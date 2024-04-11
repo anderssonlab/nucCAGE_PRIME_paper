@@ -1,0 +1,287 @@
+---
+title: "K562.CTSSs"
+output: html_document
+date: "2024-01-25"
+---
+
+```{r}
+library(CAGEfightR)
+
+#CAGEfighR extensions
+setwd("/home/mhf817")
+sep <- .Platform$file.sep
+cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
+source(paste(cfr.extensions.dir, "utils.R", sep = sep))
+source(paste(cfr.extensions.dir, "support.R", sep = sep))
+source(paste(cfr.extensions.dir, "cumulative.R", sep = sep))
+source(paste(cfr.extensions.dir, "decompose.R", sep = sep))
+source(paste(cfr.extensions.dir, "enhancers.R", sep = sep))
+source(paste(cfr.extensions.dir, "noise.R", sep = sep))
+source(paste(cfr.extensions.dir, "coverage.R", sep = sep))
+source(paste(cfr.extensions.dir, "complexity.R", sep = sep))
+source(paste(cfr.extensions.dir, "subsample.R", sep = sep))
+source(paste(cfr.extensions.dir, "dispersion.R", sep = sep))
+
+
+#Annotations
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+
+#Packages for plotting
+library(CAGEfightR)
+library(epistack)
+library(BiocParallel)
+library(dplyr)
+library(reshape2)
+library(limma)
+library(ggplot2)
+library(Matrix)
+library(corrplot)
+
+
+custom.col <- c("#FFDB6D", "#C4961A", "#F4EDCA", 
+                "#D16103", "#C3D7A4", "#52854C", "#4E84C4", "#293352","grey")
+
+#Function for pooling replicates
+poolReplicates <- function(object, replicates, inputAssay="counts") {
+    
+    ## dimensions
+    assert_that(ncol(object)==length(replicates),
+                length(unique(replicates))>1)
+
+
+    message("Calculating pooled counts...")
+    a <- do.call("cbind", lapply(unique(replicates), function(b) 
+      Matrix::rowSums(assay(object,inputAssay)[,replicates==b,drop=FALSE])))
+    a <- as(a, "sparseMatrix")
+    colnames(a) <- unique(replicates)
+
+    message("Create a pasted design matrix...")
+    c <- do.call("rbind", lapply(unique(replicates), function(b) 
+      apply(colData(object)[replicates==b,], 2 , paste , collapse = "," )))
+
+    rse <- SummarizedExperiment(assays=SimpleList(counts=a),
+                            rowRanges=rowRanges(object), colData=as.data.frame(c))
+    
+    rse <- calcTotalTags(rse)
+    
+    rse
+}
+
+#Set working directory
+setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/1.CTSSs/")
+```
+
+
+
+
+
+#K562
+
+```{r}
+#Read in design for k562
+design <- read.table("K562.design.txt",sep="\t",header=T)
+
+#Filter and format for use
+design <- design[design$use=="yes",]
+row.names(design) <- design$ID
+
+#Format bw_files
+plus_files <- design$bw_plus
+minus_files <- design$bw_minus
+names(plus_files) <- names(minus_files) <- row.names(design)
+
+bw_plus <- BigWigFileList(plus_files)
+bw_minus <- BigWigFileList(minus_files)
+
+```
+
+
+
+
+```{r}
+#Quantify CTSSs with no reference genome set
+register(MulticoreParam(workers=10))
+
+k562.CTSSs <- quantifyCTSSs(plusStrand = bw_plus,
+                       minusStrand = bw_minus,
+                       design = design)
+
+
+k562.CTSSs <- k562.CTSSs %>% calcTPM() %>% calcPooled()
+
+```
+```{r}
+#Pool replicates
+k562.p.CTSSs <- poolReplicates(k562.CTSSs,
+                               replicates=paste(colData(k562.CTSSs)$Cell.line,colData(k562.CTSSs)$Type, sep="_"))
+
+k562.p.CTSSs <- calcTPM(k562.p.CTSSs)
+
+#Subsample both original and pooled to minimum common depth
+set.seed(1337)
+
+
+#Only subsample here to second minimum (should probably exclude K562_ProCap_pcr_1 due to low sequencing depth)
+k562.s.CTSSs <- subsampleTarget(k562.CTSSs,target=29267326)
+k562.s.CTSSs <- subsetBySupport(k562.s.CTSSs, minSamples=0)
+k562.s.CTSSs <- calcTPM(k562.s.CTSSs)
+
+k562.p.s.CTSSs <- subsampleTarget(k562.p.CTSSs,target=min(colData(k562.p.CTSSs)$totalTags))
+k562.p.s.CTSSs <- subsetBySupport(k562.p.s.CTSSs, minSamples=0)
+k562.p.s.CTSSs <- calcTPM(k562.p.s.CTSSs)
+
+#make combined objects
+colData(k562.CTSSs)$pooled <- "no"
+colData(k562.p.CTSSs)$pooled <- "yes"
+
+k562.combined.CTSSs <- cbind(k562.CTSSs,k562.p.CTSSs)
+
+#subsample combined. Three sets, lowest CAGE rep and lowest pooled (excluding proCap and groCap)
+rep.min <- min(colData(k562.combined.CTSSs)$totalTags[colData(k562.combined.CTSSs)$pooled=="no"& !colData(k562.combined.CTSSs)$method %in% c("ProCap","GroCap")]) #29267326
+pool.min <- min(colData(k562.combined.CTSSs)$totalTags[colData(k562.combined.CTSSs)$pooled=="yes" & !colData(k562.combined.CTSSs)$method %in% c("ProCap,ProCap","GroCap")]) #98669216
+
+k562.combined.repSub.CTSSs<- subsampleTarget(k562.combined.CTSSs, target = rep.min)
+k562.combined.poolSub.CTSSs<- subsampleTarget(k562.combined.CTSSs, target = pool.min)
+
+k562.combined.repSub.CTSSs <- calcTPM(k562.combined.repSub.CTSSs)
+k562.combined.poolSub.CTSSs <- calcTPM(k562.combined.poolSub.CTSSs)
+
+```
+
+```{r}
+#Save CTSS objects
+saveRDS(k562.CTSSs, "all.k562.CTSSs.rds")
+saveRDS(k562.s.CTSSs, "subsampled.k562.CTSSs.rds")
+saveRDS(k562.p.CTSSs, "pooled.k562.CTSSs.rds")
+saveRDS(k562.p.s.CTSSs, "pooled.subsampled.k562.CTSSs.rds")
+
+
+
+saveRDS(k562.combined.CTSSs, "all.combined.k562.CTSSs.rds")
+saveRDS(k562.combined.repSub.CTSSs, "repSub.combined.k562.CTSSs.rds")
+saveRDS(k562.combined.poolSub.CTSSs, "poolSub.combined.k562.CTSSs.rds")
+
+```
+
+
+
+#GM12878
+
+```{r}
+#Read in design for GM12878
+design <- read.table("GM12878.design.txt",sep="\t",header=T)
+
+#Filter and format for use
+design <- design[design$use=="yes",]
+row.names(design) <- paste(design$ID,design$Seq_run,sep="_")
+
+#Format bw_files
+plus_files <- design$bw_plus
+minus_files <- design$bw_minus
+names(plus_files) <- names(minus_files) <- row.names(design)
+
+bw_plus <- BigWigFileList(plus_files)
+bw_minus <- BigWigFileList(minus_files)
+
+```
+
+
+
+
+```{r}
+#Quantify CTSSs with no reference genome set
+register(MulticoreParam(workers=20))
+
+GM12878.CTSSs <- quantifyCTSSs(plusStrand = bw_plus,
+                       minusStrand = bw_minus,
+                       design = design)
+
+
+GM12878.CTSSs <- GM12878.CTSSs %>% calcTPM() %>% calcPooled()
+
+```
+
+
+```{r}
+#Pool replicates
+GM12878.p.CTSSs <- poolReplicates(GM12878.CTSSs,
+                               replicates=paste(colData(GM12878.CTSSs)$Cell.line,colData(GM12878.CTSSs)$cell_count,colData(GM12878.CTSSs)$Type, sep="_"))
+
+GM12878.p.CTSSs <- calcTPM(GM12878.p.CTSSs)
+
+
+#Pool only based on reqsequencing
+GM12878.pID.CTSSs <- poolReplicates(GM12878.CTSSs,colData(GM12878.CTSSs)$ID)
+
+GM12878.pID.CTSSs <- calcTPM(GM12878.pID.CTSSs)
+
+#Subsample both original and pooled to minimum common depth
+set.seed(1337)
+
+
+#Subsample reads
+GM12878.s.CTSSs <- subsampleTarget(GM12878.CTSSs,target=min(colData(GM12878.CTSSs)$totalTags))
+GM12878.s.CTSSs <- subsetBySupport(GM12878.s.CTSSs, minSamples=0)
+GM12878.s.CTSSs <- calcTPM(GM12878.s.CTSSs)
+
+GM12878.p.s.CTSSs <- subsampleTarget(GM12878.p.CTSSs,target=min(colData(GM12878.p.CTSSs)$totalTags))
+GM12878.p.s.CTSSs <- subsetBySupport(GM12878.p.s.CTSSs, minSamples=0)
+GM12878.p.s.CTSSs <- calcTPM(GM12878.p.s.CTSSs)
+
+
+GM12878.pID.s.CTSSs <- subsampleTarget(GM12878.pID.CTSSs,target=min(colData(GM12878.pID.CTSSs)$totalTags))
+GM12878.pID.s.CTSSs <- subsetBySupport(GM12878.pID.s.CTSSs, minSamples=0)
+GM12878.pID.s.CTSSs <- calcTPM(GM12878.pID.s.CTSSs)
+
+
+```
+
+
+
+```{r}
+#Create object that also contains fully pooled samples. Create two subsamples one to the min replicate depth and one to min poole depth and keep original
+
+#Main indicates if part of main analysis. Removing Triptolide and low input
+colData(GM12878.pID.CTSSs)$main <- "yes"
+colData(GM12878.pID.CTSSs)$main[colData(GM12878.pID.CTSSs)$Type %in% c("Cap_align","ctrl","trip")| colData(GM12878.pID.CTSSs)$cell_count %in% c("50K","250K,250K")] <- "no"
+colData(GM12878.pID.CTSSs)$pooled <- "no"
+
+colData(GM12878.p.CTSSs)$main <- "yes"
+colData(GM12878.p.CTSSs)$main[colData(GM12878.p.CTSSs)$Type %in% c("Cap_align","ctrl,ctrl,ctrl","trip,trip,trip,trip")| colData(GM12878.p.CTSSs)$cell_count %in% c("50K,50K,50K","250K,250K,250K,250K,250K,250K")] <- "no"
+colData(GM12878.p.CTSSs)$pooled <- "yes"
+
+
+GM12878.combined.CTSSs <- cbind(GM12878.p.CTSSs,GM12878.pID.CTSSs)
+
+rep.min <- min(colData(GM12878.combined.CTSSs)$totalTags[colData(GM12878.combined.CTSSs)$main=="yes" & colData(GM12878.combined.CTSSs)$pooled=="no"]) #29027358
+pool.min <- min(colData(GM12878.combined.CTSSs)$totalTags[colData(GM12878.combined.CTSSs)$main=="yes" & colData(GM12878.combined.CTSSs)$pooled=="yes"]) #106618677
+
+GM12878.combined.repSub.CTSSs<- subsampleTarget(GM12878.combined.CTSSs, target = rep.min)
+GM12878.combined.poolSub.CTSSs<- subsampleTarget(GM12878.combined.CTSSs, target = pool.min)
+
+GM12878.combined.repSub.CTSSs <- calcTPM(GM12878.combined.repSub.CTSSs)
+GM12878.combined.poolSub.CTSSs <- calcTPM(GM12878.combined.poolSub.CTSSs)
+```
+
+
+
+```{r}
+#Save CTSS objects
+saveRDS(GM12878.CTSSs, "all.GM12878.CTSSs.rds")
+saveRDS(GM12878.s.CTSSs, "subsampled.GM12878.CTSSs.rds")
+saveRDS(GM12878.p.CTSSs, "pooled.GM12878.CTSSs.rds")
+saveRDS(GM12878.p.s.CTSSs, "pooled.subsampled.GM12878.CTSSs.rds")
+
+saveRDS(GM12878.pID.CTSSs, "IDpooled.GM12878.CTSSs.rds")
+saveRDS(GM12878.pID.s.CTSSs, "IDpooled.subsampled.GM12878.CTSSs.rds")
+
+saveRDS(GM12878.combined.CTSSs, "all.combined.GM12878.CTSSs.rds")
+saveRDS(GM12878.combined.repSub.CTSSs, "repSub.combined.GM12878.CTSSs.rds")
+saveRDS(GM12878.combined.poolSub.CTSSs, "poolSub.combined.GM12878.CTSSs.rds")
+
+```
+
+
+
+

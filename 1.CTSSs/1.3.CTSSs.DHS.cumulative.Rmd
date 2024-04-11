@@ -1,0 +1,356 @@
+---
+title: "1.3Noise"
+output: html_document
+date: "2024-01-31"
+---
+
+```{r}
+library(CAGEfightR)
+
+#CAGEfighR extensions
+setwd("/home/mhf817")
+sep <- .Platform$file.sep
+cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
+source(paste(cfr.extensions.dir, "utils.R", sep = sep))
+source(paste(cfr.extensions.dir, "support.R", sep = sep))
+source(paste(cfr.extensions.dir, "cumulative.R", sep = sep))
+source(paste(cfr.extensions.dir, "decompose.R", sep = sep))
+source(paste(cfr.extensions.dir, "enhancers.R", sep = sep))
+source(paste(cfr.extensions.dir, "noise.R", sep = sep))
+source(paste(cfr.extensions.dir, "coverage.R", sep = sep))
+source(paste(cfr.extensions.dir, "complexity.R", sep = sep))
+source(paste(cfr.extensions.dir, "subsample.R", sep = sep))
+source(paste(cfr.extensions.dir, "dispersion.R", sep = sep))
+
+
+#Annotations
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+
+#Packages for plotting
+library(CAGEfightR)
+library(epistack)
+library(BiocParallel)
+library(dplyr)
+library(reshape2)
+library(limma)
+library(ggplot2)
+library(Matrix)
+library(corrplot)
+library(stringr)
+library(gridExtra)
+
+
+
+custom.col <- c("#FFDB6D", "#C4961A", "#F4EDCA", 
+                "#D16103", "#C3D7A4", "#52854C", "#4E84C4", "#293352","grey")
+
+#Set working directory
+setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/1.CTSSs/")
+```
+
+
+#K562
+```{r}
+#Read in pre made CTSS objects
+k562.CTSSs <- readRDS("all.k562.CTSSs.rds")
+k562.s.CTSSs <- readRDS("subsampled.k562.CTSSs.rds")
+k562.p.CTSSs <- readRDS("pooled.k562.CTSSs.rds")
+k562.p.s.CTSSs <- readRDS("pooled.subsampled.k562.CTSSs.rds")
+```
+
+
+
+```{r}
+#Read in DHS bed file form encode 
+k562.dhs <- read.table("../0.External_resources/E123-DNase.macs2.hg38.narrowPeak")
+colnames(k562.dhs) <- c("chr","start","end")
+k562.dhs <- GRanges(k562.dhs[,1:3])
+k562.dhs$thick <- IRanges(start=start(k562.dhs)+((end(k562.dhs)-start(k562.dhs))/2))
+```
+
+
+
+```{r}
+#Remove non standard chromsosomes for fair comparison
+k562.CTSSs.stand <- keepStandardChromosomes(k562.s.CTSSs,pruning.mode = "coarse")
+k562.dhs<- keepStandardChromosomes(k562.dhs,pruning.mode = "coarse")
+cumFrac <- cumulativeFractions(k562.dhs,k562.CTSSs.stand) 
+
+ctss.cumfrac <- melt(cumFrac[[1]], id.var="distance")
+ctss.cumfrac$method <- str_sub(ctss.cumfrac$variable,1,-2)
+p1 <- ggplot(ctss.cumfrac,aes(distance,value, color=method, group=variable)) + geom_line() + theme_bw() +  labs(y="CTSS to DHS cumulative fraction", x= "distance to DHSs center", color="sample") + scale_color_manual(values=custom.col) + geom_vline(xintercept=200,alpha=0.5,linetype="dashed") + theme(legend.position="none")
+
+
+p1.2 <- ggplot(ctss.cumfrac[ctss.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col)+ labs(y="Cumulative CTSS fraction at 200bp", x= "sample", fill="sample")
+
+
+uctss.cumfrac <- melt(cumFrac[[2]], id.var="distance")
+uctss.cumfrac$method <- str_sub(uctss.cumfrac$variable,1,-2)
+p2 <- ggplot(uctss.cumfrac,aes(distance,value, color=method, group=variable)) + geom_line() + theme_bw() + labs(y="unique CTSS to DHS cumulative fraction", x= "distance to DHSs center", color="sample")+ scale_color_manual(values=custom.col) + geom_vline(xintercept=200,alpha=0.5,linetype="dashed")+ theme(legend.position="none")
+
+p2.2 <- ggplot(uctss.cumfrac[uctss.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col) + labs(y="Cumulative unique CTSS fraction at 200bp", x= "sample", fill="sample")
+
+
+loci.cumfrac <- melt(cumFrac[[3]], id.var="distance")
+loci.cumfrac$method <- str_sub(loci.cumfrac$variable,1,-2)
+p3 <- ggplot(loci.cumfrac,aes(distance,value, color=method, group=variable)) + geom_line() + theme_bw()  + labs(y="DHS to CTSS cumulative fraction", x= "distance to DHSs center", color="sample")+ scale_color_manual(values=custom.col) + geom_vline(xintercept=200,alpha=0.5,linetype="dashed")+ theme(legend.position="none")
+
+
+p3.2 <- ggplot(loci.cumfrac[loci.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col) + labs(y="Cumulative unique DHS fraction at 200bp", x= "sample", fill="sample")
+
+
+
+pdf("./plots/cumfrac.k562.subsampled.DHS.pdf", height=20, width = 20)
+grid.arrange(p1,p1.2,p2,p2.2,p3,p3.2 ,ncol=2)
+dev.off()
+
+```
+
+
+
+```{r}
+#Remove non standard chromsosomes for fair comparison
+k562.CTSSs.stand <- keepStandardChromosomes(k562.CTSSs,pruning.mode = "coarse")
+k562.dhs<- keepStandardChromosomes(k562.dhs,pruning.mode = "coarse")
+cumFrac <- cumulativeFractions(k562.dhs,k562.CTSSs.stand) 
+
+ctss.cumfrac <- melt(cumFrac[[1]], id.var="distance")
+ctss.cumfrac$method <- str_sub(ctss.cumfrac$variable,1,-2)
+p1 <- ggplot(ctss.cumfrac,aes(distance,value, color=method, group=variable)) + geom_line() + theme_bw() +  labs(y="CTSS to DHS cumulative fraction", x= "distance to DHSs center", color="sample") + scale_color_manual(values=custom.col) + geom_vline(xintercept=200,alpha=0.5,linetype="dashed") + theme(legend.position="none")
+
+
+p1.2 <- ggplot(ctss.cumfrac[ctss.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col)+ labs(y="Cumulative CTSS fraction at 200bp", x= "sample", fill="sample")
+
+
+uctss.cumfrac <- melt(cumFrac[[2]], id.var="distance")
+uctss.cumfrac$method <- str_sub(uctss.cumfrac$variable,1,-2)
+p2 <- ggplot(uctss.cumfrac,aes(distance,value, color=method, group=variable)) + geom_line() + theme_bw() + labs(y="unique CTSS to DHS cumulative fraction", x= "distance to DHSs center", color="sample")+ scale_color_manual(values=custom.col) + geom_vline(xintercept=200,alpha=0.5,linetype="dashed")+ theme(legend.position="none")
+
+p2.2 <- ggplot(uctss.cumfrac[uctss.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col) + labs(y="Cumulative unique CTSS fraction at 200bp", x= "sample", fill="sample")
+
+
+loci.cumfrac <- melt(cumFrac[[3]], id.var="distance")
+loci.cumfrac$method <- str_sub(loci.cumfrac$variable,1,-2)
+p3 <- ggplot(loci.cumfrac,aes(distance,value, color=method, group=variable)) + geom_line() + theme_bw()  + labs(y="DHS to CTSS cumulative fraction", x= "distance to DHSs center", color="sample")+ scale_color_manual(values=custom.col) + geom_vline(xintercept=200,alpha=0.5,linetype="dashed")+ theme(legend.position="none")
+
+
+p3.2 <- ggplot(loci.cumfrac[loci.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col) + labs(y="Cumulative unique DHS fraction at 200bp", x= "sample", fill="sample")
+
+
+
+pdf("./plots/cumfrac.k562.DHS.pdf", height=20, width = 20)
+grid.arrange(p1,p1.2,p2,p2.2,p3,p3.2 ,ncol=2)
+dev.off()
+
+```
+
+```{r}
+#Read in pre made CTSS objects
+GM12878.CTSSs <- readRDS("all.GM12878.CTSSs.rds")
+GM12878.s.CTSSs <- readRDS("subsampled.GM12878.CTSSs.rds")
+GM12878.p.CTSSs <- readRDS("pooled.GM12878.CTSSs.rds")
+GM12878.p.s.CTSSs <- readRDS("pooled.subsampled.GM12878.CTSSs.rds")
+
+GM12878.pID.CTSSs <- readRDS("IDpooled.GM12878.CTSSs.rds")
+GM12878.pID.s.CTSSs <- readRDS("IDpooled.subsampled.GM12878.CTSSs.rds")
+```
+
+
+```{r}
+#Read in DHS bed file form encode 
+GM12878.dhs <- read.table("../0.External_resources/E116-DNase.macs2.hg38.narrowPeak")
+colnames(GM12878.dhs) <- c("chr","start","end")
+GM12878.dhs <- GRanges(GM12878.dhs[,1:3])
+GM12878.dhs$thick <- IRanges(start=start(GM12878.dhs)+((end(GM12878.dhs)-start(GM12878.dhs))/2))
+```
+
+
+```{r}
+GM12878.CTSSs.stand <- keepStandardChromosomes(GM12878.pID.s.CTSSs,pruning.mode = "coarse")
+GM12878.dhs <- keepStandardChromosomes(GM12878.dhs, pruning.mode="coarse")
+gm12878.cumFrac <- cumulativeFractions(GM12878.dhs,GM12878.CTSSs.stand)
+
+ctss.cumfrac <- melt(gm12878.cumFrac[[1]], id.var="distance")
+
+ctss.cumfrac$method <- str_extract(ctss.cumfrac$variable, "_(.*?)_")
+ctss.cumfrac$C_N <- str_sub(ctss.cumfrac$variable,-2,-2)
+
+ctss.cumfrac$method <- gsub("_", "", ctss.cumfrac$method )
+
+p1 <- ggplot(ctss.cumfrac,aes(distance,value, group=variable, color=method)) + geom_line() + theme_bw() + facet_wrap(~method+C_N) + guides(color="none") + labs(y="CTSS to DHS cumulative fraction", x= "distance to DHSs center")+ scale_color_manual(values=custom.col)
+
+p1.2 <- ggplot(ctss.cumfrac[ctss.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col)+ labs(y="Cumulative CTSS fraction at 200bp", x= "sample", fill="sample")
+
+
+ctss.cumfrac <- melt(gm12878.cumFrac[2], id.var="distance")
+
+ctss.cumfrac$method <- str_extract(ctss.cumfrac$variable, "_(.*?)_")
+ctss.cumfrac$C_N <- str_sub(ctss.cumfrac$variable,-2,-2)
+
+ctss.cumfrac$method <- gsub("_", "", ctss.cumfrac$method )
+
+p2 <-  ggplot(ctss.cumfrac,aes(distance,value, group=variable, color=method)) + geom_line() + theme_bw() + facet_wrap(~method+C_N) + guides(color="none") + labs(y="CTSS to DHS cumulative fraction", x= "distance to DHSs center")+ 
+scale_color_manual(values=custom.col)
+
+p2.2 <- ggplot(ctss.cumfrac[ctss.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col)+ labs(y="Cumulative unique CTSS fraction at 200bp", x= "sample", fill="sample")
+
+
+ctss.cumfrac <- melt(gm12878.cumFrac[3], id.var="distance")
+
+
+ctss.cumfrac$method <- str_extract(ctss.cumfrac$variable, "_(.*?)_")
+ctss.cumfrac$C_N <- str_sub(ctss.cumfrac$variable,-2,-2)
+
+ctss.cumfrac$method <- gsub("_", "", ctss.cumfrac$method )
+
+p3 <-  ggplot(ctss.cumfrac,aes(distance,value, group=variable, color=method)) + geom_line() + theme_bw() + facet_wrap(~method+C_N) + guides(color="none") + labs(y="CTSS to DHS cumulative fraction", x= "distance to DHSs center")+ 
+scale_color_manual(values=custom.col)
+
+p3.2 <- ggplot(ctss.cumfrac[ctss.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col)+ labs(y="Cumulative DHS fraction at 200bp", x= "sample", fill="sample")
+
+
+pdf("./plots/cumfrac.GM12878.pID.subsampled.DHS.pdf", height=30, width = 20)
+grid.arrange(arrangeGrob(p1,p2,p3, ncol=1, nrow=3),
+         arrangeGrob(p1.2,p2.2,p3.2, ncol=1, nrow=3), widths=c(2,1))
+dev.off()
+```
+
+
+
+
+
+```{r}
+#Read in rDHS bed file form encode 
+rdhs <- read.table("/maps/projects/ralab/people/pcr980/DeepCompare/Raw_data/rDHS_ENCFF619EJE.bed")
+colnames(rdhs) <- c("chr","start","end")
+rdhs <- GRanges(rdhs[,1:3])
+rdhs$thick <- IRanges(start=start(rdhs)+((end(rdhs)-start(rdhs))/2))
+```
+
+
+```{r}
+rdhs <- keepStandardChromosomes(rdhs, pruning.mode="coarse")
+gm12878.rDHS.cumFrac <- cumulativeFractions(rdhs,GM12878.CTSSs.stand)
+```
+```{r}
+ctss.cumfrac <- melt(gm12878.rDHS.cumFrac[[1]], id.var="distance")
+
+ctss.cumfrac$method <- str_extract(ctss.cumfrac$variable, "_(.*?)_")
+ctss.cumfrac$C_N <- str_sub(ctss.cumfrac$variable,-2,-2)
+
+ctss.cumfrac$method <- gsub("_", "", ctss.cumfrac$method )
+
+p1 <- ggplot(ctss.cumfrac,aes(distance,value, group=variable, color=method)) + geom_line() + theme_bw() + facet_wrap(~method+C_N) + guides(color="none") + labs(y="CTSS to DHS cumulative fraction", x= "distance to DHSs center")+ scale_color_manual(values=custom.col)
+
+p1.2 <- ggplot(ctss.cumfrac[ctss.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col)+ labs(y="Cumulative CTSS fraction at 200bp", x= "sample", fill="sample")
+
+
+ctss.cumfrac <- melt(gm12878.rDHS.cumFrac[2], id.var="distance")
+
+ctss.cumfrac$method <- str_extract(ctss.cumfrac$variable, "_(.*?)_")
+ctss.cumfrac$C_N <- str_sub(ctss.cumfrac$variable,-2,-2)
+
+ctss.cumfrac$method <- gsub("_", "", ctss.cumfrac$method )
+
+p2 <-  ggplot(ctss.cumfrac,aes(distance,value, group=variable, color=method)) + geom_line() + theme_bw() + facet_wrap(~method+C_N) + guides(color="none") + labs(y="CTSS to DHS cumulative fraction", x= "distance to DHSs center")+ 
+scale_color_manual(values=custom.col)
+
+p2.2 <- ggplot(ctss.cumfrac[ctss.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col)+ labs(y="Cumulative unique CTSS fraction at 200bp", x= "sample", fill="sample")
+
+
+ctss.cumfrac <- melt(gm12878.rDHS.cumFrac[3], id.var="distance")
+
+
+ctss.cumfrac$method <- str_extract(ctss.cumfrac$variable, "_(.*?)_")
+ctss.cumfrac$C_N <- str_sub(ctss.cumfrac$variable,-2,-2)
+
+ctss.cumfrac$method <- gsub("_", "", ctss.cumfrac$method )
+
+p3 <-  ggplot(ctss.cumfrac,aes(distance,value, group=variable, color=method)) + geom_line() + theme_bw() + facet_wrap(~method+C_N) + guides(color="none") + labs(y="CTSS to DHS cumulative fraction", x= "distance to DHSs center")+ 
+scale_color_manual(values=custom.col)
+
+p3.2 <- ggplot(ctss.cumfrac[ctss.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col)+ labs(y="Cumulative DHS fraction at 200bp", x= "sample", fill="sample")
+
+
+pdf("./plots/cumfrac.GM12878.pID.subsampled.rDHS.pdf", height=30, width = 20)
+grid.arrange(arrangeGrob(p1,p2,p3, ncol=1, nrow=3),
+         arrangeGrob(p1.2,p2.2,p3.2, ncol=1, nrow=3), widths=c(2,1))
+dev.off()
+```
+
+```{r}
+k562.rdhs.cumFrac <- cumulativeFractions(rdhs,k562.s.CTSSs.stand) 
+
+
+ctss.cumfrac <- melt(cumFrac[[1]], id.var="distance")
+ctss.cumfrac$method <- str_sub(ctss.cumfrac$variable,1,-2)
+p1 <- ggplot(ctss.cumfrac,aes(distance,value, color=method, group=variable)) + geom_line() + theme_bw() +  labs(y="CTSS to DHS cumulative fraction", x= "distance to DHSs center", color="sample") + scale_color_manual(values=custom.col) + geom_vline(xintercept=200,alpha=0.5,linetype="dashed") + theme(legend.position="none")
+
+
+p1.2 <- ggplot(ctss.cumfrac[ctss.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col)+ labs(y="Cumulative CTSS fraction at 200bp", x= "sample", fill="sample")
+
+
+uctss.cumfrac <- melt(cumFrac[[2]], id.var="distance")
+uctss.cumfrac$method <- str_sub(uctss.cumfrac$variable,1,-2)
+p2 <- ggplot(uctss.cumfrac,aes(distance,value, color=method, group=variable)) + geom_line() + theme_bw() + labs(y="unique CTSS to DHS cumulative fraction", x= "distance to DHSs center", color="sample")+ scale_color_manual(values=custom.col) + geom_vline(xintercept=200,alpha=0.5,linetype="dashed")+ theme(legend.position="none")
+
+p2.2 <- ggplot(uctss.cumfrac[uctss.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col) + labs(y="Cumulative unique CTSS fraction at 200bp", x= "sample", fill="sample")
+
+
+loci.cumfrac <- melt(cumFrac[[3]], id.var="distance")
+loci.cumfrac$method <- str_sub(loci.cumfrac$variable,1,-2)
+p3 <- ggplot(loci.cumfrac,aes(distance,value, color=method, group=variable)) + geom_line() + theme_bw()  + labs(y="DHS to CTSS cumulative fraction", x= "distance to DHSs center", color="sample")+ scale_color_manual(values=custom.col) + geom_vline(xintercept=200,alpha=0.5,linetype="dashed")+ theme(legend.position="none")
+
+
+p3.2 <- ggplot(loci.cumfrac[loci.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col) + labs(y="Cumulative unique DHS fraction at 200bp", x= "sample", fill="sample")
+
+
+
+pdf("./plots/cumfrac.k562.subsampled.rDHS.pdf", height=20, width = 20)
+grid.arrange(p1,p1.2,p2,p2.2,p3,p3.2 ,ncol=2)
+dev.off()
+
+```
+
+
+
+```{r}
+k562.rdhs.cumFrac <- cumulativeFractions(rdhs,k562.CTSSs.stand) 
+
+
+ctss.cumfrac <- melt(cumFrac[[1]], id.var="distance")
+ctss.cumfrac$method <- str_sub(ctss.cumfrac$variable,1,-2)
+p1 <- ggplot(ctss.cumfrac,aes(distance,value, color=method, group=variable)) + geom_line() + theme_bw() +  labs(y="CTSS to DHS cumulative fraction", x= "distance to DHSs center", color="sample") + scale_color_manual(values=custom.col) + geom_vline(xintercept=200,alpha=0.5,linetype="dashed") + theme(legend.position="none")
+
+
+p1.2 <- ggplot(ctss.cumfrac[ctss.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col)+ labs(y="Cumulative CTSS fraction at 200bp", x= "sample", fill="sample")
+
+
+uctss.cumfrac <- melt(cumFrac[[2]], id.var="distance")
+uctss.cumfrac$method <- str_sub(uctss.cumfrac$variable,1,-2)
+p2 <- ggplot(uctss.cumfrac,aes(distance,value, color=method, group=variable)) + geom_line() + theme_bw() + labs(y="unique CTSS to DHS cumulative fraction", x= "distance to DHSs center", color="sample")+ scale_color_manual(values=custom.col) + geom_vline(xintercept=200,alpha=0.5,linetype="dashed")+ theme(legend.position="none")
+
+p2.2 <- ggplot(uctss.cumfrac[uctss.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col) + labs(y="Cumulative unique CTSS fraction at 200bp", x= "sample", fill="sample")
+
+
+loci.cumfrac <- melt(cumFrac[[3]], id.var="distance")
+loci.cumfrac$method <- str_sub(loci.cumfrac$variable,1,-2)
+p3 <- ggplot(loci.cumfrac,aes(distance,value, color=method, group=variable)) + geom_line() + theme_bw()  + labs(y="DHS to CTSS cumulative fraction", x= "distance to DHSs center", color="sample")+ scale_color_manual(values=custom.col) + geom_vline(xintercept=200,alpha=0.5,linetype="dashed")+ theme(legend.position="none")
+
+
+p3.2 <- ggplot(loci.cumfrac[loci.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col) + labs(y="Cumulative unique DHS fraction at 200bp", x= "sample", fill="sample")
+
+
+
+pdf("./plots/cumfrac.k562.rDHS.pdf", height=20, width = 20)
+grid.arrange(p1,p1.2,p2,p2.2,p3,p3.2 ,ncol=2)
+dev.off()
+
+```
+
+
+
+
+
+

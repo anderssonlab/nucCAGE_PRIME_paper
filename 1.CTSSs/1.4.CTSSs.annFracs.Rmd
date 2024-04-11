@@ -1,0 +1,272 @@
+---
+title: "1.4 Noise"
+output: html_document
+date: "2024-02-06"
+---
+
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+```{r}
+library(CAGEfightR)
+
+#CAGEfighR extensions
+setwd("/home/mhf817")
+sep <- .Platform$file.sep
+cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
+source(paste(cfr.extensions.dir, "utils.R", sep = sep))
+source(paste(cfr.extensions.dir, "support.R", sep = sep))
+source(paste(cfr.extensions.dir, "cumulative.R", sep = sep))
+source(paste(cfr.extensions.dir, "decompose.R", sep = sep))
+source(paste(cfr.extensions.dir, "enhancers.R", sep = sep))
+source(paste(cfr.extensions.dir, "noise.R", sep = sep))
+source(paste(cfr.extensions.dir, "coverage.R", sep = sep))
+source(paste(cfr.extensions.dir, "complexity.R", sep = sep))
+source(paste(cfr.extensions.dir, "subsample.R", sep = sep))
+source(paste(cfr.extensions.dir, "dispersion.R", sep = sep))
+
+
+#Annotations
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+
+#Packages for plotting
+library(CAGEfightR)
+library(epistack)
+library(BiocParallel)
+library(dplyr)
+library(reshape2)
+library(limma)
+library(ggplot2)
+library(stringr)
+
+custom.col <- c("#FFDB6D", "#C4961A", "#F4EDCA", 
+                "#D16103", "#C3D7A4", "#52854C", "#4E84C4", "#293352","grey")
+
+
+#Set working directory
+setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/1.CTSSs")
+```
+
+
+
+```{r}
+calc_anno_CTSS <- function(data, txModels) {
+  
+  data <- assignTxType(data,txModels = txModels)
+  
+  #Condiser all txTypes
+  Types <- unique(rowData(data)$txType)
+  
+  # Initialize list to store total tags for each txType
+  totalTags_list <- vector("list", length = length(Types))
+  
+  # Loop through each txType
+  for (i in seq_along(Types)) {
+    # Subset data based on current txType
+    current_subset <- subset(data, txType %in% Types[i])
+    # Calculate totalTags for current subset
+    current_subset <- calcTotalTags(current_subset) %>% colData()
+    totalTags_list[[i]] <- current_subset$totalTags
+  }
+  
+  # Combine totalTags into a data frame
+  ann_counts <- as.data.frame(do.call(cbind, totalTags_list))
+  colnames(ann_counts) <- Types
+  return(ann_counts)
+}
+
+
+calc_anno_uniqCTSS <- function(data, txModels) {
+  
+  data <- assignTxType(data,txModels = txModels)
+  
+  #Condiser all txTypes
+  Types <- unique(rowData(data)$txType)
+  
+  # Initialize list to store total tags for each txType
+  totalTags_list <- vector("list", length = length(Types))
+  
+  # Loop through each txType
+  for (i in seq_along(Types)) {
+    # Subset data based on current txType
+    current_subset <- subset(data, txType %in% Types[i])
+    # Calculate totalTags for current subset
+    current_subset <- colSums(assay(current_subset)>0) 
+    totalTags_list[[i]] <- current_subset
+  }
+  
+  # Combine totalTags into a data frame
+  ann_counts <- as.data.frame(do.call(cbind, totalTags_list))
+  colnames(ann_counts) <- Types
+  return(ann_counts)
+}
+
+```
+
+
+
+```{r}
+k562.s.CTSSs <- readRDS("subsampled.k562.CTSSs.rds")
+GM12878.pID.s.CTSSs <- readRDS("IDpooled.subsampled.GM12878.CTSSs.rds")
+
+```
+
+
+
+
+
+```{r}
+#Quantify CTSS level annotations
+gm12878.ann.counts <- calc_anno_CTSS(GM12878.pID.s.CTSSs,txModels = txdb)
+gm12878.ann.fracs <- gm12878.ann.counts/colData(GM12878.pID.s.CTSSs)$totalTags
+
+gm12878.ann.uniqcounts <- calc_anno_uniqCTSS(GM12878.pID.s.CTSSs,txModels = txdb)
+gm12878.ann.uniqfracs <- gm12878.ann.uniqcounts/rowSums(gm12878.ann.uniqcounts)
+```
+
+
+
+```{r}
+gm12878.ann.fracs$sample <- row.names(gm12878.ann.fracs)
+
+gm12878.ann.fracs$method <- str_extract(gm12878.ann.fracs$sample, "_(.*?)_")
+gm12878.ann.fracs$C_N <- str_sub(gm12878.ann.fracs$sample,-2,-2)
+
+gm12878.ann.fracs.m <- melt(gm12878.ann.fracs)
+
+
+
+#Plotting
+p1 <- ggplot(gm12878.ann.fracs.m, aes(sample, value, fill=variable)) + geom_col() + coord_flip() +
+  theme_bw() + scale_fill_manual(values=custom.col)
+
+p2 <- ggplot(gm12878.ann.fracs, aes(intergenic, intron, color=method)) +
+  geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.fracs), 
+    check_overlap = F, size=3,nudge_y = 0.003) + 
+  guides(color="none") + scale_color_manual(values=custom.col)
+
+p3 <- ggplot(gm12878.ann.fracs, aes(exon, intron, color=method)) +
+  geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.fracs), 
+    check_overlap = F, size=3,nudge_y = 0.003) + 
+  guides(color="none") + scale_color_manual(values=custom.col)
+
+pdf("./plots/annFracs.GM12878.pID.subsampled.pdf", height=20, width = 10)
+grid.arrange(p1,p2,p3)
+dev.off()
+
+```
+
+
+
+
+```{r}
+#Unique CTSS fraction per annotation
+gm12878.ann.uniqfracs$sample <- row.names(gm12878.ann.uniqfracs)
+
+gm12878.ann.uniqfracs$method <- str_extract(gm12878.ann.uniqfracs$sample, "_(.*?)_")
+gm12878.ann.uniqfracs$C_N <- str_sub(gm12878.ann.uniqfracs$sample,-2,-2)
+
+gm12878.ann.uniqfracs.m <- melt(gm12878.ann.uniqfracs)
+
+
+
+#Plotting
+p1 <- ggplot(gm12878.ann.uniqfracs.m, aes(sample, value, fill=variable)) + geom_col() + coord_flip() +
+  theme_bw() + scale_fill_manual(values=custom.col)
+
+p2 <- ggplot(gm12878.ann.uniqfracs, aes(intergenic, intron, color=method)) +
+  geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.uniqfracs), 
+    check_overlap = F, size=3,nudge_y = 0.003) + 
+  guides(color="none") + scale_color_manual(values=custom.col)
+
+p3 <- ggplot(gm12878.ann.uniqfracs, aes(exon, intron, color=method)) +
+  geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.uniqfracs), 
+    check_overlap = F, size=3,nudge_y = 0.003) + 
+  guides(color="none") + scale_color_manual(values=custom.col)
+
+
+pdf("./plots/annuniqFracs.GM12878.pID.subsampled.pdf", height=20, width = 10)
+grid.arrange(p1,p2,p3)
+dev.off()
+
+
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+#Quantify CTSS level annotations
+k562.ann.counts <- calc_anno_CTSS(k562.s.CTSSs,txModels = txdb)
+k562.ann.fracs <- k562.ann.counts/colData(k562.s.CTSSs)$totalTags
+
+k562.ann.uniqcounts <- calc_anno_uniqCTSS(k562.s.CTSSs,txModels = txdb)
+k562.ann.uniqfracs <- k562.ann.uniqcounts/rowSums(k562.ann.uniqcounts)
+```
+
+
+
+```{r}
+k562.ann.fracs$sample <- row.names(k562.ann.fracs)
+k562.ann.fracs.m <- melt(k562.ann.fracs)
+k562.ann.fracs$method <- str_sub(k562.ann.fracs$sample,1,-2)
+#Plotting
+p1 <- ggplot(k562.ann.fracs.m, aes(sample, value, fill=variable)) + geom_col() + coord_flip() +
+  theme_bw() + scale_fill_manual(values=custom.col)
+
+p2 <- ggplot(k562.ann.fracs, aes(intergenic, intron, color=method)) +
+  geom_point(size=2) + theme_bw() + geom_text( label=rownames(k562.ann.fracs), 
+    check_overlap = F, size=3,nudge_y = 0.003) + 
+  guides(color="none") + scale_color_manual(values=custom.col)
+
+p3 <- ggplot(k562.ann.fracs, aes(exon, intron, color=method)) +
+  geom_point(size=2) + theme_bw() + geom_text( label=rownames(k562.ann.fracs), 
+    check_overlap = F, size=3,nudge_y = 0.003) + 
+  guides(color="none") + scale_color_manual(values=custom.col)
+
+
+pdf("./plots/annFracs.k562.subsampled.pdf", height=20, width = 10)
+grid.arrange(p1,p2,p3)
+dev.off()
+
+
+```
+
+
+
+
+```{r}
+#Unique CTSS fraction per annotation
+k562.ann.uniqfracs$sample <- row.names(k562.ann.uniqfracs)
+k562.ann.uniqfracs.m <- melt(k562.ann.uniqfracs)
+k562.ann.uniqfracs$method <- str_sub(k562.ann.uniqfracs$sample,1,-2)
+
+#Plotting
+p1 <- ggplot(k562.ann.uniqfracs.m, aes(sample, value, fill=variable)) + geom_col() + coord_flip() +
+  theme_bw() + scale_fill_manual(values=custom.col)
+
+p2 <- ggplot(k562.ann.uniqfracs, aes(intergenic, intron, color=method)) +
+  geom_point(size=2) + theme_bw() + geom_text( label=rownames(k562.ann.uniqfracs), 
+    check_overlap = F, size=3,nudge_y = 0.003) + 
+  guides(color="none") + scale_color_manual(values=custom.col)
+
+p3 <- ggplot(k562.ann.uniqfracs, aes(exon, intron, color=method)) +
+  geom_point(size=2) + theme_bw() + geom_text( label=rownames(k562.ann.uniqfracs), 
+    check_overlap = F, size=3,nudge_y = 0.003) + 
+  guides(color="none") + scale_color_manual(values=custom.col)
+
+pdf("./plots/annuniqFracs.k562.subsampled.pdf", height=20, width = 10)
+grid.arrange(p1,p2,p3)
+dev.off()
+
+```
+

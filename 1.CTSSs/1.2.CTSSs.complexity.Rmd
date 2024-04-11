@@ -1,0 +1,480 @@
+---
+title: "CTSS level complexity"
+output: html_document
+date: "2024-01-26"
+---
+
+```{r}
+library(CAGEfightR)
+
+#CAGEfighR extensions
+setwd("/home/mhf817")
+sep <- .Platform$file.sep
+cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
+source(paste(cfr.extensions.dir, "utils.R", sep = sep))
+source(paste(cfr.extensions.dir, "support.R", sep = sep))
+source(paste(cfr.extensions.dir, "cumulative.R", sep = sep))
+source(paste(cfr.extensions.dir, "decompose.R", sep = sep))
+source(paste(cfr.extensions.dir, "enhancers.R", sep = sep))
+source(paste(cfr.extensions.dir, "noise.R", sep = sep))
+source(paste(cfr.extensions.dir, "coverage.R", sep = sep))
+source(paste(cfr.extensions.dir, "complexity.R", sep = sep))
+source(paste(cfr.extensions.dir, "subsample.R", sep = sep))
+source(paste(cfr.extensions.dir, "dispersion.R", sep = sep))
+
+
+#Annotations
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+
+#Packages for plotting
+library(CAGEfightR)
+library(epistack)
+library(BiocParallel)
+library(dplyr)
+library(reshape2)
+library(limma)
+library(ggplot2)
+library(Matrix)
+library(corrplot)
+library(stringr)
+library(forcats)
+library(cowplot)
+
+
+custom.col <- c("#FFDB6D", "#C4961A", "#F4EDCA", 
+                "#D16103", "#C3D7A4", "#52854C", "#4E84C4", "#293352","grey")
+
+#Set working directory
+setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/1.CTSSs/")
+```
+
+
+#K562
+```{r}
+#Read in pre made CTSS objects
+k562.CTSSs <- readRDS("all.k562.CTSSs.rds")
+k562.s.CTSSs <- readRDS("subsampled.k562.CTSSs.rds")
+k562.p.CTSSs <- readRDS("pooled.k562.CTSSs.rds")
+k562.p.s.CTSSs <- readRDS("pooled.subsampled.k562.CTSSs.rds")
+```
+
+
+```{r}
+#Compare all CTSS level correlation
+pdf("./plots/k562.CTSSs.corr.pdf",width = 30, height = 30)
+corrplot(cor(
+  as.matrix(assay(k562.CTSSs,"TPM"))),
+  method="number")
+dev.off()
+
+pdf("./plots/subsampled.k562.CTSSs.corr.pdf",width = 30, height = 30)
+corrplot(cor(
+  as.matrix(assay(k562.s.CTSSs,"TPM"))),
+  method="number")
+dev.off()
+
+pdf("./plots/pooled.k562.CTSSs.corr.pdf",width = 15, height = 15)
+corrplot(cor(
+  as.matrix(assay(k562.p.CTSSs,"TPM"))),
+  method="number")
+dev.off()
+
+pdf("./plots/pooled.subsampled.k562.CTSSs.corr.pdf",width = 15, height = 15)
+corrplot(cor(
+  as.matrix(assay(k562.p.s.CTSSs,"TPM"))),
+  method="number")
+dev.off()
+
+
+
+```
+
+
+
+
+```{r}
+#Compare CTSS>0TPM correlations
+m1 <- as.matrix(assay(k562.CTSSs,"TPM"))
+m1[m1==0] <- NA
+
+pdf("./plots/k562.CTSSs.rm0.corr.pdf",width = 30, height = 30)
+corrplot(cor(m1,use="complete.obs"),
+  method="number")
+dev.off()
+
+m1 <- as.matrix(assay(k562.s.CTSSs,"TPM"))
+m1[m1==0] <- NA
+
+pdf("./plots/subsampled.k562.CTSSs.rm0.corr.pdf",width = 30, height = 30)
+corrplot(cor(m1,use="complete.obs"),
+  method="number")
+dev.off()
+
+m1 <- as.matrix(assay(k562.p.CTSSs,"TPM"))
+m1[m1==0] <- NA
+
+pdf("./plots/pooled.k562.CTSSs.rm0.corr.pdf",width = 15, height = 15)
+corrplot(cor(m1,use="complete.obs"),
+  method="number")
+dev.off()
+
+m1 <- as.matrix(assay(k562.p.s.CTSSs,"TPM"))
+m1[m1==0] <- NA
+
+pdf("./plots/pooled.subsampled.k562.CTSSs.rm0.corr.pdf",width = 15, height = 15)
+corrplot(cor(m1,use="complete.obs"),
+  method="number")
+dev.off()
+
+
+
+```
+
+
+
+
+
+```{r}
+set.seed(1337)
+
+#Calculate CTSS level complexity
+comp.k562.CTSSs <- calcCTSSComplexity(k562.CTSSs,step=2e+6,minCTSSsupport = 1,CTSSunexpressed = 0)
+comp.k562.s.CTSSs <- calcCTSSComplexity(k562.s.CTSSs,step=2e+6,minCTSSsupport = 1,CTSSunexpressed = 0)
+comp.k562.p.CTSSs <- calcCTSSComplexity(k562.p.CTSSs,step=2e+6,minCTSSsupport = 1,CTSSunexpressed = 0)
+comp.k562.p.s.CTSSs <- calcCTSSComplexity(k562.p.s.CTSSs,step=2e+6,minCTSSsupport = 1,CTSSunexpressed = 0)
+
+#save for potential later use
+save(comp.k562.CTSSs,comp.k562.s.CTSSs,comp.k562.p.CTSSs,comp.k562.p.s.CTSSs,comp.k562.combined.CTSSs, file="./K562.CTSS.complexity.RData")
+
+```
+
+
+
+```{r}
+#Plot complexities
+comp.k562.CTSSs$method <- str_sub(comp.k562.CTSSs$sample,1,-2)
+pdf("./plots/k562.CTSSs.comp.pdf",width = 15, height = 10)
+ggplot(comp.k562.CTSSs,aes(totalTags,numberCTSSs,color=method,group=sample)) + 
+  geom_line() +
+  theme_bw() + 
+  scale_color_manual(values=custom.col)
+dev.off()
+
+comp.k562.CTSSs$method <- str_sub(comp.k562.CTSSs$sample,1,-2)
+comp.k562.s.CTSSs$method <- str_sub(comp.k562.s.CTSSs$sample,1,-2)
+pdf("./plots/subsampled.k562.CTSSs.comp.pdf",width = 15, height = 10)
+ggplot(comp.k562.s.CTSSs,aes(totalTags,numberCTSSs,color=method,group=sample)) + 
+  geom_line() +
+  theme_bw() + 
+  scale_color_manual(values=custom.col)
+dev.off()
+
+comp.k562.p.CTSSs$method <- str_sub(comp.k562.p.CTSSs$sample,1,-2)
+pdf("./plots/pooled.k562.CTSSs.comp.pdf",width = 15, height = 10)
+ggplot(comp.k562.p.CTSSs,aes(totalTags,numberCTSSs,color=method,group=sample)) + 
+  geom_line() +
+  theme_bw() + 
+  scale_color_manual(values=custom.col)
+dev.off()
+
+comp.k562.p.s.CTSSs$method <- str_sub(comp.k562.p.s.CTSSs$sample,1,-2)
+pdf("./plots/pooled.subsampled.k562.CTSSs.comp.pdf",width = 15, height = 10)
+ggplot(comp.k562.p.s.CTSSs,aes(totalTags,numberCTSSs,color=method,group=sample)) + 
+  geom_line() +
+  theme_bw() + 
+  scale_color_manual(values=custom.col)
+dev.off()
+
+
+```
+
+
+#GM12878
+```{r}
+#Read in pre made CTSS objects
+GM12878.CTSSs <- readRDS("all.GM12878.CTSSs.rds")
+GM12878.s.CTSSs <- readRDS("subsampled.GM12878.CTSSs.rds")
+GM12878.p.CTSSs <- readRDS("pooled.GM12878.CTSSs.rds")
+GM12878.p.s.CTSSs <- readRDS("pooled.subsampled.GM12878.CTSSs.rds")
+
+GM12878.pID.CTSSs <- readRDS("IDpooled.GM12878.CTSSs.rds")
+GM12878.pID.s.CTSSs <- readRDS("IDpooled.subsampled.GM12878.CTSSs.rds")
+
+GM12878.combined.CTSSs <- readRDS("all.combined.GM12878.CTSSs.rds")
+```
+
+
+
+
+```{r}
+#Compare all CTSS level correlation
+pdf("./plots/GM12878.CTSSs.corr.pdf",width = 30, height = 30)
+corrplot(cor(
+  as.matrix(assay(GM12878.CTSSs,"TPM"))),
+  method="number")
+dev.off()
+
+pdf("./plots/subsampled.GM12878.CTSSs.corr.pdf",width = 30, height = 30)
+corrplot(cor(
+  as.matrix(assay(GM12878.s.CTSSs,"TPM"))),
+  method="number")
+dev.off()
+
+pdf("./plots/pooled.GM12878.CTSSs.corr.pdf",width = 15, height = 15)
+corrplot(cor(
+  as.matrix(assay(GM12878.p.CTSSs,"TPM"))),
+  method="number")
+dev.off()
+
+pdf("./plots/pooled.subsampled.GM12878.CTSSs.corr.pdf",width = 15, height = 15)
+corrplot(cor(
+  as.matrix(assay(GM12878.p.s.CTSSs,"TPM"))),
+  method="number")
+dev.off()
+
+pdf("./plots/IDpooled.GM12878.CTSSs.corr.pdf",width = 30, height = 30)
+corrplot(cor(
+  as.matrix(assay(GM12878.pID.CTSSs,"TPM"))),
+  method="number")
+dev.off()
+
+pdf("./plots/IDpooled.subsampled.GM12878.CTSSs.corr.pdf",width = 30, height = 30)
+corrplot(cor(
+  as.matrix(assay(GM12878.pID.s.CTSSs,"TPM"))),
+  method="number")
+dev.off()
+
+```
+
+```{r}
+#Compare CTSS>0TPM correlations
+#m1 <- as.matrix(assay(GM12878.CTSSs,"TPM"))
+#m1[m1==0] <- NA
+
+#pdf("./plots/GM12878.CTSSs.rm0.corr.pdf",width = 30, height = 30)
+#corrplot(cor(m1,use="complete.obs"),
+#  method="number")
+#dev.off()
+
+m1 <- as.matrix(assay(GM12878.s.CTSSs,"TPM"))
+m1[m1==0] <- NA
+
+pdf("./plots/subsampled.GM12878.CTSSs.rm0.corr.pdf",width = 30, height = 30)
+corrplot(cor(m1,use="complete.obs"),
+  method="number")
+dev.off()
+
+m1 <- as.matrix(assay(GM12878.p.CTSSs,"TPM"))
+m1[m1==0] <- NA
+
+pdf("./plots/pooled.GM12878.CTSSs.rm0.corr.pdf",width = 15, height = 15)
+corrplot(cor(m1,use="complete.obs"),
+  method="number")
+dev.off()
+
+m1 <- as.matrix(assay(GM12878.p.s.CTSSs,"TPM"))
+m1[m1==0] <- NA
+
+pdf("./plots/pooled.subsampled.GM12878.CTSSs.rm0.corr.pdf",width = 15, height = 15)
+corrplot(cor(m1,use="complete.obs"),
+  method="number")
+dev.off()
+
+#m1 <- as.matrix(assay(GM12878.pID.CTSSs,"TPM"))
+#m1[m1==0] <- NA
+
+#pdf("./plots/IDpooled.GM12878.CTSSs.rm0.corr.pdf",width = 30, height = 30)
+#corrplot(cor(m1,use="complete.obs"),
+#  method="number")
+#dev.off()
+
+m1 <- as.matrix(assay(GM12878.pID.s.CTSSs,"TPM"))
+m1[m1==0] <- NA
+
+pdf("./plots/IDpooled.subsampled.GM12878.CTSSs.rm0.corr.pdf",width = 30, height = 30)
+corrplot(cor(m1,use="complete.obs"),
+  method="number")
+dev.off()
+
+```
+
+
+
+```{r}
+set.seed(1337)
+
+#Calculate CTSS level complexity
+comp.GM12878.CTSSs <- calcCTSSComplexity(GM12878.CTSSs,step=2e+6,minCTSSsupport = 1,CTSSunexpressed = 0)
+comp.GM12878.s.CTSSs <- calcCTSSComplexity(GM12878.s.CTSSs,step=2e+6,minCTSSsupport = 1,CTSSunexpressed = 0)
+comp.GM12878.p.CTSSs <- calcCTSSComplexity(GM12878.p.CTSSs,step=2e+6,minCTSSsupport = 1,CTSSunexpressed = 0)
+comp.GM12878.p.s.CTSSs <- calcCTSSComplexity(GM12878.p.s.CTSSs,step=2e+6,minCTSSsupport = 1,CTSSunexpressed = 0)
+comp.GM12878.pID.CTSSs <- calcCTSSComplexity(GM12878.pID.CTSSs,step=2e+6,minCTSSsupport = 1,CTSSunexpressed = 0)
+comp.GM12878.pID.s.CTSSs <- calcCTSSComplexity(GM12878.pID.s.CTSSs,step=2e+6,minCTSSsupport = 1,CTSSunexpressed = 0)
+comp.GM12878.combined.CTSSs <- calcCTSSComplexity(GM12878.combined.CTSSs,step=2e+6,minCTSSsupport = 1,CTSSunexpressed = 0)
+#save for potential later use
+save(comp.GM12878.CTSSs,comp.GM12878.s.CTSSs,comp.GM12878.p.CTSSs,comp.GM12878.pID.CTSSs,comp.GM12878.pID.s.CTSSs,comp.GM12878.combined.CTSSs, file="./GM12878.CTSS.complexity.RData")
+
+```
+
+
+
+```{r}
+#Plot complexities
+pdf("./plots/GM12878.CTSSs.comp.pdf",width = 15, height = 10)
+ggplot(comp.GM12878.CTSSs,aes(totalTags,numberCTSSs,color=sample)) + 
+  geom_line() +
+  theme_bw() 
+dev.off()
+
+
+comp.GM12878.CTSSs$method <- str_extract(comp.GM12878.CTSSs$sample, "_(.*?)_")
+
+comp.GM12878.CTSSs$method <- gsub("_", "", comp.GM12878.CTSSs$method )
+
+pdf("./plots/GM12878.CTSSs.compSplit.pdf",width = 15, height = 10)
+ggplot(comp.GM12878.CTSSs,aes(totalTags,numberCTSSs,color=sample)) + 
+  geom_line() +
+  theme_bw() + 
+  facet_wrap(~method)+ theme(legend.position = "none")
+dev.off()
+
+pdf("./plots/subsampled.GM12878.CTSSs.comp.pdf",width = 15, height = 10)
+ggplot(comp.GM12878.s.CTSSs,aes(totalTags,numberCTSSs,color=sample)) + 
+  geom_line() +
+  theme_bw() 
+dev.off()
+
+pdf("./plots/pooled.GM12878.CTSSs.comp.pdf",width = 15, height = 10)
+ggplot(comp.GM12878.p.CTSSs,aes(totalTags,numberCTSSs,color=sample)) + 
+  geom_line() +
+  theme_bw() 
+dev.off()
+
+pdf("./plots/pooled.subsampled.GM12878.CTSSs.comp.pdf",width = 15, height = 10)
+ggplot(comp.GM12878.p.s.CTSSs,aes(totalTags,numberCTSSs,color=sample)) + 
+  geom_line() +
+  theme_bw() 
+dev.off()
+
+pdf("./plots/pooledID.GM12878.CTSSs.comp.pdf",width = 15, height = 10)
+ggplot(comp.GM12878.pID.CTSSs,aes(totalTags,numberCTSSs,color=sample)) + 
+  geom_line() +
+  theme_bw() 
+dev.off()
+
+pdf("./plots/pooledID.subsampled.GM12878.CTSSs.comp.pdf",width = 15, height = 10)
+ggplot(comp.GM12878.pID.s.CTSSs,aes(totalTags,numberCTSSs,color=sample)) + 
+  geom_line() +
+  theme_bw() 
+dev.off()
+
+
+```
+
+
+
+
+
+
+
+
+```{r}
+
+load("./GM12878.CTSS.complexity.RData")
+#Make a nice main figure from GM12878
+main <- comp.GM12878.combined.CTSSs[comp.GM12878.combined.CTSSs$sample %in% colnames(GM12878.combined.CTSSs)[GM12878.combined.CTSSs$main=="yes"],]
+
+gm.pal <- c("#F5CE00", "#E2AA00", "#B68D00","#DF613F","#DF5643","#DD4425","#92B9C9","#76A5B6","#004352","#29A957","#008E37","#007A30","#4F5D5C","#444E4C","#3D4138",
+                     "#AC97C2","#977FB4","#7D62A3")
+                     
+gm.pooled.pal <- c("#FF8D00","#FF4425","#00439B","#009072","#878784","#7D62D0")
+
+gm.full.pal <- c("#F5CE00", "#E2AA00", "#B68D00","#FF8D00","#DF613F","#DF5643","#DD4425","#FF4425","#92B9C9","#76A5B6","#004352","#00439B","#29A957","#008E37","#007A30","#009072","#4F5D5C","#444E4C","#3D4138","#878784","#AC97C2","#977FB4","#7D62A3","#7D62D0")
+
+
+main$sample <- factor(main$sample,levels=c( "GM12878_500K_C1","GM12878_500K_C2","GM12878_500K_C3","GM12878_500K_C",
+                                                                "GM12878_500K_N1","GM12878_500K_N2","GM12878_500K_N3", "GM12878_500K_N",
+                                                                "GM12878_1M_C1","GM12878_1M_C2","GM12878_1M_C3","GM12878_1M_C",
+                                                                "GM12878_1M_N1","GM12878_1M_N2","GM12878_1M_N3", "GM12878_1M_N",
+                                                                "GM12878_5M_N1","GM12878_5M_N2","GM12878_5M_N3", "GM12878_5M_N",
+                                                                "GM12878_10M_N1","GM12878_10M_N2","GM12878_10M_N3", "GM12878_10M_N"))
+    
+pdf("./combined_plots/combined.GM12878.CTSSs.comp.pdf",width = 15, height = 10)
+ggplot(main,aes(totalTags,numberCTSSs,color=sample)) + 
+  geom_line() +
+  theme_bw() + scale_color_manual(values = gm.full.pal) + geom_vline(xintercept=c(29027358,106618677),linetype=2)
+dev.off()
+
+pdf("./combined_plots/combined.GM12878.CTSSs.comp.scaled.pdf",width = 15, height = 10)
+ggplot(main,aes(totalTags,numberCTSSs,color=sample)) + 
+  geom_line() +
+  theme_bw() + scale_y_log10() + scale_color_manual(values = gm.full.pal) + geom_vline(xintercept=c(29027358,106618677),linetype=2)
+dev.off()
+
+
+#Add barplots for subsampled levels
+max <- main[main$target<106618677,]
+p.max <- na.omit(max) %>% group_by(sample) %>% summarize(pooled.compexity=max(numberCTSSs))
+max <- main[main$target<29027358,]
+r.max <- na.omit(max) %>% group_by(sample) %>% summarize(rep.compexity=max(numberCTSSs)) 
+
+p1 <- ggplot(main,aes(totalTags,numberCTSSs,color=sample)) + 
+  geom_line() +
+  theme_bw() + scale_y_log10() + scale_color_manual(values = gm.full.pal) + geom_vline(xintercept=c(29027358,106618677),linetype=2)+ guides(color="none") 
+
+p2 <- ggplot(r.max,aes(fct_rev(sample),rep.compexity,fill=sample)) + geom_col() + theme_bw() + scale_fill_manual(values=gm.full.pal) + coord_flip() + scale_y_log10()+ guides(fill="none") + labs(y="numberCTSSs", x="Samples")
+
+p3 <- ggplot(p.max,aes(fct_rev(sample),pooled.compexity,fill=sample)) + geom_col() + theme_bw() + scale_fill_manual(values=gm.full.pal) + coord_flip() + scale_y_log10() + labs(y="numberCTSSs", x="Samples")
+
+
+
+# extract the legend from one of the plots
+legend <- get_legend(
+  # create some space to the left of the legend
+  p3 + theme(legend.box.margin = margin(0, 0, 0, 12))
+)
+
+#Save legend plot as separate object to work with
+pdf("./combined_plots/GM12878.colorLegend.pdf")
+grid.arrange(legend)
+dev.off()
+
+pdf("./combined_plots/GM12878.mainComplexity.pdf",width=30,height=15)
+grid.arrange(p1,p2,p3+guides(fill="none"),
+  widths = c(2, 1, 1),
+  layout_matrix = rbind(c(1, 2, 3))
+)
+dev.off()
+
+
+
+
+
+k.full.pal <- c("#F5CE00", "#E2AA00", "#B68D00","#FF8D00","#DF613F","#DF5643","#DD4425","#FF4425","#92B9C9","#76A5B6","#004352","#00439B","#29A957","#008E37","#007A30","#4F5D5C")
+#Same for K562
+#Small naming change
+comp.k562.combined.CTSSs$sample[comp.k562.combined.CTSSs$sample=="K562_N_10M"] <- "K562_10M_N"
+
+#Remove duplicated groCap
+comp.k562.combined.CTSSs[comp.k562.combined.CTSSs$sample!="K562_Cap_align",]
+
+#Reorder samples as factors
+comp.k562.combined.CTSSs$sample <- factor(comp.k562.combined.CTSSs$sample,levels=c( "K562_C1","K562_C2","K562_C3","K562_C","K562_N4","K562_N5","K562_N6", "K562_N","K562_10M_N1", "K562_10M_N2","K562_10M_N3","K562_10M_N",
+                                                                                       "K562_ProCap_pcr_1","K562_ProCap_pcr_2","K562_pcr_align","K562_groCap_1"))
+pdf("./combined_plots/combined.k562.CTSSs.comp..pdf",width = 15, height = 10)
+ggplot(comp.k562.combined.CTSSs,aes(totalTags,numberCTSSs,color=sample)) + 
+  geom_line() +
+  theme_bw()  + scale_color_manual(values = k.full.pal) + geom_vline(xintercept=c(29267326,98669216),linetype=2)
+dev.off()
+
+pdf("./combined_plots/combined.k562.CTSSs.comp.scaled.pdf",width = 15, height = 10)
+ggplot(comp.k562.combined.CTSSs,aes(totalTags,numberCTSSs,color=sample)) + 
+  geom_line() +
+  theme_bw() + scale_y_log10() + scale_color_manual(values = k.full.pal) + geom_vline(xintercept=c(29267326,98669216),linetype=2)
+dev.off()
+```
+
+
+
+
