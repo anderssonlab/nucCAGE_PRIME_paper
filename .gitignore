@@ -16,7 +16,9 @@ liftOver
 *.sav
 *.out
 __pycache__
-README
+*README*
 *plots*
 *.ipynb.checkpoints*
 notuse
+.Rproj.user
+*.Rproj
