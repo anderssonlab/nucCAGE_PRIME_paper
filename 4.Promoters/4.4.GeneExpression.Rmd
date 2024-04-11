@@ -1,0 +1,110 @@
+---
+title: "4.2.GeneExpression"
+output: html_document
+date: "2024-03-11"
+---
+
+
+
+
+```{r}
+library(CAGEfightR)
+
+#CAGEfighR extensions
+setwd("/home/mhf817")
+sep <- .Platform$file.sep
+cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
+source(paste(cfr.extensions.dir, "utils.R", sep = sep))
+source(paste(cfr.extensions.dir, "support.R", sep = sep))
+source(paste(cfr.extensions.dir, "cumulative.R", sep = sep))
+source(paste(cfr.extensions.dir, "decompose.R", sep = sep))
+source(paste(cfr.extensions.dir, "enhancers.R", sep = sep))
+source(paste(cfr.extensions.dir, "noise.R", sep = sep))
+source(paste(cfr.extensions.dir, "coverage.R", sep = sep))
+source(paste(cfr.extensions.dir, "complexity.R", sep = sep))
+source(paste(cfr.extensions.dir, "subsample.R", sep = sep))
+source(paste(cfr.extensions.dir, "dispersion.R", sep = sep))
+
+
+#Annotations
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+library(BSgenome.Hsapiens.UCSC.hg38)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+#Packages for plotting
+library(CAGEfightR)
+library(epistack)
+library(BiocParallel)
+library(dplyr)
+library(reshape2)
+library(limma)
+library(ggplot2)
+library(stringr)
+
+custom.col <- c("#FFDB6D", "#C4961A", "#F4EDCA", 
+                "#D16103", "#C3D7A4", "#52854C", "#4E84C4", "#293352","grey")
+
+
+gm.pal <- c("#F5CE00", "#E2AA00", "#B68D00","#DF613F","#DF5643","#DD4425","#92B9C9","#76A5B6","#004352","#29A957","#008E37","#007A30","#4F5D5C","#444E4C","#3D4138",
+                     "#AC97C2","#977FB4","#7D62A3")
+                     
+gm.pooled.pal <- c("#FF8D00","#FF4425","#00439B","#009072","#878784","#7D62D0")
+
+gm.full.pal <- c("#F5CE00", "#E2AA00", "#B68D00","#FF8D00","#DF613F","#DF5643","#DD4425","#FF4425","#92B9C9","#76A5B6","#004352","#00439B","#29A957","#008E37","#007A30","#009072","#4F5D5C","#444E4C","#3D4138","#878784","#AC97C2","#977FB4","#7D62A3","#7D62D0")
+
+
+
+
+k.full.pal <- c("#F5CE00", "#E2AA00", "#B68D00","#FF8D00","#DF613F","#DF5643","#DD4425","#FF4425","#4F5D5C","#92B9C9","#76A5B6","#004352","#00439B","#29A957","#008E37","#007A30")
+
+
+#Set working directory
+setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/4.Promoters/")
+
+
+```
+
+
+
+
+```{r}
+k562.TCs <- readRDS("./repSub.TCs.k562.rds")
+k562.geneExpr <- read.table("../0.External_resources/ENCFF928NYA.tsv", header=T)
+k562.geneExpr$ensembl <- gsub("\\..*","",k562.geneExpr$gene_id)
+```
+
+
+
+```{r}
+k562.TCs <- assignGeneID(k562.TCs,geneModels=txdb)
+
+GSE <- k562.TCs %>% as.data.frame(row.names=NULL) %>% group_by(sample, geneID) %>% summarize(gene_counts=sum(score))
+
+
+
+library(org.Hs.eg.db)
+
+map <- mapIds(org.Hs.eg.db, keys = GSE$geneID, keytype="ENTREZID", column = "ENSEMBL", multiVals="first")
+
+inds <- which(!is.na(map))
+found_genes <- map[inds]
+
+GSE <- GSE[GSE$geneID %in% names(found_genes),]
+
+GSE$ensembl <- as.character(found_genes)
+
+expr <- merge(GSE,k562.geneExpr, by.y="ensembl","ensembl")
+
+corel <- lapply(unique(expr$sample),function(x) {
+  samp <- expr[expr$sample==x & expr$TPM>0 & expr$gene_counts>0,]
+  cor <- cor(log10(samp$gene_counts), log10(samp$TPM))
+})
+
+cor.df <- data.frame(samp=unique(expr$sample), correlation=unlist(corel))
+
+expr$sample <- factor(expr$sample, levels=c("K562_C1","K562_C2","K562_C3","K562_C","K562_N4","K562_N5","K562_N6","K562_N",
+                                            "K562_10M_N1","K562_10M_N2","K562_10M_N3","K562_N_10M",
+                                            "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_pcr_align"))
+
+ggplot(expr[expr$TPM>0 &expr$gene_counts>0,], aes(gene_counts, TPM, color=sample, group=sample)) + geom_point(size=0.5) + facet_wrap(~sample) + scale_x_log10() + scale_y_log10() + theme_bw() + scale_color_manual(values=k.full.pal)
+```
+
