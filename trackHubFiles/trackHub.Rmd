@@ -1,0 +1,153 @@
+---
+title: "0.1.TrackFile generation"
+output: html_document
+date: "2024-03-13"
+---
+
+
+
+```{r}
+library(CAGEfightR)
+
+#CAGEfighR extensions
+setwd("/home/mhf817")
+sep <- .Platform$file.sep
+cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
+source(paste(cfr.extensions.dir, "utils.R", sep = sep))
+source(paste(cfr.extensions.dir, "support.R", sep = sep))
+source(paste(cfr.extensions.dir, "cumulative.R", sep = sep))
+source(paste(cfr.extensions.dir, "decompose.R", sep = sep))
+source(paste(cfr.extensions.dir, "enhancers.R", sep = sep))
+source(paste(cfr.extensions.dir, "noise.R", sep = sep))
+source(paste(cfr.extensions.dir, "coverage.R", sep = sep))
+source(paste(cfr.extensions.dir, "complexity.R", sep = sep))
+source(paste(cfr.extensions.dir, "subsample.R", sep = sep))
+source(paste(cfr.extensions.dir, "dispersion.R", sep = sep))
+
+
+#Annotations
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+
+#Packages for plotting
+library(CAGEfightR)
+library(epistack)
+library(BiocParallel)
+library(dplyr)
+library(reshape2)
+library(limma)
+library(ggplot2)
+
+setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/trackHubFiles//")
+```
+
+```{r}
+#Create function to export TPM bigwig per sample
+perSampleBigWigExport <- function(object, inputAssay="TPM", prefix="") {
+  sampleIDs = colnames(object)
+  lapply(sampleIDs, function(sample){
+    sub.object = object[,sample]
+    sub.object = calcPooled(sub.object, inputAssay=inputAssay)
+    sub.object.plus = subset(sub.object, score>0 & strand=="+")
+    sub.object.minus = subset(sub.object, score>0 & strand=="-")
+    export.bw(rowRanges(sub.object.plus),con=paste0(prefix,sep="",sample,sep=".",inputAssay,sep=".","plus",sep=".","bw"))
+    export.bw(rowRanges(sub.object.minus),con=paste0(prefix,sep="",sample,sep=".",inputAssay,sep=".","minus",sep=".","bw"))
+  })
+}
+```
+
+
+
+```{r}
+k562.s.CTSSs <- readRDS("../1.CTSSs/repSub.combined.k562.CTSSs.rds")
+k562.p.CTSSs <- readRDS("../1.CTSSs/poolSub.combined.k562.CTSSs.rds")
+
+perSampleBigWigExport(k562.s.CTSSs)
+
+perSampleBigWigExport(k562.p.CTSSs, prefix="PoolSub.")
+
+
+
+GM12878.s.CTSSs <- readRDS("../1.CTSSs/repSub.combined.GM12878.CTSSs.rds")
+GM12878.p.CTSSs <- readRDS("../1.CTSSs/poolSub.combined.GM12878.CTSSs.rds")
+
+perSampleBigWigExport(GM12878.s.CTSSs)
+
+perSampleBigWigExport(GM12878.p.CTSSs, prefix="PoolSub.")
+
+
+
+```
+
+
+```{r}
+#Prepare per sample bed files
+
+#Very lenient calling 
+k562.DLs <- readRDS("../3.DivergentLoci/repSub.k562.DLs.TCs.rds")
+
+lapply(unique(k562.DLs$sample), function(x) {
+  prefix="repSub."
+  samp.bed <- subset(k562.DLs, sample == x & score>=3)
+  samp.bed$score <- abs(samp.bed$directionality)*1000
+  myTrackLine <- new("BasicTrackLine", name=x, useScore=TRUE)
+  export.bed(samp.bed,con=paste0(prefix,sep="",x,sep=".","DLs",sep=".","bed"),trackLine=myTrackLine)
+  
+})
+
+
+GM12878.DLs<- readRDS("../3.DivergentLoci/repSub.GM12878.DLs.TCs.rds")
+
+lapply(unique(GM12878.DLs$sample), function(x) {
+  prefix="repSub."
+  samp.bed <- subset(GM12878.DLs, sample == x & score>=3)
+  samp.bed$score <- abs(samp.bed$directionality)*1000
+  myTrackLine <- new("BasicTrackLine", name=x, useScore=TRUE)
+  export.bed(samp.bed,con=paste0(prefix,sep="",x,sep=".","DLs",sep=".","bed"),trackLine=myTrackLine)
+  
+})
+
+```
+
+
+
+
+
+```{r}
+
+#Export used DHS regions
+
+#Load in DHSs 
+k562.dhs <- read.table("../0.External_resources/E123-DNase.macs2.hg38.narrowPeak")
+colnames(k562.dhs) <- c("chr","start","end")
+k562.dhs <- GRanges(k562.dhs[,1:3])
+k562.dhs$thick <- IRanges(start=start(k562.dhs)+((end(k562.dhs)-start(k562.dhs))/2))
+k562.dhs <- k562.dhs %>% swapRanges() %>% promoters(upstream=200, downstream=200) #Resize for equal width
+
+export.bed(k562.dhs, con="./K562.DHSs.bed")
+
+#Load in GM12878 DHSs and reformat them
+GM12878.dhs <- read.table("../0.External_resources/E116-DNase.macs2.hg38.narrowPeak")
+colnames(GM12878.dhs) <- c("chr","start","end")
+GM12878.dhs <- GRanges(GM12878.dhs[,1:3])
+GM12878.dhs$thick <- IRanges(start=start(GM12878.dhs)+((end(GM12878.dhs)-start(GM12878.dhs))/2)) #Set center as thick
+GM12878.dhs <- GM12878.dhs %>% swapRanges() %>% promoters(upstream=200, downstream=200) #Resize for equal width
+
+export.bed(GM12878.dhs, con="./GM12878.DHSs.bed")
+
+#rDHSs
+rdhs <- read.table("/maps/projects/ralab/people/pcr980/DeepCompare/Raw_data/rDHS_ENCFF619EJE.bed")
+colnames(rdhs) <- c("chr","start","end")
+rdhs <- GRanges(rdhs[,1:3])
+rdhs$thick <- IRanges(start=start(rdhs)+((end(rdhs)-start(rdhs))/2))
+rdhs <- rdhs %>% swapRanges() %>% promoters(upstream=200, downstream=200)
+
+export.bed(rdhs, con="./rDHSs.bed")
+
+```
+
+
+
+
+
+
