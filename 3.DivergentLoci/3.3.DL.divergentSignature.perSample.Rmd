@@ -1,0 +1,764 @@
+---
+title: "3.3.DLs.signatures"
+output: html_document
+date: "2024-02-15"
+---
+
+
+
+```{r}
+library(CAGEfightR)
+
+#CAGEfighR extensions
+setwd("/home/mhf817")
+sep <- .Platform$file.sep
+cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
+source(paste(cfr.extensions.dir, "utils.R", sep = sep))
+source(paste(cfr.extensions.dir, "support.R", sep = sep))
+source(paste(cfr.extensions.dir, "cumulative.R", sep = sep))
+source(paste(cfr.extensions.dir, "decompose.R", sep = sep))
+source(paste(cfr.extensions.dir, "enhancers.R", sep = sep))
+source(paste(cfr.extensions.dir, "noise.R", sep = sep))
+source(paste(cfr.extensions.dir, "coverage.R", sep = sep))
+source(paste(cfr.extensions.dir, "complexity.R", sep = sep))
+source(paste(cfr.extensions.dir, "subsample.R", sep = sep))
+source(paste(cfr.extensions.dir, "dispersion.R", sep = sep))
+
+
+#Annotations
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+
+#Packages for plotting
+library(CAGEfightR)
+library(epistack)
+library(BiocParallel)
+library(dplyr)
+library(reshape2)
+library(limma)
+library(ggplot2)
+library(corrplot)
+library(stringr)
+
+custom.col <- c("#FFDB6D", "#C4961A", "#F4EDCA", 
+                "#D16103", "#C3D7A4", "#52854C", "#4E84C4", "#293352","grey")
+
+
+#Set working directory
+setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/3.DivergentLoci/")
+
+
+```
+
+
+
+```{r}
+#Load in previously called DLs 
+k562.DLs.CTSS <- readRDS("subsampled.k562.DLs.CTSS.rds")
+k562.DLs.TCs <- readRDS("subsampled.k562.DLs.TCs.rds")
+
+
+GM12878.DLs.CTSS <- readRDS("IDpooled.subsampled.GM12878.DLs.CTSS.rds")
+GM12878.DLs.TCs <- readRDS("IDpooled.subsampled.GM12878.DLs.TCs.rds")
+```
+
+
+
+
+#K562
+```{r}
+#Simple plot of the numbers of DLs per samples
+
+
+k562.DLs.CTSS$method <-  str_sub(k562.DLs.CTSS$sample,1,-2)
+pdf("./plots/k562.nDLs.CTSS.pdf")
+k562.DLs.CTSS %>% as.data.frame(row.names=NULL) %>%
+  ggplot(aes(sample,fill=method)) + geom_bar() + coord_flip() + theme_bw() + scale_fill_manual(values=custom.col) + labs(title="total DLs detected")
+
+k562.DLs.CTSS %>% as.data.frame(row.names=NULL) %>%  subset(score>=3) %>%
+  ggplot(aes(sample,fill=method)) + geom_bar() + coord_flip() + theme_bw() + scale_fill_manual(values=custom.col) + labs(title="DLs detected score>=3")
+
+k562.DLs.CTSS %>% as.data.frame(row.names=NULL) %>% subset(score>=3 & abs(directionality)<=0.8) %>%
+  ggplot(aes(sample,fill=method)) + geom_bar() + coord_flip() + theme_bw() + scale_fill_manual(values=custom.col) + labs(title="DLs detected score>=3 & directionality <=0.8")
+
+k562.DLs.CTSS %>% as.data.frame(row.names=NULL) %>% subset(score>=3 & abs(directionality)<=0.8 & dhs.olap>=1) %>%
+  ggplot(aes(sample,fill=method)) + geom_bar() + coord_flip() + theme_bw() + scale_fill_manual(values=custom.col) + labs(title="DLs detected score>=3 & directionality <=0.8 & DHS olverlap")
+dev.off()
+
+
+k562.DLs.TCs$method <-  str_sub(k562.DLs.TCs$sample,1,-2)
+pdf("./plots/k562.nDLs.TCs.pdf")
+k562.DLs.TCs %>% as.data.frame(row.names=NULL) %>%
+  ggplot(aes(sample,fill=method)) + geom_bar() + coord_flip() + theme_bw() + scale_fill_manual(values=custom.col) + labs(title="total DLs detected")
+
+k562.DLs.TCs %>% as.data.frame(row.names=NULL) %>%  subset(score>=3) %>%
+  ggplot(aes(sample,fill=method)) + geom_bar() + coord_flip() + theme_bw() + scale_fill_manual(values=custom.col) + labs(title="DLs detected score>=3")
+
+k562.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(score>=3 & abs(directionality)<=0.8) %>%
+  ggplot(aes(sample,fill=method)) + geom_bar() + coord_flip() + theme_bw() + scale_fill_manual(values=custom.col) + labs(title="DLs detected score>=3 & directionality <=0.8")
+
+k562.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(score>=3 & abs(directionality)<=0.8 & dhs.olap>=1) %>%
+  ggplot(aes(sample,fill=method)) + geom_bar() + coord_flip() + theme_bw() + scale_fill_manual(values=custom.col) + labs(title="DLs detected score>=3 & directionality <=0.8 & DHS olverlap")
+dev.off()
+
+```
+
+```{r}
+#Directionality signature over different regions
+
+pdf("./plots/k562.bidirScore.CTSS.pdf")
+k562.DLs.CTSS %>% as.data.frame(row.names=NULL) %>%
+  ggplot(aes(directionality)) + geom_histogram(bins=25) + facet_wrap(~sample, scales="free_y") + theme_bw() + labs(title="bidir score over all DLs")
+
+k562.DLs.CTSS %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+  ggplot(aes(directionality)) + geom_histogram(bins=25) + facet_wrap(~sample, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with score >=3") 
+
+
+k562.DLs.CTSS %>% as.data.frame(row.names=NULL) %>%
+  ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~sample, scales="free_y") + theme_bw() + 
+  labs(title="bidir score over all DLs", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
+
+
+k562.DLs.CTSS %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+  ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~sample, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with score >=3", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
+
+
+
+k562.DLs.CTSS %>% as.data.frame(row.names=NULL) %>%
+  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~sample, scales="free_y") + theme_bw() + 
+  labs(title="bidir score over all DLs", fill="annotation") + scale_fill_manual(values=custom.col)
+
+
+k562.DLs.CTSS %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~sample, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with score >=3", fill="annotation") + scale_fill_manual(values=custom.col)
+
+
+
+k562.DLs.CTSS %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1) %>%
+  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~sample, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with DHS overlap", fill="annotation") + scale_fill_manual(values=custom.col)
+
+k562.DLs.CTSS %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1 & score>=3) %>%
+  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~sample, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with DHS overlap & score>=3", fill="annotation") + scale_fill_manual(values=custom.col)
+
+dev.off()
+
+
+pdf("./plots/k562.bidirScore.TCs.pdf")
+k562.DLs.TCs %>% as.data.frame(row.names=NULL) %>%
+  ggplot(aes(directionality)) + geom_histogram(bins=25) + facet_wrap(~sample, scales="free_y") + theme_bw() + labs(title="bidir score over all DLs")
+
+k562.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+  ggplot(aes(directionality)) + geom_histogram(bins=25) + facet_wrap(~sample, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with score >=3") 
+
+
+k562.DLs.TCs %>% as.data.frame(row.names=NULL) %>%
+  ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~sample, scales="free_y") + theme_bw() + 
+  labs(title="bidir score over all DLs", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
+
+
+k562.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+  ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~sample, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with score >=3", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
+
+
+
+k562.DLs.TCs %>% as.data.frame(row.names=NULL) %>%
+  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~sample, scales="free_y") + theme_bw() + 
+  labs(title="bidir score over all DLs", fill="annotation") + scale_fill_manual(values=custom.col)
+
+
+k562.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~sample, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with score >=3", fill="annotation") + scale_fill_manual(values=custom.col)
+
+
+
+k562.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1) %>%
+  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~sample, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with DHS overlap", fill="annotation") + scale_fill_manual(values=custom.col)
+
+k562.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1 & score>=3) %>%
+  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~sample, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with DHS overlap & score>=3", fill="annotation") + scale_fill_manual(values=custom.col)
+
+dev.off()
+
+
+```
+
+
+
+
+```{r}
+#Subset and quantify DLs between assays
+k562.CTSSs <- readRDS("../1.CTSSs/subsampled.k562.CTSSs.rds")
+
+#Formating of seqlevels (move to DL calling)
+seqlevels(k562.DLs.CTSS) <- seqlevels(k562.CTSSs)
+seqlevels(k562.DLs.TCs) <- seqlevels(k562.CTSSs)
+
+#Quantifying all divergent loci (allows overlap)
+k562.DLs.CTSS <- quantifyDivergentLoci(k562.DLs.CTSS,k562.CTSSs,requireDisjoint = FALSE)
+k562.DLs.CTSS <- calcTPM(k562.DLs.CTSS)
+
+k562.DLs.TCs <- quantifyDivergentLoci(k562.DLs.TCs,k562.CTSSs,requireDisjoint = FALSE)
+k562.DLs.TCs <- calcTPM(k562.DLs.TCs)
+
+
+```
+
+
+```{r}
+#TPM expression corrplot split based on sample calling from CTSS called DLs
+k562.DLs.df <- cbind(rowData(k562.DLs.CTSS), assay(k562.DLs.CTSS,"TPM"))
+
+pdf("./plots/k562.allDLs.corrplots.CTSS.pdf", width=20, height = 20)
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x,c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over all DLs called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$score>=3,c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over DLs with score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$dhs.olap>=1,c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over DLs with DHS overlap called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$dhs.olap>=1 & k562.DLs.df$score>=3,c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over DLs with DHS overlap and score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+dev.off()
+
+
+pdf("./plots/k562.distalDLs.corrplots.CTSS.pdf", width=20, height = 20)
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$txType %in% c("intron","intergenic"),c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over distal DLs called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$score>=3& k562.DLs.df$txType %in% c("intron","intergenic"),c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over distal DLs with score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$dhs.olap>=1& k562.DLs.df$txType %in% c("intron","intergenic"),c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over distal DLs with DHS overlap called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$dhs.olap>=1 & k562.DLs.df$score>=3& k562.DLs.df$txType %in% c("intron","intergenic"),c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over distal  DLs with DHS overlap and score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+dev.off()
+
+
+
+
+pdf("./plots/k562.proximalDLs.corrplots.CTSS.pdf", width=20, height = 20)
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$txType %in% c("promoter","proximal","fiveUTR"),c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over proximal DLs called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$score>=3& k562.DLs.df$txType %in% c("promoter","proximal","fiveUTR"),c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over proximal DLs with score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$dhs.olap>=1& k562.DLs.df$txType %in% c("promoter","proximal","fiveUTR"),c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over proximal DLs with DHS overlap called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$dhs.olap>=1 & k562.DLs.df$score>=3& k562.DLs.df$txType %in% c("promoter","proximal","fiveUTR"),c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over proximal  DLs with DHS overlap and score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+dev.off()
+
+
+
+```
+
+
+
+```{r}
+#TPM expression corrplot split based on sample calling from TCs called DLs
+k562.DLs.df <- cbind(rowData(k562.DLs.TCs), assay(k562.DLs.TCs,"TPM"))
+
+pdf("./plots/k562.allDLs.corrplots.TCs.pdf", width=20, height = 20)
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x,c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over all DLs called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$score>=3,c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over DLs with score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$dhs.olap>=1,c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over DLs with DHS overlap called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$dhs.olap>=1 & k562.DLs.df$score>=3,c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over DLs with DHS overlap and score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+dev.off()
+
+
+pdf("./plots/k562.distalDLs.corrplots.TCs.pdf", width=20, height = 20)
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$txType %in% c("intron","intergenic"),c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over distal DLs called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$score>=3& k562.DLs.df$txType %in% c("intron","intergenic"),c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over distal DLs with score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$dhs.olap>=1& k562.DLs.df$txType %in% c("intron","intergenic"),c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over distal DLs with DHS overlap called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$dhs.olap>=1 & k562.DLs.df$score>=3& k562.DLs.df$txType %in% c("intron","intergenic"),c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over distal  DLs with DHS overlap and score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+dev.off()
+
+
+
+
+pdf("./plots/k562.proximalDLs.corrplots.TCs.pdf", width=20, height = 20)
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$txType %in% c("promoter","proximal","fiveUTR"),c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over proximal DLs called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$score>=3& k562.DLs.df$txType %in% c("promoter","proximal","fiveUTR"),c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over proximal DLs with score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$dhs.olap>=1& k562.DLs.df$txType %in% c("promoter","proximal","fiveUTR"),c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over proximal DLs with DHS overlap called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(k562.DLs.df$sample), function(x) {
+  k562.DLs.df[k562.DLs.df$sample==x & k562.DLs.df$dhs.olap>=1 & k562.DLs.df$score>=3& k562.DLs.df$txType %in% c("promoter","proximal","fiveUTR"),c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6",
+                 "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_10M_N1","K562_10M_N2","K562_10M_N3")]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over proximal  DLs with DHS overlap and score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+dev.off()
+
+```
+
+
+
+
+
+
+
+#########
+#GM12878
+########
+
+```{r}
+#Simple plot of the numbers of DLs per samples
+
+#Exclude triptolide experiment from analysis
+GM12878.DLs.CTSS <- GM12878.DLs.CTSS[!GM12878.DLs.CTSS$cell_count %in% c("ctrl","triptolide"),]
+GM12878.DLs.TCs <- GM12878.DLs.TCs[!GM12878.DLs.TCs$cell_count %in% c("ctrl","triptolide"),]
+
+pdf("./plots/GM12878.nDLs.CTSS.pdf")
+GM12878.DLs.CTSS %>% as.data.frame(row.names=NULL) %>%
+  ggplot(aes(sample,fill=paste(cell_count,cell_nuclei))) + geom_bar() + coord_flip() + theme_bw() + scale_fill_manual(values=custom.col) + labs(title="total DLs detected",fill="method") +scale_y_log10()
+
+GM12878.DLs.CTSS %>% as.data.frame(row.names=NULL) %>%  subset(score>=3) %>%
+  ggplot(aes(sample,fill=paste(cell_count,cell_nuclei))) + geom_bar() + coord_flip() + theme_bw() + scale_fill_manual(values=custom.col) + labs(title="DLs detected score>=3",fill="method")+scale_y_log10()
+
+GM12878.DLs.CTSS %>% as.data.frame(row.names=NULL) %>% subset(score>=3 & abs(directionality)<=0.8) %>%
+  ggplot(aes(sample,fill=paste(cell_count,cell_nuclei))) + geom_bar() + coord_flip() + theme_bw() + scale_fill_manual(values=custom.col) + labs(title="DLs detected score>=3 & directionality <=0.8",fill="method")+scale_y_log10()
+
+GM12878.DLs.CTSS %>% as.data.frame(row.names=NULL) %>% subset(score>=3 & abs(directionality)<=0.8 & dhs.olap>=1) %>%
+  ggplot(aes(sample,fill=paste(cell_count,cell_nuclei))) + geom_bar() + coord_flip() + theme_bw() + scale_fill_manual(values=custom.col) + labs(title="DLs detected score>=3 & directionality <=0.8 & DHS olverlap",fill="method")+scale_y_log10()
+dev.off()
+
+
+pdf("./plots/GM12878.nDLs.TCs.pdf")
+GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>%
+  ggplot(aes(sample,fill=paste(cell_count,cell_nuclei))) + geom_bar() + coord_flip() + theme_bw() + scale_fill_manual(values=custom.col) + labs(title="total DLs detected",fill="method")+scale_y_log10()
+
+GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>%  subset(score>=3) %>%
+  ggplot(aes(sample,fill=paste(cell_count,cell_nuclei))) + geom_bar() + coord_flip() + theme_bw() + scale_fill_manual(values=custom.col) + labs(title="DLs detected score>=3",fill="method")+scale_y_log10()
+
+GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(score>=3 & abs(directionality)<=0.8) %>%
+  ggplot(aes(sample,fill=paste(cell_count,cell_nuclei))) + geom_bar() + coord_flip() + theme_bw() + scale_fill_manual(values=custom.col) + labs(title="DLs detected score>=3 & directionality <=0.8",fill="method")+scale_y_log10()
+
+GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(score>=3 & abs(directionality)<=0.8 & dhs.olap>=1) %>%
+  ggplot(aes(sample,fill=paste(cell_count,cell_nuclei))) + geom_bar() + coord_flip() + theme_bw() + scale_fill_manual(values=custom.col) + labs(title="DLs detected score>=3 & directionality <=0.8 & DHS olverlap",fill="method")+scale_y_log10()
+dev.off()
+
+```
+
+```{r}
+#Directionality signature over different regions
+
+pdf("./plots/GM12878.bidirScore.CTSS.pdf")
+GM12878.DLs.CTSS %>% as.data.frame(row.names=NULL) %>%
+  ggplot(aes(directionality)) + geom_histogram(bins=25) + facet_wrap(~cell_count+cell_nuclei, scales="free_y") + theme_bw() + labs(title="bidir score over all DLs")
+
+GM12878.DLs.CTSS %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+  ggplot(aes(directionality)) + geom_histogram(bins=25) + facet_wrap(~cell_count+cell_nuclei, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with score >=3") 
+
+
+GM12878.DLs.CTSS %>% as.data.frame(row.names=NULL) %>%
+  ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~cell_count+cell_nuclei, scales="free_y") + theme_bw() + 
+  labs(title="bidir score over all DLs", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
+
+
+GM12878.DLs.CTSS %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+  ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~cell_count+cell_nuclei, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with score >=3", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
+
+
+
+GM12878.DLs.CTSS %>% as.data.frame(row.names=NULL) %>%
+  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~cell_count+cell_nuclei, scales="free_y") + theme_bw() + 
+  labs(title="bidir score over all DLs", fill="annotation") + scale_fill_manual(values=custom.col)
+
+
+GM12878.DLs.CTSS %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~cell_count+cell_nuclei, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with score >=3", fill="annotation") + scale_fill_manual(values=custom.col)
+
+
+
+GM12878.DLs.CTSS %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1) %>%
+  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~cell_count+cell_nuclei, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with DHS overlap", fill="annotation") + scale_fill_manual(values=custom.col)
+
+GM12878.DLs.CTSS %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1 & score>=3) %>%
+  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~cell_count+cell_nuclei, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with DHS overlap & score>=3", fill="annotation") + scale_fill_manual(values=custom.col)
+
+dev.off()
+
+
+pdf("./plots/GM12878.bidirScore.TCs.pdf")
+GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>%
+  ggplot(aes(directionality)) + geom_histogram(bins=25) + facet_wrap(~cell_count+cell_nuclei, scales="free_y") + theme_bw() + labs(title="bidir score over all DLs")
+
+GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+  ggplot(aes(directionality)) + geom_histogram(bins=25) + facet_wrap(~cell_count+cell_nuclei, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with score >=3") 
+
+
+GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>%
+  ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~cell_count+cell_nuclei, scales="free_y") + theme_bw() + 
+  labs(title="bidir score over all DLs", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
+
+
+GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+  ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~cell_count+cell_nuclei, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with score >=3", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
+
+
+
+GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>%
+  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~cell_count+cell_nuclei, scales="free_y") + theme_bw() + 
+  labs(title="bidir score over all DLs", fill="annotation") + scale_fill_manual(values=custom.col)
+
+
+GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~cell_count+cell_nuclei, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with score >=3", fill="annotation") + scale_fill_manual(values=custom.col)
+
+
+
+GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1) %>%
+  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~cell_count+cell_nuclei, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with DHS overlap", fill="annotation") + scale_fill_manual(values=custom.col)
+
+GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1 & score>=3) %>%
+  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~cell_count+cell_nuclei, scales="free_y") + theme_bw() +
+  labs(title="bidir score over DLs with DHS overlap & score>=3", fill="annotation") + scale_fill_manual(values=custom.col)
+
+dev.off()
+
+
+```
+
+
+
+
+```{r}
+#Subset and quantify DLs between assays
+GM12878.CTSSs <- readRDS("../1.CTSSs/IDpooled.subsampled.GM12878.CTSSs.rds")
+
+#Formating of seqlevels (move to DL calling)
+seqlevels(GM12878.DLs.CTSS) <- seqlevels(GM12878.CTSSs)
+seqlevels(GM12878.DLs.TCs) <- seqlevels(GM12878.CTSSs)
+
+#Quantifying all divergent loci (allows overlap)
+GM12878.DLs.CTSS <- quantifyDivergentLoci(GM12878.DLs.CTSS,GM12878.CTSSs,requireDisjoint = FALSE)
+GM12878.DLs.CTSS <- calcTPM(GM12878.DLs.CTSS)
+
+GM12878.DLs.TCs <- quantifyDivergentLoci(GM12878.DLs.TCs,GM12878.CTSSs,requireDisjoint = FALSE)
+GM12878.DLs.TCs <- calcTPM(GM12878.DLs.TCs)
+
+
+```
+
+
+```{r}
+#TPM expression corrplot split based on sample calling from CTSS called DLs
+GM12878.DLs.df <- cbind(rowData(GM12878.DLs.CTSS), assay(GM12878.DLs.CTSS,"TPM"))
+
+pdf("./plots/GM12878.allDLs.corrplots.CTSS.pdf", width=40, height = 40)
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x,colnames(GM12878.DLs.CTSS)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over all DLs called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$score>=3,colnames(GM12878.DLs.CTSS)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over DLs with score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$dhs.olap>=1,colnames(GM12878.DLs.CTSS)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over DLs with DHS overlap called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$dhs.olap>=1 & GM12878.DLs.df$score>=3,colnames(GM12878.DLs.CTSS)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over DLs with DHS overlap and score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+dev.off()
+
+
+pdf("./plots/GM12878.distalDLs.corrplots.CTSS.pdf", width=40, height = 40)
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$txType %in% c("intron","intergenic"),colnames(GM12878.DLs.CTSS)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over distal DLs called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$score>=3& GM12878.DLs.df$txType %in% c("intron","intergenic"),colnames(GM12878.DLs.CTSS)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over distal DLs with score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$dhs.olap>=1& GM12878.DLs.df$txType %in% c("intron","intergenic"),colnames(GM12878.DLs.CTSS)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over distal DLs with DHS overlap called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$dhs.olap>=1 & GM12878.DLs.df$score>=3& GM12878.DLs.df$txType %in% c("intron","intergenic"),colnames(GM12878.DLs.CTSS)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over distal  DLs with DHS overlap and score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+dev.off()
+
+
+
+
+pdf("./plots/GM12878.proximalDLs.corrplots.CTSS.pdf", width=40, height = 40)
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$txType %in% c("promoter","proximal","fiveUTR"),colnames(GM12878.DLs.CTSS)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over proximal DLs called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$score>=3& GM12878.DLs.df$txType %in% c("promoter","proximal","fiveUTR"),colnames(GM12878.DLs.CTSS)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over proximal DLs with score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$dhs.olap>=1& GM12878.DLs.df$txType %in% c("promoter","proximal","fiveUTR"),colnames(GM12878.DLs.CTSS)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over proximal DLs with DHS overlap called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$dhs.olap>=1 & GM12878.DLs.df$score>=3& GM12878.DLs.df$txType %in% c("promoter","proximal","fiveUTR"),colnames(GM12878.DLs.CTSS)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over proximal  DLs with DHS overlap and score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+dev.off()
+
+
+
+```
+
+
+
+```{r}
+#TPM expression corrplot split based on sample calling from TCs called DLs
+GM12878.DLs.df <- cbind(rowData(GM12878.DLs.TCs), assay(GM12878.DLs.TCs,"TPM"))
+
+pdf("./plots/GM12878.allDLs.corrplots.TCs.pdf", width=40, height = 40)
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x,colnames(GM12878.DLs.TCs)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over all DLs called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$score>=3,colnames(GM12878.DLs.TCs)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over DLs with score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$dhs.olap>=1,colnames(GM12878.DLs.TCs)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over DLs with DHS overlap called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$dhs.olap>=1 & GM12878.DLs.df$score>=3,colnames(GM12878.DLs.TCs)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over DLs with DHS overlap and score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+dev.off()
+
+
+pdf("./plots/GM12878.distalDLs.corrplots.TCs.pdf", width=40, height = 40)
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$txType %in% c("intron","intergenic"),colnames(GM12878.DLs.TCs)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over distal DLs called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$score>=3& GM12878.DLs.df$txType %in% c("intron","intergenic"),colnames(GM12878.DLs.TCs)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over distal DLs with score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$dhs.olap>=1& GM12878.DLs.df$txType %in% c("intron","intergenic"),colnames(GM12878.DLs.TCs)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over distal DLs with DHS overlap called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$dhs.olap>=1 & GM12878.DLs.df$score>=3& GM12878.DLs.df$txType %in% c("intron","intergenic"),colnames(GM12878.DLs.TCs)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over distal  DLs with DHS overlap and score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+dev.off()
+
+
+
+
+pdf("./plots/GM12878.proximalDLs.corrplots.TCs.pdf", width=40, height = 40)
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$txType %in% c("promoter","proximal","fiveUTR"),colnames(GM12878.DLs.TCs)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over proximal DLs called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$score>=3& GM12878.DLs.df$txType %in% c("promoter","proximal","fiveUTR"),colnames(GM12878.DLs.TCs)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over proximal DLs with score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$dhs.olap>=1& GM12878.DLs.df$txType %in% c("promoter","proximal","fiveUTR"),colnames(GM12878.DLs.TCs)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over proximal DLs with DHS overlap called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+lapply(unique(GM12878.DLs.df$sample), function(x) {
+  GM12878.DLs.df[GM12878.DLs.df$sample==x & GM12878.DLs.df$dhs.olap>=1 & GM12878.DLs.df$score>=3& GM12878.DLs.df$txType %in% c("promoter","proximal","fiveUTR"),colnames(GM12878.DLs.TCs)]  %>% as.matrix %>% 
+    cor() %>% corrplot.mixed(lower="number", upper= 'ellipse', order = 'AOE', title=paste("correlation [TPM] over proximal  DLs with DHS overlap and score>=3 called from",x,sep=" "),mar=c(0,0,2,0))
+})
+
+dev.off()
+
+```
+
+
+
+
+
+

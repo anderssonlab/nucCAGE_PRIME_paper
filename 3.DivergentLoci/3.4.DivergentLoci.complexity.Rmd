@@ -1,0 +1,102 @@
+---
+title: "3.4.DL.complexities"
+output: html_document
+date: "2024-02-15"
+---
+
+```{r}
+library(CAGEfightR)
+
+#CAGEfighR extensions
+setwd("/home/mhf817")
+sep <- .Platform$file.sep
+cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
+source(paste(cfr.extensions.dir, "utils.R", sep = sep))
+source(paste(cfr.extensions.dir, "support.R", sep = sep))
+source(paste(cfr.extensions.dir, "cumulative.R", sep = sep))
+source(paste(cfr.extensions.dir, "decompose.R", sep = sep))
+source(paste(cfr.extensions.dir, "enhancers.R", sep = sep))
+source(paste(cfr.extensions.dir, "noise.R", sep = sep))
+source(paste(cfr.extensions.dir, "coverage.R", sep = sep))
+source(paste(cfr.extensions.dir, "complexity.R", sep = sep))
+source(paste(cfr.extensions.dir, "subsample.R", sep = sep))
+source(paste(cfr.extensions.dir, "dispersion.R", sep = sep))
+
+
+#Annotations
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+
+#Packages for plotting
+library(CAGEfightR)
+library(epistack)
+library(BiocParallel)
+library(dplyr)
+library(reshape2)
+library(limma)
+library(ggplot2)
+library(stringr)
+
+custom.col <- c("#FFDB6D", "#C4961A", "#F4EDCA", 
+                "#D16103", "#C3D7A4", "#52854C", "#4E84C4", "#293352","grey")
+
+
+gm.pal <- c("#F5CE00", "#E2AA00", "#B68D00","#DF613F","#DF5643","#DD4425","#92B9C9","#76A5B6","#004352","#29A957","#008E37","#007A30","#4F5D5C","#444E4C","#3D4138",
+                     "#AC97C2","#977FB4","#7D62A3")
+                     
+gm.pooled.pal <- c("#FF8D00","#FF4425","#00439B","#009072","#878784","#7D62D0")
+
+gm.full.pal <- c("#F5CE00", "#E2AA00", "#B68D00","#FF8D00","#DF613F","#DF5643","#DD4425","#FF4425","#92B9C9","#76A5B6","#004352","#00439B","#29A957","#008E37","#007A30","#009072","#4F5D5C","#444E4C","#3D4138","#878784","#AC97C2","#977FB4","#7D62A3","#7D62D0")
+
+
+
+k.full.pal <- c("#F5CE00", "#E2AA00", "#B68D00","#FF8D00","#DF613F","#DF5643","#DD4425","#FF4425","#92B9C9","#76A5B6","#004352","#00439B","#29A957","#008E37","#007A30","#4F5D5C")
+
+
+
+
+#Set working directory
+setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/3.DivergentLoci/")
+
+
+```
+
+
+
+```{r}
+#Load in previously called DLs 
+k562.DLs.CTSS <- readRDS("poolSub.k562.DLs.CTSS.rds")
+k562.DLs.TCs <- readRDS("poolSub.k562.DLs.TCs.rds")
+
+#Load in CTSSs for complexity calcs
+k562.CTSSs <- readRDS("../1.CTSSs/poolSub.combined.k562.CTSSs.rds")
+
+#Formatting
+seqlevels(k562.DLs.CTSS) <- seqlevels(k562.CTSSs)
+seqinfo(k562.DLs.CTSS) <- seqinfo(k562.CTSSs)
+seqlevels(k562.DLs.TCs) <- seqlevels(k562.CTSSs)
+seqinfo(k562.DLs.TCs) <- seqinfo(k562.CTSSs)
+
+```
+
+
+
+```{r}
+bpparam <- MulticoreParam(20)
+k562.allDls.complex.CTSS <- bplapply(row.names(colData(k562.CTSSs)), function(x) calcDivergentLociComplexity(k562.CTSSs,k562.DLs.CTSS[k562.DLs.CTSS$sample==x,]),BPPARAM = bpparam)
+
+k562.allDls.complex.TCs <- lapply(row.names(colData(k562.CTSSs)), function(x) calcDivergentLociComplexity(k562.CTSSs,k562.DLs.TCs[k562.DLs.TCs$sample==x,]))
+
+save(k562.allDls.complex.CTSS,k562.allDls.complex.TCs,file="DL.complexity.RData")
+```
+
+```{r}
+load("")
+```
+
+
+
+
+
+
+
