@@ -1,0 +1,159 @@
+---
+title: "2.2.K562_cell_vs_nuclei.Rmd"
+output: html_document
+date: "2024-02-07"
+---
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+```{r}
+library(CAGEfightR)
+
+#CAGEfighR extensions
+setwd("/home/mhf817")
+sep <- .Platform$file.sep
+cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
+source(paste(cfr.extensions.dir, "utils.R", sep = sep))
+source(paste(cfr.extensions.dir, "support.R", sep = sep))
+source(paste(cfr.extensions.dir, "cumulative.R", sep = sep))
+source(paste(cfr.extensions.dir, "decompose.R", sep = sep))
+source(paste(cfr.extensions.dir, "enhancers.R", sep = sep))
+source(paste(cfr.extensions.dir, "noise.R", sep = sep))
+source(paste(cfr.extensions.dir, "coverage.R", sep = sep))
+source(paste(cfr.extensions.dir, "complexity.R", sep = sep))
+source(paste(cfr.extensions.dir, "subsample.R", sep = sep))
+source(paste(cfr.extensions.dir, "dispersion.R", sep = sep))
+
+
+#Annotations
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+
+#Packages for plotting
+library(CAGEfightR)
+library(epistack)
+library(BiocParallel)
+library(dplyr)
+library(reshape2)
+library(limma)
+library(ggplot2)
+
+custom.col <- c("#FFDB6D", "#C4961A", "#F4EDCA", 
+                "#D16103", "#C3D7A4", "#52854C", "#4E84C4", "#293352","grey")
+
+
+#Set working directory
+setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/2.Cellular_localization/")
+```
+
+
+
+```{r}
+#Load in pre computed CTSSs for GM12878
+k562.CTSSs <- readRDS("../1.CTSSs/subsampled.k562.CTSSs.rds")
+```
+
+```{r}
+#Load in DHSs 
+k562.dhs <- read.table("../0.External_resources/E123-DNase.macs2.hg38.narrowPeak")
+colnames(k562.dhs) <- c("chr","start","end")
+k562.dhs <- GRanges(k562.dhs[,1:3])
+k562.dhs$thick <- IRanges(start=start(k562.dhs)+((end(k562.dhs)-start(k562.dhs))/2))
+```
+
+
+```{r}
+#Quantify DHS clusters
+k562.CTSSs.stand <- keepStandardChromosomes(k562.CTSSs,pruning.mode = "coarse")
+k562.dhs <- keepStandardChromosomes(k562.dhs, pruning.mode="coarse")
+k562.dhs <- k562.dhs %>% swapRanges() %>% promoters(upstream=200, downstream = 200)
+
+seqlevels(k562.dhs) <- seqlevels(k562.CTSSs.stand)
+seqinfo(k562.dhs) <- seqinfo(k562.CTSSs.stand)
+k562.dhs<- subsetByOverlaps(k562.dhs,rowRanges(k562.CTSSs.stand))
+
+k562.dhs <- quantifyClustersOlap(k562.CTSSs.stand, k562.dhs,inputAssay="counts")
+
+```
+
+
+```{r}
+k562.dhs <- calcTPM(k562.dhs)
+tpm.df <- as.data.frame(assay(k562.dhs, "TPM"))
+k562.dhs<- assignTxType(k562.dhs, txModels=txdb)
+tpm.df$txType <- rowData(k562.dhs)$txType
+```
+
+
+
+```{r}
+tpm.df$C <- rowMeans(tpm.df[,c("K562_C1", "K562_C2", "K562_C3")])
+tpm.df$N <- rowMeans(tpm.df[,c("K562_N4", "K562_N5", "K562_N6")])
+tpm.df$N10 <- rowMeans(tpm.df[,c("K562_10M_N1", "K562_10M_N2", "K562_10M_N3")])
+
+
+tpm.df$m <- rowMeans(tpm.df[,c("K562_C1", "K562_C2", "K562_C3","K562_N4", "K562_N5", "K562_N6")])
+
+tpm.df$m10 <- rowMeans(tpm.df[,c("K562_10M_N1", "K562_10M_N2", "K562_10M_N3")])
+
+
+pdf("./plots/C1M.N1M.k562.pdf", height=10, width=15)
+ggplot(tpm.df, aes(C, N)) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + labs(x="average DHS signal in 1M cellular CAGE [TPM]",y="average DHS signal in 1M nuclei CAGE [TPM]")
+dev.off()
+
+pdf("./plots/volcano1M.k562.pdf", height=10, width=15)
+ggplot(tpm.df, aes(m, log2(N/C))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2()+ labs(x="Average expression across 1M CAGE [TPM] ",y="log2(1M nuclei/1M Cellular) [TPM]")
+dev.off()
+
+pdf("./plots/C1M.GroCap.GroNFC.k562.pdf", height=10, width=15)
+ggplot(tpm.df, aes(C, K562_groCap_1, color=log2(N/C))) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType)+ scale_color_gradient2() + labs(x="average DHS signal in 1M cellular CAGE [TPM]",y="average DHS signal in 10M GroCap [TPM]", color="log2(N CAGE/C CAGE) [TPM]")
+dev.off()
+
+
+pdf("./plots/N1M.GroCap.k562.pdf", height=10, width=15)
+ggplot(tpm.df, aes(N, K562_groCap_1)) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + labs(x="average DHS signal in 1M cellular CAGE [TPM]",y="average DHS signal in 1M nuclei CAGE [TPM]")
+dev.off()
+
+
+pdf("./plots/C1M.ProCap.GroNFC.k562.pdf", height=10, width=15)
+ggplot(tpm.df, aes(C, K562_ProCap_pcr_2, color=log2(N/C))) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType)+ scale_color_gradient2() + labs(x="average DHS signal in 1M cellular CAGE [TPM]",y="average DHS signal in 20M ProCap [TPM]", color="log2(N CAGE/C CAGE) [TPM]")
+dev.off()
+
+
+pdf("./plots/N1M.ProCap.k562.pdf", height=10, width=15)
+ggplot(tpm.df, aes(N, K562_ProCap_pcr_2)) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + labs(x="average DHS signal in 1M cellular CAGE [TPM]",y="average DHS signal in 20M ProCap [TPM]")
+dev.off()
+
+
+pdf("./plots/N10M.ProCap.k562.pdf", height=10, width=15)
+ggplot(tpm.df, aes(N10, K562_ProCap_pcr_2)) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + labs(x="average DHS signal in 1M cellular CAGE [TPM]",y="average DHS signal in 20M ProCap [TPM]")
+dev.off()
+
+
+pdf("./plots/N10M.GroCap.k562.pdf", height=10, width=15)
+ggplot(tpm.df, aes(N10, K562_groCap_1)) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + labs(x="average DHS signal in 1M cellular CAGE [TPM]",y="average DHS signal in 1M nuclei CAGE [TPM]")
+dev.off()
+
+pdf("./plots/N10M.N1M.k562.pdf", height=10, width=15)
+ggplot(tpm.df, aes(N10, N)) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + labs(x="average DHS signal in 1M cellular CAGE [TPM]",y="average DHS signal in 1M nuclei CAGE [TPM]")
+dev.off()
+
+pdf("./plots/N10M.C1M.k562.pdf", height=10, width=15)
+ggplot(tpm.df, aes(N10, C)) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + labs(x="average DHS signal in 1M cellular CAGE [TPM]",y="average DHS signal in 1M nuclei CAGE [TPM]")
+dev.off()
+
+```
+
+

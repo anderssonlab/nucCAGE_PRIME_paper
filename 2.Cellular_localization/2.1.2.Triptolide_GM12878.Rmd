@@ -1,0 +1,416 @@
+---
+title: "2.1.2 Cellular"
+output: html_document
+date: "2024-02-29"
+---
+---
+title: "2.1.Cell_vs_nuclei"
+output: html_document
+date: "2024-02-06"
+---
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+```{r}
+library(CAGEfightR)
+
+#CAGEfighR extensions
+setwd("/home/mhf817")
+sep <- .Platform$file.sep
+cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
+source(paste(cfr.extensions.dir, "utils.R", sep = sep))
+source(paste(cfr.extensions.dir, "support.R", sep = sep))
+source(paste(cfr.extensions.dir, "cumulative.R", sep = sep))
+source(paste(cfr.extensions.dir, "decompose.R", sep = sep))
+source(paste(cfr.extensions.dir, "enhancers.R", sep = sep))
+source(paste(cfr.extensions.dir, "noise.R", sep = sep))
+source(paste(cfr.extensions.dir, "coverage.R", sep = sep))
+source(paste(cfr.extensions.dir, "complexity.R", sep = sep))
+source(paste(cfr.extensions.dir, "subsample.R", sep = sep))
+source(paste(cfr.extensions.dir, "dispersion.R", sep = sep))
+
+
+#Annotations
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+
+#Packages for plotting
+library(CAGEfightR)
+library(epistack)
+library(BiocParallel)
+library(dplyr)
+library(reshape2)
+library(limma)
+library(ggplot2)
+
+custom.col <- c("#FFDB6D", "#C4961A", "#F4EDCA", 
+                "#D16103", "#C3D7A4", "#52854C", "#4E84C4", "#293352","grey")
+
+
+#Set working directory
+setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/2.Cellular_localization/")
+```
+
+
+
+```{r}
+#Load in pre computed CTSSs for GM12878
+GM12878.s.CTSSs <- readRDS("../1.CTSSs/repSub.combined.GM12878.CTSSs.rds")
+```
+
+```{r}
+#Load in DHSs 
+GM12878.dhs <- read.table("../0.External_resources/E116-DNase.macs2.hg38.narrowPeak")
+colnames(GM12878.dhs) <- c("chr","start","end")
+GM12878.dhs <- GRanges(GM12878.dhs[,1:3])
+GM12878.dhs$thick <- IRanges(start=start(GM12878.dhs)+((end(GM12878.dhs)-start(GM12878.dhs))/2))
+```
+
+
+```{r}
+#Quantify DHS clusters
+GM12878.CTSSs.stand <- keepStandardChromosomes(GM12878.s.CTSSs,pruning.mode = "coarse")
+GM12878.dhs <- keepStandardChromosomes(GM12878.dhs, pruning.mode="coarse")
+GM12878.dhs <- GM12878.dhs %>% swapRanges() %>% promoters(upstream=200, downstream = 200)
+
+seqlevels(GM12878.dhs) <- seqlevels(GM12878.CTSSs.stand)
+seqinfo(GM12878.dhs) <- seqinfo(GM12878.CTSSs.stand)
+GM12878.dhs<- subsetByOverlaps(GM12878.dhs,rowRanges(GM12878.CTSSs.stand))
+
+GM12878.dhs <- quantifyClustersOlap(GM12878.CTSSs.stand, GM12878.dhs,inputAssay="counts")
+
+```
+
+
+```{r}
+GM12878.dhs <- calcTPM(GM12878.dhs)
+tpm.df <- as.data.frame(assay(GM12878.dhs, "TPM"))
+GM12878.dhs <- assignTxType(GM12878.dhs, txModels=txdb)
+tpm.df$txType <- rowData(GM12878.dhs)$txType
+```
+
+
+
+
+
+
+
+```{r}
+tpm.df$C_1M <- rowMeans(tpm.df[,c("GM12878_1M_C1","GM12878_1M_C2","GM12878_1M_C3")])
+tpm.df$N_1M <- rowMeans(tpm.df[,c("GM12878_1M_N1","GM12878_1M_N2","GM12878_1M_N3")])
+
+tpm.df$C_500k <- rowMeans(tpm.df[,c("GM12878_500K_C1","GM12878_500K_C2","GM12878_500K_C3")])
+tpm.df$N_500k <- rowMeans(tpm.df[,c("GM12878_500K_N1","GM12878_500K_N2","GM12878_500K_N3")])
+
+tpm.df$N_5M <- rowMeans(tpm.df[,c("GM12878_5M_N1","GM12878_5M_N2","GM12878_5M_N3")])
+tpm.df$N_10M <- rowMeans(tpm.df[,c("GM12878_10M_N1","GM12878_10M_N2","GM12878_10M_N3")])
+
+
+tpm.df$Ctrl <- rowMeans(tpm.df[,c("GM12878_ctrl_C1","GM12878_ctrl_C2","GM12878_ctrl_C3")])
+tpm.df$Trip <- rowMeans(tpm.df[,c("GM12878_triptolide_C1","GM12878_triptolide_C2","GM12878_triptolide_C3","GM12878_triptolide_C4")])
+
+tpm.df$m <- rowMeans(tpm.df[,c("C_1M","N_1M")])
+tpm.df$m2 <- rowMeans(tpm.df[,c("C_500k","N_500k")])
+
+tpm.df$m51 <- rowMeans(tpm.df[,c("C_1M","N_5M")])
+
+
+pdf("./plots.2/repSub.C500K.N500K.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(C_500k, N_500k, color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2() + labs(x="average DHS signal in 500k cellular CAGE [TPM]",y="average DHS signal in 500k nuclei CAGE [TPM]", color="log2(Triptolide/Control) [TPM]")
+dev.off()
+
+pdf("./plots.2/repSub.volcano500k.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(m2, log2(N_500k/C_500k), color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2()+ labs(x="Average expression across 500k CAGE [TPM] ",y="log2(500k nuclei/500k Cellular) [TPM]", color="log2(Triptolide/Control)")
+dev.off()
+
+pdf("./plots.2/repSub.C1M.N1M.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(C_1M, N_1M, color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2() + labs(x="average DHS signal in 1M cellular CAGE [TPM]",y="average DHS signal in 1M nuclei CAGE [TPM]", color="log2(Triptolide/Control) [TPM]")
+dev.off()
+
+pdf("./plots.2/repSub.volcano1M.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(m, log2(N_1M/C_1M), color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2()+ labs(x="Average expression across 1M CAGE [TPM] ",y="log2(1M nuclei/1M Cellular) [TPM]", color="log2(Triptolide/Control)")
+dev.off()
+
+pdf("./plots.2/repSub.C1M.N10M.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(C_1M, N_10M, color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2() + labs(x="average DHS signal in 1M cellular CAGE [TPM]",y="average DHS signal in 10M nuclei CAGE [TPM]", color="log2(Triptolide/Control) [TPM]")
+dev.off()
+
+pdf("./plots.2/repSub.C1M.N5M.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(C_1M, N_5M, color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2() + labs(x="average DHS signal in 1M cellular CAGE [TPM]",y="average DHS signal in 5M nuclei CAGE [TPM]", color="log2(Triptolide/Control) [TPM]")
+dev.off()
+
+
+
+pdf("./plots.2/repSub.volcano5M.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(m51, log2(N_5M/C_1M), color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2(low="#01665E",high="#8E540C")+ labs(x="Average expression across 5MN & 1MC CAGE [TPM] ",y="log2(5M nuclei/1M Cellular) [TPM]", color="log2(Triptolide/Control)")
+dev.off()
+
+pdf("./plots.2/repSub.volcano5M.groCap.pdf", height=10, width=15)
+ggplot(tpm.df, aes(m51, log2(N_5M/C_1M), color=log10(1+GM12878_groCap_1))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_distiller(palette = "BrBG", values = c(0,0.05,0.1, 0.5,1))+ labs(x="Average expression across 5MN & 1MC CAGE [TPM] ",y="log2(5M nuclei/1M Cellular) [TPM]", color="log10(GRO-cap)")
+dev.off()
+
+```
+
+
+
+
+```{r}
+pdf("./plots.2/repSub.N1M.GroCap.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(N_1M, GM12878_groCap_1, color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2() + labs(x="average DHS signal in 1M nuclei CAGE [TPM]",y="average DHS signal in 10M GroCap [TPM]", color="log2(Triptolide/Control) [TPM]")
+dev.off()
+
+pdf("./plots.2/repSub.C1M.GroCap.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(C_1M, GM12878_groCap_1, color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2() + labs(x="average DHS signal in 1M cellular CAGE [TPM]",y="average DHS signal in 10M GroCap [TPM]", color="log2(Triptolide/Control) [TPM]")
+dev.off()
+
+pdf("./plots.2/repSub.N5M.GroCap.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(N_5M, GM12878_groCap_1, color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2() + labs(x="average DHS signal in 5M nuclei CAGE [TPM]",y="average DHS signal in 10M GroCap [TPM]", color="log2(Triptolide/Control) [TPM]")
+dev.off()
+
+
+pdf("./plots.2/repSub.N10M.GroCap.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(N_10M, GM12878_groCap_1, color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2() + labs(x="average DHS signal in 1M cellular CAGE [TPM]",y="average DHS signal in 10M GroCap [TPM]", color="log2(Triptolide/Control) [TPM]")
+dev.off()
+```
+
+
+```{r}
+
+pdf("./plots.2/repSub.volcano5M.pooled.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes((GM12878_5M_N+GM12878_1M_C)/2, log2(GM12878_5M_N/GM12878_1M_C), color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2(low="#01665E",high="#8E540C")+ labs(x="average expression across pooled 5MN & 1MC CAGE [TPM] ",y="log2(5M pooled nuclei/1M pooled Cellular) [TPM]", color="log2(Triptolide/Control)")
+dev.off()
+
+pdf("./plots.2/repSub.volcano5M.pooled.groCap.pdf", height=10, width=15)
+ggplot(tpm.df, aes((GM12878_5M_N+GM12878_1M_C)/2, log2(GM12878_5M_N/GM12878_1M_C), color=log10(1+GM12878_groCap_1))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_distiller(palette = "BrBG", values = c(0,0.05,0.1, 0.5,1))+ labs(x="Average expression across 5MN & 1MC CAGE [TPM] ",y="log2(5M nuclei/1M Cellular) [TPM]", color="log10(GRO-cap)")
+dev.off()
+
+
+pdf("./plots.2/repSub.volcano1M.pooled.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes((GM12878_1M_N+GM12878_1M_C)/2, log2(GM12878_1M_N/GM12878_1M_C), color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2(low="#01665E",high="#8E540C")+ labs(x="average expression across pooled 1MN & 1MC CAGE [TPM] ",y="log2(1M pooled nuclei/1M pooled Cellular) [TPM]", color="log2(Triptolide/Control)")
+dev.off()
+
+pdf("./plots.2/repSub.volcano1M.pooled.groCap.pdf", height=10, width=15)
+ggplot(tpm.df, aes((GM12878_1M_N+GM12878_1M_C)/2, log2(GM12878_1M_N/GM12878_1M_C), color=log10(1+GM12878_groCap_1))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_distiller(palette = "BrBG", values = c(0,0.05,0.1, 0.5,1))+ labs(x="Average expression across 1MN & 1MC CAGE [TPM] ",y="log2(1M nuclei/1M Cellular) [TPM]", color="log10(GRO-cap)")
+dev.off()
+
+
+
+
+pdf("./plots.2/repSub.volcano500K.pooled.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes((GM12878_500K_N+GM12878_500K_C)/2, log2(GM12878_500K_N/GM12878_500K_C), color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2(low="#01665E",high="#8E540C")+ labs(x="average expression across pooled 500KN & 500KC CAGE [TPM] ",y="log2(500K pooled nuclei/500K pooled Cellular) [TPM]", color="log2(Triptolide/Control)")
+dev.off()
+
+pdf("./plots.2/repSub.volcano500K.pooled.groCap.pdf", height=10, width=15)
+ggplot(tpm.df, aes((GM12878_500K_N+GM12878_500K_C)/2, log2(GM12878_500K_N/GM12878_500K_C), color=log10(1+GM12878_groCap_1))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_distiller(palette = "BrBG", values = c(0,0.05,0.1, 0.5,1))+ labs(x="Average expression across 500KN & 500KC CAGE [TPM] ",y="log2(500K nuclei/500K Cellular) [TPM]", color="log10(GRO-cap)")
+dev.off()
+
+
+
+
+
+
+```
+
+
+
+
+#Same now for pooled subsampled
+
+
+
+```{r}
+#Load in pre computed CTSSs for GM12878
+GM12878.p.CTSSs <- readRDS("../1.CTSSs/poolSub.combined.GM12878.CTSSs.rds")
+```
+
+```{r}
+#Load in DHSs 
+GM12878.dhs <- read.table("../0.External_resources/E116-DNase.macs2.hg38.narrowPeak")
+colnames(GM12878.dhs) <- c("chr","start","end")
+GM12878.dhs <- GRanges(GM12878.dhs[,1:3])
+GM12878.dhs$thick <- IRanges(start=start(GM12878.dhs)+((end(GM12878.dhs)-start(GM12878.dhs))/2))
+```
+
+
+```{r}
+#Quantify DHS clusters
+GM12878.CTSSs.stand <- keepStandardChromosomes(GM12878.p.CTSSs,pruning.mode = "coarse")
+GM12878.dhs <- keepStandardChromosomes(GM12878.dhs, pruning.mode="coarse")
+GM12878.dhs <- GM12878.dhs %>% swapRanges() %>% promoters(upstream=200, downstream = 200)
+
+seqlevels(GM12878.dhs) <- seqlevels(GM12878.CTSSs.stand)
+seqinfo(GM12878.dhs) <- seqinfo(GM12878.CTSSs.stand)
+GM12878.dhs<- subsetByOverlaps(GM12878.dhs,rowRanges(GM12878.CTSSs.stand))
+
+GM12878.dhs <- quantifyClustersOlap(GM12878.CTSSs.stand, GM12878.dhs,inputAssay="counts")
+
+```
+
+
+```{r}
+GM12878.dhs <- calcTPM(GM12878.dhs)
+tpm.df <- as.data.frame(assay(GM12878.dhs, "TPM"))
+GM12878.dhs <- assignTxType(GM12878.dhs, txModels=txdb)
+tpm.df$txType <- rowData(GM12878.dhs)$txType
+```
+
+
+
+
+
+
+
+
+```{r}
+tpm.df$C_1M <- rowMeans(tpm.df[,c("GM12878_1M_C1","GM12878_1M_C2","GM12878_1M_C3")])
+tpm.df$N_1M <- rowMeans(tpm.df[,c("GM12878_1M_N1","GM12878_1M_N2","GM12878_1M_N3")])
+
+tpm.df$C_500k <- rowMeans(tpm.df[,c("GM12878_500K_C1","GM12878_500K_C2","GM12878_500K_C3")])
+tpm.df$N_500k <- rowMeans(tpm.df[,c("GM12878_500K_N1","GM12878_500K_N2","GM12878_500K_N3")])
+
+tpm.df$N_5M <- rowMeans(tpm.df[,c("GM12878_5M_N1","GM12878_5M_N2","GM12878_5M_N3")])
+tpm.df$N_10M <- rowMeans(tpm.df[,c("GM12878_10M_N1","GM12878_10M_N2","GM12878_10M_N3")])
+
+
+tpm.df$Ctrl <- rowMeans(tpm.df[,c("GM12878_ctrl_C1","GM12878_ctrl_C2","GM12878_ctrl_C3")])
+tpm.df$Trip <- rowMeans(tpm.df[,c("GM12878_triptolide_C1","GM12878_triptolide_C2","GM12878_triptolide_C3","GM12878_triptolide_C4")])
+
+tpm.df$m <- rowMeans(tpm.df[,c("C_1M","N_1M")])
+tpm.df$m2 <- rowMeans(tpm.df[,c("C_500k","N_500k")])
+
+tpm.df$m51 <- rowMeans(tpm.df[,c("C_1M","N_5M")])
+
+
+pdf("./plots.2/poolSub.C500K.N500K.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(C_500k, N_500k, color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2() + labs(x="average DHS signal in 500k cellular CAGE [TPM]",y="average DHS signal in 500k nuclei CAGE [TPM]", color="log2(Triptolide/Control) [TPM]")
+dev.off()
+
+pdf("./plots.2/poolSub.volcano500k.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(m2, log2(N_500k/C_500k), color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2()+ labs(x="Average expression across 500k CAGE [TPM] ",y="log2(500k nuclei/500k Cellular) [TPM]", color="log2(Triptolide/Control)")
+dev.off()
+
+pdf("./plots.2/poolSub.C1M.N1M.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(C_1M, N_1M, color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2() + labs(x="average DHS signal in 1M cellular CAGE [TPM]",y="average DHS signal in 1M nuclei CAGE [TPM]", color="log2(Triptolide/Control) [TPM]")
+dev.off()
+
+pdf("./plots.2/poolSub.volcano1M.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(m, log2(N_1M/C_1M), color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2()+ labs(x="Average expression across 1M CAGE [TPM] ",y="log2(1M nuclei/1M Cellular) [TPM]", color="log2(Triptolide/Control)")
+dev.off()
+
+pdf("./plots.2/poolSub.C1M.N10M.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(C_1M, N_10M, color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2() + labs(x="average DHS signal in 1M cellular CAGE [TPM]",y="average DHS signal in 10M nuclei CAGE [TPM]", color="log2(Triptolide/Control) [TPM]")
+dev.off()
+
+pdf("./plots.2/poolSub.C1M.N5M.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(C_1M, N_5M, color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2() + labs(x="average DHS signal in 1M cellular CAGE [TPM]",y="average DHS signal in 5M nuclei CAGE [TPM]", color="log2(Triptolide/Control) [TPM]")
+dev.off()
+
+
+
+pdf("./plots.2/poolSub.volcano5M.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(m51, log2(N_5M/C_1M), color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2(low="#01665E",high="#8E540C")+ labs(x="Average expression across 5MN & 1MC CAGE [TPM] ",y="log2(5M nuclei/1M Cellular) [TPM]", color="log2(Triptolide/Control)")
+dev.off()
+
+pdf("./plots.2/poolSub.volcano5M.groCap.pdf", height=10, width=15)
+ggplot(tpm.df, aes(m51, log2(N_5M/C_1M), color=log10(1+GM12878_groCap_1))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_distiller(palette = "BrBG", values = c(0,0.05,0.1, 0.5,1))+ labs(x="Average expression across 5MN & 1MC CAGE [TPM] ",y="log2(5M nuclei/1M Cellular) [TPM]", color="log10(GRO-cap)")
+dev.off()
+
+```
+
+
+
+```{r}
+pdf("./plots.2/poolSub.N1M.GroCap.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(N_1M, GM12878_groCap_1, color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2() + labs(x="average DHS signal in 1M nuclei CAGE [TPM]",y="average DHS signal in 10M GroCap [TPM]", color="log2(Triptolide/Control) [TPM]")
+dev.off()
+
+pdf("./plots.2/poolSub.C1M.GroCap.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(C_1M, GM12878_groCap_1, color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2() + labs(x="average DHS signal in 1M cellular CAGE [TPM]",y="average DHS signal in 10M GroCap [TPM]", color="log2(Triptolide/Control) [TPM]")
+dev.off()
+
+pdf("./plots.2/poolSub.N5M.GroCap.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(N_5M, GM12878_groCap_1, color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2() + labs(x="average DHS signal in 5M nuclei CAGE [TPM]",y="average DHS signal in 10M GroCap [TPM]", color="log2(Triptolide/Control) [TPM]")
+dev.off()
+
+
+pdf("./plots.2/poolSub.N10M.GroCap.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes(N_10M, GM12878_groCap_1, color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_y_log10() + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 1, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2() + labs(x="average DHS signal in 1M cellular CAGE [TPM]",y="average DHS signal in 10M GroCap [TPM]", color="log2(Triptolide/Control) [TPM]")
+dev.off()
+```
+
+
+
+```{r}
+
+pdf("./plots.2/poolSub.volcano5M.pooled.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes((GM12878_5M_N+GM12878_1M_C)/2, log2(GM12878_5M_N/GM12878_1M_C), color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2(low="#01665E",high="#8E540C")+ labs(x="average expression across pooled 5MN & 1MC CAGE [TPM] ",y="log2(5M pooled nuclei/1M pooled Cellular) [TPM]", color="log2(Triptolide/Control)")
+dev.off()
+
+pdf("./plots.2/poolSub.volcano5M.pooled.groCap.pdf", height=10, width=15)
+ggplot(tpm.df, aes((GM12878_5M_N+GM12878_1M_C)/2, log2(GM12878_5M_N/GM12878_1M_C), color=log10(1+GM12878_groCap_1))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_distiller(palette = "BrBG", values = c(0,0.05,0.1, 0.5,1))+ labs(x="Average expression across 5MN & 1MC CAGE [TPM] ",y="log2(5M nuclei/1M Cellular) [TPM]", color="log10(GRO-cap)")
+dev.off()
+
+
+pdf("./plots.2/poolSub.volcano1M.pooled.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes((GM12878_1M_N+GM12878_1M_C)/2, log2(GM12878_1M_N/GM12878_1M_C), color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2(low="#01665E",high="#8E540C")+ labs(x="average expression across pooled 1MN & 1MC CAGE [TPM] ",y="log2(1M pooled nuclei/1M pooled Cellular) [TPM]", color="log2(Triptolide/Control)")
+dev.off()
+
+pdf("./plots.2/poolSub.volcano1M.pooled.groCap.pdf", height=10, width=15)
+ggplot(tpm.df, aes((GM12878_1M_N+GM12878_1M_C)/2, log2(GM12878_1M_N/GM12878_1M_C), color=log10(1+GM12878_groCap_1))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_distiller(palette = "BrBG", values = c(0,0.05,0.1, 0.5,1))+ labs(x="Average expression across 1MN & 1MC CAGE [TPM] ",y="log2(1M nuclei/1M Cellular) [TPM]", color="log10(GRO-cap)")
+dev.off()
+
+
+
+
+pdf("./plots.2/poolSub.volcano500K.pooled.trpFC.pdf", height=10, width=15)
+ggplot(tpm.df, aes((GM12878_500K_N+GM12878_500K_C)/2, log2(GM12878_500K_N/GM12878_500K_C), color=log2(Trip/Ctrl))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_gradient2(low="#01665E",high="#8E540C")+ labs(x="average expression across pooled 500KN & 500KC CAGE [TPM] ",y="log2(500K pooled nuclei/500K pooled Cellular) [TPM]", color="log2(Triptolide/Control)")
+dev.off()
+
+pdf("./plots.2/poolSub.volcano500K.pooled.groCap.pdf", height=10, width=15)
+ggplot(tpm.df, aes((GM12878_500K_N+GM12878_500K_C)/2, log2(GM12878_500K_N/GM12878_500K_C), color=log10(1+GM12878_groCap_1))) + geom_point(size=0.5) + scale_x_log10()  +
+  theme_bw() +  geom_abline(intercept = 0, slope = 0, color="darkorange") + facet_wrap(~txType) + scale_color_distiller(palette = "BrBG", values = c(0,0.05,0.1, 0.5,1))+ labs(x="Average expression across 500KN & 500KC CAGE [TPM] ",y="log2(500K nuclei/500K Cellular) [TPM]", color="log10(GRO-cap)")
+dev.off()
+
+
+
+
+
+
+```
