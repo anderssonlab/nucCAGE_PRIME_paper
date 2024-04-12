@@ -12,8 +12,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 BiocManager::install("AnnotationHub")
 BiocManager::install("remotes")
-
-BiocManager::install("Bioconductor/RBGL", ref="avoid-Rdefines")
 BiocManager::install("Bioconductor/RBGL")
 BiocManager::install("ggbio")
 ```
@@ -118,7 +116,6 @@ fs <- base::list.files(
   stringr::str_subset("_500K_|_5M_")
 ```
 
-
 ## [2.] CAGE_preparation_BigWig --------------------
 
 ## [2.0.] Helper function reader()
@@ -152,12 +149,24 @@ readcage <- function(files, range){
 ```
 
 ## [2.1.] Get genomic region from coordinates
-#### suggested region "chr8:144,407,529-144,416,261"
+#### suggested region "chr8:144,407,529-144,416,261", "chr10:110,291,360-110,366,023", "chrX:48,670,569-48,746,869"
+#### enhancers: "chrX:48,676,170-48,676,946", "chrX:48,737,065-48,737,528", "chr9:41358750-41358940", "chr9:41,356,277-41,359,588", "chr8:134563800-134564100"
+```{r}
+l_ <- "chr8:134,563,186-134,566,375" # "chr8:134563800-134564100"
+l <- stringr::str_replace_all(l_,",","")
+chr = stringr::str_replace(l,"^(chr.*):.*","\\1")
+s = stringr::str_replace(l,"^chr.*:(.*)-(.*)","\\1") %>%
+  base::as.integer()
+e = stringr::str_replace(l,"^chr.*:(.*)-(.*)","\\2") %>%
+  base::as.integer()
+out <- base::paste0("_",chr,"_",s,"_",e)
+```
+
 ```{r}
 extend = 0
 ran <- GenomicRanges::GRanges(
-    seqnames = "chr8",
-    ranges = IRanges::IRanges(start = 144407529, end = 144416261)
+    seqnames = chr,
+    ranges = IRanges::IRanges(start = s, end = e)
   )
 BiocGenerics::start(ran) <- BiocGenerics::start(ran) - extend
 BiocGenerics::end(ran) <- BiocGenerics::end(ran) + extend
@@ -165,27 +174,27 @@ GenomeInfoDb::seqlevelsStyle(ran) <- "UCSC"
 ```
 
 ## [2.2.] Get genomic region from gene names
-#### examples are SLC39A4, YLPM1
+#### examples are SLC39A4, YLPM1, SMNDC1
 ```{r}
-omr <- base::c(
-    "AREL1","FCF1","YLPM1","XR_944033.2",
-    "PROX2"
-  )
-ran_ <- hg38_gr_sub[
-    S4Vectors::elementMetadata(hg38_gr_sub)[,"gene_name"] %in% omr,
-  ]
-base::unique(ran_$gene_name)
-ran <- base::range(ran_,ignore.strand = TRUE)
-
-GenomeInfoDb::seqlevelsStyle(ran) <- "UCSC"
-if(!stringr::str_detect(GenomeInfoDb::seqlevels(ran)[1],"chr")){
-  GenomeInfoDb::seqlevels(ran) <- base::gsub(
-      pattern = '^(.*)$',
-      replacement = 'chr\\1',
-      x = GenomeInfoDb::seqlevels(ran)
-    )
-  }
-GenomeInfoDb::seqlevels(ran)
+# omr <- base::c(
+#     "AREL1","FCF1","YLPM1","XR_944033.2",
+#     "PROX2"
+#   )
+# ran_ <- hg38_gr_sub[
+#     S4Vectors::elementMetadata(hg38_gr_sub)[,"gene_name"] %in% omr,
+#   ]
+# base::unique(ran_$gene_name)
+# ran <- base::range(ran_,ignore.strand = TRUE)
+# 
+# GenomeInfoDb::seqlevelsStyle(ran) <- "UCSC"
+# if(!stringr::str_detect(GenomeInfoDb::seqlevels(ran)[1],"chr")){
+#   GenomeInfoDb::seqlevels(ran) <- base::gsub(
+#       pattern = '^(.*)$',
+#       replacement = 'chr\\1',
+#       x = GenomeInfoDb::seqlevels(ran)
+#     )
+#   }
+# GenomeInfoDb::seqlevels(ran)
 ```
 
 ## [2.3.] Extract coordinates
@@ -294,6 +303,9 @@ plot <- ggplot2::ggplot(
       ncol = 1,
       strip.position = "right"
     ) +
+  scale_x_continuous(
+      limits = base::c(start_pos,end_pos)
+    ) +
   # scale_y_continuous(
   #     name = "Average TPM",
   #     limits = #yRange #base::c((-1)*y,y)
@@ -303,16 +315,39 @@ plot <- ggplot2::ggplot(
   #   ) +
   theme_bw() +
   theme(
-      aspect.ratio = 1/12,
+      aspect.ratio = 1/4,
       legend.position = "none",
       axis.title.x = element_blank(),
-      panel.spacing = grid::unit(0.05,"lines")
+      panel.spacing = grid::unit(0.05,"lines"),
+      panel.grid.minor = element_blank()
     )
 ggrastr::rasterise(
     input = plot,
     layers = "Bar",
     dpi = 300
   )
+```
+
+## [3.2.] Print data
+```{r eval=FALSE}
+for(ext in c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("trackHubFiles/"),
+          format(Sys.time(), "%Y%m%d"),
+          out,
+          "_enhChr8Wider",
+          "_500k5M",
+          "_tpm",
+          ".", ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 4,
+      height = 8
+    )
+  }
 ```
 
 ## [4.] Genomic_landscape -------------------------
@@ -322,6 +357,7 @@ ggrastr::rasterise(
 ```{r}
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 
+# base::debugonce(ggbio::autoplot)
 plot_land <- ggbio::autoplot(
       txdb,
       which = ran,
@@ -336,7 +372,7 @@ plot_land <- ggbio::autoplot(
     ) +
   theme_bw() +
   theme(
-      aspect.ratio = 1/10
+      aspect.ratio = 1/4
     )
 base::print(plot_land)
 ```
@@ -344,16 +380,18 @@ base::print(plot_land)
 ## [4.1.] Print data
 ```{r}
 outfile <- base::paste0(
-    here::here("results/20220317_workflow_visualization/"),
+    here::here("trackHubFiles/"),
     format(Sys.time(), "%Y%m%d"),
-    "_psen1",
+    out,
+    "_enh2",
+    "_500k5M",
     "_landscape",
     ".pdf"
   )
 
 grDevices::pdf(
     file = outfile,
-    width = 10,
+    width = 8,
     height = 3
   )
 base::print(
@@ -371,7 +409,7 @@ base::print(
     ) +
   theme_bw() +
   theme(
-        aspect.ratio = 1/10
+        aspect.ratio = 1/4
       )
     )
 grDevices::dev.off()
