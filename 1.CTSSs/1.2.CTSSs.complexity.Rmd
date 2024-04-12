@@ -4,6 +4,8 @@ output: html_document
 date: "2024-01-26"
 ---
 
+## [0.] Prerequsites -------------------------
+
 ## [0.0.] Load necesarray packages
 ```{r message=FALSE}
 base::library(tidyverse)
@@ -54,6 +56,14 @@ cols3 <- base::c(
     "#03CEC2","#2AB348","#EDA838",
     "#7297C7","#EB373C","#FFE45F"
   )
+k.full.pal <- base::c(
+    "#F5CE00","#E2AA00","#B68D00",
+    "#FF8D00","#DF613F","#DF5643",
+    "#DD4425","#FF4425","#92B9C9",
+    "#76A5B6","#004352","#00439B",
+    "#29A957","#008E37","#007A30",
+    "#4F5D5C"
+  )
 ```
 
 ## [0.4.] Set working directory
@@ -61,7 +71,9 @@ cols3 <- base::c(
 # base::setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/1.CTSSs/")
 ```
 
-## [0.5.] K562 datasets
+# [1.] K562 datasets -------------------------
+
+## [0.5.] Read in K562 datasets
 #### see '1.1CTSSs.processing.Rmd' for read objects
 ```{r}
 k562.CTSSs <- base::readRDS(
@@ -70,7 +82,6 @@ k562.CTSSs <- base::readRDS(
       "all.k562.CTSSs.rds"
     )
   )
-
 k562.s.CTSSs <- base::readRDS(
   file = base::paste0(
       here::here("1.CTSSs/"),
@@ -90,8 +101,6 @@ k562.p.s.CTSSs <- base::readRDS(
     )
   )
 ```
-
-# [1.] K562 datasets -------------------------
 
 ## [1.0.] Compare all CTSS level correlation
 ```{r}
@@ -293,7 +302,7 @@ comp.k562.p.s.CTSSs <- .GlobalEnv$calcCTSSComplexity(
   )
 ```
 
-## [1.3.] Save
+## [1.3.] Save & load RData container
 ```{r}
 base::save(
   comp.k562.CTSSs,
@@ -303,15 +312,103 @@ base::save(
   file = base::paste0(
       here::here("1.CTSSs/"),
       base::format(base::Sys.time(), "%Y%m%d"),
-      "_k562.CTSS.complexity.RData"
+      "_K562.CTSS.complexity.RData"
     )
   )
 ```
 
+```{r}
+f <- base::list.files(
+      path = here::here("1.CTSSs"),
+      full.names = TRUE
+    ) %>% 
+  stringr::str_subset("complexity") %>%
+  stringr::str_subset("K562")
 
+base::load(file = f)
+```
+
+## [1.3.1.] #### Safety copy of 'comp.k562.combined.CTSSs' object
+```{r}
+base::saveRDS(
+  object = comp.k562.combined.CTSSs,
+  file =  base::paste0(
+      here::here("1.CTSSs/"),
+      base::format(base::Sys.time(), "%Y%m%d"),
+      "_comp.k562.combined.CTSSs.rds"
+    )
+  )
+```
 
 ```{r}
-#Plot complexities
+comp.k562.combined.CTSSs <- base::readRDS(
+  file = base::paste0(
+    here::here("1.CTSSs/"),
+      "20240412_comp.k562.combined.CTSSs.rds"
+    )
+  )
+```
+
+## [1.4.] Plot complexities
+```{r}
+comp.k562.CTSSs$method <- stringr::str_sub(
+    string = comp.k562.CTSSs$sample, start = 1, end = -2
+  )
+ggplot2::ggplot(
+    data = comp.k562.CTSSs,
+    mapping = aes(
+        x = totalTags,
+        y = numberCTSSs,
+        color = method,
+        group = sample
+      )
+    ) + 
+  geom_line() +
+  geom_abline(
+      intercept = 0,
+      slope = 1,
+      linetype = "dashed",
+      color = "black",
+      size = 0.5
+    ) +
+  theme_bw() +
+  scale_color_manual(
+      values = cols3
+    ) +
+  theme(
+      aspect.ratio = 1,
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.position = base::c(0.95,0.05),
+      legend.background = element_rect(
+          fill = "grey95"
+        ),
+      legend.text = element_text(size = 8),
+      legend.key.size = grid::unit(0.9, "lines")
+    )
+```
+
+## [1.5.] Save complexity plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("results/20240324_combined_analysis/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_comp.comb.CTSSs_remap",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 5,
+      height = 5
+    )
+  }
+```
+
+## [1.6.] Plot complexities for the other objects
+```{r}
 comp.k562.CTSSs$method <- str_sub(comp.k562.CTSSs$sample,1,-2)
 pdf("./plots/k562.CTSSs.comp.pdf",width = 15, height = 10)
 ggplot(comp.k562.CTSSs,aes(totalTags,numberCTSSs,color=method,group=sample)) + 
@@ -344,30 +441,126 @@ ggplot(comp.k562.p.s.CTSSs,aes(totalTags,numberCTSSs,color=method,group=sample))
   theme_bw() + 
   scale_color_manual(values=custom.col)
 dev.off()
-
-
 ```
 
-
-#GM12878
+## [1.7.] Data wrangling for all K562 samples & pools
+#### Name change of "K562_10M_N", remove "K562_Cap_align" sample
 ```{r}
-#Read in pre made CTSS objects
-GM12878.CTSSs <- readRDS("all.GM12878.CTSSs.rds")
-GM12878.s.CTSSs <- readRDS("subsampled.GM12878.CTSSs.rds")
-GM12878.p.CTSSs <- readRDS("pooled.GM12878.CTSSs.rds")
-GM12878.p.s.CTSSs <- readRDS("pooled.subsampled.GM12878.CTSSs.rds")
+comp.k562.combined.CTSSs$sample[comp.k562.combined.CTSSs$sample=="K562_N_10M"] <- "K562_10M_N"
 
-GM12878.pID.CTSSs <- readRDS("IDpooled.GM12878.CTSSs.rds")
-GM12878.pID.s.CTSSs <- readRDS("IDpooled.subsampled.GM12878.CTSSs.rds")
+comp.k562.combined.CTSSs <- comp.k562.combined.CTSSs[comp.k562.combined.CTSSs$sample!="K562_Cap_align",]
 
-GM12878.combined.CTSSs <- readRDS("all.combined.GM12878.CTSSs.rds")
+comp.k562.combined.CTSSs$sample <- base::factor(
+    comp.k562.combined.CTSSs$sample,
+    levels = base::c(
+        "K562_C1","K562_C2","K562_C3","K562_C",
+        "K562_N4","K562_N5","K562_N6","K562_N",
+        "K562_10M_N1","K562_10M_N2","K562_10M_N3","K562_10M_N",
+        "K562_ProCap_pcr_1","K562_ProCap_pcr_2","K562_pcr_align",
+        "K562_groCap_1"
+      ),
+      ordered = TRUE
+  )
+
+base::unique(comp.k562.combined.CTSSs$sample)
 ```
 
-
-
-
+## [1.4.] Plot all complexity curves
+#### /combined_plots/combined.k562.CTSSs.comp.pdf
 ```{r}
-#Compare all CTSS level correlation
+ggplot2::ggplot(
+  data = comp.k562.combined.CTSSs,
+  mapping = aes(
+      x = totalTags,
+      y = numberCTSSs,
+      color=sample
+    )
+  ) + 
+  geom_line() +
+  theme_bw()  +
+  scale_color_manual(
+      values = k.full.pal
+    ) +
+  geom_vline(
+      xintercept = base::c(29267326,98669216),
+      linetype = 2
+    )
+```
+
+#### /combined_plots/combined.k562.CTSSs.comp.scaled.pdf
+```{r}
+ggplot2::ggplot(
+    data = comp.k562.combined.CTSSs,
+    mapping = aes(
+        x = totalTags,
+        y = numberCTSSs,
+        color = sample
+      )
+    ) + 
+  geom_line() +
+  theme_bw() +
+  scale_y_log10() +
+  # scale_x_log10() +
+  scale_color_manual(
+      values = k.full.pal
+    ) +
+  geom_vline(
+      xintercept = base::c(29267326,98669216),
+      linetype = 2
+    )
+```
+
+# [2.] GM12878 -------------------------
+
+## [0.6.] Read in GM12878 datasets
+#### see '1.1CTSSs.processing.Rmd' for read objects
+```{r}
+GM12878.CTSSs <- base::readRDS(
+    file = base::paste0(
+      here::here("1.CTSSs/"),
+      "all.GM12878.CTSSs.rds"
+    )
+  )
+GM12878.s.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "subsampled.GM12878.CTSSs.rds"
+    )
+  )
+GM12878.p.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "pooled.GM12878.CTSSs.rds"
+    )
+  )
+GM12878.p.s.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "pooled.subsampled.GM12878.CTSSs.rds"
+    )
+  )
+GM12878.pID.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "IDpooled.GM12878.CTSSs.rds"
+    )
+  )
+GM12878.pID.s.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "IDpooled.subsampled.GM12878.CTSSs.rds"
+    )
+  )
+GM12878.combined.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "all.combined.GM12878.CTSSs.rds"
+    )
+  )
+```
+
+## [2.0.] Compare all CTSS level correlation
+```{r}
 pdf("./plots/GM12878.CTSSs.corr.pdf",width = 30, height = 30)
 corrplot(cor(
   as.matrix(assay(GM12878.CTSSs,"TPM"))),
@@ -539,7 +732,6 @@ dev.off()
 
 
 ```{r}
-
 load("./GM12878.CTSS.complexity.RData")
 #Make a nice main figure from GM12878
 main <- comp.GM12878.combined.CTSSs[comp.GM12878.combined.CTSSs$sample %in% colnames(GM12878.combined.CTSSs)[GM12878.combined.CTSSs$main=="yes"],]
@@ -605,35 +797,5 @@ grid.arrange(p1,p2,p3+guides(fill="none"),
   layout_matrix = rbind(c(1, 2, 3))
 )
 dev.off()
-
-
-
-
-
-k.full.pal <- c("#F5CE00", "#E2AA00", "#B68D00","#FF8D00","#DF613F","#DF5643","#DD4425","#FF4425","#92B9C9","#76A5B6","#004352","#00439B","#29A957","#008E37","#007A30","#4F5D5C")
-#Same for K562
-#Small naming change
-comp.k562.combined.CTSSs$sample[comp.k562.combined.CTSSs$sample=="K562_N_10M"] <- "K562_10M_N"
-
-#Remove duplicated groCap
-comp.k562.combined.CTSSs[comp.k562.combined.CTSSs$sample!="K562_Cap_align",]
-
-#Reorder samples as factors
-comp.k562.combined.CTSSs$sample <- factor(comp.k562.combined.CTSSs$sample,levels=c( "K562_C1","K562_C2","K562_C3","K562_C","K562_N4","K562_N5","K562_N6", "K562_N","K562_10M_N1", "K562_10M_N2","K562_10M_N3","K562_10M_N",
-                                                                                       "K562_ProCap_pcr_1","K562_ProCap_pcr_2","K562_pcr_align","K562_groCap_1"))
-pdf("./combined_plots/combined.k562.CTSSs.comp..pdf",width = 15, height = 10)
-ggplot(comp.k562.combined.CTSSs,aes(totalTags,numberCTSSs,color=sample)) + 
-  geom_line() +
-  theme_bw()  + scale_color_manual(values = k.full.pal) + geom_vline(xintercept=c(29267326,98669216),linetype=2)
-dev.off()
-
-pdf("./combined_plots/combined.k562.CTSSs.comp.scaled.pdf",width = 15, height = 10)
-ggplot(comp.k562.combined.CTSSs,aes(totalTags,numberCTSSs,color=sample)) + 
-  geom_line() +
-  theme_bw() + scale_y_log10() + scale_color_manual(values = k.full.pal) + geom_vline(xintercept=c(29267326,98669216),linetype=2)
-dev.off()
 ```
-
-
-
 
