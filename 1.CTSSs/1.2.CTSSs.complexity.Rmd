@@ -489,25 +489,52 @@ comp.k562.combined.CTSSs$sample <- base::factor(
 base::unique(comp.k562.combined.CTSSs$sample)
 ```
 
+## [1.7.1.] Identify max values for coordinated plotting
+```{r}
+tt1 <- comp.k562.combined.CTSSs %>%
+  dplyr::pull(totalTags) %>%
+  base::max(na.rm = TRUE)
+tt2 <- comp.GM12878.combined.CTSSs %>%
+  dplyr::pull(totalTags) %>%
+  base::max(na.rm = TRUE)
+nc1 <- comp.k562.combined.CTSSs %>%
+  dplyr::pull(numberCTSSs) %>%
+  base::max(na.rm = TRUE)
+nc2 <- comp.GM12878.combined.CTSSs %>%
+  dplyr::pull(numberCTSSs) %>%
+  base::max(na.rm = TRUE)
+xmax <- base::max(tt1,tt2)
+ymax <- base::max(nc1,nc2)
+```
+
 ## [1.4.] Plot all complexity curves
 #### /combined_plots/combined.k562.CTSSs.comp.pdf
 ```{r}
 ggplot2::ggplot(
-  data = comp.k562.combined.CTSSs,
-  mapping = aes(
-      x = totalTags,
-      y = numberCTSSs,
-      color=sample
-    )
-  ) + 
+    data = comp.k562.combined.CTSSs,
+    mapping = aes(
+        x = totalTags,
+        y = numberCTSSs,
+        color=sample
+      )
+    ) + 
   geom_line() +
-  theme_bw()  +
-  scale_color_manual(
-      values = k.full.pal
-    ) +
   geom_vline(
       xintercept = base::c(29267326,98669216),
       linetype = 2
+    ) +
+  scale_x_continuous(
+      limits = base::c(0,xmax),
+    ) +
+  scale_y_continuous(
+      limits = base::c(0,ymax),
+    ) +
+  scale_color_manual(
+      values = k.full.pal
+    ) +
+  theme_bw()  +
+  theme(
+      aspect.ratio = 1,
     )
 ```
 
@@ -843,7 +870,9 @@ ggplot2::ggplot(
       facets = ~method
     ) +
   theme(
-      legend.position = "none"
+      legend.position = "none",
+      aspect.ratio = 1,
+      panel.spacing = grid::unit(0.1,"lines")
     )
 ```
 
@@ -882,34 +911,95 @@ dev.off()
 
 ```
 
-
-
+## [2.6.] Plot complexities including pooled samples
 #### 'comp.GM12878.combined.CTSSs' object is loaded in [2.3.]
+#### replaced: 'main <- comp.GM12878.combined.CTSSs[comp.GM12878.combined.CTSSs$sample %in% base::colnames(GM12878.combined.CTSSs)[GM12878.combined.CTSSs$main=="yes"],]'
 ```{r}
+levs <- base::c(
+    "GM12878_500K_C1","GM12878_500K_C2","GM12878_500K_C3","GM12878_500K_C",
+    "GM12878_500K_N1","GM12878_500K_N2","GM12878_500K_N3", "GM12878_500K_N",
+    "GM12878_1M_C1","GM12878_1M_C2","GM12878_1M_C3","GM12878_1M_C",
+    "GM12878_1M_N1","GM12878_1M_N2","GM12878_1M_N3", "GM12878_1M_N",
+    "GM12878_5M_N1","GM12878_5M_N2","GM12878_5M_N3", "GM12878_5M_N",
+    "GM12878_10M_N1","GM12878_10M_N2","GM12878_10M_N3", "GM12878_10M_N"
+  )
 
-main <- comp.GM12878.combined.CTSSs[comp.GM12878.combined.CTSSs$sample %in% colnames(GM12878.combined.CTSSs)[GM12878.combined.CTSSs$main=="yes"],]
+types <- GM12878.combined.CTSSs %>% 
+  SummarizedExperiment::colData() %>%
+  base::as.data.frame() %>% 
+  tibble::rownames_to_column(var = "type") %>%
+  dplyr::filter(main == "yes") %>%
+  dplyr::pull(type)
+main <- comp.GM12878.combined.CTSSs %>%
+  dplyr::filter(sample %in% types)
 
+main$sample <- base::factor(
+    main$sample,
+    levels = levs,
+    ordered = TRUE
+  )
+```
 
-main$sample <- factor(main$sample,levels=c( "GM12878_500K_C1","GM12878_500K_C2","GM12878_500K_C3","GM12878_500K_C",
-                                                                "GM12878_500K_N1","GM12878_500K_N2","GM12878_500K_N3", "GM12878_500K_N",
-                                                                "GM12878_1M_C1","GM12878_1M_C2","GM12878_1M_C3","GM12878_1M_C",
-                                                                "GM12878_1M_N1","GM12878_1M_N2","GM12878_1M_N3", "GM12878_1M_N",
-                                                                "GM12878_5M_N1","GM12878_5M_N2","GM12878_5M_N3", "GM12878_5M_N",
-                                                                "GM12878_10M_N1","GM12878_10M_N2","GM12878_10M_N3", "GM12878_10M_N"))
-    
-pdf("./combined_plots/combined.GM12878.CTSSs.comp.pdf",width = 15, height = 10)
-ggplot(main,aes(totalTags,numberCTSSs,color=sample)) + 
+#### "/combined_plots/combined.GM12878.CTSSs.comp.pdf"
+#### "/combined_plots/combined.GM12878.CTSSs.comp.scaled.pdf"
+```{r}
+ggplot2::ggplot(
+    data = main,
+    mapping = aes(
+        x = totalTags,
+        y = numberCTSSs,
+        color = sample
+      )
+    ) + 
   geom_line() +
-  theme_bw() + scale_color_manual(values = gm.full.pal) + geom_vline(xintercept=c(29027358,106618677),linetype=2)
-dev.off()
+  geom_vline(
+      xintercept = base::c(29027358,106618677),
+      linetype = 2
+    ) +
+  scale_x_continuous(
+      limits = base::c(0,xmax),
+    ) +
+  scale_y_continuous(
+      limits = base::c(0,ymax),
+    ) +
+  scale_color_manual(
+      values = gm.full.pal
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
 
-pdf("./combined_plots/combined.GM12878.CTSSs.comp.scaled.pdf",width = 15, height = 10)
-ggplot(main,aes(totalTags,numberCTSSs,color=sample)) + 
+
+```{r}
+ggplot2::ggplot(
+    data = main,
+    mapping = aes(
+        x = totalTags,
+        y = numberCTSSs,
+        color = sample
+      )
+    ) + 
   geom_line() +
-  theme_bw() + scale_y_log10() + scale_color_manual(values = gm.full.pal) + geom_vline(xintercept=c(29027358,106618677),linetype=2)
-dev.off()
+  theme_bw() +
+  scale_y_log10() +
+  scale_color_manual(
+      values = gm.full.pal
+    ) +
+  geom_vline(
+      xintercept = base::c(29027358,106618677),
+      linetype = 2
+    )
+```
+
+```{r}
+comp.k562.combined.CTSSs
+```
 
 
+
+```{r}
 #Add barplots for subsampled levels
 max <- main[main$target<106618677,]
 p.max <- na.omit(max) %>% group_by(sample) %>% summarize(pooled.compexity=max(numberCTSSs))
