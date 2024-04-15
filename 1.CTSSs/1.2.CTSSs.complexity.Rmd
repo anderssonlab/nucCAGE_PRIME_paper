@@ -507,7 +507,7 @@ xmax <- base::max(tt1,tt2)
 ymax <- base::max(nc1,nc2)
 ```
 
-## [1.4.] Plot all complexity curves
+## [1.8.] Plot all complexity curves
 #### /combined_plots/combined.k562.CTSSs.comp.pdf
 ```{r}
 ggplot2::ggplot(
@@ -560,6 +560,107 @@ ggplot2::ggplot(
       linetype = 2
     )
 ```
+
+## [1.9.] Print data
+```{r eval=FALSE}
+for(ext in c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("1.CTSSs/"),
+          format(Sys.time(), "%Y%m%d"),
+          "_complexityCtss",
+          "_K562",
+          ".", ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 8,
+      height = 6
+    )
+  }
+```
+
+## [1.10.] Plot subsampled number of CTSSs per library
+## Add barplots for subsampled levels
+```{r}
+p.max <- comp.k562.combined.CTSSs %>%
+  dplyr::filter(target < 98669216) %>%
+  tidyr::drop_na() %>%
+  dplyr::group_by(sample) %>%
+  dplyr::summarize(
+      compexity = base::max(numberCTSSs)
+    )
+r.max <- comp.k562.combined.CTSSs %>%
+  dplyr::filter(target < 29267326) %>%
+  tidyr::drop_na() %>%
+  dplyr::group_by(sample) %>%
+  dplyr::summarize(
+      compexity = base::max(numberCTSSs)
+    )
+```
+
+```{r}
+ggplot2::ggplot(
+    data = r.max, # p.max,
+    mapping = aes(
+        x = compexity,
+        y = forcats::fct_rev(sample),
+        fill = sample
+      )
+    ) +
+  geom_col() +
+  geom_text(
+      mapping = aes(
+        label = sample
+      ),
+      x = 0,
+      hjust = -0.1,
+      colour = "white",
+      size = 3,
+      fontface = "bold"
+    ) +
+  scale_fill_manual(
+      values = gm.full.pal
+    ) +
+  # scale_x_log10() +
+  guides(fill = "none") +
+  labs(
+      x = "numberCTSSs",
+      y = "Samples"
+    ) +
+  theme_bw() +
+  theme(
+    aspect.ratio = 2,
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+## [1.11.] Print data
+```{r eval=FALSE}
+for(ext in c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("1.CTSSs/"),
+          format(Sys.time(), "%Y%m%d"),
+          "_complexityCtss",
+          "_K562",
+          "_barplots",
+          "_replicate",
+          # "_pool",
+          "_nonLog10",
+          ".", ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 3,
+      height = 6
+    )
+  }
+```
+
 
 # [2.] GM12878 -------------------------
 
@@ -911,7 +1012,7 @@ dev.off()
 
 ```
 
-## [2.6.] Plot complexities including pooled samples
+## [2.6.] Prepare plotting 
 #### 'comp.GM12878.combined.CTSSs' object is loaded in [2.3.]
 #### replaced: 'main <- comp.GM12878.combined.CTSSs[comp.GM12878.combined.CTSSs$sample %in% base::colnames(GM12878.combined.CTSSs)[GM12878.combined.CTSSs$main=="yes"],]'
 ```{r}
@@ -940,6 +1041,7 @@ main$sample <- base::factor(
   )
 ```
 
+## [2.7.] Plot complexities including pooled samples
 #### "/combined_plots/combined.GM12878.CTSSs.comp.pdf"
 #### "/combined_plots/combined.GM12878.CTSSs.comp.scaled.pdf"
 ```{r}
@@ -970,8 +1072,7 @@ ggplot2::ggplot(
       aspect.ratio = 1
     )
 ```
-
-
+#### log10 scaled
 ```{r}
 ggplot2::ggplot(
     data = main,
@@ -993,19 +1094,142 @@ ggplot2::ggplot(
     )
 ```
 
+#### Only 500k and 5M samples
 ```{r}
-comp.k562.combined.CTSSs
+main %>%
+  dplyr::filter(
+      stringr::str_detect(sample,"500K|5M")
+    ) %>%
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = totalTags,
+        y = numberCTSSs,
+        color = sample
+      )
+    ) + 
+  geom_line() +
+  geom_vline(
+      xintercept = base::c(29027358,106618677),
+      linetype = 2
+    ) +
+  scale_x_continuous(
+      limits = base::c(0,xmax),
+    ) +
+  scale_y_continuous(
+      limits = base::c(0,ymax),
+    ) +
+  scale_color_manual(
+      values = gm.full.pal
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [2.8.] Print data
+```{r eval=FALSE}
+for(ext in c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("1.CTSSs/"),
+          format(Sys.time(), "%Y%m%d"),
+          "_complexityCtss",
+          "_GM12878",
+          ".", ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 10,
+      height = 6
+    )
+  }
+```
+
+## [2.9.] Plot subsampled number of CTSSs per library
+## Add barplots for subsampled levels
+```{r}
+p.max <- main %>%
+  dplyr::filter(target < 106618677L) %>%
+  tidyr::drop_na() %>%
+  dplyr::group_by(sample) %>%
+  dplyr::summarize(
+      compexity = base::max(numberCTSSs)
+    )
+r.max <- main %>%
+  dplyr::filter(target < 29027358) %>%
+  tidyr::drop_na() %>%
+  dplyr::group_by(sample) %>%
+  dplyr::summarize(
+      compexity = base::max(numberCTSSs)
+    )
+```
+
+```{r}
+ggplot2::ggplot(
+    data = p.max, # r.max,
+    mapping = aes(
+        x = compexity,
+        y = forcats::fct_rev(sample),
+        fill = sample
+      )
+    ) +
+  geom_col() +
+  geom_text(
+      mapping = aes(
+        label = sample
+      ),
+      x = 0,
+      hjust = 0,
+      colour = "white",
+      size = 3,
+      fontface = "bold"
+    ) +
+  scale_fill_manual(
+      values = gm.full.pal
+    ) +
+  # scale_x_log10() +
+  guides(fill = "none") +
+  labs(
+      x = "numberCTSSs",
+      y = "Samples"
+    ) +
+  theme_bw() +
+  theme(
+    aspect.ratio = 2,
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+
+## [2.10.] Print data
+```{r eval=FALSE}
+for(ext in c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("1.CTSSs/"),
+          format(Sys.time(), "%Y%m%d"),
+          "_complexityCtss",
+          "_GM12878",
+          "_barplots",
+          # "_replicate",
+          "_pool",
+          "_nonLog10",
+          ".", ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 3,
+      height = 6
+    )
+  }
 ```
 
 
-
 ```{r}
-#Add barplots for subsampled levels
-max <- main[main$target<106618677,]
-p.max <- na.omit(max) %>% group_by(sample) %>% summarize(pooled.compexity=max(numberCTSSs))
-max <- main[main$target<29027358,]
-r.max <- na.omit(max) %>% group_by(sample) %>% summarize(rep.compexity=max(numberCTSSs)) 
-
 p1 <- ggplot(main,aes(totalTags,numberCTSSs,color=sample)) + 
   geom_line() +
   theme_bw() + scale_y_log10() + scale_color_manual(values = gm.full.pal) + geom_vline(xintercept=c(29027358,106618677),linetype=2)+ guides(color="none") 
@@ -1013,9 +1237,10 @@ p1 <- ggplot(main,aes(totalTags,numberCTSSs,color=sample)) +
 p2 <- ggplot(r.max,aes(fct_rev(sample),rep.compexity,fill=sample)) + geom_col() + theme_bw() + scale_fill_manual(values=gm.full.pal) + coord_flip() + scale_y_log10()+ guides(fill="none") + labs(y="numberCTSSs", x="Samples")
 
 p3 <- ggplot(p.max,aes(fct_rev(sample),pooled.compexity,fill=sample)) + geom_col() + theme_bw() + scale_fill_manual(values=gm.full.pal) + coord_flip() + scale_y_log10() + labs(y="numberCTSSs", x="Samples")
+```
 
 
-
+```{r}
 # extract the legend from one of the plots
 legend <- get_legend(
   # create some space to the left of the legend
