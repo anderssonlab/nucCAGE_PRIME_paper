@@ -180,15 +180,6 @@ GM12878.p.CTSSs <- base::readRDS(
 
 # [1.] GM12878 analysis -------------------------
 
-#### Factor levels for genomic features
-```{r}
-feats <- base::c(
-    "intergenic","antisense","proximal",
-    "intron","exon","promoter",
-    "fiveUTR","CDS","threeUTR"
-  )
-```
-
 ## [1.0.] Quantify CTSS level annotations
 ```{r}
 subset <- SummarizedExperiment::colData(GM12878.s.CTSSs) %>%
@@ -206,6 +197,17 @@ tags <- dplyr::pull(subset,totalTags)
 gm12878.ann.fracs <- gm12878.ann.counts/tags
 ```
 
+#### Factor levels for genomic features & cell amounts
+```{r}
+feats <- base::c(
+    "intergenic","antisense","proximal",
+    "intron","exon","promoter",
+    "fiveUTR","CDS","threeUTR"
+  )
+amts <- base::c("500K","1M","5M","10M")
+reps <- base::c("pool","1","2","3")
+```
+
 ## Data wrangling - prepare plotting
 #### Previous code: gm12878.ann.fracs$sample <- row.names(gm12878.ann.fracs); gm12878.ann.fracs.m <- melt(gm12878.ann.fracs)
 ```{r}
@@ -216,13 +218,44 @@ gm12878.ann.fracs.m <- gm12878.ann.fracs %>%
       names_to = "variable",
       values_to = "value"
     ) %>%
+  tidyr::separate_wider_delim(
+      cols = sample,
+      delim = "_",
+      names = base::c("cell","amount","type"),
+      cols_remove = FALSE
+    ) %>%
+  tidyr::separate(
+      col = type,
+      sep = 1,
+      into = base::c("source","rep"),
+      convert = TRUE ## Creates NAs
+    ) %>%
   dplyr::mutate(
+    rep = dplyr::case_when(
+        base::is.na(rep) ~ "pool",
+        TRUE ~ base::as.character(rep)
+      ),
+    rep = base::factor(
+        x = rep,
+        levels = base::rev(reps),
+        ordered = TRUE
+      ),
+    amount = base::factor(
+        x = amount,
+        levels = amts,
+        ordered = TRUE
+      ),
+    source = base::factor(
+        x = source,
+        levels = base::c("C","N"),
+        ordered = TRUE
+      ),
     variable = base::factor(
-      x = variable,
-      levels = feats,
-      ordered = TRUE
+        x = variable,
+        levels = base::rev(feats),
+        ordered = TRUE
+      )
     )
-  )
 ```
 
 ## Quantify CTSS level annotations
@@ -287,16 +320,46 @@ base::load(
   )
 ```
 
-## Plotting
+## [1.3.] Plotting
 ```{r}
-p1 <- ggplot(gm12878.ann.fracs.m, aes(sample, value, fill=variable)) + geom_col() + coord_flip() +
-  theme_bw() + scale_fill_manual(values=custom.col)
+ggplot2::ggplot(
+    data = gm12878.ann.fracs.m,
+    mapping = aes(
+        x = value,
+        y = rep,
+        fill = variable
+      )
+    ) +
+  geom_col() +
+  facet_wrap(
+      facets = source ~ amount,
+      ncol = 1,
+      strip.position = "right",
+      # scale = "free",
+      axis.labels = "margins",
+      axes = "margins"
+    ) +
+  theme_bw() +
+  scale_fill_manual(
+      values = base::rev(custom.col)
+    ) +
+  theme(
+      axis.title = element_blank(),
+      panel.spacing = grid::unit(0.1,"lines"),
+      aspect.ratio = 1/6
+    )
+```
 
+
+```{r}
 p2 <- ggplot(gm12878.ann.fracs, aes(intergenic, intron, color=sample)) +
   geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.fracs), 
     check_overlap = F, size=3,nudge_y = 0.003) + 
   guides(color="none") + scale_color_manual(values=gm.full.pal)
+```
 
+
+```{r}
 p3 <- ggplot(gm12878.ann.fracs, aes(exon, intron, color=sample)) +
   geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.fracs), 
     check_overlap = F, size=3,nudge_y = 0.003) + 
