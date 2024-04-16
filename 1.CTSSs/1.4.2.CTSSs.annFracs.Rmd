@@ -52,6 +52,11 @@ custom.col <- base::c(
     "#D16103","#C3D7A4","#52854C",
     "#4E84C4","#293352","grey"
   )
+custom.col.ord <- base::c(
+    "#FFDB6D","#F4EDCA","#52854C",
+    "#4E84C4","#293352","#C3D7A4",
+    "#D16103","grey","#C4961A"
+  )
 cols3 <- base::c(
     "#ED4938","#ADC607","#F4C10D",
     "#333136","#161474","#7B3DBA",
@@ -197,12 +202,14 @@ tags <- dplyr::pull(subset,totalTags)
 gm12878.ann.fracs <- gm12878.ann.counts/tags
 ```
 
+
 ## [1.1.] Factor levels for genomic features & cell amounts
+#### Old order: 'feats <- base::c("intergenic","antisense","proximal","intron","exon","promoter","fiveUTR","CDS","threeUTR")'
 ```{r}
 feats <- base::c(
-    "intergenic","antisense","proximal",
-    "intron","exon","promoter",
-    "fiveUTR","CDS","threeUTR"
+    "intergenic","proximal","promoter",    
+    "fiveUTR","CDS","exon",
+    "intron","threeUTR","antisense"
   )
 amts <- base::c("500K","1M","5M","10M")
 reps <- base::c("pool","1","2","3")
@@ -344,7 +351,7 @@ ggplot2::ggplot(
     ) +
   theme_bw() +
   scale_fill_manual(
-      values = base::rev(custom.col)
+      values = base::rev(custom.col.ord) #base::rev(custom.col)
     ) +
   theme(
       axis.title = element_blank(),
@@ -364,6 +371,7 @@ for(ext in base::c("pdf", "png")){
           base::format(base::Sys.time(), "%Y%m%d"),
           "_gm12878.ann.fracs.m",
           "_allReplicatesPool",
+          "_reordered",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
@@ -397,7 +405,7 @@ gm12878.ann.fracs.m %>%
     geom_col() +
     theme_bw() +
     scale_fill_manual(
-        values = base::rev(custom.col)
+        values = base::rev(custom.col.ord) #base::rev(custom.col)
       ) +
     theme(
         axis.title = element_blank(),
@@ -418,6 +426,7 @@ for(ext in base::c("pdf", "png")){
           base::format(base::Sys.time(), "%Y%m%d"),
           "_gm12878.ann.fracs.m",
           "_OnlyPool",
+          "_reordered",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
