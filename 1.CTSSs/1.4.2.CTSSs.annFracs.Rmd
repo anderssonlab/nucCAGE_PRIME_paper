@@ -197,7 +197,7 @@ tags <- dplyr::pull(subset,totalTags)
 gm12878.ann.fracs <- gm12878.ann.counts/tags
 ```
 
-#### Factor levels for genomic features & cell amounts
+## [1.1.] Factor levels for genomic features & cell amounts
 ```{r}
 feats <- base::c(
     "intergenic","antisense","proximal",
@@ -206,9 +206,13 @@ feats <- base::c(
   )
 amts <- base::c("500K","1M","5M","10M")
 reps <- base::c("pool","1","2","3")
+sams <- base::c(
+    "GM12878_500K_C","GM12878_1M_C","GM12878_500K_N",
+    "GM12878_1M_N","GM12878_5M_N","GM12878_10M_N"
+  )
 ```
 
-## Data wrangling - prepare plotting
+## [1.2.] Data wrangling - prepare plotting of fractions
 #### Previous code: gm12878.ann.fracs$sample <- row.names(gm12878.ann.fracs); gm12878.ann.fracs.m <- melt(gm12878.ann.fracs)
 ```{r}
 gm12878.ann.fracs.m <- gm12878.ann.fracs %>%
@@ -258,7 +262,7 @@ gm12878.ann.fracs.m <- gm12878.ann.fracs %>%
     )
 ```
 
-## Quantify CTSS level annotations
+## [1.3.] Quantify CTSS level annotations
 #### Previous code chunk
 ```{r}
 # gm12878.ann.counts <- calc_anno_CTSS(
@@ -292,7 +296,7 @@ gm12878.ann.fracs.m <- gm12878.ann.fracs %>%
 # gm12878.ann.uniqfracs.p.m <- melt(gm12878.ann.uniqfracs.p)
 ```
 
-## [1.2.] Save & load data
+## [1.4.] Save & load data
 ```{r}
 base::save(
     gm12878.ann.counts,
@@ -320,7 +324,7 @@ base::load(
   )
 ```
 
-## [1.3.] Plotting
+## [1.5.] Plotting of fractions
 ```{r}
 ggplot2::ggplot(
     data = gm12878.ann.fracs.m,
@@ -335,7 +339,6 @@ ggplot2::ggplot(
       facets = source ~ amount,
       ncol = 1,
       strip.position = "right",
-      # scale = "free",
       axis.labels = "margins",
       axes = "margins"
     ) +
@@ -346,30 +349,101 @@ ggplot2::ggplot(
   theme(
       axis.title = element_blank(),
       panel.spacing = grid::unit(0.1,"lines"),
-      aspect.ratio = 1/6
+      aspect.ratio = 1/6,
+      legend.title = element_blank(),
+      legend.background = element_blank()
     )
 ```
 
+## [1.6.] Save complexity plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("1.CTSSs/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_gm12878.ann.fracs.m",
+          "_allReplicatesPool",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 7,
+      height = 5
+    )
+  }
+```
 
+## [1.7.] Plotting of fractions
+```{r}
+gm12878.ann.fracs.m %>% 
+  dplyr::filter(rep == "pool") %>%
+  dplyr::mutate(
+      sample = base::factor(
+        x = sample,
+        levels = base::rev(sams),
+        ordered = TRUE
+      )
+    ) %>% 
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+          x = value,
+          y = sample,
+          fill = variable
+        )
+      ) +
+    geom_col() +
+    theme_bw() +
+    scale_fill_manual(
+        values = base::rev(custom.col)
+      ) +
+    theme(
+        axis.title = element_blank(),
+        panel.spacing = grid::unit(0.1,"lines"),
+        aspect.ratio = 1/6,
+        legend.title = element_blank(),
+        legend.background = element_blank(),
+        legend.position = "bottom"
+      )
+```
+
+## [1.8.] Save complexity plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("1.CTSSs/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_gm12878.ann.fracs.m",
+          "_OnlyPool",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 8,
+      height = 4
+    )
+  }
+```
+
+#### /combined_plots/annFracs.GM12878.repSub.pdf
+#### See chunk in [1.5.] for previous plot part "p1"
 ```{r}
 p2 <- ggplot(gm12878.ann.fracs, aes(intergenic, intron, color=sample)) +
   geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.fracs), 
     check_overlap = F, size=3,nudge_y = 0.003) + 
   guides(color="none") + scale_color_manual(values=gm.full.pal)
-```
 
-
-```{r}
 p3 <- ggplot(gm12878.ann.fracs, aes(exon, intron, color=sample)) +
   geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.fracs), 
     check_overlap = F, size=3,nudge_y = 0.003) + 
   guides(color="none") + scale_color_manual(values=gm.full.pal)
-
-pdf("./combined_plots/annFracs.GM12878.repSub.pdf", height=20, width = 10)
-grid.arrange(p1,p2,p3)
-dev.off()
 ```
 
+#### /combined_plots/annFracs.GM12878.poolSub.pdf
 ```{r}
 p1 <- ggplot(gm12878.ann.fracs.p.m, aes(sample, value, fill=variable)) + geom_col() + coord_flip() +
   theme_bw() + scale_fill_manual(values=custom.col)
@@ -383,12 +457,9 @@ p3 <- ggplot(gm12878.ann.fracs.p, aes(exon, intron, color=sample)) +
   geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.fracs.p), 
     check_overlap = F, size=3,nudge_y = 0.003) + 
   guides(color="none") + scale_color_manual(values=gm.full.pal)
-
-pdf("./combined_plots/annFracs.GM12878.poolSub.pdf", height=20, width = 10)
-grid.arrange(p1,p2,p3)
-dev.off()
 ```
 
+#### /combined_plots/annuniqFracs.GM12878.repSub.pdf
 ```{r}
 p1 <- ggplot(gm12878.ann.uniqfracs.m, aes(sample, value, fill=variable)) + geom_col() + coord_flip() +
   theme_bw() + scale_fill_manual(values=custom.col)
@@ -402,12 +473,9 @@ p3 <- ggplot(gm12878.ann.uniqfracs, aes(exon, intron, color=sample)) +
   geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.uniqfracs), 
     check_overlap = F, size=3,nudge_y = 0.003) + 
   guides(color="none") + scale_color_manual(values=gm.full.pal)
-
-pdf("./combined_plots/annuniqFracs.GM12878.repSub.pdf", height=20, width = 10)
-grid.arrange(p1,p2,p3)
-dev.off()
 ```
 
+#### /combined_plots/annuniqFracs.GM12878.poolSub.pdf
 ```{r}
 p1 <- ggplot(gm12878.ann.uniqfracs.p.m, aes(sample, value, fill=variable)) + geom_col() + coord_flip() +
   theme_bw() + scale_fill_manual(values=custom.col)
@@ -421,10 +489,6 @@ p3 <- ggplot(gm12878.ann.uniqfracs.p, aes(exon, intron, color=sample)) +
   geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.uniqfracs.p), 
     check_overlap = F, size=3,nudge_y = 0.003) + 
   guides(color="none") + scale_color_manual(values=gm.full.pal)
-
-pdf("./combined_plots/annuniqFracs.GM12878.poolSub.pdf", height=20, width = 10)
-grid.arrange(p1,p2,p3)
-dev.off()
 ```
 
 # [1.] K562 analysis -------------------------
