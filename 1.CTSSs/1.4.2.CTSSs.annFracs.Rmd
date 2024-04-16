@@ -9,66 +9,88 @@ date: "2024-02-29"
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 ```
 
-```{r}
-library(CAGEfightR)
-
-#CAGEfighR extensions
-setwd("/home/mhf817")
-sep <- .Platform$file.sep
-cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
-source(paste(cfr.extensions.dir, "utils.R", sep = sep))
-source(paste(cfr.extensions.dir, "support.R", sep = sep))
-source(paste(cfr.extensions.dir, "cumulative.R", sep = sep))
-source(paste(cfr.extensions.dir, "decompose.R", sep = sep))
-source(paste(cfr.extensions.dir, "enhancers.R", sep = sep))
-source(paste(cfr.extensions.dir, "noise.R", sep = sep))
-source(paste(cfr.extensions.dir, "coverage.R", sep = sep))
-source(paste(cfr.extensions.dir, "complexity.R", sep = sep))
-source(paste(cfr.extensions.dir, "subsample.R", sep = sep))
-source(paste(cfr.extensions.dir, "dispersion.R", sep = sep))
-
-
-#Annotations
-library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-
-#Packages for plotting
-library(CAGEfightR)
-library(epistack)
-library(BiocParallel)
-library(dplyr)
-library(reshape2)
-library(limma)
-library(ggplot2)
-library(stringr)
-library(gridExtra)
-
-custom.col <- c("#FFDB6D", "#C4961A", "#F4EDCA", 
-                "#D16103", "#C3D7A4", "#52854C", "#4E84C4", "#293352","grey")
-                
-
-custom.col <- c("#FFDB6D", "#C4961A", "#F4EDCA", 
-                "#D16103", "#C3D7A4", "#52854C", "#4E84C4", "#293352","grey")
-
-
-gm.pal <- c("#F5CE00", "#E2AA00", "#B68D00","#DF613F","#DF5643","#DD4425","#92B9C9","#76A5B6","#004352","#29A957","#008E37","#007A30","#4F5D5C","#444E4C","#3D4138",
-                     "#AC97C2","#977FB4","#7D62A3")
-                     
-gm.pooled.pal <- c("#FF8D00","#FF4425","#00439B","#009072","#878784","#7D62D0")
-
-gm.full.pal <- c("#F5CE00", "#E2AA00", "#B68D00","#FF8D00","#DF613F","#DF5643","#DD4425","#FF4425","#92B9C9","#76A5B6","#004352","#00439B","#29A957","#008E37","#007A30","#009072","#4F5D5C","#444E4C","#3D4138","#878784","#AC97C2","#977FB4","#7D62A3","#7D62D0")
-
-
-
-k.full.pal <- c("#F5CE00", "#E2AA00", "#B68D00","#FF8D00","#DF613F","#DF5643","#DD4425","#FF4425","#92B9C9","#76A5B6","#004352","#00439B","#29A957","#008E37","#007A30","#4F5D5C")
-
-
-#Set working directory
-setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/1.CTSSs")
+## [0.0.] Load necesarray packages
+```{r message=FALSE}
+base::library(tidyverse)
+base::library(CAGEfightR)
+##Packages for plotting
+base::library(epistack)
+base::library(BiocParallel)
+base::library(reshape2)
+base::library(limma)
+base::library(Matrix)
+base::library(corrplot)
 ```
 
+## [0.1.] Load CAGEfighR extensions
+```{r}
+# base::setwd("/home/mhf817")
+sep <- .Platform$file.sep
+cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
+base::source(base::paste(cfr.extensions.dir, "utils.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "support.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "cumulative.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "decompose.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "enhancers.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "noise.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "coverage.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "complexity.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "subsample.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "dispersion.R", sep = sep))
+```
 
+## [0.2.] Load annotations
+```{r message=FALSE}
+base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+```
 
+## [0.3.] Add custom color palette
+```{r}
+custom.col <- base::c(
+    "#FFDB6D","#C4961A","#F4EDCA",
+    "#D16103","#C3D7A4","#52854C",
+    "#4E84C4","#293352","grey"
+  )
+cols3 <- base::c(
+    "#ED4938","#ADC607","#F4C10D",
+    "#333136","#161474","#7B3DBA",
+    "#03CEC2","#2AB348","#EDA838",
+    "#7297C7","#EB373C","#FFE45F"
+  )
+gm.pal <- base::c(
+    "#F5CE00","#E2AA00","#B68D00",
+    "#DF613F","#DF5643","#DD4425",
+    "#92B9C9","#76A5B6","#004352",
+    "#29A957","#008E37","#007A30",
+    "#4F5D5C","#444E4C","#3D4138",
+    "#AC97C2","#977FB4","#7D62A3"
+  )
+gm.pooled.pal <- base::c(
+    "#FF8D00","#FF4425","#00439B",
+    "#009072","#878784","#7D62D0"
+  )
+gm.full.pal <- base::c(
+    "#F5CE00","#E2AA00","#B68D00",
+    "#FF8D00","#DF613F","#DF5643",
+    "#DD4425","#FF4425","#92B9C9",
+    "#76A5B6","#004352","#00439B",
+    "#29A957","#008E37","#007A30",
+    "#009072","#4F5D5C","#444E4C",
+    "#3D4138","#878784","#AC97C2",
+    "#977FB4","#7D62A3","#7D62D0"
+  )
+k.full.pal <- base::c(
+    "#F5CE00","#E2AA00","#B68D00",
+    "#FF8D00","#DF613F","#DF5643",
+    "#DD4425","#FF4425","#92B9C9",
+    "#76A5B6","#004352","#00439B",
+    "#29A957","#008E37","#007A30",
+    "#4F5D5C"
+  )
+```
+
+## [0.4.] Add additional functions
 ```{r}
 calc_anno_CTSS <- function(data, txModels) {
   
@@ -94,8 +116,9 @@ calc_anno_CTSS <- function(data, txModels) {
   colnames(ann_counts) <- Types
   return(ann_counts)
 }
+```
 
-
+```{r}
 calc_anno_uniqCTSS <- function(data, txModels) {
   
   data <- assignTxType(data,txModels = txModels)
@@ -123,54 +146,149 @@ calc_anno_uniqCTSS <- function(data, txModels) {
 
 ```
 
-
-
+## [0.5.] Read in datasets for K562 & GM12878
+#### see [1.10.] in "1.1.CTSSs.processing.Rmd"
 ```{r}
-k562.s.CTSSs <- readRDS("repSub.combined.k562.CTSSs.rds")
-k562.p.CTSSs <- readRDS("poolSub.combined.k562.CTSSs.rds")
-
-
-GM12878.s.CTSSs <- readRDS("repSub.combined.GM12878.CTSSs.rds")
-GM12878.p.CTSSs <- readRDS("poolSub.combined.GM12878.CTSSs.rds")
-
-
+k562.s.CTSSs <- base::readRDS(
+    file = base::paste0(
+      here::here("1.CTSSs/"),
+      "repSub.combined.k562.CTSSs.rds"
+    )
+  )
+k562.p.CTSSs <- base::readRDS(
+    file = base::paste0(
+      here::here("1.CTSSs/"),
+      "poolSub.combined.k562.CTSSs.rds"
+    )
+  )
 ```
 
-
-
-
-
 ```{r}
-#Quantify CTSS level annotations
-gm12878.ann.counts <- calc_anno_CTSS(GM12878.s.CTSSs[,colData(GM12878.s.CTSSs)$main=="yes"],txModels = txdb)
-gm12878.ann.fracs <- gm12878.ann.counts/colData(GM12878.s.CTSSs)$totalTags[colData(GM12878.s.CTSSs)$main=="yes"]
-
-gm12878.ann.uniqcounts <- calc_anno_uniqCTSS(GM12878.s.CTSSs[,colData(GM12878.s.CTSSs)$main=="yes"],txModels = txdb)
-gm12878.ann.uniqfracs <- gm12878.ann.uniqcounts/rowSums(gm12878.ann.uniqcounts)
-
-gm12878.ann.counts.p <- calc_anno_CTSS(GM12878.p.CTSSs[,colData(GM12878.p.CTSSs)$main=="yes"],txModels = txdb)
-gm12878.ann.fracs.p <- gm12878.ann.counts.p/colData(GM12878.p.CTSSs)$totalTags[colData(GM12878.p.CTSSs)$main=="yes"]
-
-gm12878.ann.uniqcounts.p <- calc_anno_uniqCTSS(GM12878.p.CTSSs[,colData(GM12878.p.CTSSs)$main=="yes"],txModels = txdb)
-gm12878.ann.uniqfracs.p <- gm12878.ann.uniqcounts.p/rowSums(gm12878.ann.uniqcounts.p)
+GM12878.s.CTSSs <- base::readRDS(
+    file = base::paste0(
+      here::here("1.CTSSs/"),
+      "repSub.combined.GM12878.CTSSs.rds"
+    )
+  )
+GM12878.p.CTSSs <- base::readRDS(
+    file = base::paste0(
+      here::here("1.CTSSs/"),
+      "poolSub.combined.GM12878.CTSSs.rds"
+    )
+  )
 ```
 
+# [1.] GM12878 analysis -------------------------
 
+#### Factor levels for genomic features
 ```{r}
-save(gm12878.ann.counts,gm12878.ann.fracs,gm12878.ann.uniqcounts,gm12878.ann.uniqfracs,gm12878.ann.counts.p,gm12878.ann.fracs.p,gm12878.ann.uniqcounts.p,gm12878.ann.uniqfracs.p, file="annFracs.gm12878.RData")
+feats <- base::c(
+    "intergenic","antisense","proximal",
+    "intron","exon","promoter",
+    "fiveUTR","CDS","threeUTR"
+  )
 ```
 
+## [1.0.] Quantify CTSS level annotations
+```{r}
+subset <- SummarizedExperiment::colData(GM12878.s.CTSSs) %>%
+  base::as.data.frame() %>%
+  tibble::rownames_to_column(var = "sample") %>%
+  dplyr::filter(main == "yes")
+samples <- dplyr::pull(subset,sample)
 
+gm12878.ann.counts <- .GlobalEnv$calc_anno_CTSS(
+    data = GM12878.s.CTSSs[,samples],
+    txModels = txdb
+  )
+
+tags <- dplyr::pull(subset,totalTags)
+gm12878.ann.fracs <- gm12878.ann.counts/tags
+```
+
+## Data wrangling - prepare plotting
+#### Previous code: gm12878.ann.fracs$sample <- row.names(gm12878.ann.fracs); gm12878.ann.fracs.m <- melt(gm12878.ann.fracs)
+```{r}
+gm12878.ann.fracs.m <- gm12878.ann.fracs %>%
+  tibble::rownames_to_column("sample") %>%
+  tidyr::pivot_longer(
+      cols = !sample,
+      names_to = "variable",
+      values_to = "value"
+    ) %>%
+  dplyr::mutate(
+    variable = base::factor(
+      x = variable,
+      levels = feats,
+      ordered = TRUE
+    )
+  )
+```
+
+## Quantify CTSS level annotations
+#### Previous code chunk
+```{r}
+# gm12878.ann.counts <- calc_anno_CTSS(
+#     GM12878.s.CTSSs[,colData(GM12878.s.CTSSs)$main=="yes"],
+#     txModels = txdb
+#   )
+# gm12878.ann.fracs <- gm12878.ann.counts/colData(GM12878.s.CTSSs)$totalTags[colData(GM12878.s.CTSSs)$main=="yes"]
+# 
+# gm12878.ann.uniqcounts <- .GlobalEnv$calc_anno_uniqCTSS(
+#     GM12878.s.CTSSs[,colData(GM12878.s.CTSSs)$main=="yes"],
+#     txModels = txdb
+#   )
+# gm12878.ann.uniqfracs <- gm12878.ann.uniqcounts/rowSums(gm12878.ann.uniqcounts)
+# gm12878.ann.uniqfracs$sample <- row.names(gm12878.ann.uniqfracs)
+# gm12878.ann.uniqfracs.m <- melt(gm12878.ann.uniqfracs)
+# 
+# gm12878.ann.counts.p <- .GlobalEnv$calc_anno_CTSS(
+#     GM12878.p.CTSSs[,colData(GM12878.p.CTSSs)$main=="yes"],
+#     txModels = txdb
+#   )
+# gm12878.ann.fracs.p <- gm12878.ann.counts.p/colData(GM12878.p.CTSSs)$totalTags[colData(GM12878.p.CTSSs)$main=="yes"]
+# gm12878.ann.fracs.p$sample <- row.names(gm12878.ann.fracs.p)
+# gm12878.ann.fracs.p.m <- melt(gm12878.ann.fracs.p)
+# 
+# gm12878.ann.uniqcounts.p <- .GlobalEnv$calc_anno_uniqCTSS(
+#     GM12878.p.CTSSs[,colData(GM12878.p.CTSSs)$main=="yes"],
+#     txModels = txdb
+#   )
+# gm12878.ann.uniqfracs.p <- gm12878.ann.uniqcounts.p/rowSums(gm12878.ann.uniqcounts.p)
+# gm12878.ann.uniqfracs.p$sample <- row.names(gm12878.ann.uniqfracs.p)
+# gm12878.ann.uniqfracs.p.m <- melt(gm12878.ann.uniqfracs.p)
+```
+
+## [1.2.] Save & load data
+```{r}
+base::save(
+    gm12878.ann.counts,
+    gm12878.ann.fracs,
+    gm12878.ann.uniqcounts,
+    gm12878.ann.uniqfracs,
+    gm12878.ann.counts.p,
+    gm12878.ann.fracs.p,
+    gm12878.ann.uniqcounts.p,
+    gm12878.ann.uniqfracs.p,
+    file = file = base::paste0(
+      here::here("1.CTSSs/"),
+      base::format(base::Sys.time(), "%Y%m%d"),
+      "_annFracs.gm12878.RData"
+    )
+  )
+```
 
 ```{r}
-gm12878.ann.fracs$sample <- row.names(gm12878.ann.fracs)
+base::load(
+    file = base::paste0(
+      here::here("1.CTSSs/"),
+      "annFracs.gm12878.RData"
+    )
+  )
+```
 
-
-gm12878.ann.fracs.m <- melt(gm12878.ann.fracs)
-
-
-
-#Plotting
+## Plotting
+```{r}
 p1 <- ggplot(gm12878.ann.fracs.m, aes(sample, value, fill=variable)) + geom_col() + coord_flip() +
   theme_bw() + scale_fill_manual(values=custom.col)
 
@@ -187,17 +305,9 @@ p3 <- ggplot(gm12878.ann.fracs, aes(exon, intron, color=sample)) +
 pdf("./combined_plots/annFracs.GM12878.repSub.pdf", height=20, width = 10)
 grid.arrange(p1,p2,p3)
 dev.off()
+```
 
-
-#
-gm12878.ann.fracs.p$sample <- row.names(gm12878.ann.fracs.p)
-
-
-gm12878.ann.fracs.p.m <- melt(gm12878.ann.fracs.p)
-
-
-
-#Plotting
+```{r}
 p1 <- ggplot(gm12878.ann.fracs.p.m, aes(sample, value, fill=variable)) + geom_col() + coord_flip() +
   theme_bw() + scale_fill_manual(values=custom.col)
 
@@ -214,22 +324,9 @@ p3 <- ggplot(gm12878.ann.fracs.p, aes(exon, intron, color=sample)) +
 pdf("./combined_plots/annFracs.GM12878.poolSub.pdf", height=20, width = 10)
 grid.arrange(p1,p2,p3)
 dev.off()
-
 ```
 
-
-
 ```{r}
-#Unique CTSS fraction per annotation
-gm12878.ann.uniqfracs$sample <- row.names(gm12878.ann.uniqfracs)
-
-
-
-gm12878.ann.uniqfracs.m <- melt(gm12878.ann.uniqfracs)
-
-
-
-#Plotting
 p1 <- ggplot(gm12878.ann.uniqfracs.m, aes(sample, value, fill=variable)) + geom_col() + coord_flip() +
   theme_bw() + scale_fill_manual(values=custom.col)
 
@@ -243,23 +340,12 @@ p3 <- ggplot(gm12878.ann.uniqfracs, aes(exon, intron, color=sample)) +
     check_overlap = F, size=3,nudge_y = 0.003) + 
   guides(color="none") + scale_color_manual(values=gm.full.pal)
 
-
 pdf("./combined_plots/annuniqFracs.GM12878.repSub.pdf", height=20, width = 10)
 grid.arrange(p1,p2,p3)
 dev.off()
+```
 
-
-
-
-#
-gm12878.ann.uniqfracs.p$sample <- row.names(gm12878.ann.uniqfracs.p)
-
-
-gm12878.ann.uniqfracs.p.m <- melt(gm12878.ann.uniqfracs.p)
-
-
-
-#Plotting
+```{r}
 p1 <- ggplot(gm12878.ann.uniqfracs.p.m, aes(sample, value, fill=variable)) + geom_col() + coord_flip() +
   theme_bw() + scale_fill_manual(values=custom.col)
 
@@ -276,93 +362,186 @@ p3 <- ggplot(gm12878.ann.uniqfracs.p, aes(exon, intron, color=sample)) +
 pdf("./combined_plots/annuniqFracs.GM12878.poolSub.pdf", height=20, width = 10)
 grid.arrange(p1,p2,p3)
 dev.off()
-
-
-
-
-
-
 ```
 
+# [1.] K562 analysis -------------------------
 
-
-
-
-
-
-
-
-
-
-
+#### Factor levels for genomic features
 ```{r}
-#Quantify CTSS level annotations
-k562.ann.counts <- calc_anno_CTSS(k562.s.CTSSs,txModels = txdb)
-k562.ann.fracs <- k562.ann.counts/colData(k562.s.CTSSs)$totalTags
-
-k562.ann.uniqcounts <- calc_anno_uniqCTSS(k562.s.CTSSs,txModels = txdb)
-k562.ann.uniqfracs <- k562.ann.uniqcounts/rowSums(k562.ann.uniqcounts)
-
-k562.ann.counts.p <- calc_anno_CTSS(k562.s.CTSSs,txModels = txdb)
-k562.ann.fracs.p <- k562.ann.counts/colData(k562.s.CTSSs)$totalTags
-
-k562.ann.uniqcounts.p <- calc_anno_uniqCTSS(k562.p.CTSSs,txModels = txdb)
-k562.ann.uniqfracs.p <- k562.ann.uniqcounts.p/rowSums(k562.ann.uniqcounts.p)
+feats <- base::c(
+    "intergenic","antisense","proximal",
+    "intron","exon","promoter",
+    "fiveUTR","CDS","threeUTR"
+  )
 ```
 
-
+## [1.0.] Quantify CTSS level annotations
 ```{r}
-save(k562.ann.counts,k562.ann.fracs,k562.ann.uniqcounts,k562.ann.uniqfracs,k562.ann.counts,k562.ann.fracs.p,k562.ann.uniqcounts.p,k562.ann.uniqfracs.p, file="annFracs.k562.RData")
+k562.ann.counts <- .GlobalEnv$calc_anno_CTSS(
+    data = k562.s.CTSSs,
+    txModels = txdb
+  )
+k562.ann.fracs <- k562.ann.counts/SummarizedExperiment::colData(k562.s.CTSSs)$totalTags
 ```
 
+## Data wrangling - prepare plotting
+```{r}
+k562.ann.fracs.m <- k562.ann.fracs %>%
+  tibble::rownames_to_column("sample") %>%
+  dplyr::mutate(
+      sample = dplyr::case_when(
+        sample == "K562_N_10M" ~ "K562_10M_N",
+        TRUE ~ sample
+      ),
+    ) %>%
+  dplyr::filter(
+      sample != "K562_Cap_align"
+    ) %>% 
+  tidyr::pivot_longer(
+      cols = !sample,
+      names_to = "variable",
+      values_to = "value"
+    ) %>%
+  dplyr::mutate(
+    variable = base::factor(
+      x = variable,
+      levels = feats,
+      ordered = TRUE
+    )
+  )
+```
+
+#### Previous code chunk
+```{r}
+# k562.ann.counts <- calc_anno_CTSS(k562.s.CTSSs,txModels = txdb)
+# k562.ann.fracs <- k562.ann.counts/colData(k562.s.CTSSs)$totalTags
+# 
+# k562.ann.uniqcounts <- calc_anno_uniqCTSS(k562.s.CTSSs,txModels = txdb)
+# k562.ann.uniqfracs <- k562.ann.uniqcounts/rowSums(k562.ann.uniqcounts)
+# 
+# k562.ann.counts.p <- calc_anno_CTSS(k562.s.CTSSs,txModels = txdb)
+# k562.ann.fracs.p <- k562.ann.counts/colData(k562.s.CTSSs)$totalTags
+# 
+# k562.ann.uniqcounts.p <- calc_anno_uniqCTSS(k562.p.CTSSs,txModels = txdb)
+# k562.ann.uniqfracs.p <- k562.ann.uniqcounts.p/rowSums(k562.ann.uniqcounts.p)
+```
+
+## [1.1.] Save & laod K562 data objects
+```{r}
+base::save(
+    k562.ann.counts,
+    k562.ann.fracs,
+    k562.ann.uniqcounts,
+    k562.ann.uniqfracs,
+    k562.ann.counts,
+    k562.ann.fracs.p,
+    k562.ann.uniqcounts.p,
+    k562.ann.uniqfracs.p,
+    file = base::paste0(
+      here::here("1.CTSSs/"),
+      base::format(base::Sys.time(), "%Y%m%d"),
+      "_annFracs.k562.RData"
+    )
+  )
+```
 
 ```{r}
-k562.ann.fracs$sample <- row.names(k562.ann.fracs)
-#Small naming change
-k562.ann.fracs$sample[k562.ann.fracs$sample=="K562_N_10M"] <- "K562_10M_N"
-k562.ann.fracs<- k562.ann.fracs[k562.ann.fracs$sample!="K562_Cap_align",]
+base::load(
+    file = base::paste0(
+      here::here("1.CTSSs/"),
+      "annFracs.k562.RData"
+    )
+  )
+```
 
+## [1.2.] Plotting
+```{r}
+ggplot2::ggplot(
+    data = k562.ann.fracs.m,
+    mapping = aes(
+        x = value,
+        y = sample,
+        fill = variable
+      )
+    ) +
+  geom_col() +
+  scale_fill_manual(
+      values = custom.col
+    ) +
+  theme_bw() +
+  theme(
+      axis.title = element_blank()
+    )
+```
 
-k562.ann.fracs.m <- melt(k562.ann.fracs)
+```{r}
+ggplot2::ggplot(
+    data = k562.ann.fracs,
+    mapping = aes(
+        x = intergenic,
+        y = intron,
+        color = sample
+      )
+    ) +
+  geom_point(
+      size = 2
+    ) +
+  theme_bw() +
+  geom_text(
+      label = rownames(k562.ann.fracs), 
+      check_overlap = F,
+      size = 3,
+      nudge_y = 0.003
+    ) + 
+  guides(color="none") +
+  scale_color_manual(
+      values = k.full.pal
+    )
+```
 
-
-
-
-
-#Plotting
-p1 <- ggplot(k562.ann.fracs.m, aes(sample, value, fill=variable)) + geom_col() + coord_flip() +
-  theme_bw() + scale_fill_manual(values=custom.col)
-
-p2 <- ggplot(k562.ann.fracs, aes(intergenic, intron, color=sample)) +
-  geom_point(size=2) + theme_bw() + geom_text( label=rownames(k562.ann.fracs), 
-    check_overlap = F, size=3,nudge_y = 0.003) + 
-  guides(color="none") + scale_color_manual(values=k.full.pal)
-
-p3 <- ggplot(k562.ann.fracs, aes(exon, intron, color=sample)) +
-  geom_point(size=2) + theme_bw() + geom_text( label=rownames(k562.ann.fracs), 
-    check_overlap = F, size=3,nudge_y = 0.003) + 
-  guides(color="none") + scale_color_manual(values=k.full.pal)
+```{r}
+ggplot2::ggplot(
+  data = k562.ann.fracs,
+  mapping = aes(
+        x = exon,
+        y = intron,
+        color = sample
+      )
+    ) +
+  geom_point(
+      size = 2
+    ) +
+  theme_bw() +
+  geom_text(
+      label = rownames(k562.ann.fracs),
+      check_overlap = F,
+      size = 3,
+      nudge_y = 0.003
+    ) + 
+  guides(color="none") +
+  scale_color_manual(
+      values = k.full.pal
+    )
 
 pdf("./combined_plots/annFracs.k562.repSub.pdf", height=20, width = 10)
 grid.arrange(p1,p2,p3)
 dev.off()
+```
 
 
-#
+```{r}
 k562.ann.fracs.p$sample <- row.names(k562.ann.fracs.p)
 
 k562.ann.fracs.p$sample[k562.ann.fracs.p$sample=="K562_N_10M"] <- "K562_10M_N"
 k562.ann.fracs.p<- k562.ann.fracs.p[k562.ann.fracs.p$sample!="K562_Cap_align",]
 
-
 k562.ann.fracs.m <- melt(k562.ann.fracs)
 
-
 k562.ann.fracs.p.m <- melt(k562.ann.fracs.p)
+```
 
-
-
-#Plotting
+## Plotting
+```{r}
 p1 <- ggplot(k562.ann.fracs.p.m, aes(sample, value, fill=variable)) + geom_col() + coord_flip() +
   theme_bw() + scale_fill_manual(values=custom.col)
 
@@ -379,24 +558,20 @@ p3 <- ggplot(k562.ann.fracs.p, aes(exon, intron, color=sample)) +
 pdf("./combined_plots/annFracs.k562.poolSub.pdf", height=20, width = 10)
 grid.arrange(p1,p2,p3)
 dev.off()
-
 ```
 
-
-
+## Unique CTSS fraction per annotation
 ```{r}
-#Unique CTSS fraction per annotation
 k562.ann.uniqfracs$sample <- row.names(k562.ann.uniqfracs)
 
 k562.ann.uniqfracs$sample[k562.ann.uniqfracs$sample=="K562_N_10M"] <- "K562_10M_N"
 k562.ann.uniqfracs<- k562.ann.uniqfracs[k562.ann.uniqfracs$sample!="K562_Cap_align",]
 
-
 k562.ann.uniqfracs.m <- melt(k562.ann.uniqfracs)
+```
 
-
-
-#Plotting
+## Plotting
+```{r}
 p1 <- ggplot(k562.ann.uniqfracs.m, aes(sample, value, fill=variable)) + geom_col() + coord_flip() +
   theme_bw() + scale_fill_manual(values=custom.col)
 
@@ -414,24 +589,19 @@ p3 <- ggplot(k562.ann.uniqfracs, aes(exon, intron, color=sample)) +
 pdf("./combined_plots/annuniqFracs.k562.repSub.pdf", height=20, width = 10)
 grid.arrange(p1,p2,p3)
 dev.off()
+```
 
-
-
-
-#
+```{r}
 k562.ann.uniqfracs.p$sample <- row.names(k562.ann.uniqfracs.p)
 
 k562.ann.uniqfracs.p$sample[k562.ann.uniqfracs.p$sample=="K562_N_10M"] <- "K562_10M_N"
 k562.ann.uniqfracs.p<- k562.ann.uniqfracs.p[k562.ann.uniqfracs.p$sample!="K562_Cap_align",]
 
-
-
-
 k562.ann.uniqfracs.p.m <- melt(k562.ann.uniqfracs.p)
+```
 
-
-
-#Plotting
+## Plotting
+```{r}
 p1 <- ggplot(k562.ann.uniqfracs.p.m, aes(sample, value, fill=variable)) + geom_col() + coord_flip() +
   theme_bw() + scale_fill_manual(values=custom.col)
 
@@ -450,6 +620,3 @@ grid.arrange(p1,p2,p3)
 dev.off()
 
 ```
-
-
-
