@@ -88,6 +88,15 @@ gm.full.pal <- base::c(
     "#3D4138","#878784","#AC97C2",
     "#977FB4","#7D62A3","#7D62D0"
   )
+
+gm.full.ada <- base::c(
+    "#F5CE00","#F5CE00","#F5CE00","#FF8D00",
+    "#FF4425","#FF4425","#FF4425","#DD4425",
+    "#92B9C9","#92B9C9","#92B9C9","#00439B",
+    "#29A957","#29A957","#29A957","#007A30",
+    "#878784","#878784","#878784","#3D4138",
+    "#AC97C2","#AC97C2","#AC97C2","#7D62D0"
+  )
 ```
 
 ## [0.4.] Set working directory
@@ -1094,11 +1103,12 @@ ggplot2::ggplot(
     )
 ```
 
-#### Only 500k and 5M samples
+#### Only pooled samples
+#### previously: Only 500k and 5M samples, 'gm.full.ada' color palette used
 ```{r}
 main %>%
   dplyr::filter(
-      stringr::str_detect(sample,"500K|5M")
+      stringr::str_detect(sample,"_N$|_C$")
     ) %>%
   ggplot2::ggplot(
     data = .,
@@ -1120,7 +1130,7 @@ main %>%
       limits = base::c(0,ymax),
     ) +
   scale_color_manual(
-      values = gm.full.pal
+      values = gm.full.pal[base::seq(1,24,4)]
     ) +
   theme_bw() +
   theme(
@@ -1137,13 +1147,14 @@ for(ext in c("pdf", "png")){
           format(Sys.time(), "%Y%m%d"),
           "_complexityCtss",
           "_GM12878",
+          "_Pooled",
           ".", ext
         ),
       plot = ggplot2::last_plot(),
       device = ext,
       dpi = 300,
-      width = 10,
-      height = 6
+      width = 6, #10
+      height = 4
     )
   }
 ```
