@@ -127,8 +127,8 @@ fsms %>%
   dplyr::pull(sample)
 ```
 
-## [1.5.] Data wrangling - prepare plotting
-#### Evaluate with 'dplyr::distinct(fsmd,sample)'
+## [1.5.] Subset samples & separate sample name information
+#### Evaluate with 'dplyr::distinct(fsmd,sample)', 'dplyr::distinct(fsmd,repseq)'
 ```{r}
 samples <- meta %>%
   dplyr::filter(
@@ -166,14 +166,9 @@ fsmd <- fsms %>%
   )
 ```
 
-
+## [1.6.] Convert arguments into factors
 ```{r}
 amts <- base::c("500k","1mio","5mio","10mio")
-srcs <- base::c("C","N")
-```
-
-
-```{r}
 curlst <- base::c(
     "C_500k_1", "C_500k_2", "C_500k_3",
     "C_1mio_1", "C_1mio_2", "C_1mio_3",
@@ -185,12 +180,25 @@ curlst <- base::c(
 ```
 
 ```{r}
-fsmd %>%
-  dplyr::filter(
-      sample %in% curlst
-    ) %>% 
+fsmp <- fsmd %>%
+  dplyr::mutate(
+    amount = base::factor(
+        x = amount,
+        levels = amts,
+        ordered = TRUE
+      ),
+    source = base::c(
+      x = source,
+      levels = base::c("C","N"),
+      ordered = TRUE
+    )
+  )
+```
+
+
+```{r}
   ggplot2::ggplot(
-        data = .,
+        data = fsmp,
         mapping = aes(
           x = relrank,
           y = relagsum,
