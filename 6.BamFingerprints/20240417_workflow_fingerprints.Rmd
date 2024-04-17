@@ -160,9 +160,10 @@ fsmd <- fsms %>%
     ) %>%
   dplyr::mutate(
     repseq = dplyr::case_when(
-      seq == "reseq" ~ base::paste0(rep,"_",seq),
-      TRUE ~ rep
-    )
+        seq == "reseq" ~ base::paste0(rep,"_",seq),
+        TRUE ~ rep
+      ),
+    srcamt = base::paste0(source,"_",amount)
   )
 ```
 
@@ -177,37 +178,137 @@ curlst <- base::c(
     "N_5mio_1", "N_5mio_2", "N_5mio_3",
     "N_10mio_1", "N_10mio_2","N_10mio_3"
   )
-```
-
-```{r}
-fsmp <- fsmd %>%
-  dplyr::mutate(
-    amount = base::factor(
-        x = amount,
-        levels = amts,
-        ordered = TRUE
-      ),
-    source = base::c(
-      x = source,
-      levels = base::c("C","N"),
-      ordered = TRUE
-    )
+srcamts <- base::c(
+    "C_500k","C_1mio","N_500k",
+    "N_1mio","N_5mio","N_10mio"
   )
 ```
 
-
 ```{r}
+fsmp <- fsmd %>% 
+  dplyr::ungroup() %>% 
+  dplyr::filter(
+      sample %in% curlst
+    ) %>% #distinct(source)
+  dplyr::mutate(
+    srcamt = base::factor(
+        x = srcamt,
+        levels = srcamts,
+        ordered = TRUE
+      )
+    )
+```
+
+## [1.7.] Plot data
+```{r}
+ggplot2::ggplot(
+      data = fsmp,
+      mapping = aes(
+        x = relrank,
+        y = relagsum,
+        colour = repseq
+      )
+    ) +
+  geom_line() +
+  facet_wrap(
+      facets = srcamt ~ .,
+      nrow = 1
+    ) +
+  theme_bw() +
+  theme(
+      panel.spacing = grid::unit(0.1,"lines"),
+      aspect.ratio = 1
+    )
+```
+
+# [2.] QC data -------------------------
+
+## [2.0.] Read in QC data
+```{r}
+qcs <- readr::read_delim(
+      file = base::paste0(
+          here::here("6.BamFingerprints/"),
+          "20240417_qc_fingerprints.txt"
+        ),
+      delim = "\t",
+      col_names = TRUE,
+      col_types = readr::cols(
+        .default = readr::col_double(),
+        Sample = readr::col_character()
+      )
+    ) %>%
+  dplyr::rename(sample = "Sample")
+```
+
+## [2.1.] Read in QC data
+```{r}
+qcp <- qcs %>%
+  dplyr::mutate(
+      sample = stringr::str_replace(
+        sample, "^(.*)\\/bam_files\\/(.*)_STAR.*$","\\2"
+      )
+    ) %>%
+  dplyr::mutate(
+    seq = stringr::str_extract(
+        sample,"reseq"
+      ),
+    sample = stringr::str_replace_all(
+        sample,"GM12878_|CAGE_reseq_|CAGE_",""
+      )
+    ) %>%
+  tidyr::separate(
+      col = sample,
+      sep = "_",
+      into = base::c("source","amount","rep"),
+      remove = FALSE
+    ) %>%
+  dplyr::mutate(
+      repseq = dplyr::case_when(
+          seq == "reseq" ~ base::paste0(rep,"_",seq),
+          TRUE ~ rep
+        ),
+      srcamt = base::paste0(source,"_",amount)
+    ) %>%
+  dplyr::filter(
+      sample %in% curlst
+    ) %>%
+  dplyr::mutate(
+    srcamt = base::factor(
+        x = srcamt,
+        levels = srcamts,
+        ordered = TRUE
+      )
+    )
+```
+
+## [2.2.] PLot data
+```{r}
+qcp_sub <- qcp %>% 
+ dplyr::filter(
+      stringr::str_detect(repseq,"reseq")
+    )
+fsmp %>%
+   dplyr::filter(
+      stringr::str_detect(repseq,"reseq")
+    ) %>% 
   ggplot2::ggplot(
-        data = fsmp,
+        data = .,
         mapping = aes(
           x = relrank,
           y = relagsum,
-          colour = rep
+          colour = repseq
         )
       ) +
     geom_line() +
+    geom_vline(
+        data = qcp_sub,
+        mapping = aes(
+            xintercept = `X-intercept`
+          ),
+        linetype = "dashed"
+      ) +
     facet_wrap(
-        facets = amount ~ source + seq,
+        facets = srcamt ~ .,
         nrow = 1
       ) +
     theme_bw() +
@@ -217,3 +318,132 @@ fsmp <- fsmd %>%
       )
 ```
 
+## [2.3.] Print data
+```{r eval=FALSE}
+for(ext in c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("6.BamFingerprints/"),
+          format(Sys.time(), "%Y%m%d"),
+          "_fingerprint",
+          "_AllReseqSamples",
+          ".", ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 8,
+      height = 3
+    )
+  }
+```
+
+## [2.4.] Plot qc data
+```{r}
+qcp %>%
+  dplyr::filter(
+      stringr::str_detect(repseq,"reseq")
+    ) %>% 
+  ggplot2::ggplot(
+        data = .,
+        mapping = aes(
+          y = 1-`Elbow Point`,
+          x = repseq
+        )
+      ) +
+    geom_col() +
+    facet_wrap(
+        facets = srcamt ~ .,
+        nrow = 1
+      ) +
+    scale_y_continuous(
+        name = "Enriched genome"
+      ) +
+    theme_bw() +
+    theme(
+        aspect.ratio = 1,
+        panel.spacing = grid::unit(0.1,"lines"),
+        axis.text.x = element_text(
+          angle = 90,
+          vjust = 0.5,
+          hjust = 1
+        ),
+        axis.title.x = element_blank()
+      )
+```
+
+## [2.5.] Print data
+```{r eval=FALSE}
+for(ext in c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("6.BamFingerprints/"),
+          format(Sys.time(), "%Y%m%d"),
+          "_fingerprint",
+          "_AllReseqSamples",
+          "_ElbowEnrichment",
+          ".", ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 8,
+      height = 3
+    )
+  }
+```
+
+## [2.6.] Print data
+```{r}
+qcp %>%
+  dplyr::filter(
+      stringr::str_detect(repseq,"reseq")
+    ) %>%
+  ggplot2::ggplot(
+        data = .,
+        mapping = aes(
+          y = 1-`X-intercept`,
+          x = repseq
+        )
+      ) +
+    geom_col() +
+    facet_wrap(
+        facets = srcamt ~ .,
+        nrow = 1
+      ) +
+    scale_y_continuous(
+        name = "Covered genome"
+      ) +
+    theme_bw() +
+    theme(
+        aspect.ratio = 1,
+        panel.spacing = grid::unit(0.1,"lines"),
+        axis.text.x = element_text(
+          angle = 90,
+          vjust = 0.5,
+          hjust = 1
+        ),
+        axis.title.x = element_blank()
+      )
+```
+
+## [2.7.] Print data
+```{r eval=FALSE}
+for(ext in c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("6.BamFingerprints/"),
+          format(Sys.time(), "%Y%m%d"),
+          "_fingerprint",
+          "_AllReseqSamples",
+          "_xInterceptEnrichment",
+          ".", ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 8,
+      height = 3
+    )
+  }
+```
