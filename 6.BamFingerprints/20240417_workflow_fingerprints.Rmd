@@ -1,0 +1,99 @@
+---
+title: "20240417_workflow_fingerprints"
+output: html_document
+date: "2024-04-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## [0.0.] Load necessary packages
+```{r}
+base::library(tidyverse)
+```
+
+## [1.0.] Read in data
+```{r}
+cnts_ <- readr::read_delim(
+    file = base::paste0(
+        here::here("6.BamFingerprints/"),
+        "20240417_counts_fingerprints.txt"
+      ),
+    skip = 1,
+    delim = "\t",
+    col_names = TRUE,
+    col_types = readr::cols(
+      .default = readr::col_integer()
+    )
+  )
+```
+
+## [1.1.] Data wrangling
+```{r}
+cnts <- cnts_ %>%
+  tidyr::pivot_longer(
+      cols = dplyr::everything(),
+      names_to = "sample",
+      values_to = "count"
+    ) %>%
+  dplyr::mutate(
+    sample = stringr::str_replace(
+      sample, "^.*\\/bam_files\\/(.*)_STAR.*$","\\1"
+    )
+  )
+```
+
+## [1.2.] Calculate relative ranks & cumsums
+#### All samples have 500435 entries, evaluate with 'dplyr::summarise(sms, len = dplyr::n())'
+#### evaluate with 'base::max(fsms$relagsum)'
+```{r}
+sms <- cnts %>%
+  dplyr::group_by(sample) %>%
+  dplyr::arrange(count) %>%
+  dplyr::mutate(
+    agsum = base::cumsum(count),
+    rank = dplyr::row_number(),
+    relrank = rank/500435
+  )
+
+ref <- sms %>%
+  dplyr::summarise(
+      fcnt = base::max(agsum)
+    )
+
+fsms <- sms %>%
+  tidyr::nest() %>% 
+  dplyr::mutate(
+    newdata = purrr::pmap(
+      .l = base::list(sample,data),
+      .f = function(s,df){
+        c <- ref %>%
+          dplyr::filter(sample == s) %>%
+          dplyr::pull(fcnt)
+        return(
+          df %>%
+            dplyr::mutate(
+              relagsum = agsum/c
+            )
+          )
+      }
+    )
+  ) %>%
+  dplyr::select(-data) %>%
+  tidyr::unnest(cols = "newdata")
+```
+
+## [1.3.] Plotting
+```{r}
+ggplot2::ggplot(
+    data = fsms,
+    mapping = aes(
+      x = relrank,
+      y = relagsum,
+      color = sample
+    )
+  ) +
+  geom_line()
+```
+

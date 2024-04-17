@@ -9,6 +9,8 @@ date: "2024-02-29"
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 ```
 
+## [0.] Prerequsites -------------------------
+
 ## [0.0.] Load necesarray packages
 ```{r message=FALSE}
 base::library(tidyverse)

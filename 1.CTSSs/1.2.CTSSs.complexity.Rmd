@@ -355,8 +355,7 @@ f <- base::list.files(
       path = here::here("1.CTSSs"),
       full.names = TRUE
     ) %>% 
-  stringr::str_subset("complexity") %>%
-  stringr::str_subset("K562")
+  stringr::str_subset("K562.CTSS.complexity")
 
 base::load(file = f)
 ```
@@ -883,8 +882,7 @@ f <- base::list.files(
       path = here::here("1.CTSSs"),
       full.names = TRUE
     ) %>% 
-  stringr::str_subset("complexity") %>%
-  stringr::str_subset("GM12878")
+  stringr::str_subset("GM12878.CTSS.complexity")
 
 base::load(file = f)
 ```
@@ -1051,6 +1049,7 @@ main$sample <- base::factor(
 ```
 
 ## [2.7.] Plot complexities including pooled samples
+#### see [1.7.1.] for xmax, ymax
 #### "/combined_plots/combined.GM12878.CTSSs.comp.pdf"
 #### "/combined_plots/combined.GM12878.CTSSs.comp.scaled.pdf"
 ```{r}
@@ -1179,8 +1178,32 @@ r.max <- main %>%
 ```
 
 ```{r}
+p.max_pools <- main %>%
+  dplyr::filter(
+      stringr::str_detect(sample,"_N$|_C$")
+    ) %>%
+  dplyr::filter(target < 106618677L) %>%
+  tidyr::drop_na() %>%
+  dplyr::group_by(sample) %>%
+  dplyr::summarize(
+      compexity = base::max(numberCTSSs)
+    )
+r.max_pools <- main %>%
+  dplyr::filter(
+      stringr::str_detect(sample,"_N$|_C$")
+    ) %>%
+  dplyr::filter(target < 29027358) %>%
+  tidyr::drop_na() %>%
+  dplyr::group_by(sample) %>%
+  dplyr::summarize(
+      compexity = base::max(numberCTSSs)
+    )
+```
+
+
+```{r}
 ggplot2::ggplot(
-    data = p.max, # r.max,
+    data = r.max_pools, # p.max_pools, # p.max, # r.max,
     mapping = aes(
         x = compexity,
         y = forcats::fct_rev(sample),
@@ -1225,8 +1248,9 @@ for(ext in c("pdf", "png")){
           "_complexityCtss",
           "_GM12878",
           "_barplots",
-          # "_replicate",
-          "_pool",
+          "_replicate",
+          # "_pool",
+          "_OnlyPool",
           "_nonLog10",
           ".", ext
         ),
