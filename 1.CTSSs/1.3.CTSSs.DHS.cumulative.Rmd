@@ -56,6 +56,10 @@ custom.col <- base::c(
     "#D16103","#C3D7A4","#52854C",
     "#4E84C4","#293352","grey"
   )
+cols4 <- base::c(
+    "#FE8D02","#FF4425","#00439B",
+    "#008F72","#878784","#7D62CF"
+  )
 ```
 
 ## [0.4.] Set working directory
@@ -409,9 +413,10 @@ ctss.cumfrac <- gm12878.cumFrac %>%
         variable, "^(.*)_(.*?)_(.*)$","\\2"
       ),
     C_N = stringr::str_replace(
-        variable, "^(.*)_(.*?)_(.*)$","\\3"
-      )
-    )
+        variable, "^(.*)_(.*?)_(C|N)\\d$","\\3"
+      ),
+    type = base::paste0(C_N,"_",method)
+  )
 
 # ctss.cumfrac <- melt(gm12878.cumFrac[[1]], id.var="distance")
 # ctss.cumfrac$method <- str_extract(ctss.cumfrac$variable, "_(.*?)_")
@@ -422,41 +427,56 @@ ctss.cumfrac <- gm12878.cumFrac %>%
 #### Evaluate
 ```{r}
 dplyr::distinct(ctss.cumfrac,variable)
+dplyr::distinct(ctss.cumfrac,method)
 ```
 
 #### p1
 ```{r}
-ggplot2::ggplot(
-  data = ctss.cumfrac,
-  mapping = aes(
-      x = distance,
-      y = value,
-      group = variable,
-      color = method
-    )
-  ) +
-  geom_vline(
-      xintercept = 200L,
-      linetype = "dashed"
+tps <- base::c(
+    "C_500K","C_1M","N_500K",
+    "N_1M","N_5M","N_10M"
+  )
+
+ctss.cumfrac %>%
+  dplyr::filter(type %in% tps) %>%
+  dplyr::mutate(
+      type = base::factor(
+        x = type,
+        levels = tps,
+        ordered = TRUE
+      )
+    ) %>% 
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = distance,
+        y = value,
+        group = variable,
+        color = type
+      )
     ) +
-  geom_line() +
-  # facet_wrap(
-  #     facets = ~ method #+ C_N
-  #   ) +
-  # guides(
-  #     color = "none"
-  #   ) +
-  labs(
-      y = "CTSS to DHS cumulative fraction",
-      x = "Distance to DHSs center"
-    ) +
-  scale_color_manual(
-      values = custom.col
-    ) +
-  theme_bw() +
-  theme(
-      aspect.ratio = 1
-    )
+    geom_vline(
+        xintercept = 200L,
+        linetype = "dashed"
+      ) +
+    geom_line() +
+    # facet_wrap(
+    #     facets = ~ method #+ C_N
+    #   ) +
+    # guides(
+    #     color = "none"
+    #   ) +
+    labs(
+        y = "CTSS to DHS cumulative fraction",
+        x = "Distance to DHSs center"
+      ) +
+    scale_color_manual(
+        values = cols4
+      ) +
+    theme_bw() +
+    theme(
+        aspect.ratio = 1
+      )
 ```
 
 #### p1.2
