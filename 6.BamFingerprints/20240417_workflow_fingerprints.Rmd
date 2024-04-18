@@ -287,7 +287,7 @@ qcp_sub <- qcp %>%
  dplyr::filter(
       stringr::str_detect(repseq,"reseq")
     )
-fsmp %>%
+plot <- fsmp %>%
    dplyr::filter(
       stringr::str_detect(repseq,"reseq")
     ) %>% 
@@ -305,17 +305,38 @@ fsmp %>%
         mapping = aes(
             xintercept = `X-intercept`
           ),
-        linetype = "dashed"
+        linetype = "dashed",
+        size = 0.1
+      ) +
+    geom_vline(
+        data = qcp_sub,
+        mapping = aes(
+            xintercept = `Elbow Point`
+          ),
+        linetype = "dashed",
+        color = "blue",
+        size = 0.1
       ) +
     facet_wrap(
         facets = srcamt ~ .,
         nrow = 1
       ) +
+    scale_colour_manual(
+        limits = base::c("1_reseq","2_reseq","3_reseq"),
+        breaks = base::c("1_reseq","2_reseq","3_reseq"),
+        values = base::c("#20639B","#3CAEA3","#ED553B"),
+      ) +
     theme_bw() +
     theme(
         panel.spacing = grid::unit(0.1,"lines"),
-        aspect.ratio = 1
+        aspect.ratio = 1,
+        legend.position = "none"
       )
+ggrastr::rasterise(
+    input = plot,
+    layers = "Line",
+    dpi = 300
+  )
 ```
 
 ## [2.3.] Print data
@@ -444,6 +465,64 @@ for(ext in c("pdf", "png")){
       dpi = 300,
       width = 8,
       height = 3
+    )
+  }
+```
+
+## [2.8.] Plot data
+```{r}
+qcp %>%
+  dplyr::filter(
+      stringr::str_detect(repseq,"reseq")
+    ) %>%
+  dplyr::mutate(
+      coeff = (1-`Elbow Point`)/(1-`X-intercept`)
+    ) %>%
+   ggplot2::ggplot(
+        data = .,
+        mapping = aes(
+          y = coeff,
+          x = repseq
+        )
+      ) +
+    geom_col() +
+    facet_wrap(
+        facets = srcamt ~ .,
+        nrow = 1
+      ) +
+    scale_y_continuous(
+        name = "Enriched genome / Covered genome"
+      ) +
+    theme_bw() +
+    theme(
+        aspect.ratio = 1,
+        panel.spacing = grid::unit(0.1,"lines"),
+        axis.text.x = element_text(
+          angle = 90,
+          vjust = 0.5,
+          hjust = 1
+        ),
+        axis.title.x = element_blank()
+      )
+```
+
+## [2.7.] Print data
+```{r eval=FALSE}
+for(ext in c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("6.BamFingerprints/"),
+          format(Sys.time(), "%Y%m%d"),
+          "_fingerprint",
+          "_AllReseqSamples",
+          "_EnrichedOverCovered",
+          ".", ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 8,
+      height = 4
     )
   }
 ```
