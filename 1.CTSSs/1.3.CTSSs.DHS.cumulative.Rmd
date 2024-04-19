@@ -387,9 +387,11 @@ GM12878.dhs$thick <- IRanges::IRanges(
 
 ## [2.2.] Calculate cumulative fractions as a function of the distance to DHSs
 #### 'gm12878.cumFrac <- cumulativeFractions(GM12878.dhs,GM12878.CTSSs.stand)'
+#### 'GM12878.p.s.CTSSs' object used for pool-plots
+#### 'GM12878.pID.s.CTSSs' object used for replicate-plots
 ```{r}
 GM12878.CTSSs.stand <- GenomeInfoDb::keepStandardChromosomes(
-    x = GM12878.p.s.CTSSs, # GM12878.pID.s.CTSSs,
+    x = GM12878.pID.s.CTSSs, #GM12878.p.s.CTSSs
     pruning.mode = "coarse"
   )
 GM12878.dhs <- GenomeInfoDb::keepStandardChromosomes(
@@ -401,7 +403,7 @@ gm12878.cumFrac <- .GlobalEnv$cumulativeFractions(
     ctss = GM12878.CTSSs.stand
   )
 
-regex = "^(.*)_(.*?)_(C|N)$"# "^(.*)_(.*?)_(C|N)\\d$"
+regex = "^(.*)_(.*?)_(C|N)\\d$" #"^(.*)_(.*?)_(C|N)$"
 
 ctss.cumfrac <- gm12878.cumFrac %>%
   purrr::pluck(1) %>%
@@ -472,7 +474,7 @@ ctss.plot <- ctss.cumfrac %>%
     mapping = aes(
         x = distance,
         y = value,
-        group = type, #variable,
+        group = variable, #type,
         color = type
       )
     ) +
@@ -492,7 +494,7 @@ ctss.plot <- ctss.cumfrac %>%
         x = "Distance to DHSs center"
       ) +
     scale_color_manual(
-        values = cols4
+        values = base::rev(cols4)
       ) +
     theme_bw() +
     theme(
@@ -515,8 +517,8 @@ for(ext in base::c("pdf", "png")){
           base::format(base::Sys.time(), "%Y%m%d"),
           "_GM12878",
           "_cumFracDhs",
-          # "_replicates",
-          "_pools",
+          "_replicates",
+          # "_pools",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
@@ -538,7 +540,7 @@ ctss.plot %>%
 ggplot2::ggplot(
     data = ., #ctss.cumfrac[ctss.cumfrac$distance==200,],
     mapping = aes(
-        y = type, #variable,
+        y = variable, #type,
         x = value,
         fill = type
       )
