@@ -389,7 +389,7 @@ GM12878.dhs$thick <- IRanges::IRanges(
 #### 'gm12878.cumFrac <- cumulativeFractions(GM12878.dhs,GM12878.CTSSs.stand)'
 ```{r}
 GM12878.CTSSs.stand <- GenomeInfoDb::keepStandardChromosomes(
-    x = GM12878.pID.s.CTSSs, #GM12878.p.s.CTSSs
+    x = GM12878.p.s.CTSSs, # GM12878.pID.s.CTSSs
     pruning.mode = "coarse"
   )
 GM12878.dhs <- GenomeInfoDb::keepStandardChromosomes(
@@ -400,6 +400,8 @@ gm12878.cumFrac <- .GlobalEnv$cumulativeFractions(
     loci = GM12878.dhs,
     ctss = GM12878.CTSSs.stand
   )
+
+regex = "^(.*)_(.*?)_(C|N)$" # "^(.*)_(.*?)_(C|N)\\d$"
 
 ctss.cumfrac <- gm12878.cumFrac %>%
   purrr::pluck(1) %>%
@@ -413,7 +415,7 @@ ctss.cumfrac <- gm12878.cumFrac %>%
         variable, "^(.*)_(.*?)_(.*)$","\\2"
       ),
     C_N = stringr::str_replace(
-        variable, "^(.*)_(.*?)_(C|N)\\d$","\\3"
+        variable, regex,"\\3"
       ),
     type = base::paste0(C_N,"_",method)
   )
@@ -428,8 +430,10 @@ ctss.cumfrac <- gm12878.cumFrac %>%
 ```{r}
 dplyr::distinct(ctss.cumfrac,variable)
 dplyr::distinct(ctss.cumfrac,method)
+dplyr::distinct(ctss.cumfrac,type)
 ```
 
+## [2.3.] Plotting
 #### p1
 ```{r}
 tps <- base::c(
@@ -475,32 +479,109 @@ ctss.cumfrac %>%
       ) +
     theme_bw() +
     theme(
-        aspect.ratio = 1
+        aspect.ratio = 1,
+        legend.title = element_blank(),
+        legend.justification = base::c(1,0),
+        legend.position = base::c(0.95,0.05),
+        legend.background = element_rect(
+          fill = "grey"
+        )
       )
 ```
 
+## [2.4.] Save plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("1.CTSSs/plots/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_GM12878",
+          "_cumFracDhs",
+          # "_replicates",
+          "_pools",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 5,
+      height = 5
+    )
+  }
+```
+
+## [2.5.] Plotting
 #### p1.2
 ```{r}
+ctss.cumfrac %>%
+  dplyr::filter(
+      type %in% tps &
+      distance == 200L
+    ) %>%
+  dplyr::mutate(
+      type = base::factor(
+        x = type,
+        levels = base::rev(tps),
+        ordered = TRUE
+      )
+    ) %>%
 ggplot2::ggplot(
-    data = ctss.cumfrac[ctss.cumfrac$distance==200,],
+    data = ., #ctss.cumfrac[ctss.cumfrac$distance==200,],
     mapping = aes(
-        x = variable,
-        y = value,
-        fill = method
+        y = type,
+        x = value,
+        fill = type
       )
     ) +
   geom_col() +
-  theme_bw() +
+  geom_text(
+      mapping = aes(
+        label = type
+      ),
+      x = 0,
+      hjust = -1.1,
+      color = "white",
+      fontface = "bold"
+    ) +
   scale_fill_manual(
-      values = custom.col
+      values =  base::rev(cols4)
     ) +
   labs(
       y = "Cumulative CTSS fraction at 200bp",
       x = "sample",
       fill = "sample"
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      legend.position = "none",
+      axis.text.y = element_blank()
     )
 ```
 
+## [2.6.] Save plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("1.CTSSs/plots/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_GM12878",
+          "_cumFracDhs",
+          # "_replicates",
+          "_pools",
+          "_dist200",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 5,
+      height = 5
+    )
+  }
+```
 
 ```{r}
 ctss.cumfrac <- melt(gm12878.cumFrac[2], id.var="distance")
