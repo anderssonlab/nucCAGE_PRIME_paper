@@ -1,7 +1,7 @@
 ---
 title: "8.1.K562_external_validation"
 output: html_document
-date: "2024-05-08"
+date: "2024-05-16"
 ---
 
 Evaluation of divergent loci using fine-mapped GWAS variants, fine-mapped eQTLs, and CRISPRi data and comparison to other methods / assays.
@@ -43,6 +43,8 @@ GWAS.pip.thres <- 0.2
 traits <- c("Plt","HbA1c","Hb","RBC","MCV","MCH","MCHC")
 
 cCRE.file <- "../0.External_resources/ENCFF464BRU.bed"
+ENCODErE2Gext.file <- "../0.External_resources/ENCFF202FID.bed.gz"
+ENCODErE2G.file <- "../0.External_resources/ENCFF815ILK.bed.gz"
 point.files <- c("PINTS GRO/PRO-cap, distal" = "../0.External_resources/K562_Distal_PINTS_GRO_PRO_cap.bed",
                  "PINTS GRO/PRO-cap, proximal" = "../0.External_resources/K562_Proximal_PINTS_GRO_PRO_cap.bed",
                  "dREG PRO-seq" = "../0.External_resources/GSE150625_PROseq_1M_K562_dREGpeaks_clean.bed",
@@ -140,6 +142,17 @@ for (n in c("dELS","pELS","PLS")) {
   x$class <- NULL
   point.data[[paste0("ENCODE cCRE, ",n)]] <- x
 }
+
+ENCODErE2G <- read_tsv(ENCODErE2G.file)
+ENCODErE2G <- subset(ENCODErE2G, !isSelfPromoter & (class != "promoter"))
+ENCODErE2G <- makeGRangesFromDataFrame(ENCODErE2G,seqnames.field = "#chr")
+
+ENCODErE2Gext <- read_tsv(ENCODErE2Gext.file)
+ENCODErE2Gext <- subset(ENCODErE2Gext, !isSelfPromoter & (class != "promoter"))
+ENCODErE2Gext <- makeGRangesFromDataFrame(ENCODErE2Gext,seqnames.field = "#chr")
+
+point.data[["ENCODE-rE2G"]] <- ENCODErE2G
+point.data[["ENCODE-rE2G (extended)"]] <- ENCODErE2Gext
 
 for (n in names(point.data)) {
   point.data[[n]] <- sort(point.data[[n]])
