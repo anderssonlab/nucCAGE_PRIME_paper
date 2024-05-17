@@ -4,7 +4,7 @@ output: html_document
 date: "2024-05-16"
 ---
 
-Evaluation of divergent loci using fine-mapped GWAS variants, fine-mapped eQTLs, and CRISPRi data and comparison to other methods / assays.
+Evaluation of divergent loci using fine-mapped GWAS variants, fine-mapped eQTLs, and CRISPRi data and comparison to other methods & assays.
 
 ```{r}
 
@@ -117,8 +117,9 @@ trait.count.df <- do.call("rbind", lapply(traits, function(trait) {
   as.data.frame(table(dat$name))
 }))
 
-ggplot(trait.count.df, aes(Var1,Freq,label=Freq)) + geom_bar(stat = "identity") +
-  geom_text(size=3)
+trait.count.df
+
+ggplot(trait.count.df, aes(Var1,Freq,label=Freq)) + geom_bar(stat = "identity") + geom_text(size=3)
 ggsave(paste0("plots/K562_GWAS_trait_variant_count_PIP_",GWAS.pip.thres,".pdf"),width=3,height=3)
 
 GWAS.data <- sort(GWAS.data)
@@ -224,9 +225,10 @@ point.eQTL.df <- do.call("rbind", lapply(names(point.data), function(n) {
              assay=n)
 }))
 
+point.eQTL.df
+
 replicate.eQTL.enrichment.recall.data <- do.call("rbind", lapply(focus.samples, function(sample) {
   
-  print(sample)
   gr <- DLs[DLs$sample==sample]
   
   scores <- sort(unique(gr$score))
@@ -250,10 +252,8 @@ replicate.eQTL.enrichment.recall.data <- do.call("rbind", lapply(focus.samples, 
   }))
 }))
 
-
 pooled.eQTL.enrichment.recall.data <- do.call("rbind", lapply(pooled.focus.samples, function(sample) {
   
-  print(sample)
   gr <- pooled.DLs[pooled.DLs$sample==sample]
   
   scores <- sort(unique(gr$score))
@@ -296,10 +296,10 @@ point.GWAS.df <- do.call("rbind", lapply(names(point.data), function(n) {
              assay=n)
 }))
 
+point.GWAS.df
 
 replicate.GWAS.enrichment.recall.data <- do.call("rbind", lapply(focus.samples, function(sample) {
   
-  print(sample)
   gr <- DLs[DLs$sample==sample]
   
   scores <- sort(unique(gr$score))
@@ -325,7 +325,6 @@ replicate.GWAS.enrichment.recall.data <- do.call("rbind", lapply(focus.samples, 
 
 pooled.GWAS.enrichment.recall.data <- do.call("rbind", lapply(pooled.focus.samples, function(sample) {
   
-  print(sample)
   gr <- pooled.DLs[pooled.DLs$sample==sample]
   
   scores <- sort(unique(gr$score))
@@ -368,9 +367,10 @@ point.CRISPR.df <- do.call("rbind", lapply(names(point.data), function(n) {
              assay=n)
 }))
 
+point.CRISPR.df
+
 replicate.CRISPR.precision.recall.data <- do.call("rbind", lapply(focus.samples, function(sample) {
   
-  print(sample)
   gr <- DLs[DLs$sample==sample]
   
   scores <- sort(unique(gr$score))
@@ -396,7 +396,6 @@ replicate.CRISPR.precision.recall.data <- do.call("rbind", lapply(focus.samples,
 
 pooled.CRISPR.precision.recall.data <- do.call("rbind", lapply(pooled.focus.samples, function(sample) {
   
-  print(sample)
   gr <- pooled.DLs[pooled.DLs$sample==sample]
   
   scores <- sort(unique(gr$score))
@@ -440,11 +439,18 @@ replicate.eQTL.df <- data.frame(mean_enrichment=eQTL.mean.enrichment,
                                 sample=focus.samples,
                                 assay=assay.names)
 
+replicate.eQTL.df
+
 ggplot(replicate.eQTL.df,aes(sample,mean_enrichment)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
 ggsave(paste0("plots/K562_replicate_eQTL_mean_enrichment_PIP_",eQTL.pip.thres,".pdf"),width=1.5,height=3)
 
 ggplot(replicate.eQTL.df,aes(sample,max_recall)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
 ggsave(paste0("plots/K562_replicate_eQTL_max_recall_PIP_",eQTL.pip.thres,".pdf"),width=1.5,height=3)
+
+```
+
+
+```{r}
 
 max.enr <- min(c(max(c(pooled.eQTL.enrichment.recall.data$enrichment,point.eQTL.df$enrichment),na.rm=TRUE),75))
 min.enr <- min(c(pooled.eQTL.enrichment.recall.data$enrichment,point.eQTL.df$enrichment),na.rm=TRUE)
@@ -459,6 +465,8 @@ pooled.eQTL.df <- data.frame(mean_enrichment=eQTL.mean.enrichment,
                              max_recall=eQTL.r,
                              sample=pooled.focus.samples,
                              assay=assay.names)
+
+pooled.eQTL.df
 
 ggplot(pooled.eQTL.df,aes(sample,mean_enrichment)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
 ggsave(paste0("plots/K562_pooled_eQTL_mean_enrichment_PIP_",eQTL.pip.thres,".pdf"),width=1.5,height=3)
@@ -487,11 +495,18 @@ replicate.GWAS.df <- data.frame(mean_enrichment=GWAS.mean.enrichment,
                                 sample=focus.samples,
                                 assay=assay.names)
 
+replicate.GWAS.df
+
 ggplot(replicate.GWAS.df,aes(sample,mean_enrichment)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
 ggsave(paste0("plots/K562_replicate_GWAS_mean_enrichment_PIP_",GWAS.pip.thres,".pdf"),width=1.5,height=3)
 
 ggplot(replicate.GWAS.df,aes(sample,max_recall)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
 ggsave(paste0("plots/K562_replicate_GWAS_max_recall_PIP_",GWAS.pip.thres,".pdf"),width=1.5,height=3)
+
+```
+
+
+```{r}
 
 max.enr <- min(c(max(c(pooled.GWAS.enrichment.recall.data$enrichment,point.GWAS.df$enrichment),na.rm=TRUE),15))
 min.enr <- min(c(pooled.GWAS.enrichment.recall.data$enrichment,point.GWAS.df$enrichment),na.rm=TRUE)
@@ -507,6 +522,8 @@ pooled.GWAS.df <- data.frame(mean_enrichment=GWAS.mean.enrichment,
                              sample=pooled.focus.samples,
                              assay=assay.names)
 
+pooled.GWAS.df
+
 ggplot(pooled.GWAS.df,aes(sample,mean_enrichment)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
 ggsave(paste0("plots/K562_pooled_GWAS_mean_enrichment_PIP_",GWAS.pip.thres,".pdf"),width=1.5,height=3)
 
@@ -520,6 +537,8 @@ Plot CRISPR results
 ```{r}
 
 meena.df <- as.data.frame(rbind(mean.replicate.meena.df,pooled.meena.df))
+
+meena.df
 
 max.prec <- min(c(max(c(replicate.CRISPR.precision.recall.data$precision,point.CRISPR.df$precision),na.rm=TRUE),0.5))
 min.prec <- min(c(replicate.CRISPR.precision.recall.data$precision,point.CRISPR.df$precision),na.rm=TRUE)
