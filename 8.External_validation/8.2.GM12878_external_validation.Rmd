@@ -1,10 +1,10 @@
 ---
-title: "8.1.K562_external_validation"
+title: "8.1.GM12878_external_validation"
 output: html_document
 date: "2024-05-23"
 ---
 
-Evaluation of divergent loci using fine-mapped GWAS variants, fine-mapped eQTLs, and CRISPRi data and comparison to other methods & assays.
+Evaluation of divergent loci using fine-mapped GWAS variants and fine-mapped eQTLs and comparison to other methods & assays.
 
 ```{r}
 
@@ -26,44 +26,34 @@ theme_set(theme_bw(base_size = 10))
 
 ```{r}
 
-pooled.focus.samples <- c("K562_C","K562_N")
-pooled.assay.names <- c("K562_C" = "CAGE divergent loci, cells",
-                        "K562_N" = "CAGE divergent loci, nuclei")
-pooled.DL.file <- "../3.DivergentLoci/poolSub.k562.summitDLs.rmSingletons.rds"
+pooled.focus.samples <- c("GM12878_500K_C","GM12878_5M_N")
+pooled.assay.names <- c("GM12878_500K_C" = "CAGE divergent loci, 500K cells",
+                        "GM12878_5M_N" = "CAGE divergent loci, 5M nuclei")
+pooled.DL.file <- "../3.DivergentLoci/poolSub.GM12878.summitDLs.rmSingletons.rds"
 
-focus.samples = c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6")
-assay.names = c("K562_C1" = "CAGE divergent loci, cells", "K562_C2" = "CAGE divergent loci, cells", "K562_C3" = "CAGE divergent loci, cells",
-                "K562_N4" = "CAGE divergent loci, nuclei", "K562_N5" = "CAGE divergent loci, nuclei", "K562_N6" = "CAGE divergent loci, nuclei")
-DL.file = "../3.DivergentLoci/repSub.k562.summitDLs.rmSingletons.rds"
+focus.samples = c("GM12878_500K_C1","GM12878_500K_C2","GM12878_500K_C3","GM12878_5M_N1","GM12878_5M_N2","GM12878_5M_N3")
+assay.names = c("GM12878_500K_C1" = "CAGE divergent loci, 500K cells", "GM12878_500K_C2" = "CAGE divergent loci, 500K cells", 
+                "GM12878_500K_C3" = "CAGE divergent loci, 500K cells", "GM12878_5M_N1" = "CAGE divergent loci, 5M nuclei", 
+                "GM12878_5M_N2" = "CAGE divergent loci, 5M nuclei", "GM12878_5M_N3" = "CAGE divergent loci, 5M nuclei")
+DL.file = "../3.DivergentLoci/repSub.GM12878.summitDLs.rmSingletons.rds"
 
 SNP.file <- "../0.External_resources/all.bg.SNPs.hg38.baseline.v1.1.bed.sorted"
-eQTL.file <- "../0.External_resources/GTEx_30tissues_release1_pip_01_Whole_Blood.tsv"
+eQTL.file <- "../0.External_resources/GTEx_30tissues_release1_pip_01_Cells_EBV-transformed_lymphocytes.tsv" ## Processed file
 GWAS.file <- "../0.External_resources/UKBB_94traits_release1_pip02_clean_hg38.bed" ## Processed file
 
 eQTL.pip.thres <- 0.5
 GWAS.pip.thres <- 0.2
-traits <- c("Plt","HbA1c","Hb","RBC","MCV","MCH","MCHC")
+traits = c("AID_Combined","Lym","WBC")
 
-cCRE.file <- "../0.External_resources/ENCFF464BRU.bed"
-ENCODErE2Gext.file <- "../0.External_resources/ENCFF202FID.bed.gz"
-ENCODErE2G.file <- "../0.External_resources/ENCFF815ILK.bed.gz"
-point.files <- c("PINTS GRO/PRO-cap, distal" = "../0.External_resources/K562_Distal_PINTS_GRO_PRO_cap.bed",
-                 "PINTS GRO/PRO-cap, proximal" = "../0.External_resources/K562_Proximal_PINTS_GRO_PRO_cap.bed",
-                 "dREG PRO-seq" = "../0.External_resources/GSE150625_PROseq_1M_K562_dREGpeaks_clean.bed",
-                 "dREG qPRO-seq" = "../0.External_resources/GSE150625_qPROseq_1M_K562_dREGpeaks_clean.bed")
+cCRE.file <- "../0.External_resources/ENCFF590IMH.bed"
+ENCODErE2Gext.file <- "../0.External_resources/ENCFF128MZW.bed.gz"
+ENCODErE2G.file <- "../0.External_resources/ENCFF162ADG.bed.gz"
+point.files <- c("PINTS GRO/PRO-cap, distal" = "../0.External_resources/GM12878_Distal_PINTS_GRO_PRO_cap.bed",
+                 "PINTS GRO/PRO-cap, proximal" = "../0.External_resources/GM12878_Proximal_PINTS_GRO_PRO_cap.bed")
 
 FANTOM5.file <- "../0.External_resources/F5.hg38.enhancers.expression.matrix.gz"
 FANTOM5.enhancers.file <- "../0.External_resources/F5.hg38.enhancers.bed.gz"
-FANTOM5.id <- "CNhs12334"
-
-CRISPR.pos.file <- "../5.EPCrisprBenchmark/1.EPC.pos.gr.rds"
-CRISPR.neg.file <- "../5.EPCrisprBenchmark/1.EPC.neg.notsig.gr.rds"
-
-meena.thres <- 0.5
-meena.pool.pos.file <- "../5.EPCrisprBenchmark/4.3.pos.proba.poolSub.csv"
-meena.pool.neg.file <- "../5.EPCrisprBenchmark/4.3.neg.proba.poolSub.csv"
-meena.rep.pos.file <- "../5.EPCrisprBenchmark/4.3.pos.proba.repSub.csv"
-meena.rep.neg.file <- "../5.EPCrisprBenchmark/4.3.neg.proba.repSub.csv"
+FANTOM5.id <- "CNhs12331"
 
 ```
 
@@ -126,7 +116,7 @@ trait.count.df <- do.call("rbind", lapply(traits, function(trait) {
 trait.count.df
 
 ggplot(trait.count.df, aes(Var1,Freq,label=Freq)) + geom_bar(stat = "identity") + geom_text(size=3)
-ggsave(paste0("plots/K562_GWAS_trait_variant_count_PIP_",GWAS.pip.thres,".pdf"),width=3,height=3)
+ggsave(paste0("plots/GM12878_GWAS_trait_variant_count_PIP_",GWAS.pip.thres,".pdf"),width=3,height=3)
 
 GWAS.data <- sort(GWAS.data)
 GWAS.data$score <- NULL
@@ -174,49 +164,6 @@ for (n in names(point.data)) {
   olap <- findOverlaps(point.data[[n]],cds,minoverlap = 1)
   point.data[[n]] <- point.data[[n]][-queryHits(olap)]
 }
-
-## CRISPR data
-CRISPR.pos.data <- readRDS(CRISPR.pos.file)
-CRISPR.neg.data <- readRDS(CRISPR.neg.file)
-
-## Meena predictions
-meena.pool.pos <- read_csv(meena.pool.pos.file,show_col_types=FALSE)
-meena.pool.neg <- read_csv(meena.pool.neg.file,show_col_types=FALSE)
-meena.rep.pos <- read_csv(meena.rep.pos.file,show_col_types=FALSE)
-meena.rep.neg <- read_csv(meena.rep.neg.file,show_col_types=FALSE)
-
-meena.pooled.focus <- c("C" = "Meena pooled, cells", "N" = "Meena pooled, nuclei")
-pooled.meena.df <- do.call("rbind", lapply(names(meena.pooled.focus), function(n) {
-  fg.count <- sum(meena.pool.pos[,n]>=meena.thres,na.rm=TRUE)
-  bg.count <- sum(meena.pool.neg[,n]>=meena.thres,na.rm=TRUE)
-  data.frame(precision = fg.count / (fg.count + bg.count),
-             recall = fg.count / nrow(meena.pool.pos),
-             fg.count = fg.count,
-             bg.count = bg.count,
-             assay = meena.pooled.focus[n])
-}))
-
-meena.replicate.focus <- c("C1" = "Meena replicate, cells", "C2" = "Meena replicate, cells", 
-                           "C3" = "Meena replicate, cells", "N4" = "Meena replicate, nuclei", 
-                           "N5" = "Meena replicate, nuclei", "N6" = "Meena replicate, nuclei")
-replicate.meena.df <- do.call("rbind", lapply(names(meena.replicate.focus), function(n) {
-  fg.count <- sum(meena.rep.pos[,n]>=meena.thres,na.rm=TRUE)
-  bg.count <- sum(meena.rep.neg[,n]>=meena.thres,na.rm=TRUE)
-  data.frame(precision = fg.count / (fg.count + bg.count),
-             recall = fg.count / nrow(meena.rep.pos),
-             fg.count = fg.count,
-             bg.count = bg.count,
-             assay = meena.replicate.focus[n])
-}))
-
-mean.replicate.meena.df <- do.call("rbind", lapply(unique(meena.replicate.focus), function(n) {
-  x <- subset(replicate.meena.df, assay==n)
-  data.frame(precision = mean(x$precision),
-             recall = mean(x$recall),
-             fg.count = mean(x$fg.count),
-             bg.count = mean(x$bg.count),
-             assay = n)
-}))
 
 ```
 Calculate eQTL enrichment and recall
@@ -363,76 +310,6 @@ pooled.GWAS.enrichment.recall.data <- do.call("rbind", lapply(pooled.focus.sampl
 
 ```
 
-Calculate CRISPR precision and recall
-
-```{r}
-
-point.CRISPR.df <- do.call("rbind", lapply(names(point.data), function(n) {
-  fg.olap <- findOverlaps(CRISPR.pos.data, point.data[[n]], minoverlap=1)
-  bg.olap <- findOverlaps(CRISPR.neg.data, point.data[[n]], minoverlap=1)
-  fg.count <- length(unique(queryHits(fg.olap)))
-  bg.count <- length(unique(queryHits(bg.olap)))
-  data.frame(precision=fg.count/(fg.count+bg.count),
-             recall=fg.count/length(CRISPR.pos.data),
-             fg.count=fg.count,
-             bg.count=bg.count,
-             assay=n)
-}))
-
-point.CRISPR.df
-
-replicate.CRISPR.precision.recall.data <- do.call("rbind", lapply(focus.samples, function(sample) {
-  
-  gr <- DLs[DLs$sample==sample]
-  
-  scores <- sort(unique(gr$score))
-  
-  gr.fg.olap <- findOverlaps(CRISPR.pos.data, gr, minoverlap=1)
-  gr.bg.olap <- findOverlaps(CRISPR.neg.data, gr, minoverlap=1)
-  
-  do.call("rbind", lapply(scores, function(sco) {
-    
-    selection <- which(gr$score>=sco)
-    fg.count <- length(unique(queryHits(gr.fg.olap)[which(subjectHits(gr.fg.olap) %in% selection)]))
-    bg.count <- length(unique(queryHits(gr.bg.olap)[which(subjectHits(gr.bg.olap) %in% selection)]))
-    
-    data.frame(precision=fg.count/(fg.count+bg.count),
-               recall=fg.count/length(CRISPR.pos.data),
-               fg.count=fg.count,
-               bg.count=bg.count,
-               score=sco,
-               sample=sample,
-               assay=assay.names[sample])
-  }))
-}))
-
-pooled.CRISPR.precision.recall.data <- do.call("rbind", lapply(pooled.focus.samples, function(sample) {
-  
-  gr <- pooled.DLs[pooled.DLs$sample==sample]
-  
-  scores <- sort(unique(gr$score))
-  
-  gr.fg.olap <- findOverlaps(CRISPR.pos.data, gr, minoverlap=1)
-  gr.bg.olap <- findOverlaps(CRISPR.neg.data, gr, minoverlap=1)
-  
-  do.call("rbind", lapply(scores, function(sco) {
-    
-    selection <- which(gr$score>=sco)
-    fg.count <- length(unique(queryHits(gr.fg.olap)[which(subjectHits(gr.fg.olap) %in% selection)]))
-    bg.count <- length(unique(queryHits(gr.bg.olap)[which(subjectHits(gr.bg.olap) %in% selection)]))
-    
-    data.frame(precision=fg.count/(fg.count+bg.count),
-               recall=fg.count/length(CRISPR.pos.data),
-               fg.count=fg.count,
-               bg.count=bg.count,
-               score=sco,
-               sample=sample,
-               assay=pooled.assay.names[sample])
-  }))
-}))
-
-
-```
 Plot eQTL results
 
 ```{r}
@@ -442,7 +319,7 @@ min.enr <- min(c(replicate.eQTL.enrichment.recall.data$enrichment,point.eQTL.df$
 
 ggplot(replicate.eQTL.enrichment.recall.data, aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
   coord_cartesian(ylim=c(min.enr,max.enr)) + geom_point(data=point.eQTL.df)
-ggsave(paste0("plots/K562_replicate_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,".pdf"),width=7,height=5)
+ggsave(paste0("plots/GM12878_replicate_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,".pdf"),width=7,height=5)
 
 eQTL.r <- sapply(focus.samples, function(n) max(subset(replicate.eQTL.enrichment.recall.data,sample==n)$recall,na.rm=TRUE))
 eQTL.mean.enrichment <- sapply(focus.samples, function(n) mean(subset(replicate.eQTL.enrichment.recall.data,sample==n & recall<=min(eQTL.r))$enrichment, na.rm=TRUE))
@@ -454,10 +331,10 @@ replicate.eQTL.df <- data.frame(mean_enrichment=eQTL.mean.enrichment,
 replicate.eQTL.df
 
 ggplot(replicate.eQTL.df,aes(sample,mean_enrichment)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
-ggsave(paste0("plots/K562_replicate_eQTL_mean_enrichment_PIP_",eQTL.pip.thres,".pdf"),width=1.5,height=3)
+ggsave(paste0("plots/GM12878_replicate_eQTL_mean_enrichment_PIP_",eQTL.pip.thres,".pdf"),width=1.5,height=3)
 
 ggplot(replicate.eQTL.df,aes(sample,max_recall)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
-ggsave(paste0("plots/K562_replicate_eQTL_max_recall_PIP_",eQTL.pip.thres,".pdf"),width=1.5,height=3)
+ggsave(paste0("plots/GM12878_replicate_eQTL_max_recall_PIP_",eQTL.pip.thres,".pdf"),width=1.5,height=3)
 
 ```
 
@@ -469,7 +346,7 @@ min.enr <- min(c(pooled.eQTL.enrichment.recall.data$enrichment,point.eQTL.df$enr
 
 ggplot(pooled.eQTL.enrichment.recall.data, aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
   coord_cartesian(ylim=c(min.enr,max.enr)) + geom_point(data=point.eQTL.df)
-ggsave(paste0("plots/K562_pooled_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,".pdf"),width=7,height=5)
+ggsave(paste0("plots/GM12878_pooled_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,".pdf"),width=7,height=5)
 
 eQTL.r <- sapply(pooled.focus.samples, function(n) max(subset(pooled.eQTL.enrichment.recall.data,sample==n)$recall,na.rm=TRUE))
 eQTL.mean.enrichment <- sapply(pooled.focus.samples, function(n) mean(subset(pooled.eQTL.enrichment.recall.data,sample==n & recall<=min(eQTL.r))$enrichment, na.rm=TRUE))
@@ -481,10 +358,10 @@ pooled.eQTL.df <- data.frame(mean_enrichment=eQTL.mean.enrichment,
 pooled.eQTL.df
 
 ggplot(pooled.eQTL.df,aes(sample,mean_enrichment)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
-ggsave(paste0("plots/K562_pooled_eQTL_mean_enrichment_PIP_",eQTL.pip.thres,".pdf"),width=1.5,height=3)
+ggsave(paste0("plots/GM12878_pooled_eQTL_mean_enrichment_PIP_",eQTL.pip.thres,".pdf"),width=1.5,height=3)
 
 ggplot(pooled.eQTL.df,aes(sample,max_recall)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
-ggsave(paste0("plots/K562_pooled_eQTL_max_recall_PIP_",eQTL.pip.thres,".pdf"),width=1.5,height=3)
+ggsave(paste0("plots/GM12878_pooled_eQTL_max_recall_PIP_",eQTL.pip.thres,".pdf"),width=1.5,height=3)
 
 
 ```
@@ -498,7 +375,7 @@ min.enr <- min(c(replicate.GWAS.enrichment.recall.data$enrichment,point.GWAS.df$
 
 ggplot(replicate.GWAS.enrichment.recall.data, aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
   coord_cartesian(ylim=c(min.enr,max.enr)) + geom_point(data=point.GWAS.df)
-ggsave(paste0("plots/K562_replicate_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,".pdf"),width=7,height=5)
+ggsave(paste0("plots/GM12878_replicate_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,".pdf"),width=7,height=5)
 
 GWAS.r <- sapply(focus.samples, function(n) max(subset(replicate.GWAS.enrichment.recall.data,sample==n)$recall,na.rm=TRUE))
 GWAS.mean.enrichment <- sapply(focus.samples, function(n) mean(subset(replicate.GWAS.enrichment.recall.data,sample==n & recall<=min(GWAS.r))$enrichment, na.rm=TRUE))
@@ -510,10 +387,10 @@ replicate.GWAS.df <- data.frame(mean_enrichment=GWAS.mean.enrichment,
 replicate.GWAS.df
 
 ggplot(replicate.GWAS.df,aes(sample,mean_enrichment)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
-ggsave(paste0("plots/K562_replicate_GWAS_mean_enrichment_PIP_",GWAS.pip.thres,".pdf"),width=1.5,height=3)
+ggsave(paste0("plots/GM12878_replicate_GWAS_mean_enrichment_PIP_",GWAS.pip.thres,".pdf"),width=1.5,height=3)
 
 ggplot(replicate.GWAS.df,aes(sample,max_recall)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
-ggsave(paste0("plots/K562_replicate_GWAS_max_recall_PIP_",GWAS.pip.thres,".pdf"),width=1.5,height=3)
+ggsave(paste0("plots/GM12878_replicate_GWAS_max_recall_PIP_",GWAS.pip.thres,".pdf"),width=1.5,height=3)
 
 ```
 
@@ -525,7 +402,7 @@ min.enr <- min(c(pooled.GWAS.enrichment.recall.data$enrichment,point.GWAS.df$enr
 
 ggplot(pooled.GWAS.enrichment.recall.data, aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
   coord_cartesian(ylim=c(min.enr,max.enr)) + geom_point(data=point.GWAS.df)
-ggsave(paste0("plots/K562_pooled_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,".pdf"),width=7,height=5)
+ggsave(paste0("plots/GM12878_pooled_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,".pdf"),width=7,height=5)
 
 GWAS.r <- sapply(pooled.focus.samples, function(n) max(subset(pooled.GWAS.enrichment.recall.data,sample==n)$recall,na.rm=TRUE))
 GWAS.mean.enrichment <- sapply(pooled.focus.samples, function(n) mean(subset(pooled.GWAS.enrichment.recall.data,sample==n & recall<=min(GWAS.r))$enrichment, na.rm=TRUE))
@@ -537,35 +414,10 @@ pooled.GWAS.df <- data.frame(mean_enrichment=GWAS.mean.enrichment,
 pooled.GWAS.df
 
 ggplot(pooled.GWAS.df,aes(sample,mean_enrichment)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
-ggsave(paste0("plots/K562_pooled_GWAS_mean_enrichment_PIP_",GWAS.pip.thres,".pdf"),width=1.5,height=3)
+ggsave(paste0("plots/GM12878_pooled_GWAS_mean_enrichment_PIP_",GWAS.pip.thres,".pdf"),width=1.5,height=3)
 
 ggplot(pooled.GWAS.df,aes(sample,max_recall)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
-ggsave(paste0("plots/K562_pooled_GWAS_max_recall_PIP_",GWAS.pip.thres,".pdf"),width=1.5,height=3)
-
-```
-
-Plot CRISPR results
-
-```{r}
-
-meena.df <- as.data.frame(rbind(mean.replicate.meena.df,pooled.meena.df))
-meena.df
-
-max.prec <- min(c(max(c(replicate.CRISPR.precision.recall.data$precision,point.CRISPR.df$precision),na.rm=TRUE),0.5))
-min.prec <- min(c(replicate.CRISPR.precision.recall.data$precision,point.CRISPR.df$precision),na.rm=TRUE)
-
-ggplot(replicate.CRISPR.precision.recall.data, aes(recall, precision, color=assay)) + geom_line(aes(group=sample)) +
-  coord_cartesian(ylim=c(min.prec,max.prec)) + geom_point(data=point.CRISPR.df) + geom_point(data=mean.replicate.meena.df) #+ 
-  #geom_text(aes(recall,precision,label=assay),data=mean.replicate.meena.df,size=2)
-ggsave("plots/K562_replicate_CRISPR_precision_vs_recall.pdf",width=7,height=5)
-
-max.prec <- min(c(max(c(pooled.CRISPR.precision.recall.data$precision,point.CRISPR.df$precision),na.rm=TRUE),0.5))
-min.prec <- min(c(pooled.CRISPR.precision.recall.data$precision,point.CRISPR.df$precision),na.rm=TRUE)
-
-ggplot(pooled.CRISPR.precision.recall.data, aes(recall, precision, color=assay)) + geom_line(aes(group=sample)) +
-  coord_cartesian(ylim=c(min.prec,max.prec)) + geom_point(data=rbind(point.CRISPR.df,pooled.meena.df)) #+ 
-  #geom_text(aes(recall,precision,label=assay),data=pooled.meena.df,size=2)
-ggsave("plots/K562_pooled_CRISPR_precision_vs_recall.pdf",width=7,height=5)
+ggsave(paste0("plots/GM12878_pooled_GWAS_max_recall_PIP_",GWAS.pip.thres,".pdf"),width=1.5,height=3)
 
 ```
 
