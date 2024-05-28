@@ -1,7 +1,7 @@
 ---
 title: "8.1.K562_external_validation"
 output: html_document
-date: "2024-05-23"
+date: "2024-05-27"
 ---
 
 Evaluation of divergent loci using fine-mapped GWAS variants, fine-mapped eQTLs, and CRISPRi data and comparison to other methods & assays.
@@ -18,6 +18,7 @@ library(GenomicFeatures)
 library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 library(SummarizedExperiment)
 library(tibble)
+library(ggrepel)
 
 theme_set(theme_bw(base_size = 10))
 
@@ -27,34 +28,37 @@ theme_set(theme_bw(base_size = 10))
 ```{r}
 
 pooled.focus.samples <- c("K562_C","K562_N")
-pooled.assay.names <- c("K562_C" = "CAGE divergent loci, cells",
-                        "K562_N" = "CAGE divergent loci, nuclei")
+pooled.assay.names <- c("K562_C" = "CAGE divergent loci cells",
+                        "K562_N" = "CAGE divergent loci nuclei")
 pooled.DL.file <- "../3.DivergentLoci/poolSub.k562.summitDLs.rmSingletons.rds"
+pooled.noise.file <- "../9.Noise/K562.poolSub.divnoise.csv"
 
 focus.samples = c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6")
-assay.names = c("K562_C1" = "CAGE divergent loci, cells", "K562_C2" = "CAGE divergent loci, cells", "K562_C3" = "CAGE divergent loci, cells",
-                "K562_N4" = "CAGE divergent loci, nuclei", "K562_N5" = "CAGE divergent loci, nuclei", "K562_N6" = "CAGE divergent loci, nuclei")
+assay.names = c("K562_C1" = "CAGE divergent loci cells", "K562_C2" = "CAGE divergent loci cells", "K562_C3" = "CAGE divergent loci cells",
+                "K562_N4" = "CAGE divergent loci nuclei", "K562_N5" = "CAGE divergent loci nuclei", "K562_N6" = "CAGE divergent loci nuclei")
 DL.file = "../3.DivergentLoci/repSub.k562.summitDLs.rmSingletons.rds"
+
+resize.width <- 200
 
 SNP.file <- "../0.External_resources/all.bg.SNPs.hg38.baseline.v1.1.bed.sorted"
 eQTL.file <- "../0.External_resources/GTEx_30tissues_release1_pip_01_Whole_Blood.tsv"
-GWAS.file <- "../0.External_resources/UKBB_94traits_release1_pip02_clean_hg38.bed" ## Processed file
+GWAS.file <- "../0.External_resources/UKBB_94traits_release1_pip02_clean_hg38.bed"
 
 eQTL.pip.thres <- 0.5
 GWAS.pip.thres <- 0.2
 traits <- c("Plt","HbA1c","Hb","RBC","MCV","MCH","MCHC")
 
-cCRE.file <- "../0.External_resources/ENCFF464BRU.bed"
-ENCODErE2Gext.file <- "../0.External_resources/ENCFF202FID.bed.gz"
-ENCODErE2G.file <- "../0.External_resources/ENCFF815ILK.bed.gz"
-point.files <- c("PINTS GRO/PRO-cap, distal" = "../0.External_resources/K562_Distal_PINTS_GRO_PRO_cap.bed",
-                 "PINTS GRO/PRO-cap, proximal" = "../0.External_resources/K562_Proximal_PINTS_GRO_PRO_cap.bed",
-                 "dREG PRO-seq" = "../0.External_resources/GSE150625_PROseq_1M_K562_dREGpeaks_clean.bed",
-                 "dREG qPRO-seq" = "../0.External_resources/GSE150625_qPROseq_1M_K562_dREGpeaks_clean.bed")
+#cCRE.file <- "../0.External_resources/ENCFF464BRU.bed"
 
-FANTOM5.file <- "../0.External_resources/F5.hg38.enhancers.expression.matrix.gz"
-FANTOM5.enhancers.file <- "../0.External_resources/F5.hg38.enhancers.bed.gz"
-FANTOM5.id <- "CNhs12334"
+PINTS.files <- c("PINTS GRO/PRO-cap distal" = "../0.External_resources/K562_Distal_PINTS_GRO_PRO_cap.bed",
+                 "PINTS GRO/PRO-cap proximal" = "../0.External_resources/K562_Proximal_PINTS_GRO_PRO_cap.bed")
+
+dREG.files <- c("dREG PRO-seq" = "../0.External_resources/GSE150625_PROseq_1M_K562_dREGpeaks_clean.bed",
+                "dREG qPRO-seq" = "../0.External_resources/GSE150625_qPROseq_1M_K562_dREGpeaks_clean.bed")
+
+# FANTOM5.file <- "../0.External_resources/F5.hg38.enhancers.expression.matrix.gz"
+# FANTOM5.enhancers.file <- "../0.External_resources/F5.hg38.enhancers.bed.gz"
+# FANTOM5.id <- "CNhs12334"
 
 CRISPR.pos.file <- "../5.EPCrisprBenchmark/1.EPC.pos.gr.rds"
 CRISPR.neg.file <- "../5.EPCrisprBenchmark/1.EPC.neg.notsig.gr.rds"
@@ -74,6 +78,7 @@ Read in data
 
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 cds <- unlist(cdsBy(txdb,"gene"))
+promoters <- promoters(txdb,upstream=500,downstream=500)
 
 ## Background SNPs
 SNP.data <- import.bed(SNP.file)
@@ -87,6 +92,12 @@ if (is.list(DLs))
   DLs <- do.call("c",DLs)
 seqlevels(DLs, pruning.mode="coarse") <- seqlevels(SNP.data)
 DLs <- DLs[DLs$sample %in% focus.samples]
+DLs <- resize(DLs, width=resize.width, fix="center")
+
+dlc <- rep("distal",length(DLs))
+olap <- findOverlaps(DLs,promoters,minoverlap = 1)
+dlc[queryHits(olap)] <- "proximal"
+DLs$class <- dlc
 
 ## Divergent loci from pooled samples
 pooled.DLs <- readRDS(pooled.DL.file)
@@ -94,6 +105,16 @@ if (is.list(pooled.DLs))
   pooled.DLs <- do.call("c",pooled.DLs)
 seqlevels(pooled.DLs, pruning.mode="coarse") <- seqlevels(SNP.data)
 pooled.DLs <- pooled.DLs[pooled.DLs$sample %in% pooled.focus.samples]
+pooled.DLs <- resize(pooled.DLs, width=resize.width, fix="center")
+
+dlc <- rep("distal",length(pooled.DLs))
+olap <- findOverlaps(pooled.DLs,promoters,minoverlap = 1)
+dlc[queryHits(olap)] <- "proximal"
+pooled.DLs$class <- dlc
+
+## noise estimates
+pooled.noise.thresholds <- read_csv(pooled.noise.file,col_names=TRUE,show_col_types=FALSE)
+pooled.noise.thresholds <- pooled.noise.thresholds[pooled.noise.thresholds[,1]=="95%",pooled.focus.samples]
 
 ## eQTL data
 eQTL.data <- read_tsv(eQTL.file,col_names=FALSE,show_col_types=FALSE)[,c(1,3)]
@@ -125,9 +146,6 @@ trait.count.df <- do.call("rbind", lapply(traits, function(trait) {
 
 trait.count.df
 
-ggplot(trait.count.df, aes(Var1,Freq,label=Freq)) + geom_bar(stat = "identity") + geom_text(size=3)
-ggsave(paste0("plots/K562_GWAS_trait_variant_count_PIP_",GWAS.pip.thres,".pdf"),width=3,height=3)
-
 GWAS.data <- sort(GWAS.data)
 GWAS.data$score <- NULL
 GWAS.data$name <- NULL
@@ -135,45 +153,78 @@ GWAS.data <- unique(GWAS.data)
 
 ## Point estimate data
 
-point.data <- lapply(names(point.files), function(n) import.bed(point.files[[n]]))
-names(point.data) <- names(point.files)
+point.data <- lapply(names(PINTS.files), function(n) import.bed(PINTS.files[[n]]))
+names(point.data) <- names(PINTS.files)
+point.data[["PINTS GRO/PRO-cap"]] <- c(point.data[[1]],point.data[[2]])
 
-cCRE <- read_tsv(cCRE.file,col_names=FALSE,show_col_types=FALSE)
-df <- cCRE[,1:3]
-colnames(df) <- c("chrom","start","end")
-cCRE.data <- makeGRangesFromDataFrame(df)
-cCRE.data$class = cCRE[,10,drop=TRUE]
-
-for (n in c("dELS","pELS","PLS")) {
-  x <- subset(cCRE.data,class==n)
-  x$class <- NULL
-  point.data[[paste0("ENCODE cCRE, ",n)]] <- x
+for (n in names(dREG.files)) {
+  gr <- import.bed(dREG.files[n])
+  seqlevels(gr,pruning.mode="coarse") <- seqlevels(SNP.data)
+  olap <- findOverlaps(gr, promoters, minoverlap = 1)
+  gr.proximal <- gr[unique(queryHits(olap))]
+  gr.distal <- gr[setdiff(1:length(gr), queryHits(olap))]
+  point.data[[n]] <- gr
+  point.data[[paste0(n," distal")]] <- gr.distal
+  point.data[[paste0(n," proximal")]] <- gr.proximal
 }
 
-ENCODErE2G <- read_tsv(ENCODErE2G.file,show_col_types=FALSE)
-ENCODErE2G <- subset(ENCODErE2G, !isSelfPromoter & (class != "promoter"))
-ENCODErE2G <- makeGRangesFromDataFrame(ENCODErE2G,seqnames.field = "#chr")
+# cCRE <- read_tsv(cCRE.file,col_names=FALSE,show_col_types=FALSE)
+# df <- cCRE[,1:3]
+# colnames(df) <- c("chrom","start","end")
+# cCRE.data <- makeGRangesFromDataFrame(df)
+# cCRE.data$class = cCRE[,10,drop=TRUE]
+# 
+# for (n in c("dELS","PLS")) {
+#   x <- subset(cCRE.data,class==n)
+#   x$class <- NULL
+#   point.data[[paste0("ENCODE cCRE ",n)]] <- x
+# }
+# point.data[["ENCODE cCRE"]] <- c(point.data[["ENCODE cCRE dELS"]],point.data[["ENCODE cCRE PLS"]])
 
-ENCODErE2Gext <- read_tsv(ENCODErE2Gext.file,show_col_types=FALSE)
-ENCODErE2Gext <- subset(ENCODErE2Gext, !isSelfPromoter & (class != "promoter"))
-ENCODErE2Gext <- makeGRangesFromDataFrame(ENCODErE2Gext,seqnames.field = "#chr")
+# header <- colnames(read_tsv(FANTOM5.file,n_max=1,show_col_types=FALSE))
+# FANTOM5.data <- read_tsv(FANTOM5.file,skip=1,col_names=FALSE,show_col_types=FALSE)[,c(1,match(FANTOM5.id,header)+1)]
+# FANTOM5.enhancers <- flank(swapRanges(import.bed(FANTOM5.enhancers.file)),200,both=TRUE)
+# FANTOM5.enhancers <- FANTOM5.enhancers[FANTOM5.enhancers$name %in% deframe(FANTOM5.data[FANTOM5.data[2]>0,1])]
+# point.data[["FANTOM5 enhancers"]] <- FANTOM5.enhancers
 
-point.data[["ENCODE-rE2G"]] <- ENCODErE2G
-point.data[["ENCODE-rE2G (extended)"]] <- ENCODErE2Gext
+for (sample in pooled.focus.samples) {
+  gr <- pooled.DLs[pooled.DLs$sample==sample]
+  gr <- gr[which(gr$score > deframe(pooled.noise.thresholds[,sample]))]
+  point.data[[sample]] <- gr
 
-header <- colnames(read_tsv(FANTOM5.file,n_max=1,show_col_types=FALSE))
-FANTOM5.data <- read_tsv(FANTOM5.file,skip=1,col_names=FALSE,show_col_types=FALSE)[,c(1,match(FANTOM5.id,header)+1)]
-FANTOM5.enhancers <- flank(swapRanges(import.bed(FANTOM5.enhancers.file)),200,both=TRUE)
-FANTOM5.enhancers <- FANTOM5.enhancers[FANTOM5.enhancers$name %in% deframe(FANTOM5.data[FANTOM5.data[2]>0,1])]
-point.data[["FANTOM5 enhancers"]] <- FANTOM5.enhancers
+  gr <- pooled.DLs[pooled.DLs$sample==sample & pooled.DLs$class=="distal"]
+  gr <- gr[which(gr$score > deframe(pooled.noise.thresholds[,sample]))]
+  point.data[[paste0(sample," distal")]] <- gr
+
+  gr <- pooled.DLs[pooled.DLs$sample==sample & pooled.DLs$class=="proximal"]
+  gr <- gr[which(gr$score > deframe(pooled.noise.thresholds[,sample]))]
+  point.data[[paste0(sample," proximal")]] <- gr
+}
 
 for (n in names(point.data)) {
   point.data[[n]] <- sort(point.data[[n]])
   seqlevels(point.data[[n]],pruning.mode="coarse") <- seqlevels(SNP.data)
+  point.data[[n]] <- resize(point.data[[n]], width=resize.width, fix="center")
   point.data[[n]] <- reduce(point.data[[n]])
-  olap <- findOverlaps(point.data[[n]],cds,minoverlap = 1)
-  point.data[[n]] <- point.data[[n]][-queryHits(olap)]
 }
+
+point.data.assay <- names(point.data)
+for (n in pooled.focus.samples) {
+  idx <- grep(n,point.data.assay)
+  point.data.assay[idx] <- gsub(n,pooled.assay.names[n],point.data.assay[idx])
+}
+
+point.data.loc <- rep("genome",length(point.data.assay))
+point.data.loc[grep("distal",point.data.assay)] <- "distal"
+point.data.loc[grep("proximal",point.data.assay)] <- "proximal"
+# point.data.loc[which(point.data.assay == "FANTOM5 enhancers")] <- "distal"
+# point.data.loc[which(point.data.assay == "ENCODE cCRE dELS")] <- "distal"
+# point.data.loc[c(which(point.data.assay == "ENCODE cCRE PLS"),which(point.data.assay == "ENCODE cCRE pELS"))] <- "proximal"
+
+#point.data.assay <- gsub(" distal", "", gsub(" proximal", "", gsub(" PLS", "", gsub(" dELS","",point.data.assay))))
+point.data.assay <- gsub(" distal", "", gsub(" proximal", "", point.data.assay))
+
+names(point.data.assay) <- names(point.data.loc) <- names(point.data)
 
 ## CRISPR data
 CRISPR.pos.data <- readRDS(CRISPR.pos.file)
@@ -185,7 +236,7 @@ meena.pool.neg <- read_csv(meena.pool.neg.file,show_col_types=FALSE)
 meena.rep.pos <- read_csv(meena.rep.pos.file,show_col_types=FALSE)
 meena.rep.neg <- read_csv(meena.rep.neg.file,show_col_types=FALSE)
 
-meena.pooled.focus <- c("C" = "Meena pooled, cells", "N" = "Meena pooled, nuclei")
+meena.pooled.focus <- c("C" = "Meena pooled cells", "N" = "Meena pooled nuclei")
 pooled.meena.df <- do.call("rbind", lapply(names(meena.pooled.focus), function(n) {
   fg.count <- sum(meena.pool.pos[,n]>=meena.thres,na.rm=TRUE)
   bg.count <- sum(meena.pool.neg[,n]>=meena.thres,na.rm=TRUE)
@@ -193,12 +244,14 @@ pooled.meena.df <- do.call("rbind", lapply(names(meena.pooled.focus), function(n
              recall = fg.count / nrow(meena.pool.pos),
              fg.count = fg.count,
              bg.count = bg.count,
-             assay = meena.pooled.focus[n])
+             assay = meena.pooled.focus[n],
+             loc = "distal",
+             sample = meena.pooled.focus[n])
 }))
 
-meena.replicate.focus <- c("C1" = "Meena replicate, cells", "C2" = "Meena replicate, cells", 
-                           "C3" = "Meena replicate, cells", "N4" = "Meena replicate, nuclei", 
-                           "N5" = "Meena replicate, nuclei", "N6" = "Meena replicate, nuclei")
+meena.replicate.focus <- c("C1" = "Meena replicate cells", "C2" = "Meena replicate cells", 
+                           "C3" = "Meena replicate cells", "N4" = "Meena replicate nuclei", 
+                           "N5" = "Meena replicate nuclei", "N6" = "Meena replicate nuclei")
 replicate.meena.df <- do.call("rbind", lapply(names(meena.replicate.focus), function(n) {
   fg.count <- sum(meena.rep.pos[,n]>=meena.thres,na.rm=TRUE)
   bg.count <- sum(meena.rep.neg[,n]>=meena.thres,na.rm=TRUE)
@@ -206,7 +259,9 @@ replicate.meena.df <- do.call("rbind", lapply(names(meena.replicate.focus), func
              recall = fg.count / nrow(meena.rep.pos),
              fg.count = fg.count,
              bg.count = bg.count,
-             assay = meena.replicate.focus[n])
+             assay = meena.replicate.focus[n],
+             loc = "distal",
+             sample = n)
 }))
 
 mean.replicate.meena.df <- do.call("rbind", lapply(unique(meena.replicate.focus), function(n) {
@@ -215,7 +270,9 @@ mean.replicate.meena.df <- do.call("rbind", lapply(unique(meena.replicate.focus)
              recall = mean(x$recall),
              fg.count = mean(x$fg.count),
              bg.count = mean(x$bg.count),
-             assay = n)
+             assay = n,
+             loc = "distal",
+             sample = n)
 }))
 
 ```
@@ -234,7 +291,9 @@ point.eQTL.df <- do.call("rbind", lapply(names(point.data), function(n) {
              recall=fg.count/length(eQTL.data),
              fg.count=fg.count,
              bg.count=bg.count,
-             assay=n)
+             sample=n,
+             assay=point.data.assay[n],
+             loc=point.data.loc[n])
 }))
 
 point.eQTL.df
@@ -305,7 +364,10 @@ point.GWAS.df <- do.call("rbind", lapply(names(point.data), function(n) {
              recall=fg.count/length(GWAS.data),
              fg.count=fg.count,
              bg.count=bg.count,
-             assay=n)
+             sample=n,
+             assay=point.data.assay[n],
+             loc=point.data.loc[n])
+
 }))
 
 point.GWAS.df
@@ -376,7 +438,9 @@ point.CRISPR.df <- do.call("rbind", lapply(names(point.data), function(n) {
              recall=fg.count/length(CRISPR.pos.data),
              fg.count=fg.count,
              bg.count=bg.count,
-             assay=n)
+             sample=n,
+             assay=point.data.assay[n],
+             loc=point.data.loc[n])
 }))
 
 point.CRISPR.df
@@ -437,11 +501,11 @@ Plot eQTL results
 
 ```{r}
 
-max.enr <- min(c(max(c(replicate.eQTL.enrichment.recall.data$enrichment,point.eQTL.df$enrichment),na.rm=TRUE),75))
+max.enr <- min(c(max(c(replicate.eQTL.enrichment.recall.data$enrichment,point.eQTL.df$enrichment),na.rm=TRUE),90))
 min.enr <- min(c(replicate.eQTL.enrichment.recall.data$enrichment,point.eQTL.df$enrichment),na.rm=TRUE)
 
 ggplot(replicate.eQTL.enrichment.recall.data, aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
-  coord_cartesian(ylim=c(min.enr,max.enr)) + geom_point(data=point.eQTL.df)
+  coord_cartesian(ylim=c(min.enr,max.enr)) + theme(aspect.ratio=1)
 ggsave(paste0("plots/K562_replicate_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,".pdf"),width=7,height=5)
 
 eQTL.r <- sapply(focus.samples, function(n) max(subset(replicate.eQTL.enrichment.recall.data,sample==n)$recall,na.rm=TRUE))
@@ -453,39 +517,52 @@ replicate.eQTL.df <- data.frame(mean_enrichment=eQTL.mean.enrichment,
 
 replicate.eQTL.df
 
-ggplot(replicate.eQTL.df,aes(sample,mean_enrichment)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
-ggsave(paste0("plots/K562_replicate_eQTL_mean_enrichment_PIP_",eQTL.pip.thres,".pdf"),width=1.5,height=3)
-
-ggplot(replicate.eQTL.df,aes(sample,max_recall)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
-ggsave(paste0("plots/K562_replicate_eQTL_max_recall_PIP_",eQTL.pip.thres,".pdf"),width=1.5,height=3)
-
 ```
 
 
 ```{r}
 
-max.enr <- min(c(max(c(pooled.eQTL.enrichment.recall.data$enrichment,point.eQTL.df$enrichment),na.rm=TRUE),75))
+point.eQTL.pooled.df <- subset(point.eQTL.df, !sample %in% as.character(sapply(focus.samples,paste0,c(""," proximal"," distal"))))
+point.eQTL.pooled.genome.df <- subset(point.eQTL.pooled.df, loc=="genome")
+point.eQTL.pooled.non.genome.df <- subset(point.eQTL.pooled.df, loc!="genome")
+
+max.enr <- min(c(max(c(pooled.eQTL.enrichment.recall.data$enrichment,point.eQTL.df$enrichment),na.rm=TRUE),90))
 min.enr <- min(c(pooled.eQTL.enrichment.recall.data$enrichment,point.eQTL.df$enrichment),na.rm=TRUE)
 
 ggplot(pooled.eQTL.enrichment.recall.data, aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
-  coord_cartesian(ylim=c(min.enr,max.enr)) + geom_point(data=point.eQTL.df)
+  coord_cartesian(ylim=c(min.enr,max.enr)) + theme(aspect.ratio=1)
 ggsave(paste0("plots/K562_pooled_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,".pdf"),width=7,height=5)
+
+ggplot(pooled.eQTL.enrichment.recall.data, aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
+  coord_cartesian(ylim=c(min.enr,max.enr)) + theme(aspect.ratio=1) +
+  geom_point(data=point.eQTL.pooled.non.genome.df, aes(shape=loc))
+ggsave(paste0("plots/K562_pooled_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,"_and_point_estimates.pdf"),width=7,height=5)
+
+ggplot(pooled.eQTL.enrichment.recall.data, aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
+  coord_cartesian(ylim=c(min.enr,max.enr)) + theme(aspect.ratio=1) +
+  geom_point(data=point.eQTL.pooled.genome.df)
+ggsave(paste0("plots/K562_pooled_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,"_and_point_estimates_genome.pdf"),width=7,height=5)
 
 eQTL.r <- sapply(pooled.focus.samples, function(n) max(subset(pooled.eQTL.enrichment.recall.data,sample==n)$recall,na.rm=TRUE))
 eQTL.mean.enrichment <- sapply(pooled.focus.samples, function(n) mean(subset(pooled.eQTL.enrichment.recall.data,sample==n & recall<=min(eQTL.r))$enrichment, na.rm=TRUE))
 pooled.eQTL.df <- data.frame(mean_enrichment=eQTL.mean.enrichment,
-                             max_recall=eQTL.r,
-                             sample=pooled.focus.samples,
-                             assay=pooled.assay.names)
+                                max_recall=eQTL.r,
+                                sample=pooled.focus.samples,
+                                assay=pooled.assay.names)
 
 pooled.eQTL.df
 
-ggplot(pooled.eQTL.df,aes(sample,mean_enrichment)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
-ggsave(paste0("plots/K562_pooled_eQTL_mean_enrichment_PIP_",eQTL.pip.thres,".pdf"),width=1.5,height=3)
+ggplot(point.eQTL.pooled.df, aes(recall, enrichment, color=assay, label=sample)) + 
+  geom_point(aes(shape=loc)) + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black")
+ggsave(paste0("plots/K562_pooled_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,"_point_estimates.pdf"),width=8,height=7)
 
-ggplot(pooled.eQTL.df,aes(sample,max_recall)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
-ggsave(paste0("plots/K562_pooled_eQTL_max_recall_PIP_",eQTL.pip.thres,".pdf"),width=1.5,height=3)
+ggplot(point.eQTL.pooled.non.genome.df, aes(sample, recall, fill=loc)) + geom_bar(stat="identity") + 
+  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1))
+ggsave(paste0("plots/K562_pooled_eQTL_recall_PIP_",eQTL.pip.thres,"_point_estimates_bar.pdf"),width=4,height=3)
 
+ggplot(point.eQTL.pooled.non.genome.df, aes(sample, enrichment, fill=loc)) + geom_bar(stat="identity") + 
+  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1))
+ggsave(paste0("plots/K562_pooled_eQTL_enrichment_PIP_",eQTL.pip.thres,"_point_estimates_bar.pdf"),width=4,height=3)
 
 ```
 
@@ -493,11 +570,11 @@ Plot GWAS results
 
 ```{r}
 
-max.enr <- min(c(max(c(replicate.GWAS.enrichment.recall.data$enrichment,point.GWAS.df$enrichment),na.rm=TRUE),15))
+max.enr <- min(c(max(c(replicate.GWAS.enrichment.recall.data$enrichment,point.GWAS.df$enrichment),na.rm=TRUE),30))
 min.enr <- min(c(replicate.GWAS.enrichment.recall.data$enrichment,point.GWAS.df$enrichment),na.rm=TRUE)
 
 ggplot(replicate.GWAS.enrichment.recall.data, aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
-  coord_cartesian(ylim=c(min.enr,max.enr)) + geom_point(data=point.GWAS.df)
+  coord_cartesian(ylim=c(min.enr,max.enr)) + theme(aspect.ratio=1)
 ggsave(paste0("plots/K562_replicate_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,".pdf"),width=7,height=5)
 
 GWAS.r <- sapply(focus.samples, function(n) max(subset(replicate.GWAS.enrichment.recall.data,sample==n)$recall,na.rm=TRUE))
@@ -509,38 +586,52 @@ replicate.GWAS.df <- data.frame(mean_enrichment=GWAS.mean.enrichment,
 
 replicate.GWAS.df
 
-ggplot(replicate.GWAS.df,aes(sample,mean_enrichment)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
-ggsave(paste0("plots/K562_replicate_GWAS_mean_enrichment_PIP_",GWAS.pip.thres,".pdf"),width=1.5,height=3)
-
-ggplot(replicate.GWAS.df,aes(sample,max_recall)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
-ggsave(paste0("plots/K562_replicate_GWAS_max_recall_PIP_",GWAS.pip.thres,".pdf"),width=1.5,height=3)
-
 ```
 
 
 ```{r}
 
-max.enr <- min(c(max(c(pooled.GWAS.enrichment.recall.data$enrichment,point.GWAS.df$enrichment),na.rm=TRUE),15))
+point.GWAS.pooled.df <- subset(point.GWAS.df, !sample %in% as.character(sapply(focus.samples,paste0,c(""," proximal"," distal"))))
+point.GWAS.pooled.genome.df <- subset(point.GWAS.pooled.df, loc=="genome")
+point.GWAS.pooled.non.genome.df <- subset(point.GWAS.pooled.df, loc!="genome")
+
+max.enr <- min(c(max(c(pooled.GWAS.enrichment.recall.data$enrichment,point.GWAS.df$enrichment),na.rm=TRUE),30))
 min.enr <- min(c(pooled.GWAS.enrichment.recall.data$enrichment,point.GWAS.df$enrichment),na.rm=TRUE)
 
 ggplot(pooled.GWAS.enrichment.recall.data, aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
-  coord_cartesian(ylim=c(min.enr,max.enr)) + geom_point(data=point.GWAS.df)
+  coord_cartesian(ylim=c(min.enr,max.enr)) + theme(aspect.ratio=1)
 ggsave(paste0("plots/K562_pooled_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,".pdf"),width=7,height=5)
+
+ggplot(pooled.GWAS.enrichment.recall.data, aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
+  coord_cartesian(ylim=c(min.enr,max.enr)) + theme(aspect.ratio=1) +
+  geom_point(data=point.GWAS.pooled.non.genome.df, aes(shape=loc))
+ggsave(paste0("plots/K562_pooled_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,"_and_point_estimates.pdf"),width=7,height=5)
+
+ggplot(pooled.GWAS.enrichment.recall.data, aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
+  coord_cartesian(ylim=c(min.enr,max.enr)) + theme(aspect.ratio=1) +
+  geom_point(data=point.GWAS.pooled.genome.df)
+ggsave(paste0("plots/K562_pooled_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,"_and_point_estimates_genome.pdf"),width=7,height=5)
 
 GWAS.r <- sapply(pooled.focus.samples, function(n) max(subset(pooled.GWAS.enrichment.recall.data,sample==n)$recall,na.rm=TRUE))
 GWAS.mean.enrichment <- sapply(pooled.focus.samples, function(n) mean(subset(pooled.GWAS.enrichment.recall.data,sample==n & recall<=min(GWAS.r))$enrichment, na.rm=TRUE))
 pooled.GWAS.df <- data.frame(mean_enrichment=GWAS.mean.enrichment,
-                             max_recall=GWAS.r,
-                             sample=pooled.focus.samples,
-                             assay=pooled.assay.names)
+                                max_recall=GWAS.r,
+                                sample=pooled.focus.samples,
+                                assay=pooled.assay.names)
 
 pooled.GWAS.df
 
-ggplot(pooled.GWAS.df,aes(sample,mean_enrichment)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
-ggsave(paste0("plots/K562_pooled_GWAS_mean_enrichment_PIP_",GWAS.pip.thres,".pdf"),width=1.5,height=3)
+ggplot(point.GWAS.pooled.df, aes(recall, enrichment, color=assay, label=sample)) + 
+  geom_point(aes(shape=loc)) + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black")
+ggsave(paste0("plots/K562_pooled_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,"_point_estimates.pdf"),width=8,height=7)
 
-ggplot(pooled.GWAS.df,aes(sample,max_recall)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1))
-ggsave(paste0("plots/K562_pooled_GWAS_max_recall_PIP_",GWAS.pip.thres,".pdf"),width=1.5,height=3)
+ggplot(point.GWAS.pooled.non.genome.df, aes(sample, recall, fill=loc)) + geom_bar(stat="identity") + 
+  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1))
+ggsave(paste0("plots/K562_pooled_GWAS_recall_PIP_",GWAS.pip.thres,"_point_estimates_bar.pdf"),width=4,height=3)
+
+ggplot(point.GWAS.pooled.non.genome.df, aes(sample, enrichment, fill=loc)) + geom_bar(stat="identity") + 
+  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1))
+ggsave(paste0("plots/K562_pooled_GWAS_enrichment_PIP_",GWAS.pip.thres,"_point_estimates_bar.pdf"),width=4,height=3)
 
 ```
 
@@ -551,21 +642,48 @@ Plot CRISPR results
 meena.df <- as.data.frame(rbind(mean.replicate.meena.df,pooled.meena.df))
 meena.df
 
-max.prec <- min(c(max(c(replicate.CRISPR.precision.recall.data$precision,point.CRISPR.df$precision),na.rm=TRUE),0.5))
-min.prec <- min(c(replicate.CRISPR.precision.recall.data$precision,point.CRISPR.df$precision),na.rm=TRUE)
+point.CRISPR.pooled.df <- subset(point.CRISPR.df, !sample %in% as.character(sapply(focus.samples,paste0,c(""," proximal"," distal"))))
+point.CRISPR.pooled.genome.df <- subset(point.CRISPR.pooled.df, loc=="genome")
+point.CRISPR.pooled.non.genome.df <- subset(point.CRISPR.pooled.df, loc!="genome")
+
+max.prec <- min(c(max(c(replicate.CRISPR.precision.recall.data$precision,point.CRISPR.df$precision,meena.df$precision),na.rm=TRUE),0.5))
+min.prec <- min(c(replicate.CRISPR.precision.recall.data$precision,point.CRISPR.df$precision,meena.df$precision),na.rm=TRUE)
 
 ggplot(replicate.CRISPR.precision.recall.data, aes(recall, precision, color=assay)) + geom_line(aes(group=sample)) +
-  coord_cartesian(ylim=c(min.prec,max.prec)) + geom_point(data=point.CRISPR.df) + geom_point(data=mean.replicate.meena.df) #+ 
-  #geom_text(aes(recall,precision,label=assay),data=mean.replicate.meena.df,size=2)
+  coord_cartesian(ylim=c(min.prec,max.prec)) + theme(aspect.ratio=1)
 ggsave("plots/K562_replicate_CRISPR_precision_vs_recall.pdf",width=7,height=5)
 
-max.prec <- min(c(max(c(pooled.CRISPR.precision.recall.data$precision,point.CRISPR.df$precision),na.rm=TRUE),0.5))
-min.prec <- min(c(pooled.CRISPR.precision.recall.data$precision,point.CRISPR.df$precision),na.rm=TRUE)
+max.prec <- min(c(max(c(pooled.CRISPR.precision.recall.data$precision,point.CRISPR.df$precision,meena.df$precision),na.rm=TRUE),0.5))
+min.prec <- min(c(pooled.CRISPR.precision.recall.data$precision,point.CRISPR.df$precision,meena.df$precision),na.rm=TRUE)
 
 ggplot(pooled.CRISPR.precision.recall.data, aes(recall, precision, color=assay)) + geom_line(aes(group=sample)) +
-  coord_cartesian(ylim=c(min.prec,max.prec)) + geom_point(data=rbind(point.CRISPR.df,pooled.meena.df)) #+ 
-  #geom_text(aes(recall,precision,label=assay),data=pooled.meena.df,size=2)
+  coord_cartesian(ylim=c(min.prec,max.prec)) + theme(aspect.ratio=1)
 ggsave("plots/K562_pooled_CRISPR_precision_vs_recall.pdf",width=7,height=5)
+
+ggplot(pooled.CRISPR.precision.recall.data, aes(recall, precision, color=assay)) + geom_line(aes(group=sample)) +
+  coord_cartesian(ylim=c(min.prec,max.prec)) + theme(aspect.ratio=1) +
+  geom_point(data=point.CRISPR.pooled.non.genome.df, aes(shape=loc)) +
+  geom_point(data=pooled.meena.df,aes(shape=loc))
+ggsave("plots/K562_pooled_CRISPR_precision_vs_recall_and_point_estimates.pdf",width=7,height=5)
+
+ggplot(pooled.CRISPR.precision.recall.data, aes(recall, precision, color=assay)) + geom_line(aes(group=sample)) +
+  coord_cartesian(ylim=c(min.prec,max.prec)) + theme(aspect.ratio=1) +
+  geom_point(data=point.CRISPR.pooled.genome.df)
+ggsave("plots/K562_pooled_CRISPR_precision_vs_recall_and_point_estimates_genome.pdf",width=7,height=5)
+
+ggplot(point.CRISPR.pooled.df, aes(recall, precision, color=assay, label=sample)) +
+  geom_point(aes(shape=loc)) + geom_point(data=pooled.meena.df,aes(shape=loc)) + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") +
+  geom_text_repel(data=pooled.meena.df,size=2,min.segment.length = 0,color="black")
+ggsave("plots/K562_pooled_CRISPR_precision_vs_recall_point_estimates.pdf",width=8,height=7)
+
+ggplot(rbind(point.CRISPR.pooled.non.genome.df, pooled.meena.df), aes(sample, precision, fill=loc)) + geom_bar(stat="identity") + 
+  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1))
+ggsave("plots/K562_pooled_CRISPR_precision_point_estimates_bar.pdf",width=4,height=3)
+
+ggplot(rbind(point.CRISPR.pooled.non.genome.df, pooled.meena.df), aes(sample, recall, fill=loc)) + geom_bar(stat="identity") + 
+  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1))
+ggsave("plots/K562_pooled_CRISPR_recall_point_estimates_bar.pdf",width=4,height=3)
+
 
 ```
 
