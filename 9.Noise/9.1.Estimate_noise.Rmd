@@ -1,0 +1,73 @@
+---
+title: "9.1.Estimate_noise"
+output: html_document
+date: "2024-05-24"
+---
+
+Estimate noise levels across libraries
+
+```{r}
+
+library(CAGEfightR)
+library(GenomicRanges)
+library(rtracklayer)
+library(GenomicFeatures)
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+
+setwd("/Users/fxc326/Documents/")
+source("CAGEfightR_extensions/utils.R")
+source("CAGEfightR_extensions/noise.R")
+
+```
+
+
+```{r}
+
+CTSSs <- readRDS("../1.CTSSs/repSub.combined.k562.CTSSs.rmSingletons.rds")
+
+## uniquely mappable
+map.gr.plus <- import.bed("GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.plus.bed")
+map.gr.minus <- import.bed("GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.minus.bed")
+
+seqlevels(map.gr.plus,pruning.mode="coarse") <- seqlevels(CTSSs)
+seqlevels(map.gr.minus,pruning.mode="coarse") <- seqlevels(CTSSs)
+seqinfo(map.gr.plus) <- seqinfo(map.gr.minus) <- seqinfo(CTSSs)
+map.gr.plus <- trim(map.gr.plus)
+map.gr.minus <- trim(map.gr.minus)
+
+## mask
+blacklist <- import.bed("ENCFF356LFX.bed")
+hotspots <- import.bed("hotspots_merged_ext_300.bed")
+exons <- flank(unlist(exonsBy(TxDb.Hsapiens.UCSC.hg38.knownGene,"tx")),50,both=TRUE)
+mask <- reduce(c(blacklist,hotspots,exons))
+seqlevels(mask,pruning.mode="coarse") <- seqlevels(CTSSs)
+seqinfo(mask) <- seqinfo(CTSSs)
+mask <- trim(mask)
+
+```
+
+
+```{r}
+
+K562.repSub.divnoise <- estimateDivergentNoise(CTSSs, mask, map.gr.minus, map.gr.plus)
+K562.repSub.divnoise
+write.csv(K562.repSub.divnoise,"K562.repSub.divnoise.csv")
+
+CTSSs <- readRDS("../1.CTSSs/poolSub.combined.k562.CTSSs.rmSingletons.rds")
+K562.poolSub.divnoise <- estimateDivergentNoise(CTSSs, mask, map.gr.minus, map.gr.plus)
+K562.poolSub.divnoise
+write.csv(K562.poolSub.divnoise,"K562.poolSub.divnoise.csv")
+
+CTSSs <- readRDS("../1.CTSSs/repSub.combined.GM12878.CTSSs.rmSingletons.rds")
+GM12878.repSub.divnoise <- estimateDivergentNoise(CTSSs, mask, map.gr.minus, map.gr.plus)
+GM12878.repSub.divnoise
+write.csv(GM12878.repSub.divnoise,"GM12878.repSub.divnoise.csv")
+
+CTSSs <- readRDS("../1.CTSSs/poolSub.combined.GM12878.CTSSs.rmSingletons.rds")
+GM12878.poolSub.divnoise <- estimateDivergentNoise(CTSSs, mask, map.gr.minus, map.gr.plus)
+GM12878.poolSub.divnoise
+write.csv(GM12878.poolSub.divnoise,"GM12878.poolSub.divnoise.csv")
+
+```
+
+
