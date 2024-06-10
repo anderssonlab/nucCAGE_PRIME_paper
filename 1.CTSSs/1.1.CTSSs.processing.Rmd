@@ -4,45 +4,56 @@ output: html_document
 date: "2024-01-25"
 ---
 
+## [0.] Prerequsites -------------------------
+
+## [0.0.] Load necesarray packages
+```{r message=FALSE}
+base::library(tidyverse)
+base::library(CAGEfightR)
+##Packages for plotting
+base::library(epistack)
+base::library(BiocParallel)
+base::library(reshape2)
+base::library(limma)
+base::library(Matrix)
+base::library(corrplot)
+```
+
+## [0.1.] Load CAGEfighR extensions
 ```{r}
-library(CAGEfightR)
-
-#CAGEfighR extensions
-setwd("/home/mhf817")
+# base::setwd("/home/mhf817")
+# cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
 sep <- .Platform$file.sep
-cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
-source(paste(cfr.extensions.dir, "utils.R", sep = sep))
-source(paste(cfr.extensions.dir, "support.R", sep = sep))
-source(paste(cfr.extensions.dir, "cumulative.R", sep = sep))
-source(paste(cfr.extensions.dir, "decompose.R", sep = sep))
-source(paste(cfr.extensions.dir, "enhancers.R", sep = sep))
-source(paste(cfr.extensions.dir, "noise.R", sep = sep))
-source(paste(cfr.extensions.dir, "coverage.R", sep = sep))
-source(paste(cfr.extensions.dir, "complexity.R", sep = sep))
-source(paste(cfr.extensions.dir, "subsample.R", sep = sep))
-source(paste(cfr.extensions.dir, "dispersion.R", sep = sep))
+cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
+base::source(base::paste(cfr.extensions.dir, "utils.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "support.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "cumulative.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "decompose.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "enhancers.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "noise.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "coverage.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "complexity.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "subsample.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "dispersion.R", sep = sep))
+```
 
-
-#Annotations
-library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+## [0.2.] Load annotations
+```{r message=FALSE}
+base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+```
 
-#Packages for plotting
-library(CAGEfightR)
-library(epistack)
-library(BiocParallel)
-library(dplyr)
-library(reshape2)
-library(limma)
-library(ggplot2)
-library(Matrix)
-library(corrplot)
+## [0.3.] Add custom color palette
+```{r}
+custom.col <- base::c(
+    "#FFDB6D","#C4961A","#F4EDCA",
+    "#D16103","#C3D7A4","#52854C",
+    "#4E84C4","#293352","grey"
+  )
+```
 
-
-custom.col <- c("#FFDB6D", "#C4961A", "#F4EDCA", 
-                "#D16103", "#C3D7A4", "#52854C", "#4E84C4", "#293352","grey")
-
-#Function for pooling replicates
+## [0.4.] Function for pooling replicates
+```{r}
 poolReplicates <- function(object, replicates, inputAssay="counts") {
     
     ## dimensions
@@ -66,59 +77,88 @@ poolReplicates <- function(object, replicates, inputAssay="counts") {
     rse <- calcTotalTags(rse)
     
     rse
-}
-
-#Set working directory
-setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/1.CTSSs/")
+  }
 ```
 
-
-
-
-
-#K562
-
+## [0.5.] Register server cores / threads
 ```{r}
-#Read in design for k562
-design <- read.table("K562.design.txt",sep="\t",header=T)
+BiocParallel::register(
+  BPPARAM = BiocParallel::MulticoreParam(
+      workers = 30
+    )
+  )
+```
 
-#Filter and format for use
-design <- design[design$use=="yes",]
-row.names(design) <- design$ID
+## [0.6.] Set working directory
+```{r eval=FALSE}
+# base::setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/1.CTSSs/")
+```
 
-#Format bw_files
+# [1.] Process K562 datasets -------------------------
+
+## [1.0.] Read in K562 design matrix
+```{r}
+design_ <- utils::read.table(
+    file =  base::paste0(
+        here::here("1.CTSSs/"),
+        "K562.design.txt"
+      ),
+    sep = "\t",
+    header = T
+  )
+```
+
+## [1.1.] Filter and format for use
+#### CAGEfightR::quantifyCTSSs() requires rownames to be specified
+```{r}
+design <- design_ %>%
+  dplyr::filter(use == "yes") %>%
+  tibble::column_to_rownames(var = "ID")
+```
+
+## [1.2.] Prepare CAGEFightR input
+```{r}
 plus_files <- design$bw_plus
 minus_files <- design$bw_minus
-names(plus_files) <- names(minus_files) <- row.names(design)
 
-bw_plus <- BigWigFileList(plus_files)
-bw_minus <- BigWigFileList(minus_files)
+base::names(plus_files) <- base::rownames(design)
+base::names(minus_files) <- base::rownames(design)
 
+bw_plus <- rtracklayer::BigWigFileList(plus_files)
+bw_minus <- rtracklayer::BigWigFileList(minus_files)
 ```
 
-
-
-
+## [1.2.] Quantify CTSSs with no reference genome set
 ```{r}
-#Quantify CTSSs with no reference genome set
-register(MulticoreParam(workers=10))
+k562.CTSSs <- CAGEfightR::quantifyCTSSs(
+    plusStrand = bw_plus,
+    minusStrand = bw_minus,
+    design = design
+  )
 
-k562.CTSSs <- quantifyCTSSs(plusStrand = bw_plus,
-                       minusStrand = bw_minus,
-                       design = design)
-
-
-k562.CTSSs <- k562.CTSSs %>% calcTPM() %>% calcPooled()
-
+k562.CTSSs <- k562.CTSSs %>%
+  CAGEfightR::calcTPM() %>%
+  CAGEfightR::calcPooled()
 ```
-```{r}
-#Pool replicates
-k562.p.CTSSs <- poolReplicates(k562.CTSSs,
-                               replicates=paste(colData(k562.CTSSs)$Cell.line,colData(k562.CTSSs)$Type, sep="_"))
 
-k562.p.CTSSs <- calcTPM(k562.p.CTSSs)
+## [1.3.] Pool replicates
+#### Evaluate with SummarizedExperiment::rowRanges(k562.p.CTSSs), SummarizedExperiment::rowData(k562.p.CTSSs)
+```{r}
+k562.p.CTSSs <- poolReplicates(
+  object = k562.CTSSs,
+  replicates = base::paste(
+      SummarizedExperiment::colData(k562.CTSSs)$Cell.line,
+      SummarizedExperiment::colData(k562.CTSSs)$Type,
+      sep="_"
+    )
+  )
+
+k562.p.CTSSs <- CAGEfightR::calcTPM(k562.p.CTSSs)
+```
 
 #Subsample both original and pooled to minimum common depth
+```{r}
+
 set.seed(1337)
 
 
