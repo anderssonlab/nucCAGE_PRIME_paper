@@ -5,24 +5,31 @@ module load bedops
 module load samtools
 module load bedtools
 
+mkdir -p genome_reads
+mkdir -p genome_reads/GRCh38_no_alt_analysis_set_GCA_000001405.15.73
+mkdir -p mapped
+mkdir -p mapped/GRCh38_no_alt_analysis_set_GCA_000001405.15.73
+mkdir -p tracks
+mkdir -p tracks/GRCh38_no_alt_analysis_set_GCA_000001405.15.73
+
 ## Generate genome reads
-#./kmer_fasta.pl fasta/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta 73 100000000 genome_reads/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/
+./kmer_fasta.pl ../0.External_resources/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta 73 100000000 genome_reads/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/
 
-#STAR_CMD="STAR --readFilesType Fastx --alignEndsType Extend5pOfRead1 --readQualityScoreBase 33 --outFilterMultimapNmax 1 --outFilterMultimapScoreRange 1 --genomeDir /projects/ralab/data/genome/hg38/STAR --runThreadN 30 --outSAMtype SAM --outSAMattributes NH HI AS MD nM"
+STAR_CMD="STAR --readFilesType Fastx --alignEndsType Extend5pOfRead1 --readQualityScoreBase 33 --outFilterMultimapNmax 1 --outFilterMultimapScoreRange 1 --genomeDir /projects/ralab/data/genome/hg38/STAR --runThreadN 30 --outSAMtype SAM --outSAMattributes NH HI AS MD nM"
 
-#for FILE in $( ls genome_reads/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/bin.*.fa ); do
-#    OUT=$( basename $FILE | sed -e "s/.fa//" )
+for FILE in $( ls genome_reads/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/bin.*.fa ); do
+    OUT=$( basename $FILE | sed -e "s/.fa//" )
     
-#    CMD="${STAR_CMD} --readFilesIn ${FILE} --outFileNamePrefix mapped/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/${OUT}"	
+    CMD="${STAR_CMD} --readFilesIn ${FILE} --outFileNamePrefix mapped/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/${OUT}"	
 
-#    eval " $CMD" >> GRCh38_no_alt_analysis_set_GCA_000001405.15.73.log 2>&1
-#done
+    eval " $CMD" >> GRCh38_no_alt_analysis_set_GCA_000001405.15.73.log 2>&1
+done
 
 ## Convert to bed
-#for FILE in $( ls mapped/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/bin.*.sam ); do
-#	OUT=$( echo $FILE | sed -e "s/.sam/.bed/" )
-#	convert2bed --input=sam --do-not-sort < $FILE > $OUT
-#done
+for FILE in $( ls mapped/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/bin.*.sam ); do
+	OUT=$( echo $FILE | sed -e "s/.sam/.bed/" )
+	convert2bed --input=sam --do-not-sort < $FILE > $OUT
+done
 
 TEMPDIR=$( mktemp -d -p /projects/ralab/scratch/ )
 
