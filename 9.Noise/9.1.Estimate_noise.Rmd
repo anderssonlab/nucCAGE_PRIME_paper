@@ -26,8 +26,8 @@ source("CAGEfightR_extensions/noise.R")
 CTSSs <- readRDS("../1.CTSSs/repSub.combined.k562.CTSSs.rmSingletons.rds")
 
 ## uniquely mappable
-map.gr.plus <- import.bed("GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.plus.bed")
-map.gr.minus <- import.bed("GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.minus.bed")
+map.gr.plus <- import.bed("uniquely_mappable/tracks/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.plus.bed")
+map.gr.minus <- import.bed("uniquely_mappable/tracks/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.minus.bed")
 
 seqlevels(map.gr.plus,pruning.mode="coarse") <- seqlevels(CTSSs)
 seqlevels(map.gr.minus,pruning.mode="coarse") <- seqlevels(CTSSs)
@@ -36,8 +36,8 @@ map.gr.plus <- trim(map.gr.plus)
 map.gr.minus <- trim(map.gr.minus)
 
 ## mask
-blacklist <- import.bed("ENCFF356LFX.bed")
-hotspots <- import.bed("hotspots_merged_ext_300.bed")
+blacklist <- import.bed("../0.External_resources/ENCFF356LFX.bed")
+hotspots <- import.bed("../0.External_resources/hotspots_merged_ext_300.bed")
 exons <- flank(unlist(exonsBy(TxDb.Hsapiens.UCSC.hg38.knownGene,"tx")),50,both=TRUE)
 mask <- reduce(c(blacklist,hotspots,exons))
 seqlevels(mask,pruning.mode="coarse") <- seqlevels(CTSSs)
