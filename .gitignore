@@ -26,3 +26,4 @@ notuse
 0.External_resources
 .ipynb_checkpoints
 *.svg
+*.fasta
