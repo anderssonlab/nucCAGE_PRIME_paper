@@ -12,6 +12,7 @@ base::library(tidyverse)
 base::library(CAGEfightR)
 ##Packages for plotting
 base::library(epistack)
+base::library(foreach)
 base::library(BiocParallel)
 base::library(reshape2)
 base::library(limma)
@@ -54,7 +55,21 @@ custom.col <- base::c(
   )
 ```
 
-## [0.4.] Function for pooling replicates
+## [0.4.] Register server cores / threads
+```{r}
+BiocParallel::register(
+  BPPARAM = BiocParallel::MulticoreParam(
+      workers = 30
+    )
+  )
+```
+
+## [0.5.] Set working directory
+```{r eval=FALSE}
+# base::setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/1.CTSSs/")
+```
+
+## [0.6.] Function for pooling replicates
 ```{r}
 poolReplicates <- function(object, replicates, inputAssay="counts") {
     
@@ -106,18 +121,38 @@ poolReplicates <- function(object, replicates, inputAssay="counts") {
   }
 ```
 
-## [0.5.] Register server cores / threads
+## [0.7.] Function for writing out TMM normalized bigwig tracks
 ```{r}
-BiocParallel::register(
-  BPPARAM = BiocParallel::MulticoreParam(
-      workers = 30
+writeBw <- function(object, replicates, dir, inputAssay="TMM"){
+  
+  ## Check consistency of replicates
+  assertthat::assert_that(
+      base::length(SummarizedExperiment::rowRanges(tmm.CTSSs)) == base::nrow(SummarizedExperiment::assay(tmm.CTSSs,"TMM"))
     )
-  )
-```
-
-## [0.6.] Set working directory
-```{r eval=FALSE}
-# base::setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/1.CTSSs/")
+  base::stopifnot("Chosen directory doesn't exist!" = base::dir.exists(dir))
+  
+  ## Parallel export across all chosen replicates
+  foreach::foreach(i=1:base::length(replicates)) %dopar% {
+    
+    ## Convert individual replicate to GRanges object
+    gr <- SummarizedExperiment::rowRanges(object)
+    S4Vectors::mcols(gr)["score"] <- SummarizedExperiment::assay(object,inputAssay)[,replicates[i]]
+    
+    ## Export replicate's plus and minus strands separately
+    for (s in base::c("+","-")){
+        grs <- gr[BiocGenerics::strand(gr) == s,]
+        s <- base::ifelse(s == "+","plus","minus")
+        fn <- base::paste0(dir,reps[i],".tmm.",s,".bw")
+        
+        rtracklayer::export(
+            object = grs,
+            con = fn,
+            format = "bigWig"
+          )
+        base::message(base::paste(fn,"done.",sep = " "))
+      }
+    }
+  }
 ```
 
 # [1.] Process K562 datasets -------------------------
@@ -345,6 +380,25 @@ tmm.CTSSs <- .GlobalEnv$TPMnormalizeBySizeFactors(
     sizeFactors = facs$samples$lib.size * facs$samples$norm.factors,
     inputAssay = "counts",
     outputAssay = "TMM"
+  )
+```
+
+#### Identify original bigwig filenames 'base::basename(design[base::row.names(design)==reps[1],"bw_minus"])'
+```{r}
+assertthat::are_equal(
+   base::rownames(SummarizedExperiment::colData(tmm.CTSSs)),
+   base::colnames(SummarizedExperiment::assay(tmm.CTSSs,"TMM"))
+  )
+assertthat::assert_that(
+    base::length(SummarizedExperiment::rowRanges(tmm.CTSSs)) == base::nrow(SummarizedExperiment::assay(tmm.CTSSs,"TMM"))
+  )
+```
+
+```{r}
+.GlobalEnv$writeBw(
+    object = tmm.CTSSs,
+    replicates = base::rownames(SummarizedExperiment::colData(tmm.CTSSs)),
+    dir = base::paste0(here::here("1.CTSSs/"),"bw_files_tmm_v2/")
   )
 ```
 
