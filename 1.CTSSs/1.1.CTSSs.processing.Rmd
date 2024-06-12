@@ -368,6 +368,7 @@ base::saveRDS(
     )
   )
 ```
+
 ## [1.13.] TMM normalise data
 ```{r}
 facs <- edgeR::calcNormFactors(
@@ -383,17 +384,7 @@ tmm.CTSSs <- .GlobalEnv$TPMnormalizeBySizeFactors(
   )
 ```
 
-#### Identify original bigwig filenames 'base::basename(design[base::row.names(design)==reps[1],"bw_minus"])'
-```{r}
-assertthat::are_equal(
-   base::rownames(SummarizedExperiment::colData(tmm.CTSSs)),
-   base::colnames(SummarizedExperiment::assay(tmm.CTSSs,"TMM"))
-  )
-assertthat::assert_that(
-    base::length(SummarizedExperiment::rowRanges(tmm.CTSSs)) == base::nrow(SummarizedExperiment::assay(tmm.CTSSs,"TMM"))
-  )
-```
-
+## [1.14.] Write out the TMM normalized replicates as bigwig files
 ```{r}
 .GlobalEnv$writeBw(
     object = tmm.CTSSs,
@@ -401,7 +392,6 @@ assertthat::assert_that(
     dir = base::paste0(here::here("1.CTSSs/"),"bw_files_tmm_v2/")
   )
 ```
-
 
 #GM12878
 
