@@ -162,9 +162,9 @@ readcage <- function(files, range){
 
 ## [2.1.] Get genomic region from coordinates
 #### suggested region "chr8:144,407,529-144,416,261", "chr10:110,291,360-110,366,023", "chrX:48,670,569-48,746,869"
-#### enhancers: "chrX:48,676,170-48,676,946", "chrX:48,737,065-48,737,528", "chr9:41358750-41358940", "chr9:41,356,277-41,359,588", "chr8:134563800-134564100"
+#### enhancers: "chrX:48,676,170-48,676,946", "chrX:48,737,065-48,737,528", "chr9:41358750-41358940", "chr9:41,356,277-41,359,588", "chr8:134563800-134564100", "chr8:134,563,186-134,566,375"
 ```{r}
-l_ <- "chr8:134,563,186-134,566,375" # "chr8:134563800-134564100"
+l_ <-  "chrX:48,670,569-48,746,869"
 l <- stringr::str_replace_all(l_,",","")
 chr = stringr::str_replace(l,"^(chr.*):.*","\\1")
 s = stringr::str_replace(l,"^chr.*:(.*)-(.*)","\\1") %>%
@@ -254,14 +254,30 @@ cage_sel_ <- dplyr::bind_cols(crds,scrs)
 ```
 
 ```{r}
-cage_sel_ %>%
+cage_sel <- cage_sel_ %>%
   tidyr::pivot_longer(
       cols = tidyselect::contains("_"),
       names_to = "sample",
       values_to = "tmm"
+    ) %>%
+  dplyr::mutate(
+    replicate = stringr::str_replace(
+        sample, ".*(.)$", "\\1"
+      ),
+    type = stringr::str_replace(
+          sample, "^(.*?)_(.*)(_)?(.)", "\\2"
+        ) %>%
+      stringr::str_replace(
+        .,"^(.*?)[_]$","\\1"
+      )
+    ) %>%
+  dplyr::mutate(
+    tmm = dplyr::case_when(
+        strand == "-" ~ (-1)*tmm,
+        TRUE ~ tmm
+      )
     )
 ```
-
 
 ## [2.5.] Summarise data
 ```{r}
@@ -328,7 +344,7 @@ plot <- ggplot2::ggplot(
       data = cage_sel,
       mapping = aes(
         x = start,
-        y = tpm,
+        y = tmm, #tpm,
         colour = strand,
         linetype = strand
       )
