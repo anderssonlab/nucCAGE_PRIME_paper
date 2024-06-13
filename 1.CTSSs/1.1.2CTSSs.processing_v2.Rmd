@@ -1,0 +1,453 @@
+---
+title: "Remove singletons from CTSS objects"
+output: html_document
+date: "2024-04-24"
+---
+
+
+## [0.] Prerequsites -------------------------
+
+## [0.0.] Load necesarray packages
+```{r message=FALSE}
+base::library(tidyverse)
+base::library(CAGEfightR)
+##Packages for plotting
+base::library(epistack)
+base::library(foreach)
+base::library(BiocParallel)
+base::library(reshape2)
+base::library(limma)
+base::library(Matrix)
+base::library(corrplot)
+base::library(assertthat)
+```
+
+## [0.1.] Load CAGEfighR extensions
+```{r}
+# base::setwd("/home/mhf817")
+# cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
+sep <- .Platform$file.sep
+cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
+base::source(base::paste(cfr.extensions.dir, "utils.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "support.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "cumulative.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "decompose.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "enhancers.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "noise.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "coverage.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "complexity.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "subsample.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "dispersion.R", sep = sep))
+base::source(base::paste(cfr.extensions.dir, "normalize.R", sep = sep))
+```
+
+## [0.2.] Load annotations
+```{r message=FALSE}
+base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+```
+
+## [0.3.] Add custom color palette
+```{r}
+custom.col <- base::c(
+    "#FFDB6D","#C4961A","#F4EDCA",
+    "#D16103","#C3D7A4","#52854C",
+    "#4E84C4","#293352","grey"
+  )
+```
+
+## [0.4.] Register server cores / threads
+```{r}
+BiocParallel::register(
+  BPPARAM = BiocParallel::MulticoreParam(
+      workers = 10
+    )
+  )
+```
+
+## [0.5.] Set working directory
+```{r eval=FALSE}
+# base::setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/1.CTSSs/")
+```
+
+## [0.6.] Function for pooling replicates
+```{r}
+poolReplicates <- function(object, replicates, inputAssay="counts") {
+    
+    ## dimensions
+    assertthat::assert_that(
+        base::ncol(object) == base::length(replicates),
+        base::length(base::unique(replicates)) > 1
+      )
+
+    base::message("Calculating pooled counts...")
+    a <- base::do.call(
+        what = "cbind",
+        args = base::lapply(
+          X = base::unique(replicates),
+          FUN = function(b){
+            Matrix::rowSums(
+                SummarizedExperiment::assay(object,inputAssay)[,replicates==b,drop=FALSE]
+              )
+            }
+          )
+        )
+    a <- methods::as(a, "sparseMatrix")
+    base::colnames(a) <- base::unique(replicates)
+
+    base::message("Create a pasted design matrix...")
+    c <- base::do.call(
+      what = "rbind",
+      args = base::lapply(
+        X = base::unique(replicates),
+        FUN = function(b){ 
+          base::apply(
+              X = SummarizedExperiment::colData(object)[replicates==b,],
+              MARGIN = 2 ,
+              FUN = base::paste ,
+              collapse = ","
+            )
+          }
+        )
+      )
+
+    rse <- SummarizedExperiment::SummarizedExperiment(
+        assays = S4Vectors::SimpleList(counts = a),
+        rowRanges = SummarizedExperiment::rowRanges(object),
+        colData = base::as.data.frame(c)
+      )
+    rse <- CAGEfightR::calcTotalTags(rse)
+    return(rse)
+  }
+```
+
+## [0.7.] Alternative subsampling to deal with dropped rows
+```{r}
+subsampleTarget <- function(object, inputAssay = "counts", target) {
+
+    assertthat::assert_that(
+        methods::is(object, "SummarizedExperiment"),
+        inputAssay %in% SummarizedExperiment::assayNames(object),
+        base::is.numeric(target),
+        target > 0
+      )
+    
+    a <- SummarizedExperiment::assay(object,inputAssay)
+    n <- base::ncol(a)
+    nz <- base::lapply(
+      X = 1:n,
+      FUN = function(i){
+          .GlobalEnv$nonzero(a[,i,drop=FALSE])[,1]
+        }
+      )
+    s <- Matrix::colSums(a)
+    d <- base::unlist(
+      base::lapply(
+        X = 1:n,
+        FUN = function(i){
+        if (s[i]<=target){
+              a[nz[[i]],i]
+            } else {
+              stats::rbinom(base::length(nz[[i]]),a[nz[[i]],i], target/s[i])
+            }
+          }
+        )
+      )
+    keep <- base::which(
+        base::sapply(nz,length)>0
+      )
+    
+    # Create a matrix to store the subsampled counts, ensuring all rows are retained
+    new_matrix <- Matrix::sparseMatrix(
+      i = base::unlist(nz),
+      j = base::unlist(
+        base::lapply(
+          X = keep,
+          FUN = function(i){
+              base::rep(i, base::length(nz[[i]]))
+            }
+          )
+        ),
+      x = d, 
+      dims = base::dim(a),  # Preserve the original dimensions
+      dimnames = base::list(
+          base::rownames(a),
+          base::colnames(a)[keep]
+        )
+      )
+    
+    # Replace the original assay with the new matrix
+    SummarizedExperiment::assay(object, inputAssay) <- new_matrix
+    
+    # Recalculate the total count of reads for each sample
+    object <- CAGEfightR::calcTotalTags(object)
+    
+    return(object)
+  }
+```
+
+
+# [1.] Process K562 datasets -------------------------
+
+## [1.0.] Read in K562 design matrix
+```{r}
+design_ <- utils::read.table(
+    file =  base::paste0(
+        here::here("1.CTSSs/"),
+        "K562.design.txt"
+      ),
+    sep = "\t",
+    header = T
+  )
+```
+
+## [1.1.] Filter and format for use
+#### CAGEfightR::quantifyCTSSs() requires rownames to be specified
+```{r}
+design <- design_ %>%
+  dplyr::filter(use == "yes") %>%
+  tibble::column_to_rownames(var = "ID")
+```
+
+## [1.2.] Prepare CAGEFightR input
+```{r}
+plus_files <- design$bw_plus
+minus_files <- design$bw_minus
+
+base::names(plus_files) <- base::rownames(design)
+base::names(minus_files) <- base::rownames(design)
+
+bw_plus <- rtracklayer::BigWigFileList(plus_files)
+bw_minus <- rtracklayer::BigWigFileList(minus_files)
+```
+
+## [1.2.] Quantify CTSSs with no reference genome set
+```{r}
+k562.CTSSs <- CAGEfightR::quantifyCTSSs(
+    plusStrand = bw_plus,
+    minusStrand = bw_minus,
+    design = design
+  )
+
+k562.CTSSs <- k562.CTSSs %>%
+  CAGEfightR::calcTPM() %>%
+  CAGEfightR::calcPooled()
+```
+
+## [1.3.] Visualize amount of tags across libraries
+```{r}
+SummarizedExperiment::colData(k562.CTSSs) %>%
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+      ID = base::paste(Cell.line,Type,replicate,sep = "_"),
+      ID = forcats::as_factor(x = ID)
+    ) %>% 
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = totalTags/1000000,
+        y = ID #base::paste(Type,replicate,sep="_")
+      )
+    ) +
+  geom_bar(
+      stat = "identity"
+    ) +
+  scale_y_discrete(
+      limits = rev
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 2,
+      axis.title.y = element_blank()
+    )
+```
+
+## [1.4.] Remove non-standard chromosomes
+#### Important! chrY and chrM are also excluded
+```{r}
+keep <- GenomeInfoDb::seqlevels(k562.CTSSs)[1:23]
+k562.CTSSs <- GenomeInfoDb::keepSeqlevels(k562.CTSSs, keep, pruning.mode = "coarse")
+```
+
+## [1.5.] Pool replicates
+#### Evaluate with SummarizedExperiment::colData(k562.p.CTSSs), SummarizedExperiment::colData(k562.CTSSs)
+```{r}
+k562.p.CTSSs <- .GlobalEnv$poolReplicates(
+  object = k562.CTSSs,
+  replicates = base::paste(
+      SummarizedExperiment::colData(k562.CTSSs)$Cell.line,
+      SummarizedExperiment::colData(k562.CTSSs)$Type,
+      sep="_"
+    )
+  )
+
+k562.p.CTSSs <- CAGEfightR::calcTPM(k562.p.CTSSs)
+```
+
+## [1.6.] Combine into one object
+```{r}
+SummarizedExperiment::colData(k562.CTSSs)$pooled <- "no"
+SummarizedExperiment::colData(k562.p.CTSSs)$pooled <- "yes"
+
+k562.combined.CTSSs <- BiocGenerics::cbind(k562.CTSSs,k562.p.CTSSs)
+```
+
+```{r}
+#Find minimum seq depths
+k562.combined.CTSSs <- calcTotalTags(k562.combined.CTSSs)
+```
+
+```{r}
+#Subsample both original and pooled to minimum common depth
+set.seed(1337)
+
+#subsample combined. Three sets, lowest CAGE rep and lowest pooled (excluding proCap and groCap)
+rep.min <- min(colData(k562.combined.CTSSs)$totalTags[colData(k562.combined.CTSSs)$pooled=="no"& !colData(k562.combined.CTSSs)$method %in% c("ProCap","GroCap")]) #28619974
+pool.min <- min(colData(k562.combined.CTSSs)$totalTags[colData(k562.combined.CTSSs)$pooled=="yes" & !colData(k562.combined.CTSSs)$method %in% c("ProCap,ProCap","GroCap")]) #96351121
+
+k562.combined.repSub.CTSSs<- subsampleTarget(k562.combined.CTSSs, target = rep.min)
+k562.combined.poolSub.CTSSs<- subsampleTarget(k562.combined.CTSSs, target = pool.min)
+
+
+k562.combined.repSub.CTSSs <- calcTPM(k562.combined.repSub.CTSSs)
+k562.combined.poolSub.CTSSs <- calcTPM(k562.combined.poolSub.CTSSs)
+
+
+#Create new assay with counts where 1 counts become 0
+rmSingletons <- function(rse, inputAssay = "counts") {
+  rmS <- assay(rse, inputAssay)
+  # Find the indices where values are equal to 1
+  idx <- which(rmS == 1, arr.ind = TRUE)
+  # Replace the values at those indices with 0
+  rmS[idx] <- 0
+  # Assign the modified assay back to the SummarizedExperiment object
+  assay(rse, "counts.noSingletons") <- rmS
+  rse
+}
+
+k562.combined.repSub.CTSSs <- rmSingletons(k562.combined.repSub.CTSSs)
+k562.combined.poolSub.CTSSs <- rmSingletons(k562.combined.poolSub.CTSSs)
+```
+
+
+
+
+
+
+```{r}
+#Save as new objects
+
+saveRDS(k562.combined.CTSSs, "all.combined.k562.CTSSs.rds")
+saveRDS(k562.combined.repSub.CTSSs, "repSub.combined.k562.CTSSs.rmSingletons.rds")
+saveRDS(k562.combined.poolSub.CTSSs, "poolSub.combined.k562.CTSSs.rmSingletons.rds")
+
+
+```
+
+
+
+#########
+#GM12878
+#########
+
+
+```{r}
+#Read in design for GM12878
+design <- read.table("GM12878.design.txt",sep="\t",header=T)
+
+#Filter and format for use
+design <- design[design$use=="yes",]
+row.names(design) <- paste(design$ID,design$Seq_run,sep="_")
+
+#Format bw_files
+plus_files <- design$bw_plus
+minus_files <- design$bw_minus
+names(plus_files) <- names(minus_files) <- row.names(design)
+
+bw_plus <- BigWigFileList(plus_files)
+bw_minus <- BigWigFileList(minus_files)
+
+```
+
+
+
+
+```{r}
+#Quantify CTSSs with no reference genome set
+register(MulticoreParam(workers=20))
+
+GM12878.CTSSs <- quantifyCTSSs(plusStrand = bw_plus,
+                       minusStrand = bw_minus,
+                       design = design)
+
+
+GM12878.CTSSs <- GM12878.CTSSs %>% calcTPM() %>% calcPooled()
+
+GM12878.CTSSs <- keepSeqlevels(GM12878.CTSSs, keep, pruning.mode = "coarse")
+
+
+```
+
+
+
+
+
+```{r}
+#Pool only based on reqsequencing
+GM12878.pID.CTSSs <- poolReplicates(GM12878.CTSSs,colData(GM12878.CTSSs)$ID)
+
+GM12878.pID.CTSSs <- calcTPM(GM12878.pID.CTSSs)
+#Pool replicates
+GM12878.p.CTSSs <- poolReplicates(GM12878.CTSSs,
+                               replicates=paste(colData(GM12878.CTSSs)$Cell.line,colData(GM12878.CTSSs)$cell_count,colData(GM12878.CTSSs)$Type, sep="_"))
+
+GM12878.p.CTSSs <- calcTPM(GM12878.p.CTSSs)
+
+
+```
+
+
+
+```{r}
+#Main indicates if part of main analysis. Removing Triptolide and low input
+colData(GM12878.pID.CTSSs)$main <- "yes"
+colData(GM12878.pID.CTSSs)$main[colData(GM12878.pID.CTSSs)$Type %in% c("Cap_align","ctrl","trip")| colData(GM12878.pID.CTSSs)$cell_count %in% c("50K","250K,250K")] <- "no"
+colData(GM12878.pID.CTSSs)$pooled <- "no"
+#Subsample
+colData(GM12878.p.CTSSs)$main <- "yes"
+colData(GM12878.p.CTSSs)$main[colData(GM12878.p.CTSSs)$Type %in% c("Cap_align","ctrl,ctrl,ctrl","trip,trip,trip,trip")| colData(GM12878.p.CTSSs)$cell_count %in% c("50K,50K,50K","250K,250K,250K,250K,250K,250K")] <- "no"
+colData(GM12878.p.CTSSs)$pooled <- "yes"
+
+
+GM12878.combined.CTSSs <- cbind(GM12878.p.CTSSs,GM12878.pID.CTSSs)
+GM12878.combined.CTSSs <- calcTotalTags(GM12878.combined.CTSSs)
+
+rep.min <- min(colData(GM12878.combined.CTSSs)$totalTags[colData(GM12878.combined.CTSSs)$main=="yes" & colData(GM12878.combined.CTSSs)$pooled=="no"]) #28453942
+pool.min <- min(colData(GM12878.combined.CTSSs)$totalTags[colData(GM12878.combined.CTSSs)$main=="yes" & colData(GM12878.combined.CTSSs)$pooled=="yes"]) #104774632
+
+GM12878.combined.repSub.CTSSs<- subsampleTarget(GM12878.combined.CTSSs, target = rep.min)
+GM12878.combined.poolSub.CTSSs<- subsampleTarget(GM12878.combined.CTSSs, target = pool.min)
+
+GM12878.combined.repSub.CTSSs <- calcTPM(GM12878.combined.repSub.CTSSs)
+GM12878.combined.poolSub.CTSSs <- calcTPM(GM12878.combined.poolSub.CTSSs)
+```
+
+
+
+```{r}
+#remove singletons
+
+GM12878.combined.repSub.CTSSs <- rmSingletons(GM12878.combined.repSub.CTSSs)
+GM12878.combined.poolSub.CTSSs <- rmSingletons(GM12878.combined.poolSub.CTSSs)
+```
+
+```{r}
+#Save as new objects
+saveRDS(GM12878.combined.CTSSs, "all.combined.GM12878.CTSSs.rds")
+saveRDS(GM12878.combined.repSub.CTSSs, "repSub.combined.GM12878.CTSSs.rmSingletons.rds")
+saveRDS(GM12878.combined.poolSub.CTSSs, "poolSub.combined.GM12878.CTSSs.rmSingletons.rds")
+
+
+```
+
+
