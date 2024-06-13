@@ -127,7 +127,8 @@ writeBw <- function(object, replicates, dir, inputAssay="TMM"){
   
   ## Check consistency of replicates
   assertthat::assert_that(
-      base::length(SummarizedExperiment::rowRanges(tmm.CTSSs)) == base::nrow(SummarizedExperiment::assay(tmm.CTSSs,"TMM"))
+      base::length(SummarizedExperiment::rowRanges(object)) == base::nrow(SummarizedExperiment::assay(object,"TMM")),
+      base::all(replicates %in% rownames(SummarizedExperiment::colData(object)))
     )
   base::stopifnot("Chosen directory doesn't exist!" = base::dir.exists(dir))
   
@@ -315,7 +316,7 @@ k562.combined.poolSub.CTSSs <- CAGEfightR::calcTPM(k562.combined.poolSub.CTSSs)
 
 ```
 
-# [1.8.] Save CTSS objects
+# [1.8.1.] Save CTSS objects
 ```{r}
 base::saveRDS(
   object = k562.CTSSs,
@@ -369,6 +370,16 @@ base::saveRDS(
   )
 ```
 
+## [1.8.2.] Load saved rds files
+```{r}
+k562.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "all.k562.CTSSs.rds"
+    )
+  )
+```
+
 ## [1.13.] TMM normalise data
 ```{r}
 facs <- edgeR::calcNormFactors(
@@ -389,8 +400,31 @@ tmm.CTSSs <- .GlobalEnv$TPMnormalizeBySizeFactors(
 .GlobalEnv$writeBw(
     object = tmm.CTSSs,
     replicates = base::rownames(SummarizedExperiment::colData(tmm.CTSSs)),
-    dir = base::paste0(here::here("1.CTSSs/"),"bw_files_tmm_v2/")
+    dir = base::paste0(here::here("1.CTSSs/"),"bw_files_tmm/")
   )
+```
+
+## [1.15.1.] Save TMM normalized CTSSs
+```{r}
+base::saveRDS(
+  object = tmm.CTSSs,
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      base::format(base::Sys.time(), "%Y%m%d"),
+      "_tmm.CTSSs.rds"
+    )
+  )
+```
+
+## [1.15.2.] Load saved rds files
+```{r}
+fn <- base::list.files(
+      path = here::here("1.CTSSs"),
+      full.names = TRUE
+    ) %>%
+  stringr::str_subset("tmm.CTSSs")
+
+tmm.CTSSs <- base::readRDS(file = fn)
 ```
 
 #GM12878

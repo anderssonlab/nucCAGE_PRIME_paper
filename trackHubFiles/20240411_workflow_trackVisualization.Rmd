@@ -116,6 +116,18 @@ fs <- base::list.files(
   stringr::str_subset("_500K_|_5M_")
 ```
 
+## [1.6.] Load tmm.CTSSs object
+#### see [1.15.2.] in "1.1.CTSSs.processing.Rmd" for more info
+```{r}
+fn <- base::list.files(
+      path = here::here("1.CTSSs"),
+      full.names = TRUE
+    ) %>%
+  stringr::str_subset("tmm.CTSSs")
+
+tmm.CTSSs <- base::readRDS(file = fn)
+```
+
 ## [2.] CAGE_preparation_BigWig --------------------
 
 ## [2.0.] Helper function reader()
@@ -214,6 +226,42 @@ ran_sel <- rtracklayer::BigWigSelection(
 
 cage_sel_ <- .GlobalEnv$readcage(fs,ran_sel)
 ```
+
+
+```{r}
+ovl <- IRanges::findOverlaps(
+    query = ran,
+    subject = tmm.CTSSs
+  )
+gr <- SummarizedExperiment::rowRanges(tmm.CTSSs)[ovl@to,]
+
+crds <- gr %>% 
+  base::as.data.frame() %>%
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+      start = pos,
+      end = pos
+    ) %>%
+  dplyr::select(
+      seqnames,start,end,strand
+    )
+
+scrs <- SummarizedExperiment::assay(tmm.CTSSs,"TMM")[ovl@to,] %>%
+  base::as.matrix() %>% 
+  base::as.data.frame()
+
+cage_sel_ <- dplyr::bind_cols(crds,scrs)
+```
+
+```{r}
+cage_sel_ %>%
+  tidyr::pivot_longer(
+      cols = tidyselect::contains("_"),
+      names_to = "sample",
+      values_to = "tmm"
+    )
+```
+
 
 ## [2.5.] Summarise data
 ```{r}
