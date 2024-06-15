@@ -8,6 +8,8 @@ date: "2024-04-11"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# [0.] Packages -------------------------
+
 ## [0.0.] Install necessary packages
 ```{r}
 BiocManager::install("AnnotationHub")
@@ -37,62 +39,6 @@ sep <- .Platform$file.sep
 cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
 base::source(base::paste(cfr.extensions.dir, "normalize.R", sep = sep))
 ```
-
-```{r}
-subsampleTarget <- function(object, inputAssay = "counts", target) {
-    
-    assertthat::assert_that(
-        methods::is(object, "SummarizedExperiment"),
-        inputAssay %in% SummarizedExperiment::assayNames(object),
-        base::is.numeric(target),
-        target > 0
-      )
-    
-    a <- SummarizedExperiment::assay(object,inputAssay)
-    n <- base::ncol(a)
-    nz <- base::lapply(
-      X = 1:n,
-      FUN = function(i){
-          DAPAR::nonzero(a[,i,drop=FALSE])[,1]
-        }
-      )
-    s <- Matrix::colSums(a)
-    d <- base::unlist(
-        base::lapply(
-          X = 1:n,
-          FUN = function(i){
-            if(s[i]<=target){
-              a[nz[[i]],i]
-            } else {
-              stats::rbinom(length(nz[[i]]),a[nz[[i]],i], target/s[i])
-            }
-          }
-        )
-      )
-    keep <- base::which(
-        base::sapply(nz,length)>0
-      )
-    SummarizedExperiment::assay(object, inputAssay) <- Matrix::sparseMatrix(
-      i = base::unlist(nz),
-      j = base::unlist(
-        base::lapply(
-          X = keep,
-          FUN = function(i){
-              base::rep(i,length(nz[[i]]))
-            }
-          )
-        ),
-      x = d,
-      dimnames = base::list(
-          base::rownames(a),
-          base::colnames(a)[keep]
-        )
-      )
-    
-    return(object)
-  }
-```
-
 
 ## [1.] Prerequisites --------------------
 
@@ -231,9 +177,69 @@ GM12878.tmm.CTSSs <- .GlobalEnv$TPMnormalizeBySizeFactors(
   )
 ```
 
-## [2.] CAGE_preparation_BigWig --------------------
+# [2.] Prepare coordinate objects -------------------------
 
-## [2.0.] Helper function reader()
+## [2.0.] Get genomic region from coordinates
+#### suggested region "chr8:144,407,529-144,416,261", "chr10:110,291,360-110,366,023", 
+#### wider area: "chrX:48,670,569-48,746,869" with enh1: "chrX:48,676,170-48,676,946" and enh2: "chrX:48,737,065-48,737,528"
+#### enhancers - "chr9:41358750-41358940", "chr9:41,356,277-41,359,588", "chr8:134563800-134564100", "chr8:134,563,186-134,566,375"
+```{r}
+l_ <-  "chr10:110,291,360-110,366,023"
+l <- stringr::str_replace_all(l_,",","")
+chr = stringr::str_replace(l,"^(chr.*):.*","\\1")
+s = stringr::str_replace(l,"^chr.*:(.*)-(.*)","\\1") %>%
+  base::as.integer()
+e = stringr::str_replace(l,"^chr.*:(.*)-(.*)","\\2") %>%
+  base::as.integer()
+out <- base::paste0("_",chr,"_",s,"_",e)
+```
+
+```{r}
+extend = 0
+ran <- GenomicRanges::GRanges(
+    seqnames = chr,
+    ranges = IRanges::IRanges(start = s, end = e)
+  )
+BiocGenerics::start(ran) <- BiocGenerics::start(ran) - extend
+BiocGenerics::end(ran) <- BiocGenerics::end(ran) + extend
+GenomeInfoDb::seqlevelsStyle(ran) <- "UCSC"
+```
+
+## [2.1.] Get genomic region from gene names
+#### examples are SLC39A4, YLPM1, SMNDC1
+```{r}
+# omr <- base::c(
+#     "AREL1","FCF1","YLPM1","XR_944033.2",
+#     "PROX2"
+#   )
+# ran_ <- hg38_gr_sub[
+#     S4Vectors::elementMetadata(hg38_gr_sub)[,"gene_name"] %in% omr,
+#   ]
+# base::unique(ran_$gene_name)
+# ran <- base::range(ran_,ignore.strand = TRUE)
+# 
+# GenomeInfoDb::seqlevelsStyle(ran) <- "UCSC"
+# if(!stringr::str_detect(GenomeInfoDb::seqlevels(ran)[1],"chr")){
+#   GenomeInfoDb::seqlevels(ran) <- base::gsub(
+#       pattern = '^(.*)$',
+#       replacement = 'chr\\1',
+#       x = GenomeInfoDb::seqlevels(ran)
+#     )
+#   }
+# GenomeInfoDb::seqlevels(ran)
+```
+
+## [2.2.] Extract coordinates
+```{r}
+chrom <- GenomeInfoDb::seqnames(ran) %>%
+  base::as.character()
+start_pos <- BiocGenerics::start(ran)
+end_pos <- BiocGenerics::end(ran)
+```
+
+## [3.] CAGE_preparation_BigWig --------------------
+
+## [3.0.] Helper function reader()
 #### evaluate with 'f = fs[1]'
 ```{r}
 readcage <- function(files, range){
@@ -263,64 +269,7 @@ readcage <- function(files, range){
   }
 ```
 
-## [2.1.] Get genomic region from coordinates
-#### suggested region "chr8:144,407,529-144,416,261", "chr10:110,291,360-110,366,023", "chrX:48,670,569-48,746,869"
-#### enhancers: "chrX:48,676,170-48,676,946", "chrX:48,737,065-48,737,528", "chr9:41358750-41358940", "chr9:41,356,277-41,359,588", "chr8:134563800-134564100", "chr8:134,563,186-134,566,375"
-```{r}
-l_ <-  "chrX:48,670,569-48,746,869"
-l <- stringr::str_replace_all(l_,",","")
-chr = stringr::str_replace(l,"^(chr.*):.*","\\1")
-s = stringr::str_replace(l,"^chr.*:(.*)-(.*)","\\1") %>%
-  base::as.integer()
-e = stringr::str_replace(l,"^chr.*:(.*)-(.*)","\\2") %>%
-  base::as.integer()
-out <- base::paste0("_",chr,"_",s,"_",e)
-```
-
-```{r}
-extend = 0
-ran <- GenomicRanges::GRanges(
-    seqnames = chr,
-    ranges = IRanges::IRanges(start = s, end = e)
-  )
-BiocGenerics::start(ran) <- BiocGenerics::start(ran) - extend
-BiocGenerics::end(ran) <- BiocGenerics::end(ran) + extend
-GenomeInfoDb::seqlevelsStyle(ran) <- "UCSC"
-```
-
-## [2.2.] Get genomic region from gene names
-#### examples are SLC39A4, YLPM1, SMNDC1
-```{r}
-# omr <- base::c(
-#     "AREL1","FCF1","YLPM1","XR_944033.2",
-#     "PROX2"
-#   )
-# ran_ <- hg38_gr_sub[
-#     S4Vectors::elementMetadata(hg38_gr_sub)[,"gene_name"] %in% omr,
-#   ]
-# base::unique(ran_$gene_name)
-# ran <- base::range(ran_,ignore.strand = TRUE)
-# 
-# GenomeInfoDb::seqlevelsStyle(ran) <- "UCSC"
-# if(!stringr::str_detect(GenomeInfoDb::seqlevels(ran)[1],"chr")){
-#   GenomeInfoDb::seqlevels(ran) <- base::gsub(
-#       pattern = '^(.*)$',
-#       replacement = 'chr\\1',
-#       x = GenomeInfoDb::seqlevels(ran)
-#     )
-#   }
-# GenomeInfoDb::seqlevels(ran)
-```
-
-## [2.3.] Extract coordinates
-```{r}
-chrom <- GenomeInfoDb::seqnames(ran) %>%
-  base::as.character()
-start_pos <- BiocGenerics::start(ran)
-end_pos <- BiocGenerics::end(ran)
-```
-
-## [2.4.] Read in tpm scores in selected ranges
+## [3.1.] Read in tpm scores in selected ranges
 #### see [2.0.] in '20200721_workflow_DrosophilaCAGE.Rmd'
 ```{r}
 ran_sel <- rtracklayer::BigWigSelection(
@@ -330,7 +279,7 @@ ran_sel <- rtracklayer::BigWigSelection(
 cage_sel_ <- .GlobalEnv$readcage(fs,ran_sel)
 ```
 
-## [2.5.] Summarise data
+## [3.2.] Summarise data
 ```{r}
 cage_sel <- cage_sel_ %>%
   tidyr::pivot_wider(
@@ -367,7 +316,7 @@ cage_sel <- cage_sel_ %>%
     )
 ```
 
-## [2.6.] Adjust source order
+## [3.3.] Adjust source order
 #### dplyr::distinct(cage_sel,source)
 ```{r}
 levs <- base::c(
@@ -387,9 +336,9 @@ cage_sel <- cage_sel %>%
     )
 ```
 
-## [3.] CAGE_preparation_CTSSs --------------------
+## [4.] CAGE_preparation_CTSSs --------------------
 
-## [3.0.] Subset & convert scores from RangedSummarizedExperiment to tibble
+## [4.0.] Subset & convert scores from RangedSummarizedExperiment to tibble
 ```{r}
 ovl <- IRanges::findOverlaps(
     query = ran,
@@ -415,7 +364,8 @@ scrs <- SummarizedExperiment::assay(GM12878.tmm.CTSSs,"TMM")[ovl@to,] %>% #tmm.C
 cage_sel_ <- dplyr::bind_cols(crds,scrs)
 ```
 
-## [3.1.] Summarise data
+## [4.1.] Summarise data
+#### Evaluate with 'dplyr::arrange(cage_sel,dplyr::desc(tmm))'
 ```{r}
 cage_sel <- cage_sel_ %>%
   tidyr::pivot_longer(
@@ -438,32 +388,30 @@ cage_sel <- cage_sel_ %>%
     tmm = dplyr::case_when(
         strand == "-" ~ (-1)*tmm,
         TRUE ~ tmm
+      ),
+    strand = dplyr::case_when(
+        strand == "+" ~ "plus",
+        strand == "-" ~ "minus"
       )
     )
 ```
 
-## [3.2.] Potential subsetting for replicates
+## [4.2.] Potential subsetting for replicates
 #### subset for "500K_C", "500K_N" and "5M_N" repliactes only
 ```{r}
 # cage_sel_reps <- cage_sel %>%
 #   dplyr::filter(
 #       stringr::str_detect(replicate, "\\d") &
 #       stringr::str_detect(type, "500K|5M")
-#     ) %>%
-#   dplyr::mutate(
-#       strand = dplyr::case_when(
-#         strand == "+" ~ "plus",
-#         strand == "-" ~ "minus"
-#       )
 #     )
 ```
 
-## [4.] Plot data -------------------------
+## [5.] Plot data -------------------------
 
-## [4.0.] Plot data
+## [5.0.] Plot data
 ```{r}
 plot <- ggplot2::ggplot(
-      data = cage_sel_reps, #cage_sel,
+      data = cage_sel,
       mapping = aes(
         x = start,
         y = tmm, #tpm,
@@ -514,7 +462,7 @@ ggrastr::rasterise(
   )
 ```
 
-## [4.1.] Print data
+## [5.1.] Print data
 ```{r eval=FALSE}
 for(ext in c("pdf", "png")){
     ggplot2::ggsave(
@@ -522,7 +470,7 @@ for(ext in c("pdf", "png")){
           here::here("trackHubFiles/"),
           format(Sys.time(), "%Y%m%d"),
           out,
-          "_enhChr8Wider",
+          # "_enh2",
           "_500k5M",
           "_tmm",
           ".", ext
@@ -536,9 +484,9 @@ for(ext in c("pdf", "png")){
   }
 ```
 
-## [5.] Genomic_landscape -------------------------
+## [6.] Genomic_landscape -------------------------
 
-## [5.0.] Plot genomic environment
+## [6.0.] Plot genomic environment
 #### evaluate with 'columns(txdb)'
 ```{r}
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
@@ -563,13 +511,13 @@ plot_land <- ggbio::autoplot(
 base::print(plot_land)
 ```
 
-## [5.1.] Print data
+## [6.1.] Print data
 ```{r}
 outfile <- base::paste0(
     here::here("trackHubFiles/"),
     format(Sys.time(), "%Y%m%d"),
     out,
-    "_enhChr8Wider", # "_enh2",
+    # "_enh1", # "_enhChr8Wider"
     "_500k5M",
     "_landscape",
     ".pdf"
