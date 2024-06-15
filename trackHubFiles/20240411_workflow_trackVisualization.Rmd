@@ -164,6 +164,7 @@ SummarizedExperiment::assay(GM12878.CTSSs.sub, "counts")
 
 ## [1.9.] TMM normalise data
 ```{r}
+base::debugonce(edgeR::calcNormFactors)
 facs <- edgeR::calcNormFactors(
     object = GM12878.CTSSs.sub,
     method = "TMM",
@@ -177,6 +178,29 @@ GM12878.tmm.CTSSs <- .GlobalEnv$TPMnormalizeBySizeFactors(
   )
 ```
 
+#### Deconstructed edgeR::calcNormFactors() function
+#### "GM12878_5M_N2" is the refColumn
+```{r}
+object <- edgeR::SE2DGEList(GM12878.CTSSs.sub)
+x <- base::as.matrix(object)
+nsamples <- base::ncol(x)
+lib.size <- Matrix::colSums(x)
+allzero <- .Internal(rowSums(x > 0, base::nrow(x), nsamples, na.rm = FALSE)) == 0L
+x <- x[!allzero, , drop = FALSE]
+f75 <- base::suppressWarnings(
+   edgeR:::.calcFactorQuantile(
+       data = x,
+       lib.size = lib.size,
+       p = 0.75
+     )
+   )
+if (stats::median(f75) < 1e-20) {
+    refColumn <- BiocGenerics::which.max(base::colSums(base::sqrt(x)))
+  } else {
+    refColumn <- BiocGenerics::which.min(base::abs(f75 - base::mean(f75)))
+  }
+```
+
 # [2.] Prepare coordinate objects -------------------------
 
 ## [2.0.] Get genomic region from coordinates
@@ -184,7 +208,7 @@ GM12878.tmm.CTSSs <- .GlobalEnv$TPMnormalizeBySizeFactors(
 #### wider area: "chrX:48,670,569-48,746,869" with enh1: "chrX:48,676,170-48,676,946" and enh2: "chrX:48,737,065-48,737,528"
 #### enhancers - "chr9:41358750-41358940", "chr9:41,356,277-41,359,588", "chr8:134563800-134564100", "chr8:134,563,186-134,566,375"
 ```{r}
-l_ <-  "chr10:110,291,360-110,366,023"
+l_ <-  "chr8:134563800-134564100"
 l <- stringr::str_replace_all(l_,",","")
 chr = stringr::str_replace(l,"^(chr.*):.*","\\1")
 s = stringr::str_replace(l,"^chr.*:(.*)-(.*)","\\1") %>%
@@ -342,9 +366,9 @@ cage_sel <- cage_sel %>%
 ```{r}
 ovl <- IRanges::findOverlaps(
     query = ran,
-    subject = GM12878.tmm.CTSSs #tmm.CTSSs
+    subject = GM12878.tmm.CTSSs
   )
-gr <- SummarizedExperiment::rowRanges(GM12878.tmm.CTSSs)[ovl@to,] #tmm.CTSSs
+gr <- SummarizedExperiment::rowRanges(GM12878.tmm.CTSSs)[ovl@to,]
 
 crds <- gr %>% 
   base::as.data.frame() %>%
@@ -357,7 +381,7 @@ crds <- gr %>%
       seqnames,start,end,strand
     )
 
-scrs <- SummarizedExperiment::assay(GM12878.tmm.CTSSs,"TMM")[ovl@to,] %>% #tmm.CTSSs
+scrs <- SummarizedExperiment::assay(GM12878.tmm.CTSSs,"TMM")[ovl@to,] %>%
   base::as.matrix() %>% 
   base::as.data.frame()
 
