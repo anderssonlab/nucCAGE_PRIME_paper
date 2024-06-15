@@ -38,6 +38,62 @@ cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensio
 base::source(base::paste(cfr.extensions.dir, "normalize.R", sep = sep))
 ```
 
+```{r}
+subsampleTarget <- function(object, inputAssay = "counts", target) {
+    
+    assertthat::assert_that(
+        methods::is(object, "SummarizedExperiment"),
+        inputAssay %in% SummarizedExperiment::assayNames(object),
+        base::is.numeric(target),
+        target > 0
+      )
+    
+    a <- SummarizedExperiment::assay(object,inputAssay)
+    n <- base::ncol(a)
+    nz <- base::lapply(
+      X = 1:n,
+      FUN = function(i){
+          DAPAR::nonzero(a[,i,drop=FALSE])[,1]
+        }
+      )
+    s <- Matrix::colSums(a)
+    d <- base::unlist(
+        base::lapply(
+          X = 1:n,
+          FUN = function(i){
+            if(s[i]<=target){
+              a[nz[[i]],i]
+            } else {
+              stats::rbinom(length(nz[[i]]),a[nz[[i]],i], target/s[i])
+            }
+          }
+        )
+      )
+    keep <- base::which(
+        base::sapply(nz,length)>0
+      )
+    SummarizedExperiment::assay(object, inputAssay) <- Matrix::sparseMatrix(
+      i = base::unlist(nz),
+      j = base::unlist(
+        base::lapply(
+          X = keep,
+          FUN = function(i){
+              base::rep(i,length(nz[[i]]))
+            }
+          )
+        ),
+      x = d,
+      dimnames = base::list(
+          base::rownames(a),
+          base::colnames(a)[keep]
+        )
+      )
+    
+    return(object)
+  }
+```
+
+
 ## [1.] Prerequisites --------------------
 
 ## [1.0.] Read in annotations - convert from gff to gr
@@ -155,20 +211,19 @@ GM12878.CTSSs.sub <- S4Vectors::subset(
     x = GM12878.CTSSs,
     select = SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids
   )
-SummarizedExperiment::colData(GM12878.tmm.CTSSs.sub)
-SummarizedExperiment::assay(GM12878.tmm.CTSSs.sub, "TMM")
+SummarizedExperiment::colData(GM12878.CTSSs.sub)
+SummarizedExperiment::assay(GM12878.CTSSs.sub, "counts")
 ```
-
 
 ## [1.8.] TMM normalise data
 ```{r}
 facs <- edgeR::calcNormFactors(
-    object = GM12878.tmm.CTSSs.sub,
+    object = GM12878.CTSSs.sub,
     method = "TMM",
     refColumn = NULL
   )
 GM12878.tmm.CTSSs <- .GlobalEnv$TPMnormalizeBySizeFactors(
-    object = GM12878.CTSSs,
+    object = GM12878.CTSSs.sub,
     sizeFactors = facs$samples$lib.size * facs$samples$norm.factors,
     inputAssay = "counts",
     outputAssay = "TMM"
