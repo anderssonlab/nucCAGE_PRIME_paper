@@ -178,6 +178,17 @@ GM12878.tmm.CTSSs <- .GlobalEnv$TPMnormalizeBySizeFactors(
   )
 ```
 
+#### Use TMM values as "counts" and calculate TPMs on top of this
+```{r}
+GM12878.tmm.CTSSs <- .GlobalEnv$TPMnormalizeBySizeFactors(
+      object = GM12878.CTSSs.sub,
+      sizeFactors = facs$samples$lib.size * facs$samples$norm.factors,
+      inputAssay = "counts",
+      outputAssay = "counts"
+    ) %>%
+  CAGEfightR::calcTPM()
+```
+
 #### Deconstructed edgeR::calcNormFactors() function
 #### "GM12878_5M_N2" is the refColumn
 ```{r}
@@ -381,8 +392,12 @@ crds <- gr %>%
       seqnames,start,end,strand
     )
 
-scrs <- SummarizedExperiment::assay(GM12878.tmm.CTSSs,"TMM")[ovl@to,] %>%
-  base::as.matrix() %>% 
+# scrs <- SummarizedExperiment::assay(GM12878.tmm.CTSSs,"TMM")[ovl@to,] %>%
+#   base::as.matrix() %>% 
+#   base::as.data.frame()
+
+scrs <- SummarizedExperiment::assay(GM12878.tmm.CTSSs,"TPM")[ovl@to,] %>%
+  base::as.matrix() %>%
   base::as.data.frame()
 
 cage_sel_ <- dplyr::bind_cols(crds,scrs)
@@ -496,7 +511,7 @@ for(ext in c("pdf", "png")){
           out,
           # "_enh2",
           "_500k5M",
-          "_tmm",
+          "_TmmTpm",
           ".", ext
         ),
       plot = ggplot2::last_plot(),
