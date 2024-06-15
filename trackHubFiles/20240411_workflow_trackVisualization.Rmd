@@ -198,6 +198,7 @@ GM12878.CTSSs <- base::readRDS(
   )
 ```
 
+## [1.8.] Subset for 500k nuclei and cell samples as well as 5mio nuclei
 ```{r}
 ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
   tibble::as_tibble() %>%
@@ -215,7 +216,7 @@ SummarizedExperiment::colData(GM12878.CTSSs.sub)
 SummarizedExperiment::assay(GM12878.CTSSs.sub, "counts")
 ```
 
-## [1.8.] TMM normalise data
+## [1.9.] TMM normalise data
 ```{r}
 facs <- edgeR::calcNormFactors(
     object = GM12878.CTSSs.sub,
@@ -329,73 +330,6 @@ ran_sel <- rtracklayer::BigWigSelection(
 cage_sel_ <- .GlobalEnv$readcage(fs,ran_sel)
 ```
 
-
-```{r}
-ovl <- IRanges::findOverlaps(
-    query = ran,
-    subject = GM12878.tmm.CTSSs #tmm.CTSSs
-  )
-gr <- SummarizedExperiment::rowRanges(GM12878.tmm.CTSSs)[ovl@to,] #tmm.CTSSs
-
-crds <- gr %>% 
-  base::as.data.frame() %>%
-  tibble::as_tibble() %>%
-  dplyr::mutate(
-      start = pos,
-      end = pos
-    ) %>%
-  dplyr::select(
-      seqnames,start,end,strand
-    )
-
-scrs <- SummarizedExperiment::assay(GM12878.tmm.CTSSs,"TMM")[ovl@to,] %>% #tmm.CTSSs
-  base::as.matrix() %>% 
-  base::as.data.frame()
-
-cage_sel_ <- dplyr::bind_cols(crds,scrs)
-```
-
-```{r}
-cage_sel <- cage_sel_ %>%
-  tidyr::pivot_longer(
-      cols = tidyselect::contains("_"),
-      names_to = "sample",
-      values_to = "tmm"
-    ) %>%
-  dplyr::mutate(
-    replicate = stringr::str_replace(
-        sample, ".*(.)$", "\\1"
-      ),
-    type = stringr::str_replace(
-          sample, "^(.*?)_(.*)(_)?(.)", "\\2"
-        ) %>%
-      stringr::str_replace(
-        .,"^(.*?)[_]$","\\1"
-      )
-    ) %>%
-  dplyr::mutate(
-    tmm = dplyr::case_when(
-        strand == "-" ~ (-1)*tmm,
-        TRUE ~ tmm
-      )
-    )
-```
-
-#### subset for "500K_C", "500K_N" and "5M_N" repliactes only
-```{r}
-cage_sel_reps <- cage_sel %>%
-  dplyr::filter(
-      stringr::str_detect(replicate, "\\d") &
-      stringr::str_detect(type, "500K|5M")
-    ) %>%
-  dplyr::mutate(
-      strand = dplyr::case_when(
-        strand == "+" ~ "plus",
-        strand == "-" ~ "minus"
-      )
-    )
-```
-
 ## [2.5.] Summarise data
 ```{r}
 cage_sel <- cage_sel_ %>%
@@ -453,9 +387,80 @@ cage_sel <- cage_sel %>%
     )
 ```
 
-## [3.] Plot data -------------------------
+## [3.] CAGE_preparation_CTSSs --------------------
 
-## [3.0.] Plot data
+## [3.0.] Subset & convert scores from RangedSummarizedExperiment to tibble
+```{r}
+ovl <- IRanges::findOverlaps(
+    query = ran,
+    subject = GM12878.tmm.CTSSs #tmm.CTSSs
+  )
+gr <- SummarizedExperiment::rowRanges(GM12878.tmm.CTSSs)[ovl@to,] #tmm.CTSSs
+
+crds <- gr %>% 
+  base::as.data.frame() %>%
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+      start = pos,
+      end = pos
+    ) %>%
+  dplyr::select(
+      seqnames,start,end,strand
+    )
+
+scrs <- SummarizedExperiment::assay(GM12878.tmm.CTSSs,"TMM")[ovl@to,] %>% #tmm.CTSSs
+  base::as.matrix() %>% 
+  base::as.data.frame()
+
+cage_sel_ <- dplyr::bind_cols(crds,scrs)
+```
+
+## [3.1.] Summarise data
+```{r}
+cage_sel <- cage_sel_ %>%
+  tidyr::pivot_longer(
+      cols = tidyselect::contains("_"),
+      names_to = "sample",
+      values_to = "tmm"
+    ) %>%
+  dplyr::mutate(
+    replicate = stringr::str_replace(
+        sample, ".*(.)$", "\\1"
+      ),
+    type = stringr::str_replace(
+          sample, "^(.*?)_(.*)(_)?(.)", "\\2"
+        ) %>%
+      stringr::str_replace(
+        .,"^(.*?)[_]$","\\1"
+      )
+    ) %>%
+  dplyr::mutate(
+    tmm = dplyr::case_when(
+        strand == "-" ~ (-1)*tmm,
+        TRUE ~ tmm
+      )
+    )
+```
+
+## [3.2.] Potential subsetting for replicates
+#### subset for "500K_C", "500K_N" and "5M_N" repliactes only
+```{r}
+# cage_sel_reps <- cage_sel %>%
+#   dplyr::filter(
+#       stringr::str_detect(replicate, "\\d") &
+#       stringr::str_detect(type, "500K|5M")
+#     ) %>%
+#   dplyr::mutate(
+#       strand = dplyr::case_when(
+#         strand == "+" ~ "plus",
+#         strand == "-" ~ "minus"
+#       )
+#     )
+```
+
+## [4.] Plot data -------------------------
+
+## [4.0.] Plot data
 ```{r}
 plot <- ggplot2::ggplot(
       data = cage_sel_reps, #cage_sel,
@@ -509,7 +514,7 @@ ggrastr::rasterise(
   )
 ```
 
-## [3.2.] Print data
+## [4.1.] Print data
 ```{r eval=FALSE}
 for(ext in c("pdf", "png")){
     ggplot2::ggsave(
@@ -519,7 +524,7 @@ for(ext in c("pdf", "png")){
           out,
           "_enhChr8Wider",
           "_500k5M",
-          "_tpm",
+          "_tmm",
           ".", ext
         ),
       plot = ggplot2::last_plot(),
@@ -531,9 +536,9 @@ for(ext in c("pdf", "png")){
   }
 ```
 
-## [4.] Genomic_landscape -------------------------
+## [5.] Genomic_landscape -------------------------
 
-## [4.0.] Plot genomic environment
+## [5.0.] Plot genomic environment
 #### evaluate with 'columns(txdb)'
 ```{r}
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
@@ -558,13 +563,13 @@ plot_land <- ggbio::autoplot(
 base::print(plot_land)
 ```
 
-## [4.1.] Print data
+## [5.1.] Print data
 ```{r}
 outfile <- base::paste0(
     here::here("trackHubFiles/"),
     format(Sys.time(), "%Y%m%d"),
     out,
-    "_enh2",
+    "_enhChr8Wider", # "_enh2",
     "_500k5M",
     "_landscape",
     ".pdf"
