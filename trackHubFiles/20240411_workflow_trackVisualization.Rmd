@@ -32,6 +32,10 @@ utils::installed.packages() %>%
     stringr::str_detect(Package,"TxDb.Hsapiens")
   )
 base::library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+
+sep <- .Platform$file.sep
+cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
+base::source(base::paste(cfr.extensions.dir, "normalize.R", sep = sep))
 ```
 
 ## [1.] Prerequisites --------------------
@@ -126,6 +130,49 @@ fn <- base::list.files(
   stringr::str_subset("tmm.CTSSs")
 
 tmm.CTSSs <- base::readRDS(file = fn)
+```
+
+## [1.7.] Load  object
+```{r}
+GM12878.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "all.combined.GM12878.CTSSs.rds"
+    )
+  )
+```
+
+```{r}
+ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
+  tibble::as_tibble() %>%
+  dplyr::filter(
+      pooled == "no" &
+      stringr::str_detect(ID, "500K|5M")
+    ) %>%
+  dplyr::pull(ID)
+
+GM12878.CTSSs.sub <- S4Vectors::subset(
+    x = GM12878.CTSSs,
+    select = SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids
+  )
+SummarizedExperiment::colData(GM12878.tmm.CTSSs.sub)
+SummarizedExperiment::assay(GM12878.tmm.CTSSs.sub, "TMM")
+```
+
+
+## [1.8.] TMM normalise data
+```{r}
+facs <- edgeR::calcNormFactors(
+    object = GM12878.tmm.CTSSs.sub,
+    method = "TMM",
+    refColumn = NULL
+  )
+GM12878.tmm.CTSSs <- .GlobalEnv$TPMnormalizeBySizeFactors(
+    object = GM12878.CTSSs,
+    sizeFactors = facs$samples$lib.size * facs$samples$norm.factors,
+    inputAssay = "counts",
+    outputAssay = "TMM"
+  )
 ```
 
 ## [2.] CAGE_preparation_BigWig --------------------
@@ -231,9 +278,9 @@ cage_sel_ <- .GlobalEnv$readcage(fs,ran_sel)
 ```{r}
 ovl <- IRanges::findOverlaps(
     query = ran,
-    subject = tmm.CTSSs
+    subject = GM12878.tmm.CTSSs #tmm.CTSSs
   )
-gr <- SummarizedExperiment::rowRanges(tmm.CTSSs)[ovl@to,]
+gr <- SummarizedExperiment::rowRanges(GM12878.tmm.CTSSs)[ovl@to,] #tmm.CTSSs
 
 crds <- gr %>% 
   base::as.data.frame() %>%
@@ -246,7 +293,7 @@ crds <- gr %>%
       seqnames,start,end,strand
     )
 
-scrs <- SummarizedExperiment::assay(tmm.CTSSs,"TMM")[ovl@to,] %>%
+scrs <- SummarizedExperiment::assay(GM12878.tmm.CTSSs,"TMM")[ovl@to,] %>% #tmm.CTSSs
   base::as.matrix() %>% 
   base::as.data.frame()
 
@@ -275,6 +322,21 @@ cage_sel <- cage_sel_ %>%
     tmm = dplyr::case_when(
         strand == "-" ~ (-1)*tmm,
         TRUE ~ tmm
+      )
+    )
+```
+
+#### subset for "500K_C", "500K_N" and "5M_N" repliactes only
+```{r}
+cage_sel_reps <- cage_sel %>%
+  dplyr::filter(
+      stringr::str_detect(replicate, "\\d") &
+      stringr::str_detect(type, "500K|5M")
+    ) %>%
+  dplyr::mutate(
+      strand = dplyr::case_when(
+        strand == "+" ~ "plus",
+        strand == "-" ~ "minus"
       )
     )
 ```
@@ -341,7 +403,7 @@ cage_sel <- cage_sel %>%
 ## [3.0.] Plot data
 ```{r}
 plot <- ggplot2::ggplot(
-      data = cage_sel,
+      data = cage_sel_reps, #cage_sel,
       mapping = aes(
         x = start,
         y = tmm, #tpm,
