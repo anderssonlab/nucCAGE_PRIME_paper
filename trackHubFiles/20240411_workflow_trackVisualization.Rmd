@@ -274,12 +274,16 @@ end_pos <- BiocGenerics::end(ran)
 
 ## [3.] CAGE_preparation_BigWig --------------------
 
-## [3.0.] Helper function reader()
-#### evaluate with 'f = fs[1]'
+## [3.0.1.] Helper function readRange()
+#### evaluate with 'f = fs[1]', 'files = fs', 'range = ran'
 ```{r}
-readcage <- function(files, range){
-  return(
-    purrr::map(
+readRange <- function(files, range){
+    ## Prepare range for rtracklayer
+    ran_sel <- rtracklayer::BigWigSelection(
+        ranges = range
+      )
+    ## Reading in scores in range from files serially
+    raw <- purrr::map(
       .x = files,
       .f = function(f){
           s <- base::basename(f) %>%
@@ -289,65 +293,83 @@ readcage <- function(files, range){
               rtracklayer::import(
                   con = f,
                   as = "GRanges",
-                  selection = range
+                  selection = ran_sel
                 ) %>%
               tibble::as_tibble() %>%
               dplyr::mutate(
-                  sample = s
+                sample = s,
+                strand = stringr::str_replace(
+                    s, "^(.*)\\.(.*?)$", "\\2"
+                  ),
+                score = dplyr::case_when(
+                    strand == "minus" ~ (-1)*score,
+                    TRUE ~ score
+                  )
                 )
               )
             )
           }
         ) %>%
       dplyr::bind_rows()
-    )
+    
+    ## Fill missing scores across samples with zeros
+    out <- .GlobalEnv$fillGaps(raw)
+    
+    return(out)
+  }
+```
+
+## [3.0.2.] Helper function fillGaps()
+#### df = raw
+```{r}
+fillGaps <- function(df){
+    columns <- df %>% 
+      dplyr::distinct(sample) %>% 
+      dplyr::pull(sample)
+  
+    df_filled <- df %>% 
+      tidyr::pivot_wider(
+          names_from = "sample",
+          values_from = "score"
+        ) %>%
+      dplyr::mutate(
+        dplyr::across(
+          .cols = columns,
+          .fns = function(x){
+              tidyr::replace_na(x, 0)
+            }
+          )
+        ) %>%
+      tidyr::pivot_longer(
+          cols = tidyselect::all_of(columns),
+          names_to = "sample",
+          values_to = "tpm"
+        ) %>%
+      dplyr::mutate(
+        sample = stringr::str_replace(
+            sample, ".TPM.minus|.TPM.plus", ""
+          )
+        )
+    return(df_filled)
   }
 ```
 
 ## [3.1.] Read in tpm scores in selected ranges
 #### see [2.0.] in '20200721_workflow_DrosophilaCAGE.Rmd'
 ```{r}
-ran_sel <- rtracklayer::BigWigSelection(
-    ranges = ran
-  )
-
-cage_sel_ <- .GlobalEnv$readcage(fs,ran_sel)
+cage_sel_ <- .GlobalEnv$readRange(fs,ran)
 ```
 
 ## [3.2.] Summarise data
 ```{r}
 cage_sel <- cage_sel_ %>%
-  tidyr::pivot_wider(
-      names_from = "sample",
-      values_from = "score"
-    ) %>%
   dplyr::mutate(
-    dplyr::across(
-        .cols = tidyselect::contains("_"),
-        .fns = function(x) tidyr::replace_na(x, 0)
-      )
-    ) %>%
-  tidyr::pivot_longer(
-      cols = tidyselect::contains("_"),
-      names_to = "sample",
-      values_to = "tpm"
-    ) %>%
-  dplyr::mutate(
-    strand = stringr::str_replace(
-        sample, "(.*)\\.TPM\\.(.*)", "\\2"
-      ),
     replicate = stringr::str_replace(
-        sample, ".*_(.*)\\.TPM\\.(.*)", "\\1"
+        sample, ".*_(.*?)$", "\\1"
       ),
     type = stringr::str_replace(
         sample, "^(.*?)_(.*)_(.*)", "\\2"
       ),
-    ) %>%
-  dplyr::mutate(
-    tpm = dplyr::case_when(
-        strand == "minus" ~ (-1)*tpm,
-        TRUE ~ tpm
-      )
     )
 ```
 
