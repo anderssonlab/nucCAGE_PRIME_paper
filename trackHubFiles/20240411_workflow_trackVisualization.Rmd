@@ -42,6 +42,136 @@ cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensio
 base::source(base::paste(cfr.extensions.dir, "normalize.R", sep = sep))
 ```
 
+## [0.2.] Helper function readRange()
+#### evaluate with 'f = fs[1]', 'files = fs', 'range = ran'
+```{r}
+readRange <- function(files, range){
+    ## Prepare range for rtracklayer
+    ran_sel <- rtracklayer::BigWigSelection(
+        ranges = range
+      )
+    ## Reading in scores in range from files serially
+    raw <- purrr::map(
+      .x = files,
+      .f = function(f){
+          s <- base::basename(f) %>%
+            stringr::str_replace(.,"^(.*?).bw$","\\1")
+          return(
+            base::suppressWarnings(
+              rtracklayer::import(
+                  con = f,
+                  as = "GRanges",
+                  selection = ran_sel
+                ) %>%
+              tibble::as_tibble() %>%
+              dplyr::mutate(
+                sample = s,
+                strand = stringr::str_replace(
+                    s, "^(.*)\\.(.*?)$", "\\2"
+                  ),
+                score = dplyr::case_when(
+                    strand == "minus" ~ (-1)*score,
+                    TRUE ~ score
+                  )
+                )
+              )
+            )
+          }
+        ) %>%
+      dplyr::bind_rows()
+    
+    ## Fill missing scores across samples with zeros
+    out <- .GlobalEnv$fillGaps(raw)
+    
+    return(out)
+  }
+```
+
+## [0.3.] Helper function fillGaps()
+#### Evaluate with 'data = raw'
+```{r}
+fillGaps <- function(data){
+    columns <- data %>% 
+      dplyr::distinct(sample) %>% 
+      dplyr::pull(sample)
+  
+    df_filled <- data %>% 
+      tidyr::pivot_wider(
+          names_from = "sample",
+          values_from = "score"
+        ) %>%
+      dplyr::mutate(
+        dplyr::across(
+          .cols = columns,
+          .fns = function(x){
+              tidyr::replace_na(x, 0)
+            }
+          )
+        ) %>%
+      tidyr::pivot_longer(
+          cols = tidyselect::all_of(columns),
+          names_to = "sample",
+          values_to = "score"
+        ) %>%
+      dplyr::mutate(
+        sample = stringr::str_replace(
+            sample, ".minus|.plus", ""
+          )
+        )
+    return(df_filled)
+  }
+```
+
+## [0.4.] Helper function plotTracks()
+#### Evaluate with 'data = cage_sel'
+```{r}
+plotTracks <- function(data, range){
+    start_pos <- BiocGenerics::start(range)
+    end_pos <- BiocGenerics::end(range)
+    
+    plot <- ggplot2::ggplot(
+        data = data,
+        mapping = aes(
+          x = start,
+          y = score,
+          colour = strand,
+          linetype = strand
+        )
+      ) +
+    ggplot2::geom_bar(
+        stat = "identity",
+        size = 0.5
+      ) +
+    ggplot2::scale_x_continuous(
+        limits = base::c(start_pos,end_pos),  
+        position = "top"
+      ) +
+    ggplot2::scale_color_manual(
+        limits = base::c("minus","plus"),
+        values = base::c("#FF6400","#632770")
+      ) +
+    ggplot2::scale_linetype_manual(
+        limits = base::c("minus","plus"),
+        breaks = base::c("minus","plus"),
+        values = base::c("solid","solid")
+      ) +
+    ggplot2::facet_wrap(
+        facets = . ~ sample,
+        ncol = 1,
+        strip.position = "right"
+      ) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(
+        legend.position = "none",
+        axis.title.x = element_blank(),
+        panel.spacing = grid::unit(0.05,"lines"),
+        panel.grid.minor = element_blank(),
+        plot.margin = grid::unit(base::c(0,0,0,0),"cm")
+      )
+    return(plot)
+  }
+```
+
 ## [1.] Prerequisites --------------------
 
 ## [1.0.] Read in annotations - convert from gff to gr
@@ -276,86 +406,6 @@ end_pos <- BiocGenerics::end(ran)
 
 ## [3.] CAGE_preparation_BigWig --------------------
 
-## [3.0.1.] Helper function readRange()
-#### evaluate with 'f = fs[1]', 'files = fs', 'range = ran'
-```{r}
-readRange <- function(files, range){
-    ## Prepare range for rtracklayer
-    ran_sel <- rtracklayer::BigWigSelection(
-        ranges = range
-      )
-    ## Reading in scores in range from files serially
-    raw <- purrr::map(
-      .x = files,
-      .f = function(f){
-          s <- base::basename(f) %>%
-            stringr::str_replace(.,"^(.*?).bw$","\\1")
-          return(
-            base::suppressWarnings(
-              rtracklayer::import(
-                  con = f,
-                  as = "GRanges",
-                  selection = ran_sel
-                ) %>%
-              tibble::as_tibble() %>%
-              dplyr::mutate(
-                sample = s,
-                strand = stringr::str_replace(
-                    s, "^(.*)\\.(.*?)$", "\\2"
-                  ),
-                score = dplyr::case_when(
-                    strand == "minus" ~ (-1)*score,
-                    TRUE ~ score
-                  )
-                )
-              )
-            )
-          }
-        ) %>%
-      dplyr::bind_rows()
-    
-    ## Fill missing scores across samples with zeros
-    out <- .GlobalEnv$fillGaps(raw)
-    
-    return(out)
-  }
-```
-
-## [3.0.2.] Helper function fillGaps()
-#### Evaluate with 'data = raw'
-```{r}
-fillGaps <- function(data){
-    columns <- data %>% 
-      dplyr::distinct(sample) %>% 
-      dplyr::pull(sample)
-  
-    df_filled <- data %>% 
-      tidyr::pivot_wider(
-          names_from = "sample",
-          values_from = "score"
-        ) %>%
-      dplyr::mutate(
-        dplyr::across(
-          .cols = columns,
-          .fns = function(x){
-              tidyr::replace_na(x, 0)
-            }
-          )
-        ) %>%
-      tidyr::pivot_longer(
-          cols = tidyselect::all_of(columns),
-          names_to = "sample",
-          values_to = "score"
-        ) %>%
-      dplyr::mutate(
-        sample = stringr::str_replace(
-            sample, ".minus|.plus", ""
-          )
-        )
-    return(df_filled)
-  }
-```
-
 ## [3.1.] Read in tpm scores in selected ranges
 #### see [2.0.] in '20200721_workflow_DrosophilaCAGE.Rmd'
 ```{r}
@@ -459,69 +509,9 @@ cage_sel <- cage_sel_ %>%
     )
 ```
 
-## [4.2.] Potential subsetting for replicates
-#### subset for "500K_C", "500K_N" and "5M_N" repliactes only
-```{r}
-# cage_sel_reps <- cage_sel %>%
-#   dplyr::filter(
-#       stringr::str_detect(replicate, "\\d") &
-#       stringr::str_detect(type, "500K|5M")
-#     )
-```
-
 # [5.] Plot data -------------------------
 
-## [5.0.] Helper function plotTracks()
-#### Evaluate with 'data = cage_sel'
-```{r}
-plotTracks <- function(data, range){
-    start_pos <- BiocGenerics::start(range)
-    end_pos <- BiocGenerics::end(range)
-    
-    plot <- ggplot2::ggplot(
-        data = data,
-        mapping = aes(
-          x = start,
-          y = score,
-          colour = strand,
-          linetype = strand
-        )
-      ) +
-    ggplot2::geom_bar(
-        stat = "identity",
-        size = 0.5
-      ) +
-    ggplot2::scale_x_continuous(
-        limits = base::c(start_pos,end_pos),  
-        position = "top"
-      ) +
-    ggplot2::scale_color_manual(
-        limits = base::c("minus","plus"),
-        values = base::c("#FF6400","#632770")
-      ) +
-    ggplot2::scale_linetype_manual(
-        limits = base::c("minus","plus"),
-        breaks = base::c("minus","plus"),
-        values = base::c("solid","solid")
-      ) +
-    ggplot2::facet_wrap(
-        facets = . ~ sample,
-        ncol = 1,
-        strip.position = "right"
-      ) +
-    ggplot2::theme_bw() +
-    ggplot2::theme(
-        legend.position = "none",
-        axis.title.x = element_blank(),
-        panel.spacing = grid::unit(0.05,"lines"),
-        panel.grid.minor = element_blank(),
-        plot.margin = grid::unit(base::c(0,0,0,0),"cm")
-      )
-    return(plot)
-  }
-```
-
-## [5.1.] Plot genome tracks
+## [5.0.] Plot genome tracks
 ```{r}
 plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
   ggplot2::facet_wrap(
@@ -529,14 +519,14 @@ plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
       ncol = 1,
       strip.position = "right"
     )
-# ggrastr::rasterise(
-#     input = plot,
-#     layers = "Bar",
-#     dpi = 300
-#   )
+ggrastr::rasterise(
+    input = plot,
+    layers = "Bar",
+    dpi = 300
+  )
 ```
 
-## [5.2.] Print data
+## [5.1.] Print data
 ```{r eval=FALSE}
 for(ext in c("pdf", "png")){
     ggplot2::ggsave(
@@ -581,12 +571,12 @@ plot_land <- ggbio::autoplot(
     ) +
   theme_bw() +
   theme(
-      # aspect.ratio = 1/4
       plot.margin = grid::unit(base::c(0.05,0,0,0), "lines")
     )
 base::print(plot_land)
 ```
 
+## [6.1.] Align genomic landscape and score plot
 ```{r}
 g <- ggplot2::ggplotGrob(plot)
 l <- ggplot2::ggplotGrob(plot_land@ggplot)
@@ -605,105 +595,26 @@ gridExtra::grid.arrange(
   )
 ```
 
-
-
-
-```{r}
-txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-zone <- GRanges("chr1", IRanges(1000000, 1100000))
-
-# create the data for the patients
-patcolors <- c("green", "red", "darkred")
-detseg <- GRanges(seqnames = "chr1",
-                  IRanges(start = rep(1000000, 3), end = rep(1100000, 3)),
-                  strand = rep("*",3),
-                  patient = paste("pat", 1:3, sep = "_"),
-                  CN = c(-1,0.5,1))
-p_pat <- ggbio::autoplot(
-      detseg,
-      aes(color = CN, fill = CN),
-      facets = patient ~ seqnames
-    ) + 
-  # xlim(1000000, 1100000) + 
-  scale_fill_gradient2(low = "blue", mid = "white", high = "red") + 
-  scale_color_gradient2(low = "blue", mid = "white", high = "red") +
-  theme(
-      legend.position = "none",
-      plot.margin = grid::unit(base::c(0,0,-0.1,0),"cm")
-    )
-```
-
-
-```{r}
-dumGM <- ggbio::autoplot(
-      txdb,
-      which = zone,
-      stat = "reduce",
-      color = "darkblue",
-      fill = "darkblue",
-      label = FALSE
-    ) +
-  theme(
-      legend.position = "none",
-      plot.margin = grid::unit(base::c(-0.1,0,0,0),"cm")
-    )
-dumGM
-```
-
-```{r}
-dumGM <- dumGM  + xlim(1000000,1100000)
-
-gtable_dumGM <- ggplotGrob(dumGM@ggplot)
-gtable_p_pat <- ggplotGrob(p_pat@ggplot)
-
-gtable_dumGM_add <- gtable::gtable_add_cols(
-    x = gtable_dumGM,
-    widths = grid::unit(1, "lines"),
-    pos = -1
-  )
-
-gtable_dumGM_add$widths <- gtable_p_pat$widths
-
-# Finally, I draw the 2 plots and, yes, they are aligned ! 
-gridExtra::grid.arrange(gtable_p_pat, gtable_dumGM_add, heights=unit(c(0.8, 0.2), "npc"))
-```
-
-
 ## [6.1.] Print data
 ```{r}
 outfile <- base::paste0(
     here::here("trackHubFiles/"),
     format(Sys.time(), "%Y%m%d"),
     out,
-    # "_enh1", # "_enhChr8Wider"
     "_500k5M",
-    "_landscape",
     ".pdf"
   )
 
 grDevices::pdf(
     file = outfile,
     width = 8,
-    height = 3
+    height = 4
   )
 base::print(
-  ggbio::autoplot(
-      txdb,
-      which = ran,
-      truncate.gaps = FALSE,
-      truncate.fun = NA,
-      coord = "genome",
-      stat = "identity",
-      label = FALSE
-    ) +
-  scale_x_continuous(
-      limits = base::c(start_pos,end_pos)
-    ) +
-  theme_bw() +
-  theme(
-        aspect.ratio = 1/4
-      )
+    gridExtra::grid.arrange(
+      g,l_add,
+      heights = grid::unit(base::c(0.8, 0.2),"npc")
     )
+  )
 grDevices::dev.off()
 ```
-
