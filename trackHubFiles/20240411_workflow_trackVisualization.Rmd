@@ -488,6 +488,9 @@ plotScores <- function(data){
         stat = "identity",
         size = 0.5
       ) +
+    ggplot2::scale_x_discrete(
+        position = "top"
+      ) +
     ggplot2::scale_color_manual(
         limits = base::c("minus","plus"),
         values = base::c("#FF6400","#632770")
@@ -504,7 +507,7 @@ plotScores <- function(data){
       ) +
     ggplot2::theme_bw() +
     ggplot2::theme(
-        aspect.ratio = 1/4,
+        # aspect.ratio = 1/4,
         legend.position = "none",
         axis.title.x = element_blank(),
         panel.spacing = grid::unit(0.05,"lines"),
@@ -619,7 +622,7 @@ plot_land <- ggbio::autoplot(
     ) +
   theme_bw() +
   theme(
-      aspect.ratio = 1/4
+      # aspect.ratio = 1/4
     )
 base::print(plot_land)
 ```
@@ -630,20 +633,37 @@ base::print(plot_land)
 # # patchwork approach
 # plot_land@ggplot / plot
 
-l <- ggplot2::ggplotGrob(plot_land@ggplot)
-g <- ggplot2::ggplotGrob(plot)
+# plot_new <- plot +
+#   theme(
+#     axis.title.y = element_blank(),
+#     axis.ticks.y = element_blank(),
+#     axis.text.y = element_blank()
+#   )
 
+g <- ggplot2::ggplotGrob(plot)
+l <- ggplot2::ggplotGrob(plot_land@ggplot)
 
 l_add <- gtable::gtable_add_cols(
     x = l,
     widths = grid::unit(1, "lines"),
     pos = -1
   )
-l_add <- gtable::gtable_add_grob(l_add, grid::textGrob(" ", gp = grid::gpar(col="white")), 3, 5)
-gtable_dumGM_add$widths <- gtable_p_pat$widths
+# l_add <- gtable::gtable_add_grob(l_add, grid::textGrob(" ", gp = grid::gpar(col="white")), 3, 5)
+# g$widths
+# l$widths
+# l_add$widths
+
+# plot(g)
+# plot(plot)
+
+l_add$widths <- g$widths
 
 # Finally, I draw the 2 plots and, yes, they are aligned ! 
-gridExtra::grid.arrange(gtable_p_pat, gtable_dumGM_add), heights=unit(c(0.8, 0.2), "npc"))
+comb <- gridExtra::grid.arrange(g,l_add, heights = unit(c(0.8, 0.2), "npc"))
+comb +
+  theme(
+    aspect.ratio = 1/4
+  )
 ```
 
 
@@ -660,18 +680,24 @@ detseg <- GRanges(seqnames = "chr1",
                   strand = rep("*",3),
                   patient = paste("pat", 1:3, sep = "_"),
                   CN = c(-1,0.5,1))
-p_pat <- ggbio::autoplot(detseg, aes(color = CN, fill = CN),
-                  facets = patient ~ seqnames) + 
-  xlim(1000000, 1100000) + 
+p_pat <- ggbio::autoplot(
+      detseg,
+      aes(color = CN, fill = CN),
+      facets = patient ~ seqnames
+    ) + 
+  # xlim(1000000, 1100000) + 
   scale_fill_gradient2(low = "blue", mid = "white", high = "red") + 
   scale_color_gradient2(low = "blue", mid = "white", high = "red") +
-  theme(panel.background = element_rect(fill = "white"),
-        # panel.grid.major = element_blank(),
-        # panel.grid.minor = element_blank(),
-        legend.position = "none",
-        strip.background = element_rect(fill = "white"),
-        strip.text.x = element_blank(),
-        strip.text.y = element_text(angle = 0, hjust = 0, color = "darkgrey"))
+  theme(
+      legend.position = "none"
+    )
+  #     panel.background = element_rect(fill = "white"),
+  #     # panel.grid.major = element_blank(),
+  #     # panel.grid.minor = element_blank(),
+  #     strip.background = element_rect(fill = "white"),
+  #     strip.text.x = element_blank(),
+  #     strip.text.y = element_text(angle = 0, hjust = 0, color = "darkgrey")
+  #   )
 ```
 
 
@@ -694,15 +720,16 @@ gtable_dumGM_add <- gtable::gtable_add_cols(
     widths = grid::unit(1, "lines"),
     pos = -1
   )
-# gtable_dumGM$widths
-# gtable_dumGM_add$widths
+# gtable_dumGM$widths #%>% length
+# gtable_dumGM_add$widths #%>% length
+# gtable_p_pat$widths %>% length
 # gtable_dumGM_add$layout[1, 4] <- 6
 
-gtable_dumGM_add <- gtable::gtable_add_grob(gtable_dumGM_add, grid::textGrob(" ", gp = grid::gpar(col="white")), 3, 5)
+# gtable_dumGM_add <- gtable::gtable_add_grob(gtable_dumGM_add, grid::textGrob(" ", gp = grid::gpar(col="white")), 3, 5)
 gtable_dumGM_add$widths <- gtable_p_pat$widths
 
 # Finally, I draw the 2 plots and, yes, they are aligned ! 
-gridExtra::grid.arrange(gtable_p_pat, gtable_dumGM_add), heights=unit(c(0.8, 0.2), "npc"))
+gridExtra::grid.arrange(gtable_p_pat, gtable_dumGM_add, heights=unit(c(0.8, 0.2), "npc"))
 ```
 
 
