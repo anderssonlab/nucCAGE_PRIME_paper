@@ -474,7 +474,10 @@ cage_sel <- cage_sel_ %>%
 ## [5.0.] Helper function plotScores()
 #### Evaluate with 'data = cage_sel'
 ```{r}
-plotScores <- function(data){
+plotScores <- function(data, range){
+    start_pos <- BiocGenerics::start(range)
+    end_pos <- BiocGenerics::end(range)
+    
     plot <- ggplot2::ggplot(
         data = data,
         mapping = aes(
@@ -488,7 +491,8 @@ plotScores <- function(data){
         stat = "identity",
         size = 0.5
       ) +
-    ggplot2::scale_x_discrete(
+    ggplot2::scale_x_continuous(
+        limits = base::c(start_pos,end_pos),  
         position = "top"
       ) +
     ggplot2::scale_color_manual(
@@ -545,6 +549,9 @@ plot <- ggplot2::ggplot(
   geom_bar(
       stat = "identity",
       size = 0.5
+    ) +
+  ggplot2::scale_x_discrete(
+      position = "top"
     ) +
   scale_color_manual(
       limits = base::c("minus","plus"),
@@ -607,13 +614,11 @@ for(ext in c("pdf", "png")){
 ```{r}
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 
-# base::debugonce(ggbio::autoplot)
 plot_land <- ggbio::autoplot(
       txdb,
       which = ran,
       truncate.gaps = FALSE,
       truncate.fun = NA,
-      # coord = "genome",
       stat = "identity",
       label = FALSE
     ) +
@@ -628,18 +633,6 @@ base::print(plot_land)
 ```
 
 ```{r}
-# # cowplot approach
-# cowplot::plot_grid(plot_land@ggplot,plot,labels = 'AUTO', align = "v", axis = "b", ncol=1) 
-# # patchwork approach
-# plot_land@ggplot / plot
-
-# plot_new <- plot +
-#   theme(
-#     axis.title.y = element_blank(),
-#     axis.ticks.y = element_blank(),
-#     axis.text.y = element_blank()
-#   )
-
 g <- ggplot2::ggplotGrob(plot)
 l <- ggplot2::ggplotGrob(plot_land@ggplot)
 
@@ -648,22 +641,10 @@ l_add <- gtable::gtable_add_cols(
     widths = grid::unit(1, "lines"),
     pos = -1
   )
-# l_add <- gtable::gtable_add_grob(l_add, grid::textGrob(" ", gp = grid::gpar(col="white")), 3, 5)
-# g$widths
-# l$widths
-# l_add$widths
-
-# plot(g)
-# plot(plot)
 
 l_add$widths <- g$widths
 
-# Finally, I draw the 2 plots and, yes, they are aligned ! 
-comb <- gridExtra::grid.arrange(g,l_add, heights = unit(c(0.8, 0.2), "npc"))
-comb +
-  theme(
-    aspect.ratio = 1/4
-  )
+gridExtra::grid.arrange(g,l_add, heights = unit(c(0.8, 0.2), "npc"))
 ```
 
 
@@ -691,13 +672,6 @@ p_pat <- ggbio::autoplot(
   theme(
       legend.position = "none"
     )
-  #     panel.background = element_rect(fill = "white"),
-  #     # panel.grid.major = element_blank(),
-  #     # panel.grid.minor = element_blank(),
-  #     strip.background = element_rect(fill = "white"),
-  #     strip.text.x = element_blank(),
-  #     strip.text.y = element_text(angle = 0, hjust = 0, color = "darkgrey")
-  #   )
 ```
 
 
@@ -710,8 +684,6 @@ dumGM
 ```{r}
 dumGM <- dumGM  + xlim(1000000,1100000)
 
-# then I "edit" the grob, add a column to have the same numbers of columns as p_pat, modify the layout and the widths, also according to p_pat. (I also write a blank in the new column so it's not empty)
-
 gtable_dumGM <- ggplotGrob(dumGM@ggplot)
 gtable_p_pat <- ggplotGrob(p_pat@ggplot)
 
@@ -720,12 +692,7 @@ gtable_dumGM_add <- gtable::gtable_add_cols(
     widths = grid::unit(1, "lines"),
     pos = -1
   )
-# gtable_dumGM$widths #%>% length
-# gtable_dumGM_add$widths #%>% length
-# gtable_p_pat$widths %>% length
-# gtable_dumGM_add$layout[1, 4] <- 6
 
-# gtable_dumGM_add <- gtable::gtable_add_grob(gtable_dumGM_add, grid::textGrob(" ", gp = grid::gpar(col="white")), 3, 5)
 gtable_dumGM_add$widths <- gtable_p_pat$widths
 
 # Finally, I draw the 2 plots and, yes, they are aligned ! 
