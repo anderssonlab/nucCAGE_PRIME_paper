@@ -471,10 +471,10 @@ cage_sel <- cage_sel_ %>%
 
 # [5.] Plot data -------------------------
 
-## [5.0.] Helper function plotScores()
+## [5.0.] Helper function plotTracks()
 #### Evaluate with 'data = cage_sel'
 ```{r}
-plotScores <- function(data, range){
+plotTracks <- function(data, range){
     start_pos <- BiocGenerics::start(range)
     end_pos <- BiocGenerics::end(range)
     
@@ -511,81 +511,32 @@ plotScores <- function(data, range){
       ) +
     ggplot2::theme_bw() +
     ggplot2::theme(
-        # aspect.ratio = 1/4,
         legend.position = "none",
         axis.title.x = element_blank(),
         panel.spacing = grid::unit(0.05,"lines"),
-        panel.grid.minor = element_blank()
+        panel.grid.minor = element_blank(),
+        plot.margin = grid::unit(base::c(0,0,0,0),"cm")
       )
     return(plot)
   }
 ```
 
+## [5.1.] Plot genome tracks
 ```{r}
-plot <- .GlobalEnv$plotScores(cage_sel) +
-  facet_wrap(
+plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
+  ggplot2::facet_wrap(
       facets = . ~ type + replicate,
       ncol = 1,
       strip.position = "right"
     )
-ggrastr::rasterise(
-    input = plot,
-    layers = "Bar",
-    dpi = 300
-  )
+# ggrastr::rasterise(
+#     input = plot,
+#     layers = "Bar",
+#     dpi = 300
+#   )
 ```
 
-## [5.0.] Plot data
-```{r}
-plot <- ggplot2::ggplot(
-      data = cage_sel,
-      mapping = aes(
-        x = start,
-        y = score,
-        colour = strand,
-        linetype = strand
-      )
-    ) +
-  geom_bar(
-      stat = "identity",
-      size = 0.5
-    ) +
-  ggplot2::scale_x_discrete(
-      position = "top"
-    ) +
-  scale_color_manual(
-      limits = base::c("minus","plus"),
-      values = base::c("#FF6400","#632770")
-    ) +
-  scale_linetype_manual(
-      limits = base::c("minus","plus"),
-      breaks = base::c("minus","plus"),
-      values = base::c("solid","solid")
-    ) +
-  facet_wrap(
-      facets = . ~ type + replicate,
-      ncol = 1,
-      strip.position = "right"
-    ) +
-  # scale_x_continuous(
-  #     limits = base::c(start_pos,end_pos)
-  #   ) +
-  theme_bw() +
-  theme(
-      aspect.ratio = 1/4,
-      legend.position = "none",
-      axis.title.x = element_blank(),
-      panel.spacing = grid::unit(0.05,"lines"),
-      panel.grid.minor = element_blank()
-    )
-ggrastr::rasterise(
-    input = plot,
-    layers = "Bar",
-    dpi = 300
-  )
-```
-
-## [5.1.] Print data
+## [5.2.] Print data
 ```{r eval=FALSE}
 for(ext in c("pdf", "png")){
     ggplot2::ggsave(
@@ -614,8 +565,11 @@ for(ext in c("pdf", "png")){
 ```{r}
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 
+start_pos <- BiocGenerics::start(ran)
+end_pos <- BiocGenerics::end(ran)
+
 plot_land <- ggbio::autoplot(
-      txdb,
+      object = txdb,
       which = ran,
       truncate.gaps = FALSE,
       truncate.fun = NA,
@@ -628,6 +582,7 @@ plot_land <- ggbio::autoplot(
   theme_bw() +
   theme(
       # aspect.ratio = 1/4
+      plot.margin = grid::unit(base::c(0.05,0,0,0), "lines")
     )
 base::print(plot_land)
 ```
@@ -644,7 +599,10 @@ l_add <- gtable::gtable_add_cols(
 
 l_add$widths <- g$widths
 
-gridExtra::grid.arrange(g,l_add, heights = unit(c(0.8, 0.2), "npc"))
+gridExtra::grid.arrange(
+    g,l_add,
+    heights = grid::unit(base::c(0.8, 0.2),"npc")
+  )
 ```
 
 
@@ -670,14 +628,25 @@ p_pat <- ggbio::autoplot(
   scale_fill_gradient2(low = "blue", mid = "white", high = "red") + 
   scale_color_gradient2(low = "blue", mid = "white", high = "red") +
   theme(
-      legend.position = "none"
+      legend.position = "none",
+      plot.margin = grid::unit(base::c(0,0,-0.1,0),"cm")
     )
 ```
 
 
 ```{r}
-dumGM <- ggbio::autoplot(txdb, which = zone, stat = "reduce",
-                  color = "darkblue", fill = "darkblue", label = FALSE)
+dumGM <- ggbio::autoplot(
+      txdb,
+      which = zone,
+      stat = "reduce",
+      color = "darkblue",
+      fill = "darkblue",
+      label = FALSE
+    ) +
+  theme(
+      legend.position = "none",
+      plot.margin = grid::unit(base::c(-0.1,0,0,0),"cm")
+    )
 dumGM
 ```
 
