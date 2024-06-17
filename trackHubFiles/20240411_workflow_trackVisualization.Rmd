@@ -16,6 +16,7 @@ BiocManager::install("AnnotationHub")
 BiocManager::install("remotes")
 BiocManager::install("Bioconductor/RBGL")
 BiocManager::install("ggbio")
+devtools::install_github("thomasp85/patchwork")
 ```
 
 ## [0.1.] Load necessary packages
@@ -25,6 +26,7 @@ base::library("magrittr")
 base::library("ggpubr")
 base::library("here")
 base::library("ggrastr")
+base::library("patchwork")
 
 base::library("AnnotationHub")
 
@@ -219,7 +221,7 @@ if (stats::median(f75) < 1e-20) {
 #### wider area: "chrX:48,670,569-48,746,869" with enh1: "chrX:48,676,170-48,676,946" and enh2: "chrX:48,737,065-48,737,528"
 #### enhancers - "chr9:41358750-41358940", "chr9:41,356,277-41,359,588", "chr8:134563800-134564100", "chr8:134,563,186-134,566,375"
 ```{r}
-l_ <-  "chr8:134563800-134564100"
+l_ <-  "chr10:110,291,360-110,366,023"
 l <- stringr::str_replace_all(l_,",","")
 chr = stringr::str_replace(l,"^(chr.*):.*","\\1")
 s = stringr::str_replace(l,"^chr.*:(.*)-(.*)","\\1") %>%
@@ -320,14 +322,14 @@ readRange <- function(files, range){
 ```
 
 ## [3.0.2.] Helper function fillGaps()
-#### df = raw
+#### Evaluate with 'data = raw'
 ```{r}
-fillGaps <- function(df){
-    columns <- df %>% 
+fillGaps <- function(data){
+    columns <- data %>% 
       dplyr::distinct(sample) %>% 
       dplyr::pull(sample)
   
-    df_filled <- df %>% 
+    df_filled <- data %>% 
       tidyr::pivot_wider(
           names_from = "sample",
           values_from = "score"
@@ -467,7 +469,64 @@ cage_sel <- cage_sel_ %>%
 #     )
 ```
 
-## [5.] Plot data -------------------------
+# [5.] Plot data -------------------------
+
+## [5.0.] Helper function plotScores()
+#### Evaluate with 'data = cage_sel'
+```{r}
+plotScores <- function(data){
+    plot <- ggplot2::ggplot(
+        data = data,
+        mapping = aes(
+          x = start,
+          y = score,
+          colour = strand,
+          linetype = strand
+        )
+      ) +
+    ggplot2::geom_bar(
+        stat = "identity",
+        size = 0.5
+      ) +
+    ggplot2::scale_color_manual(
+        limits = base::c("minus","plus"),
+        values = base::c("#FF6400","#632770")
+      ) +
+    ggplot2::scale_linetype_manual(
+        limits = base::c("minus","plus"),
+        breaks = base::c("minus","plus"),
+        values = base::c("solid","solid")
+      ) +
+    ggplot2::facet_wrap(
+        facets = . ~ sample,
+        ncol = 1,
+        strip.position = "right"
+      ) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(
+        aspect.ratio = 1/4,
+        legend.position = "none",
+        axis.title.x = element_blank(),
+        panel.spacing = grid::unit(0.05,"lines"),
+        panel.grid.minor = element_blank()
+      )
+    return(plot)
+  }
+```
+
+```{r}
+plot <- .GlobalEnv$plotScores(cage_sel) +
+  facet_wrap(
+      facets = . ~ type + replicate,
+      ncol = 1,
+      strip.position = "right"
+    )
+ggrastr::rasterise(
+    input = plot,
+    layers = "Bar",
+    dpi = 300
+  )
+```
 
 ## [5.0.] Plot data
 ```{r}
@@ -498,9 +557,9 @@ plot <- ggplot2::ggplot(
       ncol = 1,
       strip.position = "right"
     ) +
-  scale_x_continuous(
-      limits = base::c(start_pos,end_pos)
-    ) +
+  # scale_x_continuous(
+  #     limits = base::c(start_pos,end_pos)
+  #   ) +
   theme_bw() +
   theme(
       aspect.ratio = 1/4,
@@ -551,7 +610,7 @@ plot_land <- ggbio::autoplot(
       which = ran,
       truncate.gaps = FALSE,
       truncate.fun = NA,
-      coord = "genome",
+      # coord = "genome",
       stat = "identity",
       label = FALSE
     ) +
@@ -564,6 +623,88 @@ plot_land <- ggbio::autoplot(
     )
 base::print(plot_land)
 ```
+
+```{r}
+# # cowplot approach
+# cowplot::plot_grid(plot_land@ggplot,plot,labels = 'AUTO', align = "v", axis = "b", ncol=1) 
+# # patchwork approach
+# plot_land@ggplot / plot
+
+l <- ggplot2::ggplotGrob(plot_land@ggplot)
+g <- ggplot2::ggplotGrob(plot)
+
+
+l_add <- gtable::gtable_add_cols(
+    x = l,
+    widths = grid::unit(1, "lines"),
+    pos = -1
+  )
+l_add <- gtable::gtable_add_grob(l_add, grid::textGrob(" ", gp = grid::gpar(col="white")), 3, 5)
+gtable_dumGM_add$widths <- gtable_p_pat$widths
+
+# Finally, I draw the 2 plots and, yes, they are aligned ! 
+gridExtra::grid.arrange(gtable_p_pat, gtable_dumGM_add), heights=unit(c(0.8, 0.2), "npc"))
+```
+
+
+
+
+```{r}
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+zone <- GRanges("chr1", IRanges(1000000, 1100000))
+
+# create the data for the patients
+patcolors <- c("green", "red", "darkred")
+detseg <- GRanges(seqnames = "chr1",
+                  IRanges(start = rep(1000000, 3), end = rep(1100000, 3)),
+                  strand = rep("*",3),
+                  patient = paste("pat", 1:3, sep = "_"),
+                  CN = c(-1,0.5,1))
+p_pat <- ggbio::autoplot(detseg, aes(color = CN, fill = CN),
+                  facets = patient ~ seqnames) + 
+  xlim(1000000, 1100000) + 
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red") + 
+  scale_color_gradient2(low = "blue", mid = "white", high = "red") +
+  theme(panel.background = element_rect(fill = "white"),
+        # panel.grid.major = element_blank(),
+        # panel.grid.minor = element_blank(),
+        legend.position = "none",
+        strip.background = element_rect(fill = "white"),
+        strip.text.x = element_blank(),
+        strip.text.y = element_text(angle = 0, hjust = 0, color = "darkgrey"))
+```
+
+
+```{r}
+dumGM <- ggbio::autoplot(txdb, which = zone, stat = "reduce",
+                  color = "darkblue", fill = "darkblue", label = FALSE)
+dumGM
+```
+
+```{r}
+dumGM <- dumGM  + xlim(1000000,1100000)
+
+# then I "edit" the grob, add a column to have the same numbers of columns as p_pat, modify the layout and the widths, also according to p_pat. (I also write a blank in the new column so it's not empty)
+
+gtable_dumGM <- ggplotGrob(dumGM@ggplot)
+gtable_p_pat <- ggplotGrob(p_pat@ggplot)
+
+gtable_dumGM_add <- gtable::gtable_add_cols(
+    x = gtable_dumGM,
+    widths = grid::unit(1, "lines"),
+    pos = -1
+  )
+# gtable_dumGM$widths
+# gtable_dumGM_add$widths
+# gtable_dumGM_add$layout[1, 4] <- 6
+
+gtable_dumGM_add <- gtable::gtable_add_grob(gtable_dumGM_add, grid::textGrob(" ", gp = grid::gpar(col="white")), 3, 5)
+gtable_dumGM_add$widths <- gtable_p_pat$widths
+
+# Finally, I draw the 2 plots and, yes, they are aligned ! 
+gridExtra::grid.arrange(gtable_p_pat, gtable_dumGM_add), heights=unit(c(0.8, 0.2), "npc"))
+```
+
 
 ## [6.1.] Print data
 ```{r}
