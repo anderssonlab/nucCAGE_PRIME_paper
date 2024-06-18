@@ -958,22 +958,71 @@ for(ext in base::c("pdf", "png")){
 ```
 
 ```{r}
-
+# corrplot::corrplot(
+#     stats::cor(
+#       x = base::as.matrix(
+#         x = SummarizedExperiment::assay(
+#             x = GM12878.s.CTSSs,
+#             i = "TPM"
+#           )
+#         )
+#       ),
+#     method = "circle", # "number"
+#     order = 'hclust',
+#     addrect = 2,
+#     col = base::rev(corrplot::COL2("RdBu",200)),
+#     tl.col = 'black'
+#   )
+# 
+# for(ext in base::c("pdf", "png")){
+#     ggplot2::ggsave(
+#       filename =base::paste0(
+#           here::here("1.CTSSs/plots/"),
+#           base::format(base::Sys.time(), "%Y%m%d"),
+#           "_subsampled.GM12878.CTSSs.corr",
+#           ".",ext
+#         ),
+#       plot = ggplot2::last_plot(),
+#       device = ext,
+#       dpi = 300,
+#       width = 8,
+#       height = 8
+#     )
+#   }
 ```
 
-
 ```{r}
-pdf("./plots/subsampled.GM12878.CTSSs.corr.pdf",width = 30, height = 30)
-corrplot(cor(
-  as.matrix(assay(GM12878.s.CTSSs,"TPM"))),
-  method="number")
-dev.off()
-
-pdf("./plots/pooled.GM12878.CTSSs.corr.pdf",width = 15, height = 15)
-corrplot(cor(
-  as.matrix(assay(GM12878.p.CTSSs,"TPM"))),
-  method="number")
-dev.off()
+# corrplot::corrplot(
+#     stats::cor(
+#       x = base::as.matrix(
+#         x = SummarizedExperiment::assay(
+#             x = GM12878.p.CTSSs,
+#             i = "TPM"
+#           )
+#         )
+#       ),
+#     method = "circle", # "number"
+#     order = 'hclust',
+#     addrect = 2,
+#     col = base::rev(corrplot::COL2("RdBu",200)),
+#     tl.col = 'black'
+#   )
+# 
+# for(ext in base::c("pdf", "png")){
+#     ggplot2::ggsave(
+#       filename =base::paste0(
+#           here::here("1.CTSSs/plots/"),
+#           base::format(base::Sys.time(), "%Y%m%d"),
+#           "_pooled.GM12878.CTSSs.corr",
+#           ".",ext
+#         ),
+#       plot = ggplot2::last_plot(),
+#       device = ext,
+#       dpi = 300,
+#       width = 8,
+#       height = 8
+#     )
+#   }
 ```
 
 ## To be discarded
