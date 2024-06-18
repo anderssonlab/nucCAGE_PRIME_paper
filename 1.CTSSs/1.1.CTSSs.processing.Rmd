@@ -11,15 +11,6 @@ date: "2024-05-17"
 base::library(tidyverse)
 base::library(CAGEfightR)
 base::library(PRIME)
-##Packages for plotting (uncomment only needed packages)
-#base::library(epistack)
-#base::library(foreach)
-#base::library(BiocParallel)
-#base::library(reshape2)
-#base::library(limma)
-#base::library(Matrix)
-#base::library(corrplot)
-#base::library(assertthat)
 ```
 
 
