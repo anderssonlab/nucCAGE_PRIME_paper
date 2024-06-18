@@ -1301,25 +1301,14 @@ ggplot2::ggplot(
     )
 ```
 
-#### "plots/GM12878.CTSSs.comp.pdf"
-```{r}
-ggplot2::ggplot(
-  data = comp.GM12878.CTSSs,
-  mapping = aes(
-        x = totalTags,
-        y = numberCTSSs,
-        color = sample
-      )
-    ) + 
-  geom_line() +
-  theme_bw()
-```
-
 #### "plots/GM12878.CTSSs.compSplit.pdf"
 ```{r}
-comp.GM12878.CTSSs$method <- stringr::str_extract(comp.GM12878.CTSSs$sample, "_(.*?)_")
-
-comp.GM12878.CTSSs$method <- gsub("_", "", comp.GM12878.CTSSs$method )
+comp.GM12878.CTSSs$method <- stringr::str_extract(
+    comp.GM12878.CTSSs$sample, "_(.*?)_"
+  )
+comp.GM12878.CTSSs$method <- base::gsub(
+    "_", "", comp.GM12878.CTSSs$method
+  )
 
 ggplot2::ggplot(
     data = comp.GM12878.CTSSs,
@@ -1332,7 +1321,7 @@ ggplot2::ggplot(
   geom_line() +
   theme_bw() + 
   facet_wrap(
-      facets = ~method
+      facets = . ~ method
     ) +
   theme(
       legend.position = "none",
@@ -1342,38 +1331,97 @@ ggplot2::ggplot(
 ```
 
 ## [2.5.] Plot complexities for the other objects
+#### "./plots/subsampled.GM12878.CTSSs.comp.pdf"
 ```{r}
-pdf("./plots/subsampled.GM12878.CTSSs.comp.pdf",width = 15, height = 10)
-ggplot(comp.GM12878.s.CTSSs,aes(totalTags,numberCTSSs,color=sample)) + 
-  geom_line() +
-  theme_bw() 
-dev.off()
+# ggplot2::ggplot(
+#     data = comp.GM12878.s.CTSSs,
+#     mapping = aes(
+#         x = totalTags,
+#         y = numberCTSSs,
+#         color = method,
+#         group = sample
+#       )
+#     ) + 
+#   geom_line() +
+#   geom_abline(
+#       intercept = 0,
+#       slope = 1,
+#       linetype = "dashed",
+#       color = "black",
+#       size = 0.5
+#     ) +
+#   theme_bw() +
+#   scale_color_manual(
+#       values = cols3
+#     ) +
+#   theme(
+#       aspect.ratio = 1,
+#       legend.title = element_blank(),
+#       legend.justification = base::c(1,0),
+#       legend.position = base::c(0.95,0.05),
+#       legend.background = element_rect(
+#           fill = "grey95"
+#         ),
+#       legend.text = element_text(size = 8),
+#       legend.key.size = grid::unit(0.9, "lines")
+#     )
+```
 
-pdf("./plots/pooled.GM12878.CTSSs.comp.pdf",width = 15, height = 10)
-ggplot(comp.GM12878.p.CTSSs,aes(totalTags,numberCTSSs,color=sample)) + 
-  geom_line() +
-  theme_bw() 
-dev.off()
+#### "./plots/pooled.GM12878.CTSSs.comp.pdf"
+```{r}
+# ggplot2::ggplot(
+#     data = comp.GM12878.p.CTSSs,
+#     mapping = aes(
+#         x = totalTags,
+#         y = numberCTSSs,
+#         color = method,
+#         group = sample
+#       )
+#     ) + 
+#   geom_line() +
+#   geom_abline(
+#       intercept = 0,
+#       slope = 1,
+#       linetype = "dashed",
+#       color = "black",
+#       size = 0.5
+#     ) +
+#   theme_bw() +
+#   scale_color_manual(
+#       values = cols3
+#     ) +
+#   theme(
+#       aspect.ratio = 1,
+#       legend.title = element_blank(),
+#       legend.justification = base::c(1,0),
+#       legend.position = base::c(0.95,0.05),
+#       legend.background = element_rect(
+#           fill = "grey95"
+#         ),
+#       legend.text = element_text(size = 8),
+#       legend.key.size = grid::unit(0.9, "lines")
+#     )
+```
 
-pdf("./plots/pooled.subsampled.GM12878.CTSSs.comp.pdf",width = 15, height = 10)
-ggplot(comp.GM12878.p.s.CTSSs,aes(totalTags,numberCTSSs,color=sample)) + 
-  geom_line() +
-  theme_bw() 
-dev.off()
-
-pdf("./plots/pooledID.GM12878.CTSSs.comp.pdf",width = 15, height = 10)
-ggplot(comp.GM12878.pID.CTSSs,aes(totalTags,numberCTSSs,color=sample)) + 
-  geom_line() +
-  theme_bw() 
-dev.off()
-
-pdf("./plots/pooledID.subsampled.GM12878.CTSSs.comp.pdf",width = 15, height = 10)
-ggplot(comp.GM12878.pID.s.CTSSs,aes(totalTags,numberCTSSs,color=sample)) + 
-  geom_line() +
-  theme_bw() 
-dev.off()
-
-
+## To be discarded
+```{r}
+# pdf("./plots/pooled.subsampled.GM12878.CTSSs.comp.pdf",width = 15, height = 10)
+# ggplot(comp.GM12878.p.s.CTSSs,aes(totalTags,numberCTSSs,color=sample)) + 
+#   geom_line() +
+#   theme_bw() 
+# dev.off()
+# 
+# pdf("./plots/pooledID.GM12878.CTSSs.comp.pdf",width = 15, height = 10)
+# ggplot(comp.GM12878.pID.CTSSs,aes(totalTags,numberCTSSs,color=sample)) + 
+#   geom_line() +
+#   theme_bw() 
+# dev.off()
+# 
+# pdf("./plots/pooledID.subsampled.GM12878.CTSSs.comp.pdf",width = 15, height = 10)
+# ggplot(comp.GM12878.pID.s.CTSSs,aes(totalTags,numberCTSSs,color=sample)) + 
+#   geom_line() +
+#   theme_bw() 
+# dev.off()
 ```
 
 ## [2.6.] Prepare plotting 
@@ -1557,7 +1605,6 @@ r.max_pools <- main %>%
     )
 ```
 
-
 ```{r}
 ggplot2::ggplot(
     data = r.max_pools, # p.max_pools, # p.max, # r.max,
@@ -1620,35 +1667,82 @@ for(ext in c("pdf", "png")){
   }
 ```
 
-
+## [2.11.] Combined plot
 ```{r}
-p1 <- ggplot(main,aes(totalTags,numberCTSSs,color=sample)) + 
+p1 <- ggplot2::ggplot(
+    data = main,
+    mapping = aes(
+        x = totalTags,
+        y = numberCTSSs,
+        color = sample
+      )
+    ) + 
   geom_line() +
-  theme_bw() + scale_y_log10() + scale_color_manual(values = gm.full.pal) + geom_vline(xintercept=c(29027358,106618677),linetype=2)+ guides(color="none") 
+  theme_bw() +
+  scale_y_log10() +
+  scale_color_manual(
+      values = gm.full.pal
+    ) +
+  geom_vline(
+      xintercept = base::c(29027358,106618677),
+      linetype = 2
+    ) +
+  guides(color="none") 
 
-p2 <- ggplot(r.max,aes(fct_rev(sample),rep.compexity,fill=sample)) + geom_col() + theme_bw() + scale_fill_manual(values=gm.full.pal) + coord_flip() + scale_y_log10()+ guides(fill="none") + labs(y="numberCTSSs", x="Samples")
+p2 <- ggplot2::ggplot(
+  data = r.max,
+  mapping = aes(
+    x = forcats::fct_rev(sample),
+    y = rep.compexity,
+    fill = sample
+    )
+  ) +
+  geom_col() +
+  theme_bw() +
+  scale_fill_manual(
+      values = gm.full.pal
+    ) +
+  coord_flip() +
+  scale_y_log10() +
+  guides(fill = "none") +
+  labs(y = "numberCTSSs", x = "Samples")
 
-p3 <- ggplot(p.max,aes(fct_rev(sample),pooled.compexity,fill=sample)) + geom_col() + theme_bw() + scale_fill_manual(values=gm.full.pal) + coord_flip() + scale_y_log10() + labs(y="numberCTSSs", x="Samples")
+p3 <- ggplot2::ggplot(
+  data = p.max,
+  mapping = aes(
+      x = forcats::fct_rev(sample),
+      y = pooled.compexity,
+      fill = sample
+    )
+  ) +
+  geom_col() +
+  theme_bw() +
+  scale_fill_manual(
+      values = gm.full.pal
+    ) +
+  coord_flip() +
+  scale_y_log10() +
+  labs(y = "numberCTSSs", x = "Samples")
 ```
 
-
+## "./combined_plots/GM12878.mainComplexity.pdf"
+# Extract the legend after adding some space to the left
 ```{r}
-# extract the legend from one of the plots
-legend <- get_legend(
-  # create some space to the left of the legend
-  p3 + theme(legend.box.margin = margin(0, 0, 0, 12))
-)
+p3_leg <- p3 +
+  theme(
+      legend.box.margin = margin(0, 0, 0, 12)
+    )
+p3_noleg <- p3 +
+  guides(
+      fill = "none"
+    )
+legend <- get_legend(p3_leg)
 
-#Save legend plot as separate object to work with
-pdf("./combined_plots/GM12878.colorLegend.pdf")
-grid.arrange(legend)
-dev.off()
-
-pdf("./combined_plots/GM12878.mainComplexity.pdf",width=30,height=15)
-grid.arrange(p1,p2,p3+guides(fill="none"),
-  widths = c(2, 1, 1),
-  layout_matrix = rbind(c(1, 2, 3))
-)
-dev.off()
+gridExtra::grid.arrange(
+  p1,p2,p3_noleg,
+  widths = base::c(2, 1, 1),
+  layout_matrix = base::rbind(
+      base::c(1, 2, 3)
+    )
+  )
 ```
-
