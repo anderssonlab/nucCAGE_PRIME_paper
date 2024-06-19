@@ -10,7 +10,7 @@
 
 
 
-<meta name="date" content="2024-05-24" />
+<meta name="date" content="2024-06-18" />
 
 <title>9.1.Estimate_noise</title>
 
@@ -350,7 +350,7 @@ display: none;
 
 
 <h1 class="title toc-ignore">9.1.Estimate_noise</h1>
-<h4 class="date">2024-05-24</h4>
+<h4 class="date">2024-06-18</h4>
 
 </div>
 
@@ -429,12 +429,21 @@ library(GenomicFeatures)</code></pre>
 
 setwd(&quot;/Users/fxc326/Documents/&quot;)
 source(&quot;CAGEfightR_extensions/utils.R&quot;)
-source(&quot;CAGEfightR_extensions/noise.R&quot;)</code></pre>
-<pre class="r"><code>CTSSs &lt;- readRDS(&quot;../1.CTSSs/repSub.combined.k562.CTSSs.rmSingletons.rds&quot;)
+source(&quot;CAGEfightR_extensions/noise.R&quot;)
+setwd(&quot;/Users/fxc326/Documents/nucCAGE/9.Noise&quot;)</code></pre>
+<pre class="r"><code>files &lt;- c(&quot;HepG2.poolSub&quot; = &quot;../1.CTSSs/poolSub.HepG2.CTSSs.rmSingletons.rds&quot;,
+           &quot;A549.poolSub&quot; = &quot;../1.CTSSs/poolSub.A549.CTSSs.rmSingletons.rds&quot;,
+           &quot;HCT116.poolSub&quot; = &quot;../1.CTSSs/poolSub.HCT116.CTSSs.rmSingletons.rds&quot;,
+           &quot;K562.poolSub&quot; = &quot;../1.CTSSs/poolSub.combined.k562.CTSSs.rmSingletons.rds&quot;,
+           &quot;K562.repSub&quot; = &quot;../1.CTSSs/repSub.combined.k562.CTSSs.rmSingletons.rds&quot;,
+           &quot;GM12878.repSub&quot; = &quot;../1.CTSSs/repSub.combined.GM12878.CTSSs.rmSingletons.rds&quot;,
+           &quot;GM12878.poolSub&quot; = &quot;../1.CTSSs/poolSub.combined.GM12878.CTSSs.rmSingletons.rds&quot;)
+
+CTSSs &lt;- readRDS(files[1])
 
 ## uniquely mappable
-map.gr.plus &lt;- import.bed(&quot;GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.plus.bed&quot;)
-map.gr.minus &lt;- import.bed(&quot;GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.minus.bed&quot;)
+map.gr.plus &lt;- import.bed(&quot;uniquely_mappable/tracks/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.plus.bed&quot;)
+map.gr.minus &lt;- import.bed(&quot;uniquely_mappable/tracks/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.minus.bed&quot;)
 
 seqlevels(map.gr.plus,pruning.mode=&quot;coarse&quot;) &lt;- seqlevels(CTSSs)
 seqlevels(map.gr.minus,pruning.mode=&quot;coarse&quot;) &lt;- seqlevels(CTSSs)
@@ -443,8 +452,8 @@ map.gr.plus &lt;- trim(map.gr.plus)
 map.gr.minus &lt;- trim(map.gr.minus)
 
 ## mask
-blacklist &lt;- import.bed(&quot;ENCFF356LFX.bed&quot;)
-hotspots &lt;- import.bed(&quot;hotspots_merged_ext_300.bed&quot;)
+blacklist &lt;- import.bed(&quot;../0.External_resources/ENCFF356LFX.bed&quot;)
+hotspots &lt;- import.bed(&quot;../0.External_resources/hotspots_merged_ext_300.bed&quot;)
 exons &lt;- flank(unlist(exonsBy(TxDb.Hsapiens.UCSC.hg38.knownGene,&quot;tx&quot;)),50,both=TRUE)</code></pre>
 <pre><code>## Warning in valid.GenomicRanges.seqinfo(x, suggest.trim = TRUE): GRanges object contains 25 out-of-bound ranges located on sequences
 ##   chr5_KI270898v1_alt, chr6_GL000254v2_alt, chr6_KI270798v1_alt,
@@ -473,45 +482,14 @@ exons &lt;- flank(unlist(exonsBy(TxDb.Hsapiens.UCSC.hg38.knownGene,&quot;tx&quot
 ##   See ?`trim,GenomicRanges-method` for more information.</code></pre>
 <pre class="r"><code>seqlevels(mask,pruning.mode=&quot;coarse&quot;) &lt;- seqlevels(CTSSs)
 seqinfo(mask) &lt;- seqinfo(CTSSs)
-mask &lt;- trim(mask)</code></pre>
-<pre class="r"><code>K562.repSub.divnoise &lt;- estimateDivergentNoise(CTSSs, mask, map.gr.minus, map.gr.plus)</code></pre>
-<pre><code>## Creating unmasked mappable windows...</code></pre>
-<pre><code>## Warning in valid.GenomicRanges.seqinfo(x, suggest.trim = TRUE): GRanges object contains 8 out-of-bound ranges located on sequences
-##   chr6, chr10, chr11, chr12, chr15, chr18, chr22, and chrX. Note that
-##   ranges located on a sequence whose length is unknown (NA) or on a
-##   circular sequence are not considered out-of-bound (use seqlengths() and
-##   isCircular() to get the lengths and circularity flags of the underlying
-##   sequences). You can use trim() to trim these ranges. See
-##   ?`trim,GenomicRanges-method` for more information.</code></pre>
-<pre><code>## Filtering windows based on mappability strand-wise...</code></pre>
-<pre><code>## Quantifying expression strand_wise across samples...</code></pre>
-<pre><code>## Calculating statistics...</code></pre>
-<pre class="r"><code>K562.repSub.divnoise</code></pre>
-<pre><code>##          K562_C1  K562_C2 K562_C3  K562_N4  K562_N5  K562_N6 K562_groCap_1
-## 90%      0.00000  0.00000  0.0000   0.0000  0.00000   0.0000       0.00000
-## 95%      0.00000  0.00000  0.0000   1.0000  1.00000   1.0000       0.00000
-## 99%      1.00000  1.00000  0.0000   4.0000  4.00000   4.0000       2.00000
-## 99.9%    4.00000  4.00000  4.0000  13.0000 12.00000  15.0000       5.00000
-## 99.99%  11.00000 11.00000 10.0000  39.0000 33.00000  44.2012      11.00000
-## 99.999% 31.66036 33.22012 29.1006 112.1006 98.44024 143.1006      47.72312
-##         K562_ProCap_pcr_2 K562_ProCap_pcr_1 K562_10M_N1 K562_10M_N2 K562_10M_N3
-## 90%               0.00000           0.00000     2.00000     2.00000     2.00000
-## 95%               1.00000           1.00000     2.00000     3.00000     3.00000
-## 99%               3.00000           3.00000     5.00000     5.00000     6.00000
-## 99.9%             8.00000           6.00000    12.00000    12.00000    13.00000
-## 99.99%           14.20120          12.00000    34.00000    31.20120    34.20120
-## 99.999%          27.22012          17.22012    83.88048    77.44024    73.54084
-##           K562_C   K562_N K562_Cap_align K562_pcr_align K562_N_10M
-## 90%      0.00000   0.0000        0.00000              1    2.00000
-## 95%      0.00000   1.0000        0.00000              2    2.00000
-## 99%      1.00000   3.0000        2.00000              5    4.00000
-## 99.9%    3.00000  12.0000        5.00000             10   12.00000
-## 99.99%  10.00000  37.0000       10.00000             19   32.00000
-## 99.999% 31.22012 120.6604       46.94324             31   78.32072</code></pre>
-<pre class="r"><code>write.csv(K562.repSub.divnoise,&quot;K562.repSub.divnoise.csv&quot;)
+mask &lt;- trim(mask)
 
-CTSSs &lt;- readRDS(&quot;../1.CTSSs/poolSub.combined.k562.CTSSs.rmSingletons.rds&quot;)
-K562.poolSub.divnoise &lt;- estimateDivergentNoise(CTSSs, mask, map.gr.minus, map.gr.plus)</code></pre>
+for (n in names(files)) {
+    CTSSs &lt;- readRDS(files[n])
+    divnoise &lt;- estimateDivergentNoise(CTSSs, mask, map.gr.minus, map.gr.plus)
+    divnoise
+    write.csv(divnoise,paste0(n,&quot;.divnoise.csv&quot;))
+}</code></pre>
 <pre><code>## Creating unmasked mappable windows...</code></pre>
 <pre><code>## Warning in valid.GenomicRanges.seqinfo(x, suggest.trim = TRUE): GRanges object contains 8 out-of-bound ranges located on sequences
 ##   chr6, chr10, chr11, chr12, chr15, chr18, chr22, and chrX. Note that
@@ -523,32 +501,6 @@ K562.poolSub.divnoise &lt;- estimateDivergentNoise(CTSSs, mask, map.gr.minus, ma
 <pre><code>## Filtering windows based on mappability strand-wise...</code></pre>
 <pre><code>## Quantifying expression strand_wise across samples...</code></pre>
 <pre><code>## Calculating statistics...</code></pre>
-<pre class="r"><code>K562.poolSub.divnoise</code></pre>
-<pre><code>##          K562_C1  K562_C2  K562_C3  K562_N4  K562_N5  K562_N6 K562_groCap_1
-## 90%      0.00000  0.00000  0.00000   0.0000   0.0000   0.0000        0.0000
-## 95%      0.00000  0.00000  0.00000   2.0000   1.0000   2.0000        0.0000
-## 99%      1.00000  1.00000  1.00000   5.0000   5.0000   5.0000        2.0000
-## 99.9%    4.00000  5.00000  4.00000  18.0000  15.0000  18.0000        5.0000
-## 99.99%  11.00000 11.20120 13.00000  55.2012  42.2012  55.0000       11.2012
-## 99.999% 31.66036 34.22012 40.32072 166.2201 124.4402 175.3207       52.6036
-##         K562_ProCap_pcr_2 K562_ProCap_pcr_1 K562_10M_N1 K562_10M_N2 K562_10M_N3
-## 90%               1.00000           0.00000      5.0000      6.0000      4.0000
-## 95%               1.00000           1.00000      7.0000      8.0000      6.0000
-## 99%               4.00000           3.00000     14.0000     15.0000     11.0000
-## 99.9%             9.00000           6.00000     38.0000     37.0000     29.0000
-## 99.99%           17.00000          12.00000    107.4024     99.2012     71.0000
-## 99.999%          30.88048          17.22012    273.9054    228.7610    159.1823
-##           K562_C   K562_N K562_Cap_align K562_pcr_align K562_N_10M
-## 90%       0.0000   2.0000         0.0000        1.00000     4.0000
-## 95%       0.0000   3.0000         0.0000        2.00000     6.0000
-## 99%       2.0000  10.0000         2.0000        6.00000    12.0000
-## 99.9%     8.0000  39.0000         5.0000       13.00000    36.0000
-## 99.99%   32.2012 124.6036        11.2012       25.20120   106.2012
-## 99.999% 112.8805 382.7420        52.6036       46.22012   270.1006</code></pre>
-<pre class="r"><code>write.csv(K562.poolSub.divnoise,&quot;K562.poolSub.divnoise.csv&quot;)
-
-CTSSs &lt;- readRDS(&quot;../1.CTSSs/repSub.combined.GM12878.CTSSs.rmSingletons.rds&quot;)
-GM12878.repSub.divnoise &lt;- estimateDivergentNoise(CTSSs, mask, map.gr.minus, map.gr.plus)</code></pre>
 <pre><code>## Creating unmasked mappable windows...</code></pre>
 <pre><code>## Warning in valid.GenomicRanges.seqinfo(x, suggest.trim = TRUE): GRanges object contains 8 out-of-bound ranges located on sequences
 ##   chr6, chr10, chr11, chr12, chr15, chr18, chr22, and chrX. Note that
@@ -560,88 +512,6 @@ GM12878.repSub.divnoise &lt;- estimateDivergentNoise(CTSSs, mask, map.gr.minus, 
 <pre><code>## Filtering windows based on mappability strand-wise...</code></pre>
 <pre><code>## Quantifying expression strand_wise across samples...</code></pre>
 <pre><code>## Calculating statistics...</code></pre>
-<pre class="r"><code>GM12878.repSub.divnoise</code></pre>
-<pre><code>##         GM12878_250K_C GM12878_500K_C GM12878_1M_C GM12878_500K_N GM12878_1M_N
-## 90%            0.00000              0            0         0.0000       0.0000
-## 95%            0.00000              0            0         0.0000       0.0000
-## 99%            4.00000              2            3        16.0000      10.0000
-## 99.9%         11.00000              6            8        41.0000      27.0000
-## 99.99%        19.00000             13           20        88.0000      62.2012
-## 99.999%       32.66036             39           69       200.0817     159.9811
-##         GM12878_5M_N GM12878_10M_N GM12878_50K_C GM12878_1M_trip
-## 90%           1.0000        3.0000       0.00000         0.00000
-## 95%           3.0000        3.0000       0.00000         0.00000
-## 99%           7.0000        7.0000      11.00000         1.00000
-## 99.9%        23.0000       19.0000      34.00000         3.00000
-## 99.99%       58.0000       49.0000      53.20120         9.00000
-## 99.999%     164.2201      124.1006      67.22012        38.44024
-##         GM12878_1M_ctrl GM12878_10M_Cap_align GM12878_250K_C1 GM12878_250K_C2
-## 90%              0.0000               0.00000         0.00000               0
-## 95%              0.0000               0.00000         0.00000               0
-## 99%              1.0000               2.00000         1.00000               2
-## 99.9%            4.0000               6.00000        18.00000              23
-## 99.99%          13.0000              10.00000        31.00000              37
-## 99.999%         38.1006              36.88048        53.88048              54
-##         GM12878_250K_C3 GM12878_500K_C1 GM12878_1M_C1 GM12878_500K_N1
-## 90%             0.00000          0.0000       0.00000          0.0000
-## 95%             0.00000          0.0000       0.00000          0.0000
-## 99%             0.00000          3.0000       5.00000          7.0000
-## 99.9%          17.00000          8.0000      15.00000         90.0000
-## 99.99%         31.00000         16.0000      33.20120        147.0000
-## 99.999%        49.22012         39.1006      85.24504        258.8805
-##         GM12878_500K_N2 GM12878_500K_N3 GM12878_1M_N1 GM12878_1M_N3
-## 90%              0.0000          0.0000        0.0000        0.0000
-## 95%              0.0000          0.0000        0.0000        0.0000
-## 99%              1.0000          1.0000       15.0000       16.0000
-## 99.9%           73.0000         80.0000       39.0000       51.0000
-## 99.99%         135.0000        135.0000       73.0000       99.2012
-## 99.999%        275.0817        244.3207      177.1006      189.5408
-##         GM12878_5M_N1 GM12878_5M_N2 GM12878_5M_N3 GM12878_10M_N1 GM12878_10M_N2
-## 90%            0.0000        2.0000        0.0000         2.0000         3.0000
-## 95%            2.0000        4.0000        3.0000         3.0000         4.0000
-## 99%            6.0000       11.0000       10.0000         6.0000         7.0000
-## 99.9%         19.0000       31.0000       29.0000        14.0000        18.0000
-## 99.99%        51.2012       73.0000       70.2012        34.0000        47.0000
-## 99.999%      142.2201      166.2201      171.2012        73.1006       101.8805
-##         GM12878_10M_N3 GM12878_50K_C1 GM12878_50K_C2 GM12878_50K_C3
-## 90%             3.0000        0.00000         0.0000         0.0000
-## 95%             5.0000        0.00000         0.0000         0.0000
-## 99%             9.0000        6.00000         0.0000         0.0000
-## 99.9%          25.0000       47.00000        76.0000        69.0000
-## 99.99%         63.0000       72.00000       141.0000       130.0000
-## 99.999%       162.2012       88.22012       171.6604       156.4402
-##         GM12878_500K_C2 GM12878_500K_C3 GM12878_1M_C2 GM12878_1M_C3
-## 90%                   0         0.00000       0.00000       0.00000
-## 95%                   0         0.00000       0.00000       0.00000
-## 99%                   3         2.00000       3.00000       2.00000
-## 99.9%                 9         7.00000      10.00000       6.00000
-## 99.99%               17        14.00000      23.20120      15.00000
-## 99.999%              52        36.22012      73.54084      43.22012
-##         GM12878_1M_N2 GM12878_triptolide_C1 GM12878_triptolide_C2
-## 90%            0.0000                     0                     0
-## 95%            0.0000                     0                     0
-## 99%           12.0000                     1                     1
-## 99.9%         40.0000                     4                     5
-## 99.99%        83.0000                    10                    11
-## 99.999%      165.8616                    35                    43
-##         GM12878_triptolide_C3 GM12878_triptolide_C4 GM12878_ctrl_C1
-## 90%                   0.00000               0.00000         0.00000
-## 95%                   0.00000               0.00000         0.00000
-## 99%                   2.00000               1.00000         2.00000
-## 99.9%                 5.00000               5.00000         5.00000
-## 99.99%               11.00000              10.00000        13.00000
-## 99.999%              43.44024              43.22012        32.44024
-##         GM12878_ctrl_C2 GM12878_ctrl_C3 GM12878_groCap_1
-## 90%             0.00000         0.00000          0.00000
-## 95%             0.00000         0.00000          0.00000
-## 99%             1.00000         1.00000          2.00000
-## 99.9%           5.00000         4.00000          6.00000
-## 99.99%         16.00000        12.00000         10.00000
-## 99.999%        47.22012        54.44024         37.22012</code></pre>
-<pre class="r"><code>write.csv(GM12878.repSub.divnoise,&quot;GM12878.repSub.divnoise.csv&quot;)
-
-CTSSs &lt;- readRDS(&quot;../1.CTSSs/poolSub.combined.GM12878.CTSSs.rmSingletons.rds&quot;)
-GM12878.poolSub.divnoise &lt;- estimateDivergentNoise(CTSSs, mask, map.gr.minus, map.gr.plus)</code></pre>
 <pre><code>## Creating unmasked mappable windows...</code></pre>
 <pre><code>## Warning in valid.GenomicRanges.seqinfo(x, suggest.trim = TRUE): GRanges object contains 8 out-of-bound ranges located on sequences
 ##   chr6, chr10, chr11, chr12, chr15, chr18, chr22, and chrX. Note that
@@ -653,85 +523,50 @@ GM12878.poolSub.divnoise &lt;- estimateDivergentNoise(CTSSs, mask, map.gr.minus,
 <pre><code>## Filtering windows based on mappability strand-wise...</code></pre>
 <pre><code>## Quantifying expression strand_wise across samples...</code></pre>
 <pre><code>## Calculating statistics...</code></pre>
-<pre class="r"><code>GM12878.poolSub.divnoise</code></pre>
-<pre><code>##         GM12878_250K_C GM12878_500K_C GM12878_1M_C GM12878_500K_N GM12878_1M_N
-## 90%             0.0000         0.0000       0.0000         0.0000       0.0000
-## 95%             0.0000         1.0000       2.0000         0.0000       1.0000
-## 99%            14.0000         8.0000       9.0000        59.0000      36.0000
-## 99.9%          37.0000        20.0000      26.0000       148.0000      96.0000
-## 99.99%         63.0000        47.0000      71.2012       308.4024     230.4024
-## 99.999%       110.6604       121.5219     223.8237       732.4652     604.2201
-##         GM12878_5M_N GM12878_10M_N GM12878_50K_C GM12878_1M_trip
-## 90%           5.0000        8.0000        0.0000          0.0000
-## 95%           9.0000       11.0000        0.0000          1.0000
-## 99%          26.0000       22.0000       32.0000          4.0000
-## 99.9%        83.0000       67.0000       96.0000          9.0000
-## 99.99%      214.0000      169.2012      152.0000         33.0000
-## 99.999%     585.6414      413.8865      184.6604        151.2201
-##         GM12878_1M_ctrl GM12878_10M_Cap_align GM12878_250K_C1 GM12878_250K_C2
-## 90%              0.0000               0.00000         0.00000          0.0000
-## 95%              1.0000               0.00000         0.00000          0.0000
-## 99%              3.0000               2.00000         2.00000          4.0000
-## 99.9%           11.0000               6.00000        25.00000         51.0000
-## 99.99%          45.2012              11.00000        42.00000         77.0000
-## 99.999%        148.4402              41.66036        77.42132        121.4402
-##         GM12878_250K_C3 GM12878_500K_C1 GM12878_1M_C1 GM12878_500K_N1
-## 90%              0.0000          0.0000        0.0000          0.0000
-## 95%              0.0000          0.0000        0.0000          0.0000
-## 99%              0.0000         10.0000        7.0000          7.0000
-## 99.9%           32.0000         25.0000       23.0000         96.0000
-## 99.99%          57.0000         53.0000       52.0000        157.2012
-## 99.999%         84.1006        145.7042      140.1255        277.6604
-##         GM12878_500K_N2 GM12878_500K_N3 GM12878_1M_N1 GM12878_1M_N3
-## 90%              0.0000          0.0000        0.0000        0.0000
-## 95%              0.0000          0.0000        0.0000        0.0000
-## 99%              1.0000          1.0000       25.0000       16.0000
-## 99.9%          104.0120        100.0000       65.0000       51.0000
-## 99.99%         191.0000        165.4024      119.2012      100.2012
-## 99.999%        400.9622        310.5408      288.5408      191.4213
-##         GM12878_5M_N1 GM12878_5M_N2 GM12878_5M_N3 GM12878_10M_N1 GM12878_10M_N2
-## 90%             2.000        4.0000        1.0000         7.0000         7.0000
-## 95%             5.000       10.0000        5.0000         9.0000        10.0000
-## 99%            15.000       26.0000       16.0000        18.0000        19.0000
-## 99.9%          50.000       75.0000       46.0000        50.0000        50.0000
-## 99.99%        134.000      179.4024      108.4024       125.2012       131.0000
-## 99.999%       356.742      425.7610      265.3207       291.7610       323.9622
-##         GM12878_10M_N3 GM12878_50K_C1 GM12878_50K_C2 GM12878_50K_C3
-## 90%            11.0000              0         0.0000         0.0000
-## 95%            15.0000              0         0.0000         0.0000
-## 99%            31.0000              6         0.0000         0.0000
-## 99.9%          89.0000             48        76.0000        69.0000
-## 99.99%        219.2012             73       141.0000       130.0000
-## 99.999%       571.8805             90       171.6604       156.4402
-##         GM12878_500K_C2 GM12878_500K_C3 GM12878_1M_C2 GM12878_1M_C3
-## 90%             0.00000          0.0000       0.00000       0.00000
-## 95%             0.00000          0.0000       0.00000       1.00000
-## 99%             3.00000          3.0000       3.00000       3.00000
-## 99.9%          10.00000          9.0000      10.00000       9.00000
-## 99.99%         19.00000         18.0000      24.00000      23.00000
-## 99.999%        62.44024         47.1006      73.98108      67.44024
-##         GM12878_1M_N2 GM12878_triptolide_C1 GM12878_triptolide_C2
-## 90%            0.0000               0.00000                     0
-## 95%            0.0000               0.00000                     0
-## 99%           12.0000               1.00000                     1
-## 99.9%         40.0000               5.00000                     5
-## 99.99%        83.0000              13.00000                    11
-## 99.999%      165.8616              43.22012                    43
-##         GM12878_triptolide_C3 GM12878_triptolide_C4 GM12878_ctrl_C1
-## 90%                    0.0000               0.00000         0.00000
-## 95%                    0.0000               0.00000         0.00000
-## 99%                    4.0000               1.00000         2.00000
-## 99.9%                 11.0000               5.00000         5.00000
-## 99.99%                30.0000              10.00000        13.00000
-## 99.999%              111.8805              43.22012        32.44024
-##         GM12878_ctrl_C2 GM12878_ctrl_C3 GM12878_groCap_1
-## 90%             0.00000          0.0000          0.00000
-## 95%             0.00000          0.0000          0.00000
-## 99%             3.00000          3.0000          2.00000
-## 99.9%           8.00000         11.0000          6.00000
-## 99.99%         28.20120         33.0000         11.00000
-## 99.999%        83.54084        150.1006         41.66036</code></pre>
-<pre class="r"><code>write.csv(GM12878.poolSub.divnoise,&quot;GM12878.poolSub.divnoise.csv&quot;)</code></pre>
+<pre><code>## Creating unmasked mappable windows...</code></pre>
+<pre><code>## Warning in valid.GenomicRanges.seqinfo(x, suggest.trim = TRUE): GRanges object contains 8 out-of-bound ranges located on sequences
+##   chr6, chr10, chr11, chr12, chr15, chr18, chr22, and chrX. Note that
+##   ranges located on a sequence whose length is unknown (NA) or on a
+##   circular sequence are not considered out-of-bound (use seqlengths() and
+##   isCircular() to get the lengths and circularity flags of the underlying
+##   sequences). You can use trim() to trim these ranges. See
+##   ?`trim,GenomicRanges-method` for more information.</code></pre>
+<pre><code>## Filtering windows based on mappability strand-wise...</code></pre>
+<pre><code>## Quantifying expression strand_wise across samples...</code></pre>
+<pre><code>## Calculating statistics...</code></pre>
+<pre><code>## Creating unmasked mappable windows...</code></pre>
+<pre><code>## Warning in valid.GenomicRanges.seqinfo(x, suggest.trim = TRUE): GRanges object contains 8 out-of-bound ranges located on sequences
+##   chr6, chr10, chr11, chr12, chr15, chr18, chr22, and chrX. Note that
+##   ranges located on a sequence whose length is unknown (NA) or on a
+##   circular sequence are not considered out-of-bound (use seqlengths() and
+##   isCircular() to get the lengths and circularity flags of the underlying
+##   sequences). You can use trim() to trim these ranges. See
+##   ?`trim,GenomicRanges-method` for more information.</code></pre>
+<pre><code>## Filtering windows based on mappability strand-wise...</code></pre>
+<pre><code>## Quantifying expression strand_wise across samples...</code></pre>
+<pre><code>## Calculating statistics...</code></pre>
+<pre><code>## Creating unmasked mappable windows...</code></pre>
+<pre><code>## Warning in valid.GenomicRanges.seqinfo(x, suggest.trim = TRUE): GRanges object contains 8 out-of-bound ranges located on sequences
+##   chr6, chr10, chr11, chr12, chr15, chr18, chr22, and chrX. Note that
+##   ranges located on a sequence whose length is unknown (NA) or on a
+##   circular sequence are not considered out-of-bound (use seqlengths() and
+##   isCircular() to get the lengths and circularity flags of the underlying
+##   sequences). You can use trim() to trim these ranges. See
+##   ?`trim,GenomicRanges-method` for more information.</code></pre>
+<pre><code>## Filtering windows based on mappability strand-wise...</code></pre>
+<pre><code>## Quantifying expression strand_wise across samples...</code></pre>
+<pre><code>## Calculating statistics...</code></pre>
+<pre><code>## Creating unmasked mappable windows...</code></pre>
+<pre><code>## Warning in valid.GenomicRanges.seqinfo(x, suggest.trim = TRUE): GRanges object contains 8 out-of-bound ranges located on sequences
+##   chr6, chr10, chr11, chr12, chr15, chr18, chr22, and chrX. Note that
+##   ranges located on a sequence whose length is unknown (NA) or on a
+##   circular sequence are not considered out-of-bound (use seqlengths() and
+##   isCircular() to get the lengths and circularity flags of the underlying
+##   sequences). You can use trim() to trim these ranges. See
+##   ?`trim,GenomicRanges-method` for more information.</code></pre>
+<pre><code>## Filtering windows based on mappability strand-wise...</code></pre>
+<pre><code>## Quantifying expression strand_wise across samples...</code></pre>
+<pre><code>## Calculating statistics...</code></pre>
 
 
 

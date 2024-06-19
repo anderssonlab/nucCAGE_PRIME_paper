@@ -47,12 +47,15 @@ resize.width <- 200
 SNP.file <- "../0.External_resources/all.bg.SNPs.hg38.baseline.v1.1.bed.sorted"
 eQTL.file <- "../0.External_resources/GTEx_30tissues_release1_pip_01_Whole_Blood.tsv"
 GWAS.file <- "../0.External_resources/UKBB_94traits_release1_pip02_clean_hg38.bed"
+ClinVar.file <- "../0.External_resources/ClinVar_GRCh38_nonbenign_noncoding_SNV.bed"
 
 eQTL.pip.thres <- 0.5
 GWAS.pip.thres <- 0.2
 traits <- c("Plt","HbA1c","Hb","RBC","MCV","MCH","MCHC")
 
 cCRE.file <- "../0.External_resources/ENCFF464BRU.bed"
+
+DHS.file <- "../0.External_resources/ENCFF464BRU.bed"
 
 PINTS.files <- c("PINTS GRO/PRO-cap distal" = "../0.External_resources/K562_Distal_PINTS_GRO_PRO_cap.bed",
                  "PINTS GRO/PRO-cap proximal" = "../0.External_resources/K562_Proximal_PINTS_GRO_PRO_cap.bed")
@@ -199,6 +202,16 @@ GWAS.data <- unique(GWAS.data)
 
 GWAS.n <- length(GWAS.data)
 
+## ClinVar data
+
+ClinVar.data <- import.bed(ClinVar.file)
+seqlevels(ClinVar.data,pruning.mode="coarse") <- seqlevels(SNP.data)
+ClinVar.data <- sort(ClinVar.data)
+ClinVar.data <- reduce(ClinVar.data,min.gapwidth=0)
+olap <- findOverlaps(ClinVar.data,cds,minoverlap=1)
+ClinVar.data <- ClinVar.data[-queryHits(olap)]
+ClinVar.n <- length(ClinVar.data)
+
 ## Point estimate data
 
 point.data <- lapply(names(PINTS.files), function(n) import.bed(PINTS.files[[n]]))
@@ -294,6 +307,61 @@ CRISPR.neg.data <- readRDS(CRISPR.neg.file)
 CRISPR.n <- length(CRISPR.pos.data)
 
 ```
+
+Calculate ClinVar non-benign non-coding SNV densities
+
+```{r}
+
+point.ClinVar.df <- do.call("rbind", lapply(names(point.data), function(n) {
+  olap <- findOverlaps(ClinVar.data, point.data[[n]], minoverlap=1)
+  fg.count <- length(unique(queryHits(olap)))
+  region.count <- length(unique(subjectHits(olap)))
+  bg.olap <- findOverlaps(SNP.data, point.data[[n]], minoverlap=1)
+  bg.count <- length(unique(queryHits(bg.olap)))
+  data.frame(density=fg.count / sum(width(point.data[[1]])),
+             enrichment=(fg.count/length(ClinVar.data)) / (bg.count/length(SNP.data)),
+             recall=fg.count/length(ClinVar.data),
+             fg.count=fg.count,
+             bg.count=bg.count,
+             region.count=region.count,
+             sample=n,
+             assay=point.data.assay[n],
+             loc=point.data.loc[n])
+}))
+
+point.ClinVar.df
+
+pooled.preds.ClinVar.enrichment.recall.data <- do.call("rbind", lapply(names(pooled.preds.genome.files), function(n) {
+  
+  gr <- pooled.preds[[n]]
+  
+  scores <- seq(0,1,by=0.01)
+  cnt <- sapply(scores, function(sco) sum(gr$score>=sco))
+  scores <- scores[cnt>=10]
+  
+  gr.fg.olap <- findOverlaps(ClinVar.data, gr, minoverlap=1)
+  gr.bg.olap <- findOverlaps(SNP.data, gr, minoverlap=1)
+  
+  do.call("rbind", lapply(scores, function(sco) {
+    
+    selection <- which(gr$score>=sco)
+    fg.count <- length(unique(queryHits(gr.fg.olap)[which(subjectHits(gr.fg.olap) %in% selection)]))
+    bg.count <- length(unique(queryHits(gr.bg.olap)[which(subjectHits(gr.bg.olap) %in% selection)]))
+    
+    data.frame(enrichment=(fg.count/length(ClinVar.data))/(bg.count/length(SNP.data)),
+               recall=fg.count/length(ClinVar.data),
+               fg.count=fg.count,
+               bg.count=bg.count,
+               score=sco,
+               sample=n,
+               assay=as.character(pooled.preds.genome.names[n]))
+  }))
+}))
+
+
+```
+
+
 Calculate eQTL enrichment and recall
 
 ```{r}
@@ -706,6 +774,23 @@ pooled.preds.CRISPR.precision.recall.data <- do.call("rbind", lapply(names(poole
 
 
 ```
+
+Plot ClinVar results
+
+```{r}
+
+ggplot(subset(point.ClinVar.df,loc=="genome"), aes(recall, enrichment, color=assay, label=sample)) + 
+  geom_point() + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
+  xlab(paste0("recall (n=",ClinVar.n,")"))
+ggsave("plots/K562_ClinVar_enrichment_vs_recall_point_estimates.pdf",width=8,height=7)
+
+ggplot(pooled.preds.ClinVar.enrichment.recall.data, aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
+  theme(aspect.ratio=1) +
+  geom_point(data=subset(point.ClinVar.df,loc=="genome")) + xlab(paste0("recall (n=",ClinVar.n,")"))
+ggsave("plots/K562_pooled_preds_ClinVar_enrichment_vs_recall_and_point_estimates_genome.pdf",width=7,height=5)
+
+```
+
 Plot eQTL results
 
 ```{r}

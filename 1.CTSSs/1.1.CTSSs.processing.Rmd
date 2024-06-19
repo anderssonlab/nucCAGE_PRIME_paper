@@ -1,7 +1,7 @@
 ---
-title: "K562.CTSSs"
+title: "CTSSs preprocessing"
 output: html_document
-date: "2024-01-25"
+date: "2024-05-17"
 ---
 
 ## [0.] Prerequsites -------------------------
@@ -10,52 +10,11 @@ date: "2024-01-25"
 ```{r message=FALSE}
 base::library(tidyverse)
 base::library(CAGEfightR)
-##Packages for plotting
-base::library(epistack)
-base::library(foreach)
-base::library(BiocParallel)
-base::library(reshape2)
-base::library(limma)
-base::library(Matrix)
-base::library(corrplot)
-base::library(assertthat)
+base::library(PRIME)
 ```
 
-## [0.1.] Load CAGEfighR extensions
-```{r}
-# base::setwd("/home/mhf817")
-# cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
-sep <- .Platform$file.sep
-cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
-base::source(base::paste(cfr.extensions.dir, "utils.R", sep = sep))
-base::source(base::paste(cfr.extensions.dir, "support.R", sep = sep))
-base::source(base::paste(cfr.extensions.dir, "cumulative.R", sep = sep))
-base::source(base::paste(cfr.extensions.dir, "decompose.R", sep = sep))
-base::source(base::paste(cfr.extensions.dir, "enhancers.R", sep = sep))
-base::source(base::paste(cfr.extensions.dir, "noise.R", sep = sep))
-base::source(base::paste(cfr.extensions.dir, "coverage.R", sep = sep))
-base::source(base::paste(cfr.extensions.dir, "complexity.R", sep = sep))
-base::source(base::paste(cfr.extensions.dir, "subsample.R", sep = sep))
-base::source(base::paste(cfr.extensions.dir, "dispersion.R", sep = sep))
-base::source(base::paste(cfr.extensions.dir, "normalize.R", sep = sep))
-```
 
-## [0.2.] Load annotations
-```{r message=FALSE}
-base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-```
-
-## [0.3.] Add custom color palette
-```{r}
-custom.col <- base::c(
-    "#FFDB6D","#C4961A","#F4EDCA",
-    "#D16103","#C3D7A4","#52854C",
-    "#4E84C4","#293352","grey"
-  )
-```
-
-## [0.4.] Register server cores / threads
+## [0.1.] Register server cores / threads
 ```{r}
 BiocParallel::register(
   BPPARAM = BiocParallel::MulticoreParam(
@@ -64,13 +23,14 @@ BiocParallel::register(
   )
 ```
 
-## [0.5.] Set working directory
+## [0.2.] Set working directory
 ```{r eval=FALSE}
-# base::setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/1.CTSSs/")
+#base::setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/1.CTSSs/")
 ```
 
-## [0.6.] Function for pooling replicates
+## [0.3.] Function for pooling replicates
 ```{r}
+#In future included in PRIME so can be removed
 poolReplicates <- function(object, replicates, inputAssay="counts") {
     
     ## dimensions
@@ -120,8 +80,23 @@ poolReplicates <- function(object, replicates, inputAssay="counts") {
   }
 ```
 
-## [0.7.] Function for writing out TMM normalized bigwig tracks
+## [0.4.] Function for removing singletons
 ```{r}
+#Create new assay with counts where 1 counts become 0
+rmSingletons <- function(rse, inputAssay = "counts") {
+  rmS <- assay(rse, inputAssay)
+  # Find the indices where values are equal to 1
+  idx <- which(rmS == 1, arr.ind = TRUE)
+  # Replace the values at those indices with 0
+  rmS[idx] <- 0
+  # Assign the modified assay back to the SummarizedExperiment object
+  assay(rse, "counts.noSingletons") <- rmS
+  rse
+}
+```
+## [0.5.] Function for writing out TMM normalized bigwig tracks
+```{r}
+#In future included in PRIME so can be removed
 writeBw <- function(object, replicates, dir, inputAssay="TMM"){
   
   ## Check consistency of replicates
@@ -189,20 +164,16 @@ bw_plus <- rtracklayer::BigWigFileList(plus_files)
 bw_minus <- rtracklayer::BigWigFileList(minus_files)
 ```
 
-## [1.2.] Quantify CTSSs with no reference genome set
+## [1.3.] Quantify CTSSs with no reference genome set
 ```{r}
 k562.CTSSs <- CAGEfightR::quantifyCTSSs(
     plusStrand = bw_plus,
     minusStrand = bw_minus,
     design = design
   )
-
-k562.CTSSs <- k562.CTSSs %>%
-  CAGEfightR::calcTPM() %>%
-  CAGEfightR::calcPooled()
 ```
 
-## [1.3.] Visualize amount of tags across libraries
+## [1.4.] Visualize amount of tags across libraries
 ```{r}
 SummarizedExperiment::colData(k562.CTSSs) %>%
   tibble::as_tibble() %>%
@@ -230,9 +201,20 @@ SummarizedExperiment::colData(k562.CTSSs) %>%
     )
 ```
 
-## [1.4.] Pool replicates
+
+
+## [1.5.] Keep only standard chromosomes and pool replicates
 #### Evaluate with SummarizedExperiment::colData(k562.p.CTSSs), SummarizedExperiment::colData(k562.CTSSs)
 ```{r}
+keep <- GenomeInfoDb::seqlevels(k562.CTSSs)[1:23]
+
+k562.CTSSs <- GenomeInfoDb::keepSeqlevels(k562.CTSSs, keep, pruning.mode = "coarse")
+
+
+k562.CTSSs <- k562.CTSSs %>%
+  CAGEfightR::calcTPM() %>%
+  CAGEfightR::calcPooled()
+
 k562.p.CTSSs <- .GlobalEnv$poolReplicates(
   object = k562.CTSSs,
   replicates = base::paste(
@@ -245,36 +227,8 @@ k562.p.CTSSs <- .GlobalEnv$poolReplicates(
 k562.p.CTSSs <- CAGEfightR::calcTPM(k562.p.CTSSs)
 ```
 
-## [1.5.1.] Subsample original to minimum common depth
-```{r}
-base::set.seed(1337)
 
-#Only subsample here to second minimum (should probably exclude K562_ProCap_pcr_1 due to low sequencing depth)
-k562.s.CTSSs <- .GlobalEnv$subsampleTarget(
-    object = k562.CTSSs,
-    target = 29267326
-  )
-k562.s.CTSSs <- CAGEfightR::subsetBySupport(
-    object = k562.s.CTSSs,
-    minSamples = 0
-  )
-k562.s.CTSSs <- CAGEfightR::calcTPM(k562.s.CTSSs)
-```
 
-## [1.5.2.] Subsample pooled to minimum common depth
-```{r}
-k562.p.s.CTSSs <- .GlobalEnv$subsampleTarget(
-  object = k562.p.CTSSs,
-  target = base::min(
-      SummarizedExperiment::colData(k562.p.CTSSs)$totalTags
-    )
-  )
-k562.p.s.CTSSs <- CAGEfightR::subsetBySupport(
-    object = k562.p.s.CTSSs,
-    minSamples = 0
-  )
-k562.p.s.CTSSs <- CAGEfightR::calcTPM(k562.p.s.CTSSs)
-```
 
 ## [1.6.] Combine into one object
 ```{r}
@@ -284,68 +238,30 @@ SummarizedExperiment::colData(k562.p.CTSSs)$pooled <- "yes"
 k562.combined.CTSSs <- BiocGenerics::cbind(k562.CTSSs,k562.p.CTSSs)
 ```
 
-## [1.7.] Subsample combined object
-#### Three sets, lowest CAGE rep and lowest pooled (excluding proCap and groCap)
-```{r}
-rep.min <- base::min(
-  SummarizedExperiment::colData(
-    k562.combined.CTSSs)$totalTags[
-        SummarizedExperiment::colData(k562.combined.CTSSs)$pooled == "no" &
-        !SummarizedExperiment::colData(k562.combined.CTSSs)$method %in% base::c("ProCap","GroCap")
-      ]
-  ) #29267326
-pool.min <- base::min(
-  SummarizedExperiment::colData(k562.combined.CTSSs)$totalTags[
-      SummarizedExperiment::colData(k562.combined.CTSSs)$pooled=="yes" &
-      !SummarizedExperiment::colData(k562.combined.CTSSs)$method %in% base::c("ProCap,ProCap","GroCap")
-    ]
-  ) #98669216
 
-k562.combined.repSub.CTSSs<- .GlobalEnv$subsampleTarget(
-    object = k562.combined.CTSSs,
-    target = rep.min
-  )
-k562.combined.poolSub.CTSSs<- .GlobalEnv$subsampleTarget(
-    object = k562.combined.CTSSs,
-    target = pool.min
-  )
+## [1.7.] Subsample to minimum seq depth of CAGE across replicates and across pooled samples
+```{r}
+#Subsample both original and pooled to minimum common depth
+set.seed(1337)
+
+#subsample combined. Three sets, lowest CAGE rep and lowest pooled (excluding proCap and groCap)
+rep.min <- min(colData(k562.combined.CTSSs)$totalTags[colData(k562.combined.CTSSs)$pooled=="no"& !colData(k562.combined.CTSSs)$method %in% c("ProCap","GroCap")]) #28619974
+pool.min <- min(colData(k562.combined.CTSSs)$totalTags[colData(k562.combined.CTSSs)$pooled=="yes" & !colData(k562.combined.CTSSs)$method %in% c("ProCap,ProCap","GroCap")]) #96351121
+
+k562.combined.repSub.CTSSs<- PRIME::subsampleTarget(k562.combined.CTSSs, target = rep.min)
+k562.combined.poolSub.CTSSs<- PRIME::subsampleTarget(k562.combined.CTSSs, target = pool.min)
+
 
 k562.combined.repSub.CTSSs <- CAGEfightR::calcTPM(k562.combined.repSub.CTSSs)
 k562.combined.poolSub.CTSSs <- CAGEfightR::calcTPM(k562.combined.poolSub.CTSSs)
 
+
+k562.combined.repSub.CTSSs <- .GlobalEnv$rmSingletons(k562.combined.repSub.CTSSs)
+k562.combined.poolSub.CTSSs <- .GlobalEnv$rmSingletons(k562.combined.poolSub.CTSSs)
 ```
 
-# [1.8.1.] Save CTSS objects
+# [1.8.] Save CTSS objects
 ```{r}
-base::saveRDS(
-  object = k562.CTSSs,
-  file = base::paste0(
-      here::here("1.CTSSs/"),
-      "all.k562.CTSSs.rds"
-    )
-  )
-base::saveRDS(
-  object = k562.s.CTSSs,
-  file = base::paste0(
-      here::here("1.CTSSs/"),
-      "subsampled.k562.CTSSs.rds"
-    )
-  )
-base::saveRDS(
-  object = k562.p.CTSSs,
-  file = base::paste0(
-      here::here("1.CTSSs/"),
-      "pooled.k562.CTSSs.rds"
-    )
-  )
-base::saveRDS(
-  object = k562.p.s.CTSSs,
-  file = base::paste0(
-      here::here("1.CTSSs/"),
-      "pooled.subsampled.k562.CTSSs.rds"
-    )
-  )
-
 base::saveRDS(
   object = k562.combined.CTSSs,
   file = base::paste0(
@@ -357,29 +273,20 @@ base::saveRDS(
   object = k562.combined.repSub.CTSSs,
   file = base::paste0(
       here::here("1.CTSSs/"),
-      "repSub.combined.k562.CTSSs.rds"
+      "repSub.combined.k562.CTSSs.rmSingletons.rds"
     )
   )
 base::saveRDS(
   object = k562.combined.poolSub.CTSSs,
   file = base::paste0(
       here::here("1.CTSSs/"),
-      "poolSub.combined.k562.CTSSs.rds"
+      "poolSub.combined.k562.CTSSs.rmSingletons.rds"
     )
   )
 ```
 
-## [1.8.2.] Load saved rds files
-```{r}
-k562.CTSSs <- base::readRDS(
-  file = base::paste0(
-      here::here("1.CTSSs/"),
-      "all.k562.CTSSs.rds"
-    )
-  )
-```
 
-## [1.13.] TMM normalise data
+## [1.9.] TMM normalise data
 ```{r}
 facs <- edgeR::calcNormFactors(
     object = k562.CTSSs,
@@ -394,7 +301,7 @@ tmm.CTSSs <- .GlobalEnv$TPMnormalizeBySizeFactors(
   )
 ```
 
-## [1.14.] Write out the TMM normalized replicates as bigwig files
+## [1.10.] Write out the TMM normalized replicates as bigwig files
 ```{r}
 .GlobalEnv$writeBw(
     object = tmm.CTSSs,
@@ -403,7 +310,7 @@ tmm.CTSSs <- .GlobalEnv$TPMnormalizeBySizeFactors(
   )
 ```
 
-## [1.15.1.] Save TMM normalized CTSSs
+## [1.10.1.] Save TMM normalized CTSSs
 ```{r}
 base::saveRDS(
   object = tmm.CTSSs,
@@ -415,7 +322,7 @@ base::saveRDS(
   )
 ```
 
-## [1.15.2.] Load saved rds files
+## [1.10.2.] Load saved rds files
 ```{r}
 fn <- base::list.files(
       path = here::here("1.CTSSs"),
@@ -426,7 +333,7 @@ fn <- base::list.files(
 tmm.CTSSs <- base::readRDS(file = fn)
 ```
 
-
+#Downstream needs modifying
 # [2.] Process GM12878 datasets -------------------------
 
 ## [2.0.] Read in GM12878 design matrix
@@ -472,10 +379,8 @@ GM12878.CTSSs <- CAGEfightR::quantifyCTSSs(
     design = design
   )
 
-GM12878.CTSSs <- GM12878.CTSSs %>%
-  CAGEfightR::calcTPM() %>%
-  CAGEfightR::calcPooled()
 ```
+
 ## [2.4.] Visualize amount of tags across libraries
 ```{r}
 SummarizedExperiment::colData(GM12878.CTSSs) %>%
@@ -507,6 +412,15 @@ SummarizedExperiment::colData(GM12878.CTSSs) %>%
 ## [2.5.] Pool replicates
 #### Evaluate with SummarizedExperiment::colData(k562.p.CTSSs), SummarizedExperiment::colData(k562.CTSSs)
 ```{r}
+keep <- GenomeInfoDb::seqlevels(GM12878.CTSSs)[1:23]
+
+GM12878.CTSSs <- GenomeInfoDb::keepSeqlevels(GM12878.CTSSs, keep, pruning.mode = "coarse")
+
+
+GM12878.CTSSs <- GM12878.CTSSs %>%
+  CAGEfightR::calcTPM() %>%
+  CAGEfightR::calcPooled()
+
 GM12878.p.CTSSs <- .GlobalEnv$poolReplicates(
   object = GM12878.CTSSs,
   replicates = base::paste(
@@ -530,54 +444,7 @@ GM12878.pID.CTSSs <- .GlobalEnv$poolReplicates(
 GM12878.pID.CTSSs <- CAGEfightR::calcTPM(GM12878.pID.CTSSs)
 ```
 
-## [2.7.1.] Subsample original to minimum common depth
-```{r}
-base::set.seed(1337)
-
-GM12878.s.CTSSs <- .GlobalEnv$subsampleTarget(
-  object = GM12878.CTSSs,
-  target = base::min(
-      SummarizedExperiment::colData(GM12878.CTSSs)$totalTags
-    )
-  )
-GM12878.s.CTSSs <- CAGEfightR::subsetBySupport(
-    object = GM12878.s.CTSSs,
-    minSamples = 0
-  )
-GM12878.s.CTSSs <- CAGEfightR::calcTPM(GM12878.s.CTSSs)
-```
-
-## [2.7.2.] Subsample pooled to minimum common depth
-```{r}
-GM12878.p.s.CTSSs <- .GlobalEnv$subsampleTarget(
-  object = GM12878.p.CTSSs,
-  target = base::min(
-      SummarizedExperiment::colData(GM12878.p.CTSSs)$totalTags
-    )
-  )
-GM12878.p.s.CTSSs <- CAGEfightR::subsetBySupport(
-    object = GM12878.p.s.CTSSs,
-    minSamples = 0
-  )
-GM12878.p.s.CTSSs <- CAGEfightR::calcTPM(GM12878.p.s.CTSSs)
-```
-
-## [2.7.3.] Pool resequenced to minimum common depth
-```{r}
-GM12878.pID.s.CTSSs <- .GlobalEnv$subsampleTarget(
-  object = GM12878.pID.CTSSs,
-  target = base::min(
-      SummarizedExperiment::colData(GM12878.pID.CTSSs)$totalTags
-    )
-  )
-GM12878.pID.s.CTSSs <- CAGEfightR::subsetBySupport(
-    object = GM12878.pID.s.CTSSs,
-    minSamples = 0
-  )
-GM12878.pID.s.CTSSs <- CAGEfightR::calcTPM(GM12878.pID.s.CTSSs)
-```
-
-## [2.8.] Create combined objects
+## [2.7.] Create combined objects
 # Create object that also contains fully pooled samples.
 #### Main indicates if part of main analysis. Removing Triptolide and low input
 ```{r}
@@ -600,9 +467,10 @@ SummarizedExperiment::colData(GM12878.p.CTSSs)$pooled <- "yes"
 
 ```{r}
 GM12878.combined.CTSSs <- base::cbind(GM12878.p.CTSSs,GM12878.pID.CTSSs)
+GM12878.combined.CTSSs <- cagefightR::calcTotalTags(GM12878.combined.CTSSs)
 ```
 
-## [2.9.] Create two subsamples one to the min replicate depth and one to min pool depth and keep original
+## [2.8.] Create two subsamples one to the min replicate depth and one to min pool depth and keep original
 ```{r}
 rep.min <- base::min(
   SummarizedExperiment::colData(GM12878.combined.CTSSs)$totalTags[
@@ -630,53 +498,16 @@ GM12878.combined.repSub.CTSSs <- CAGEfightR::calcTPM(GM12878.combined.repSub.CTS
 GM12878.combined.poolSub.CTSSs <- CAGEfightR::calcTPM(GM12878.combined.poolSub.CTSSs)
 ```
 
-## [2.10.] Save CTSS objects
+```{r}
+GM12878.combined.repSub.CTSSs <- rmSingletons(GM12878.combined.repSub.CTSSs)
+GM12878.combined.poolSub.CTSSs <- rmSingletons(GM12878.combined.poolSub.CTSSs)
+```
+
+## [2.9.] Save CTSS objects
 ```{r}
 base::saveRDS(
-    object = GM12878.CTSSs,
+    object = GM12878.combined.CTSSs,
     file = base::paste0(
-      here::here(),
-      "all.GM12878.CTSSs.rds"
-    )
-  )
-base::saveRDS(
-  object = GM12878.s.CTSSs,
-  file = base::paste0(
-      here::here(),
-      "subsampled.GM12878.CTSSs.rds"
-    )
-  )
-base::saveRDS(
-  object = GM12878.p.CTSSs,
-  file = base::paste0(
-      here::here(),
-      "pooled.GM12878.CTSSs.rds"
-    )
-  )
-base::saveRDS(
-  object = GM12878.p.s.CTSSs,
-  file = base::paste0(
-      here::here(),
-      "pooled.subsampled.GM12878.CTSSs.rds"
-    )
-  )
-base::saveRDS(
-  object = GM12878.pID.CTSSs,
-  file = base::paste0(
-      here::here(),
-      "IDpooled.GM12878.CTSSs.rds"
-    )
-  )
-base::saveRDS(
-  object = GM12878.pID.s.CTSSs, 
-  file = base::paste0(
-      here::here(),
-      "IDpooled.subsampled.GM12878.CTSSs.rds"
-    )
-  )
-base::saveRDS(
-  object = GM12878.combined.CTSSs,
-  file = base::paste0(
       here::here(),
       "all.combined.GM12878.CTSSs.rds"
     )
@@ -685,15 +516,191 @@ base::saveRDS(
   object = GM12878.combined.repSub.CTSSs,
   file = base::paste0(
       here::here(),
-      "repSub.combined.GM12878.CTSSs.rds"
+      "repSub.combined.GM12878.CTSSs.rmSingletons.rds"
     )
   )
 base::saveRDS(
   object = GM12878.combined.poolSub.CTSSs,
   file = base::paste0(
       here::here(),
-      "poolSub.combined.GM12878.CTSSs.rds"
+      "poolSub.combined.GM12878.CTSSs.rmSingletons.rds"
     )
   )
 ```
 
+
+
+# [3.] Process HepG2, HCT116 and A549  datasets -------------------------
+
+## [3.0.] Read in design matrixes
+```{r}
+a549.design <- utils::read.table(
+    file =  base::paste0(
+        here::here("1.CTSSs/"),
+        "A549.design.txt"
+      ),
+    sep = "\t",
+    header = T
+  )
+
+hct.design <- utils::read.table(
+    file =  base::paste0(
+        here::here("1.CTSSs/"),
+        "HCT116.design.txt"
+      ),
+    sep = "\t",
+    header = T
+  )
+
+hep.design <- utils::read.table(
+    file =  base::paste0(
+        here::here("1.CTSSs/"),
+        "HepG2.design.txt"
+      ),
+    sep = "\t",
+    header = T
+  )
+```
+
+
+## [3.1.0] Prepare and quantify A549
+```{r}
+base::row.names(a549.design) <- a549.design$ID
+plus_files <- a549.design$bw_plus
+minus_files <- a549.design$bw_minus
+
+base::names(plus_files) <- base::rownames(design)
+base::names(minus_files) <- base::rownames(design)
+
+bw_plus <- rtracklayer::BigWigFileList(plus_files)
+bw_minus <- rtracklayer::BigWigFileList(minus_files)
+
+a549.CTSSs <- CAGEfightR::quantifyCTSSs(plusStrand = bw_plus,
+                       minusStrand = bw_minus,
+                       design = a549.design)
+
+
+a549.CTSSs <- a549.CTSSs %>% CAGEfightR::calcTPM() %>% CAGEfightR::calcPooled()
+```
+
+
+## [3.1.1] Prepare and quantify HCT116
+```{r}
+base::row.names(hct.design) <- hct.design$ID
+plus_files <- hct.design$bw_plus
+minus_files <- hct.design$bw_minus
+
+base::names(plus_files) <- base::rownames(design)
+base::names(minus_files) <- base::rownames(design)
+
+bw_plus <- rtracklayer::BigWigFileList(plus_files)
+bw_minus <- rtracklayer::BigWigFileList(minus_files)
+
+hct.CTSSs <- CAGEfightR::quantifyCTSSs(plusStrand = bw_plus,
+                       minusStrand = bw_minus,
+                       design = hct.design)
+
+
+hct.CTSSs <- hct.CTSSs %>% CAGEfightR::calcTPM() %>% CAGEfightR::calcPooled()
+```
+
+
+## [3.1.2] Prepare and quantify HepG2
+```{r}
+base::row.names(hep.design) <- hep.design$ID
+plus_files <- hep.design$bw_plus
+minus_files <- hep.design$bw_minus
+
+base::names(plus_files) <- base::rownames(design)
+base::names(minus_files) <- base::rownames(design)
+
+bw_plus <- rtracklayer::BigWigFileList(plus_files)
+bw_minus <- rtracklayer::BigWigFileList(minus_files)
+
+hep.CTSSs <- CAGEfightR::quantifyCTSSs(plusStrand = bw_plus,
+                       minusStrand = bw_minus,
+                       design = hep.design)
+
+
+hep.CTSSs <- hep.CTSSs %>% CAGEfightR::calcTPM() %>% CAGEfightR::calcPooled()
+```
+
+## [3.2.] Remove non standard chromosomes
+```{r}
+keep <- GenomeInfoDb::seqlevels(hep.CTSSs)[1:23]
+
+
+a549.CTSSs <- GenomeInfoDb::keepSeqlevels(a549.CTSSs, keep, pruning.mode = "coarse")
+hct.CTSSs <- GenomeInfoDb::keepSeqlevels(hct.CTSSs, keep, pruning.mode = "coarse")
+hep.CTSSs <- GenomeInfoDb::keepSeqlevels(hep.CTSSs, keep, pruning.mode = "coarse")
+```
+
+
+## [3.3.] Pool replicates
+```{r}
+#Pool replicates
+a549.p.CTSSs <- .GlobalEnv$poolReplicates(a549.CTSSs,
+                               replicates=colData(a549.CTSSs)$Type)
+
+a549.p.CTSSs <- CAGEfightR::calcTPM(a549.p.CTSSs)
+
+hct.p.CTSSs <- .GlobalEnv$poolReplicates(hct.CTSSs,
+                               replicates=colData(hct.CTSSs)$Type)
+
+hct.p.CTSSs <- CAGEfightR::calcTPM(hct.p.CTSSs)
+
+hep.p.CTSSs <- .GlobalEnv$poolReplicates(hep.CTSSs,
+                               replicates=colData(hep.CTSSs)$Type)
+
+hep.p.CTSSs <- CAGEfightR::calcTPM(hep.p.CTSSs)
+```
+
+## [3.3.] Susample to lowest seq depth per cell line
+```{r}
+#Calc minimum seq depth
+a549.min <- base::min(SummarizedExperiment::colData(a549.p.CTSSs)$totalTags)
+hct.min <- base::min(SummarizedExperiment::colData(hct.p.CTSSs)$totalTags)
+hep.min <- base::min(SummarizedExperiment::colData(hep.p.CTSSs)$totalTags)
+
+a549.p.s.CTSSs <- PRIME::subsampleTarget(a549.p.CTSSs, target = a549.min)
+hct.p.s.CTSSs <- PRIME::subsampleTarget(hct.p.CTSSs, target = hct.min)
+hep.p.s.CTSSs <- PRIME::subsampleTarget(hep.p.CTSSs, target = hep.min)
+```
+
+## [3.4.] Create assay with singletons removed
+```{r}
+a549.p.s.CTSSs <- .GlobalEnv$rmSingletons(a549.p.s.CTSSs)
+hct.p.s.CTSSs <- .GlobalEnv$rmSingletons(hct.p.s.CTSSs)
+hep.p.s.CTSSs <- .GlobalEnv$rmSingletons(hep.p.s.CTSSs)
+```
+
+## [3.4.] Save CTSS objects
+```{r}
+base::saveRDS(
+  object = a549.p.s.CTSSs,
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "poolSub.A549.CTSSs.rmSingletons.rds"
+    )
+  )
+
+base::saveRDS(
+  object = hct.p.s.CTSSs,
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "poolSub.HCT116.CTSSs.rmSingletons.rds"
+    )
+  )
+
+base::saveRDS(
+  object = hep.p.s.CTSSs,
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "poolSub.HepG2.CTSSs.rmSingletons.rds"
+    )
+  )
+
+saveRDS(a549.p.s.CTSSs, "poolSub.A549.CTSSs.rmSingletons.rds")
+saveRDS(hct.p.s.CTSSs, "poolSub.HCT116.CTSSs.rmSingletons.rds")
+saveRDS(hep.p.s.CTSSs, "poolSub.HepG2.CTSSs.rmSingletons.rds")
+```
