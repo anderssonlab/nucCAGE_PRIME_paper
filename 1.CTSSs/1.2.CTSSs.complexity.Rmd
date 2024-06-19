@@ -345,26 +345,47 @@ f <- base::list.files(
       path = here::here("1.CTSSs"),
       full.names = TRUE
     ) %>% 
-  stringr::str_subset("K562.CTSS.complexity")
+  stringr::str_subset("20240619_K562.CTSS.complexity")
 
 base::load(file = f)
 ```
 
-## [1.4.] Plot complexities
+## [1.4.] Data wrangling for all K562 samples & pools
+#### Name change of "K562_10M_N", remove "K562_Cap_align" sample
 ```{r}
-# comp.k562.CTSSs$method <- stringr::str_sub(
-#     string = comp.k562.CTSSs$sample, start = 1, end = -2
-#   )
+ levs <- base::c(
+    "K562_C1", "K562_C2", "K562_C3", "K562_C",
+    "K562_N4", "K562_N5", "K562_N6", "K562_N",
+    "K562_10M_N1", "K562_10M_N2", "K562_10M_N3", "K562_10M_N",
+    "K562_ProCap_pcr_1", "K562_ProCap_pcr_2", "K562_pcr_align",
+    "K562_groCap_1"
+  )
+
 comp.k562.CTSSs <- comp.k562.CTSSs %>%
+  dplyr::filter(
+     sample != "K562_Cap_align" 
+    ) %>% 
   dplyr::mutate(
+    sample = dplyr::case_when(
+        sample == "K562_N_10M" ~ "K562_10M_N",
+        TRUE ~ sample
+      ),
+    sample = base::factor(
+        x = sample,
+        levels = levs,
+        ordered = TRUE
+      ),
     method = stringr::str_replace(
         sample,"^(.*?)(\\d?)$","\\1"
       ) %>%
       stringr::str_replace(
         .,"^(.*?)(_?)$","\\1"
       )
-  )
+    )
+```
 
+## [1.5.] Plot complexities
+```{r}
 ggplot2::ggplot(
     data = comp.k562.CTSSs,
     mapping = aes(
@@ -399,7 +420,7 @@ ggplot2::ggplot(
     )
 ```
 
-## [1.5.] Save complexity plot
+## [1.6.] Save complexity plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -418,7 +439,7 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-## [1.6.] Plot complexities for the other objects
+## [1.7.] Plot complexities for the other objects
 ```{r}
 # comp.k562.s.CTSSs$method <- stringr::str_sub(
 #       string = comp.k562.s.CTSSs$sample, start = 1, end = -2
@@ -495,63 +516,20 @@ for(ext in base::c("pdf", "png")){
 #     )
 ```
 
-## [1.7.] Data wrangling for all K562 samples & pools
-#### Name change of "K562_10M_N", remove "K562_Cap_align" sample
-```{r}
- levs <- base::c(
-    "K562_C1","K562_C2","K562_C3","K562_C",
-    "K562_N4","K562_N5","K562_N6","K562_N",
-    "K562_10M_N1","K562_10M_N2","K562_10M_N3","K562_10M_N",
-    "K562_ProCap_pcr_1","K562_ProCap_pcr_2","K562_pcr_align",
-    "K562_groCap_1"
-  )
-comp.k562.CTSSs$sample[comp.k562.CTSSs$sample == "K562_N_10M"] <- "K562_10M_N"
-comp.k562.CTSSs <- comp.k562.CTSSs[comp.k562.CTSSs$sample != "K562_Cap_align",]
-
-comp.k562.CTSSs$sample <- base::factor(
-    comp.k562.CTSSs$sample,
-    levels = levs,
-    ordered = TRUE
-  )
-```
-
-#### To be discarded - only change: "comp.k562.combined.CTSSs" object now named "comp.k562.CTSSs"
-```{r}
-# base::unique(comp.k562.CTSSs$sample)
-# 
-# comp.k562.combined.CTSSs$sample[comp.k562.combined.CTSSs$sample=="K562_N_10M"] <- "K562_10M_N"
-# 
-# comp.k562.combined.CTSSs <- comp.k562.combined.CTSSs[comp.k562.combined.CTSSs$sample!="K562_Cap_align",]
-# 
-# comp.k562.combined.CTSSs$sample <- base::factor(
-#     comp.k562.combined.CTSSs$sample,
-#     levels = base::c(
-#         "K562_C1","K562_C2","K562_C3","K562_C",
-#         "K562_N4","K562_N5","K562_N6","K562_N",
-#         "K562_10M_N1","K562_10M_N2","K562_10M_N3","K562_10M_N",
-#         "K562_ProCap_pcr_1","K562_ProCap_pcr_2","K562_pcr_align",
-#         "K562_groCap_1"
-#       ),
-#       ordered = TRUE
-#   )
-# 
-# base::unique(comp.k562.combined.CTSSs$sample)
-```
-
-## [1.7.1.] Identify max values for coordinated plotting
+## [1.8.] Identify max values for coordinated plotting
 #### See [2.2.] below for "comp.GM12878.CTSSs" object
 ```{r}
-tt1 <- comp.k562.combined.CTSSs %>%
+tt1 <- comp.k562.CTSSs %>% # 284000983
   dplyr::pull(totalTags) %>%
   base::max(na.rm = TRUE)
 tt2 <- comp.GM12878.combined.CTSSs %>%
   dplyr::pull(totalTags) %>%
   base::max(na.rm = TRUE)
 
-nc1 <- comp.k562.combined.CTSSs %>%
+nc1 <- comp.k562.CTSSs %>% # 29717697
   dplyr::pull(numberCTSSs) %>%
   base::max(na.rm = TRUE)
-nc2 <- comp.GM12878.combined.CTSSs %>%
+nc2 <- comp.GM12878.CTSSs %>%
   dplyr::pull(numberCTSSs) %>%
   base::max(na.rm = TRUE)
 
@@ -559,11 +537,11 @@ xmax <- base::max(tt1,tt2)
 ymax <- base::max(nc1,nc2)
 ```
 
-## [1.8.] Plot all complexity curves
+## [1.9.] Plot all complexity curves
 #### /combined_plots/combined.k562.CTSSs.comp.pdf
 ```{r}
 ggplot2::ggplot(
-    data = comp.k562.combined.CTSSs,
+    data = comp.k562.CTSSs,
     mapping = aes(
         x = totalTags,
         y = numberCTSSs,
@@ -636,14 +614,14 @@ for(ext in c("pdf", "png")){
 ## [1.10.] Plot subsampled number of CTSSs per library
 ## Add barplots for subsampled levels
 ```{r}
-p.max <- comp.k562.combined.CTSSs %>%
+p.max <- comp.k562.CTSSs %>%
   dplyr::filter(target < 98669216) %>%
   tidyr::drop_na() %>%
   dplyr::group_by(sample) %>%
   dplyr::summarize(
       compexity = base::max(numberCTSSs)
     )
-r.max <- comp.k562.combined.CTSSs %>%
+r.max <- comp.k562.CTSSs %>%
   dplyr::filter(target < 29267326) %>%
   tidyr::drop_na() %>%
   dplyr::group_by(sample) %>%
@@ -713,7 +691,6 @@ for(ext in c("pdf", "png")){
   }
 ```
 
-
 # [2.] GM12878 -------------------------
 
 ## [0.6.] Read in GM12878 datasets
@@ -743,52 +720,6 @@ GM12878.CTSSs <- base::readRDS(
 #   )
 ```
 
-## To be discarded
-```{r}
-# GM12878.CTSSs <- base::readRDS(
-#     file = base::paste0(
-#       here::here("1.CTSSs/"),
-#       "all.GM12878.CTSSs.rds"
-#     )
-#   )
-# GM12878.s.CTSSs <- base::readRDS(
-#   file = base::paste0(
-#       here::here("1.CTSSs/"),
-#       "subsampled.GM12878.CTSSs.rds"
-#     )
-#   )
-# GM12878.p.CTSSs <- base::readRDS(
-#   file = base::paste0(
-#       here::here("1.CTSSs/"),
-#       "pooled.GM12878.CTSSs.rds"
-#     )
-#   )
-# GM12878.p.s.CTSSs <- base::readRDS(
-#   file = base::paste0(
-#       here::here("1.CTSSs/"),
-#       "pooled.subsampled.GM12878.CTSSs.rds"
-#     )
-#   )
-# GM12878.pID.CTSSs <- base::readRDS(
-#   file = base::paste0(
-#       here::here("1.CTSSs/"),
-#       "IDpooled.GM12878.CTSSs.rds"
-#     )
-#   )
-# GM12878.pID.s.CTSSs <- base::readRDS(
-#   file = base::paste0(
-#       here::here("1.CTSSs/"),
-#       "IDpooled.subsampled.GM12878.CTSSs.rds"
-#     )
-#   )
-# GM12878.combined.CTSSs <- base::readRDS(
-#   file = base::paste0(
-#       here::here("1.CTSSs/"),
-#       "all.combined.GM12878.CTSSs.rds"
-#     )
-#   )
-```
-
 ## [2.0.] Compare all CTSS level correlation
 ```{r}
 corrplot::corrplot(
@@ -809,7 +740,7 @@ corrplot::corrplot(
 
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename =base::paste0(
+      filename = base::paste0(
           here::here("1.CTSSs/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_GM12878.CTSSs.corr",
@@ -818,8 +749,8 @@ for(ext in base::c("pdf", "png")){
       plot = ggplot2::last_plot(),
       device = ext,
       dpi = 300,
-      width = 8,
-      height = 8
+      width = 12,
+      height = 12
     )
   }
 ```
@@ -890,27 +821,6 @@ for(ext in base::c("pdf", "png")){
 #       height = 8
 #     )
 #   }
-```
-
-## To be discarded
-```{r}
-# pdf("./plots/pooled.subsampled.GM12878.CTSSs.corr.pdf",width = 15, height = 15)
-# corrplot(cor(
-#   as.matrix(assay(GM12878.p.s.CTSSs,"TPM"))),
-#   method="number")
-# dev.off()
-# 
-# pdf("./plots/IDpooled.GM12878.CTSSs.corr.pdf",width = 30, height = 30)
-# corrplot(cor(
-#   as.matrix(assay(GM12878.pID.CTSSs,"TPM"))),
-#   method="number")
-# dev.off()
-# 
-# pdf("./plots/IDpooled.subsampled.GM12878.CTSSs.corr.pdf",width = 30, height = 30)
-# corrplot(cor(
-#   as.matrix(assay(GM12878.pID.s.CTSSs,"TPM"))),
-#   method="number")
-# dev.off()
 ```
 
 ## [2.1.] Compare CTSS>0TPM correlations
@@ -1005,33 +915,6 @@ for(ext in base::c("pdf", "png")){
 #       height = 8
 #     )
 #   }
-```
-
-## To be discarded
-```{r}
-# m1 <- as.matrix(assay(GM12878.p.s.CTSSs,"TPM"))
-# m1[m1==0] <- NA
-# 
-# pdf("./plots/pooled.subsampled.GM12878.CTSSs.rm0.corr.pdf",width = 15, height = 15)
-# corrplot(cor(m1,use="complete.obs"),
-#   method="number")
-# dev.off()
-# 
-# #m1 <- as.matrix(assay(GM12878.pID.CTSSs,"TPM"))
-# #m1[m1==0] <- NA
-# 
-# #pdf("./plots/IDpooled.GM12878.CTSSs.rm0.corr.pdf",width = 30, height = 30)
-# #corrplot(cor(m1,use="complete.obs"),
-# #  method="number")
-# #dev.off()
-# 
-# m1 <- as.matrix(assay(GM12878.pID.s.CTSSs,"TPM"))
-# m1[m1==0] <- NA
-# 
-# pdf("./plots/IDpooled.subsampled.GM12878.CTSSs.rm0.corr.pdf",width = 30, height = 30)
-# corrplot(cor(m1,use="complete.obs"),
-#   method="number")
-# dev.off()
 ```
 
 ## [2.2.] Calculate CTSS level complexity
