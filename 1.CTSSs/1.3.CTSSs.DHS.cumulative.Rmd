@@ -70,78 +70,78 @@ cols4 <- base::c(
 ## [0.5.] cumulativeFraction function
 ```{r}
 cumulativeFractions <- function(loci, ctss, max_dist = 1000, inputAssay = "counts") {
-  
-  g <- GRanges(seqnames = seqnames(loci), loci$thick, strand = "*")
-  t <- as(rowRanges(ctss), "GRanges")
-  
-  message("finding nearest loci...")
-  g_nearest <- nearest(t, g)
-  
-  message("calculating distances...")
-  d <- rep(Inf, length(t))
-  non.na <- which(!is.na(g_nearest))
-  d[non.na] <- distance(t[non.na], g[g_nearest[non.na]])
-  
-  
-  message("calculating totalTags and unique Tags...")
-  ctss <- suppressWarnings(calcTotalTags(ctss, inputAssay = "counts"))
-  colData(ctss)$uniqTags <- colSums(assay(ctss,inputAssay="counts")>0)
-  
-  message("calculating cumulative fractions...")
-  focus <- which(d <= max_dist)
-  d <- d[focus]
-  ctss <- ctss[focus]
-  
-  o <- order(d)
-  d <- d[o]
-  
-  unique_loc_frac <- sapply(colnames(ctss), function(n) {
-    cat(".")
-    a <- as.numeric(assay(ctss, inputAssay)[o, n])
-    a[a>0] <- 1
-    nz <- which(a > 0)
-    da <- d[nz]
-    a_sub <- a[nz]
-    sapply(seq(0, max_dist, by = 1), function(i) sum(a_sub[da == i]))
-  })
-  cat("\n")
-  
-  
-  fracs <- sapply(colnames(ctss), function(n) {
-    cat(".")
-    a <- as.numeric(assay(ctss, inputAssay)[o, n])
-    nz <- which(a > 0)
-    da <- d[nz]
-    a_sub <- a[nz]
-    sapply(seq(0, max_dist, by = 1), function(i) sum(a_sub[da == i]))
-  })
-  cat("\n")
-  
-  t <- as(rowRanges(ctss), "GRanges")
-  
-  loc_fracs <- sapply(colnames(ctss), function(n) {
-    cat(".")
-    a <- as.numeric(assay(ctss, inputAssay)[o, n])
-    nz <- t[which(a > 0)]
-    dist <- distanceToNearest(g,nz)
-    dist <- as.data.frame(dist)[,3]
-    sapply(seq(0, max_dist, by = 1), function(i) sum(dist==i))
-  })
-  
-  unique_loc_frac <- sapply(colnames(unique_loc_frac), function(n) cumsum(unique_loc_frac[, n] / ctss$uniqTags[n]))
-  
-  fracs <- sapply(colnames(fracs), function(n) cumsum(fracs[, n] / ctss$totalTags[n]))
-  
-  loc_fracs <- sapply(colnames(loc_fracs), function(n) cumsum(loc_fracs[, n] / length(g)))
-  
-  ucumfrac <- cbind(data.frame(distance = seq(0, max_dist, by = 1), unique_loc_frac))
-  
-  cumfrac <- cbind(data.frame(distance = seq(0, max_dist, by = 1), fracs))
-  
-  locifrac <- cbind(data.frame(distance = seq(0, max_dist, by = 1), loc_fracs))
-  
-  fraclist <- list(cumfrac,ucumfrac,locifrac)
-}
+    
+    g <- GRanges(seqnames = seqnames(loci), loci$thick, strand = "*")
+    t <- as(rowRanges(ctss), "GRanges")
+    
+    message("finding nearest loci...")
+    g_nearest <- nearest(t, g)
+    
+    message("calculating distances...")
+    d <- rep(Inf, length(t))
+    non.na <- which(!is.na(g_nearest))
+    d[non.na] <- distance(t[non.na], g[g_nearest[non.na]])
+    
+    
+    message("calculating totalTags and unique Tags...")
+    ctss <- suppressWarnings(calcTotalTags(ctss, inputAssay = "counts"))
+    colData(ctss)$uniqTags <- colSums(assay(ctss,inputAssay="counts")>0)
+    
+    message("calculating cumulative fractions...")
+    focus <- which(d <= max_dist)
+    d <- d[focus]
+    ctss <- ctss[focus]
+    
+    o <- order(d)
+    d <- d[o]
+    
+    unique_loc_frac <- sapply(colnames(ctss), function(n) {
+      cat(".")
+      a <- as.numeric(assay(ctss, inputAssay)[o, n])
+      a[a>0] <- 1
+      nz <- which(a > 0)
+      da <- d[nz]
+      a_sub <- a[nz]
+      sapply(seq(0, max_dist, by = 1), function(i) sum(a_sub[da == i]))
+    })
+    cat("\n")
+    
+    
+    fracs <- sapply(colnames(ctss), function(n) {
+      cat(".")
+      a <- as.numeric(assay(ctss, inputAssay)[o, n])
+      nz <- which(a > 0)
+      da <- d[nz]
+      a_sub <- a[nz]
+      sapply(seq(0, max_dist, by = 1), function(i) sum(a_sub[da == i]))
+    })
+    cat("\n")
+    
+    t <- as(rowRanges(ctss), "GRanges")
+    
+    loc_fracs <- sapply(colnames(ctss), function(n) {
+      cat(".")
+      a <- as.numeric(assay(ctss, inputAssay)[o, n])
+      nz <- t[which(a > 0)]
+      dist <- distanceToNearest(g,nz)
+      dist <- as.data.frame(dist)[,3]
+      sapply(seq(0, max_dist, by = 1), function(i) sum(dist==i))
+    })
+    
+    unique_loc_frac <- sapply(colnames(unique_loc_frac), function(n) cumsum(unique_loc_frac[, n] / ctss$uniqTags[n]))
+    
+    fracs <- sapply(colnames(fracs), function(n) cumsum(fracs[, n] / ctss$totalTags[n]))
+    
+    loc_fracs <- sapply(colnames(loc_fracs), function(n) cumsum(loc_fracs[, n] / length(g)))
+    
+    ucumfrac <- cbind(data.frame(distance = seq(0, max_dist, by = 1), unique_loc_frac))
+    
+    cumfrac <- cbind(data.frame(distance = seq(0, max_dist, by = 1), fracs))
+    
+    locifrac <- cbind(data.frame(distance = seq(0, max_dist, by = 1), loc_fracs))
+    
+    fraclist <- list(cumfrac,ucumfrac,locifrac)
+  }
 ```
 
 # [1.] K562 data -------------------------
@@ -323,41 +323,24 @@ dev.off()
 # [2.] GM12878 data -------------------------
 
 ## [2.0.] Read in pre-made CTSS objects
+#### see "1.1.CTSSs.processing.Rmd"
 ```{r}
 GM12878.CTSSs <- base::readRDS(
   file = base::paste0(
       here::here("1.CTSSs/"),
-      "all.GM12878.CTSSs.rds"
+      "all.combined.GM12878.CTSSs.rds"
     )
   )
 GM12878.s.CTSSs <- base::readRDS(
   file = base::paste0(
       here::here("1.CTSSs/"),
-      "subsampled.GM12878.CTSSs.rds"
+      "repSub.combined.GM12878.CTSSs.rmSingletons.rds"
     )
   )
 GM12878.p.CTSSs <- base::readRDS(
   file = base::paste0(
       here::here("1.CTSSs/"),
-      "pooled.GM12878.CTSSs.rds"
-    )
-  )
-GM12878.p.s.CTSSs <- base::readRDS(
-  file = base::paste0(
-      here::here("1.CTSSs/"),
-      "pooled.subsampled.GM12878.CTSSs.rds"
-    )
-  )
-GM12878.pID.CTSSs <- base::readRDS(
-  file = base::paste0(
-      here::here("1.CTSSs/"),
-      "IDpooled.GM12878.CTSSs.rds"
-    )
-  )
-GM12878.pID.s.CTSSs <- base::readRDS(
-  file = base::paste0(
-      here::here("1.CTSSs/"),
-      "IDpooled.subsampled.GM12878.CTSSs.rds"
+      "poolSub.combined.GM12878.CTSSs.rmSingletons.rds"
     )
   )
 ```
@@ -391,12 +374,16 @@ GM12878.dhs$thick <- IRanges::IRanges(
 #### 'GM12878.pID.s.CTSSs' object used for replicate-plots
 ```{r}
 GM12878.CTSSs.stand <- GenomeInfoDb::keepStandardChromosomes(
-    x = GM12878.pID.s.CTSSs, #GM12878.p.s.CTSSs
+    x = GM12878.s.CTSSs,
     pruning.mode = "coarse"
   )
 GM12878.dhs <- GenomeInfoDb::keepStandardChromosomes(
     x = GM12878.dhs,
     pruning.mode = "coarse"
+  )
+assertthat::assert_that(
+    base::all(GenomeInfoDb::seqlevels(GM12878.CTSSs.stand) == GenomeInfoDb::seqlevels(GM12878.s.CTSSs)),
+    base::all(GenomeInfoDb::seqlevels(GM12878.s.CTSSs) %in% GenomeInfoDb::seqlevels(GM12878.dhs))
   )
 gm12878.cumFrac <- .GlobalEnv$cumulativeFractions(
     loci = GM12878.dhs,
