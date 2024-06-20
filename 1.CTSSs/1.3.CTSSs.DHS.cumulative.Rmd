@@ -71,55 +71,86 @@ cols4 <- base::c(
 ```{r}
 cumulativeFractions <- function(loci, ctss, max_dist = 1000, inputAssay = "counts") {
     
-    g <- GRanges(seqnames = seqnames(loci), loci$thick, strand = "*")
-    t <- as(rowRanges(ctss), "GRanges")
+    g <- GenomicRanges::GRanges(
+        seqnames = GenomeInfoDb::seqnames(loci),
+        ranges = loci$thick,
+        strand = "*"
+      )
+    t <- methods::as(SummarizedExperiment::rowRanges(ctss), "GRanges")
     
-    message("finding nearest loci...")
-    g_nearest <- nearest(t, g)
+    base::message("finding nearest loci...")
+    g_nearest <- IRanges::nearest(t, g)
     
-    message("calculating distances...")
-    d <- rep(Inf, length(t))
-    non.na <- which(!is.na(g_nearest))
-    d[non.na] <- distance(t[non.na], g[g_nearest[non.na]])
+    base::message("calculating distances...")
+    d <- base::rep(Inf, base::length(t))
+    non.na <- base::which(!base::is.na(g_nearest))
+    d[non.na] <- IRanges::distance(t[non.na], g[g_nearest[non.na]])
     
+    base::message("calculating totalTags and unique Tags...")
+    ctss <- base::suppressWarnings(
+      CAGEfightR::calcTotalTags(
+          object = ctss,
+          inputAssay = "counts"
+        )
+      )
+    SummarizedExperiment::colData(ctss)$uniqTags <- base::colSums(
+        SummarizedExperiment::assay(ctss,inputAssay="counts") > 0
+      )
     
-    message("calculating totalTags and unique Tags...")
-    ctss <- suppressWarnings(calcTotalTags(ctss, inputAssay = "counts"))
-    colData(ctss)$uniqTags <- colSums(assay(ctss,inputAssay="counts")>0)
-    
-    message("calculating cumulative fractions...")
-    focus <- which(d <= max_dist)
+    base::message("calculating cumulative fractions...")
+    focus <- base::which(d <= max_dist)
     d <- d[focus]
     ctss <- ctss[focus]
     
     o <- order(d)
     d <- d[o]
     
-    unique_loc_frac <- sapply(colnames(ctss), function(n) {
-      cat(".")
-      a <- as.numeric(assay(ctss, inputAssay)[o, n])
-      a[a>0] <- 1
-      nz <- which(a > 0)
-      da <- d[nz]
-      a_sub <- a[nz]
-      sapply(seq(0, max_dist, by = 1), function(i) sum(a_sub[da == i]))
-    })
-    cat("\n")
+    unique_loc_frac <- base::sapply(
+        X = base::colnames(ctss),
+        FUN = function(n) {
+          base::cat(".")
+          a <- base::as.numeric(
+              SummarizedExperiment::assay(ctss, inputAssay)[o, n]
+            )
+          a[a>0] <- 1
+          nz <- base::which(a > 0)
+          da <- d[nz]
+          a_sub <- a[nz]
+          return(
+            base::sapply(
+              X = base::seq(0, max_dist, by = 1),
+              FUN = function(i){base::sum(a_sub[da == i])}
+            )
+          )
+        }
+      )
+    base::cat("\n")
     
+    fracs <- base::sapply(
+      X = base::colnames(ctss),
+      FUN = function(n) {
+        base::cat(".")
+        a <- base::as.numeric(
+            SummarizedExperiment::assay(ctss, inputAssay)[o, n]
+          )
+        nz <- base::which(a > 0)
+        da <- d[nz]
+        a_sub <- a[nz]
+        return(
+          base::sapply(
+              X = base::seq(0, max_dist, by = 1),
+              FUN = function(i){base::sum(a_sub[da == i])}
+            )
+          )
+        }
+      )
+    base::cat("\n")
     
-    fracs <- sapply(colnames(ctss), function(n) {
-      cat(".")
-      a <- as.numeric(assay(ctss, inputAssay)[o, n])
-      nz <- which(a > 0)
-      da <- d[nz]
-      a_sub <- a[nz]
-      sapply(seq(0, max_dist, by = 1), function(i) sum(a_sub[da == i]))
-    })
-    cat("\n")
+    t <- methods::as(SummarizedExperiment::rowRanges(ctss), "GRanges")
     
-    t <- as(rowRanges(ctss), "GRanges")
-    
-    loc_fracs <- sapply(colnames(ctss), function(n) {
+    loc_fracs <- base::sapply(
+      X = base::colnames(ctss),
+      FUN = function(n) {
       cat(".")
       a <- as.numeric(assay(ctss, inputAssay)[o, n])
       nz <- t[which(a > 0)]
