@@ -93,7 +93,7 @@ cumulativeFractions <- function(loci, ctss, max_dist = 1000, inputAssay = "count
           inputAssay = "counts"
         )
       )
-    SummarizedExperiment::colData(ctss)$uniqTags <- base::colSums(
+    SummarizedExperiment::colData(ctss)$uniqTags <- Matrix::colSums(
         SummarizedExperiment::assay(ctss,inputAssay="counts") > 0
       )
     
@@ -102,7 +102,7 @@ cumulativeFractions <- function(loci, ctss, max_dist = 1000, inputAssay = "count
     d <- d[focus]
     ctss <- ctss[focus]
     
-    o <- order(d)
+    o <- base::order(d)
     d <- d[o]
     
     unique_loc_frac <- base::sapply(
@@ -149,29 +149,64 @@ cumulativeFractions <- function(loci, ctss, max_dist = 1000, inputAssay = "count
     t <- methods::as(SummarizedExperiment::rowRanges(ctss), "GRanges")
     
     loc_fracs <- base::sapply(
-      X = base::colnames(ctss),
-      FUN = function(n) {
-      cat(".")
-      a <- as.numeric(assay(ctss, inputAssay)[o, n])
-      nz <- t[which(a > 0)]
-      dist <- distanceToNearest(g,nz)
-      dist <- as.data.frame(dist)[,3]
-      sapply(seq(0, max_dist, by = 1), function(i) sum(dist==i))
-    })
+        X = base::colnames(ctss),
+        FUN = function(n) {
+          base::cat(".")
+          a <- base::as.numeric(
+              SummarizedExperiment::assay(ctss, inputAssay)[o, n]
+            )
+        nz <- base::t[base::which(a > 0)]
+        dist <- IRanges::distanceToNearest(g,nz)
+        dist <- base::as.data.frame(dist)[,3]
+        return(
+            base::sapply(
+              X = base::seq(0, max_dist, by = 1),
+              FUN = function(i){base::sum(dist==i)}
+            )
+          )
+        }
+      )
     
-    unique_loc_frac <- sapply(colnames(unique_loc_frac), function(n) cumsum(unique_loc_frac[, n] / ctss$uniqTags[n]))
+    unique_loc_frac <- base::sapply(
+        X = base::colnames(unique_loc_frac),
+        FUN = function(n){
+          base::cumsum(unique_loc_frac[, n] / ctss$uniqTags[n])
+        }
+      )
+    fracs <- base::sapply(
+      X = base::colnames(fracs),
+      FUN = function(n){
+          base::cumsum(fracs[, n] / ctss$totalTags[n])
+        }
+      )
+    loc_fracs <- base::sapply(
+      X = base::colnames(loc_fracs),
+      FUN = function(n){
+          base::cumsum(loc_fracs[, n] / base::length(g))
+        }
+      )
     
-    fracs <- sapply(colnames(fracs), function(n) cumsum(fracs[, n] / ctss$totalTags[n]))
+    ucumfrac <- base::cbind(
+      base::data.frame(
+          distance = base::seq(0, max_dist, by = 1),
+          unique_loc_frac
+        )
+      )
+    cumfrac <- base::cbind(
+      base::data.frame(
+          distance = base::seq(0, max_dist, by = 1),
+          fracs
+        )
+      )
+    locifrac <- base::cbind(
+      base::data.frame(
+          distance = base::seq(0, max_dist, by = 1),
+          loc_fracs
+        )
+      )
     
-    loc_fracs <- sapply(colnames(loc_fracs), function(n) cumsum(loc_fracs[, n] / length(g)))
-    
-    ucumfrac <- cbind(data.frame(distance = seq(0, max_dist, by = 1), unique_loc_frac))
-    
-    cumfrac <- cbind(data.frame(distance = seq(0, max_dist, by = 1), fracs))
-    
-    locifrac <- cbind(data.frame(distance = seq(0, max_dist, by = 1), loc_fracs))
-    
-    fraclist <- list(cumfrac,ucumfrac,locifrac)
+    fraclist <- base::list(cumfrac,ucumfrac,locifrac)
+    return(fraclist)
   }
 ```
 
@@ -179,7 +214,6 @@ cumulativeFractions <- function(loci, ctss, max_dist = 1000, inputAssay = "count
 
 ## [1.1.] Read in pre made CTSS objects
 ```{r}
-
 k562.CTSSs <- readRDS("all.k562.CTSSs.rds")
 k562.s.CTSSs <- readRDS("subsampled.k562.CTSSs.rds")
 k562.p.CTSSs <- readRDS("pooled.k562.CTSSs.rds")
