@@ -56,6 +56,12 @@ custom.col <- base::c(
     "#D16103","#C3D7A4","#52854C",
     "#4E84C4","#293352","grey"
   )
+cols3 <- base::c(
+    "#ED4938","#ADC607","#F4C10D",
+    "#333136","#161474","#7B3DBA",
+    "#03CEC2","#2AB348","#EDA838",
+    "#7297C7","#EB373C","#FFE45F"
+  )
 cols4 <- base::c(
     "#FE8D02","#FF4425","#00439B",
     "#008F72","#878784","#7D62CF"
@@ -390,27 +396,27 @@ dev.off()
 ## [2.0.] Read in pre-made CTSS objects
 #### see "1.1.CTSSs.processing.Rmd"
 ```{r}
-GM12878.CTSSs <- base::readRDS(
-  file = base::paste0(
-      here::here("1.CTSSs/"),
-      "all.combined.GM12878.CTSSs.rds"
-    )
-  )
+# GM12878.CTSSs <- base::readRDS(
+#   file = base::paste0(
+#       here::here("1.CTSSs/"),
+#       "all.combined.GM12878.CTSSs.rds"
+#     )
+#   )
 GM12878.s.CTSSs <- base::readRDS(
   file = base::paste0(
       here::here("1.CTSSs/"),
       "repSub.combined.GM12878.CTSSs.rmSingletons.rds"
     )
   )
-GM12878.p.CTSSs <- base::readRDS(
-  file = base::paste0(
-      here::here("1.CTSSs/"),
-      "poolSub.combined.GM12878.CTSSs.rmSingletons.rds"
-    )
-  )
+# GM12878.p.CTSSs <- base::readRDS(
+#   file = base::paste0(
+#       here::here("1.CTSSs/"),
+#       "poolSub.combined.GM12878.CTSSs.rmSingletons.rds"
+#     )
+#   )
 ```
 
-## [2.1.] Read in DHSs & prepare as GRanges object
+## [2.1.] Read in GM12878-specific DHSs & prepare as GRanges object
 ```{r}
 GM12878.dhs <- readr::read_delim(
       file = base::paste0(
@@ -520,12 +526,12 @@ ctss.plot <- ctss.cumfrac %>%
     ) %>%
   dplyr::filter( ## Filter for replicates or pools only
       stringr::str_detect(
-        variable,"^.*_(C|N)\\d$"
+        variable, "^.*_(C|N)$" # "^.*_(C|N)\\d$"
       )
     )
 ```
 
-## [2.5.] Plotting
+## [2.6.] Plotting
 #### p1
 ```{r}
 ggplot2::ggplot(
@@ -541,7 +547,9 @@ ggplot2::ggplot(
         xintercept = 200L,
         linetype = "dashed"
       ) +
-    geom_line() +
+    geom_line(
+        size = 1
+      ) +
     # facet_wrap(
     #     facets = ~ method #+ C_N
     #   ) +
@@ -567,7 +575,7 @@ ggplot2::ggplot(
       )
 ```
 
-## [2.6.] Save plot
+## [2.7.] Save plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -576,8 +584,8 @@ for(ext in base::c("pdf", "png")){
           base::format(base::Sys.time(), "%Y%m%d"),
           "_GM12878",
           "_cumFracDhs",
-          "_replicates",
-          # "_pools",
+          # "_replicates",
+          "_pools",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
@@ -589,7 +597,7 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-## [2.7.] Plotting
+## [2.8.] Plotting
 #### p1.2
 ```{r}
 ctss.plot %>%
@@ -618,8 +626,8 @@ ggplot2::ggplot(
       values = base::rev(cols4)
     ) +
   labs(
-      y = "Cumulative CTSS fraction at 200bp",
-      x = "sample",
+      x = "Cumulative CTSS fraction at 200bp",
+      y = "sample",
       fill = "sample"
     ) +
   theme_bw() +
@@ -630,7 +638,7 @@ ggplot2::ggplot(
     )
 ```
 
-## [2.8.] Save plot
+## [2.9.] Save plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -639,8 +647,8 @@ for(ext in base::c("pdf", "png")){
           base::format(base::Sys.time(), "%Y%m%d"),
           "_GM12878",
           "_cumFracDhs",
-          "_replicates",
-          # "_pools",
+          # "_replicates",
+          "_pools",
           "_dist200",
           ".",ext
         ),
@@ -653,56 +661,212 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-
+## [2.10.] Data wrangling for cumulative fraction of unique tags
 ```{r}
-ctss.cumfrac <- melt(gm12878.cumFrac[2], id.var="distance")
+regex = "^(.*)_(.*?)_(C|N|trip|ctrl|Cap_align)(\\d?)$"
 
-ctss.cumfrac$method <- str_extract(ctss.cumfrac$variable, "_(.*?)_")
-ctss.cumfrac$C_N <- str_sub(ctss.cumfrac$variable,-2,-2)
-
-ctss.cumfrac$method <- gsub("_", "", ctss.cumfrac$method )
+ctss.cumfrac <- gm12878.cumFrac %>%
+  purrr::pluck(2) %>%
+  tidyr::pivot_longer(
+      cols = dplyr::contains("GM12878_"),
+      names_to = "variable",
+      values_to = "value"
+    ) %>%
+  dplyr::mutate(
+    method = stringr::str_replace(
+        variable, "^(.*)_(.*?)_(.*)$","\\2"
+      ),
+    C_N = stringr::str_replace(
+        variable, regex,"\\3"
+      ),
+    type = base::paste0(C_N,"_",method)
+  )
 ```
 
+#### Evaluate
 ```{r}
-p2 <-  ggplot(ctss.cumfrac,aes(distance,value, group=variable, color=method)) + geom_line() + theme_bw() + facet_wrap(~method+C_N) + guides(color="none") + labs(y="CTSS to DHS cumulative fraction", x= "distance to DHSs center")+ 
-scale_color_manual(values=custom.col)
-
-p2.2 <- ggplot(ctss.cumfrac[ctss.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col)+ labs(y="Cumulative unique CTSS fraction at 200bp", x= "sample", fill="sample")
+dplyr::distinct(ctss.cumfrac, method)
 ```
 
+## To be discarded
 ```{r}
-ctss.cumfrac <- melt(gm12878.cumFrac[3], id.var="distance")
-
-
-ctss.cumfrac$method <- str_extract(ctss.cumfrac$variable, "_(.*?)_")
-ctss.cumfrac$C_N <- str_sub(ctss.cumfrac$variable,-2,-2)
-
-ctss.cumfrac$method <- gsub("_", "", ctss.cumfrac$method )
+# ctss.cumfrac <- melt(gm12878.cumFrac[2], id.var="distance")
+# ctss.cumfrac$method <- str_extract(ctss.cumfrac$variable, "_(.*?)_")
+# ctss.cumfrac$C_N <- str_sub(ctss.cumfrac$variable,-2,-2)
+# ctss.cumfrac$method <- gsub("_", "", ctss.cumfrac$method )
 ```
 
+## [2.11.]
 ```{r}
-p3 <-  ggplot(ctss.cumfrac,aes(distance,value, group=variable, color=method)) + geom_line() + theme_bw() + facet_wrap(~method+C_N) + guides(color="none") + labs(y="CTSS to DHS cumulative fraction", x= "distance to DHSs center")+ 
-scale_color_manual(values=custom.col)
-
-p3.2 <- ggplot(ctss.cumfrac[ctss.cumfrac$distance==200,], aes(variable, value,fill=method)) + geom_col() + theme_bw() + scale_fill_manual(values=custom.col)+ labs(y="Cumulative DHS fraction at 200bp", x= "sample", fill="sample")
-
-
-pdf("./plots/cumfrac.GM12878.pID.subsampled.DHS.pdf", height=30, width = 20)
-grid.arrange(arrangeGrob(p1,p2,p3, ncol=1, nrow=3),
-         arrangeGrob(p1.2,p2.2,p3.2, ncol=1, nrow=3), widths=c(2,1))
-dev.off()
+ggplot2::ggplot(
+    data = ctss.cumfrac,
+    mapping = aes(
+        x = distance,
+        y = value,
+        group = variable,
+        color = method
+      )
+    ) +
+  geom_line() +
+  # facet_wrap(
+  #     facets = ~ method + C_N
+  #   ) +
+  # guides(
+  #     color="none"
+  #   ) +
+  labs(
+      y = "CTSS to DHS cumulative fraction",
+      x = "distance to DHSs center"
+    ) +
+  scale_color_manual(
+      values = cols3
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
 ```
 
-
-
-
-
+## [2.12.]
 ```{r}
-#Read in rDHS bed file form encode 
-rdhs <- read.table("/maps/projects/ralab/people/pcr980/DeepCompare/Raw_data/rDHS_ENCFF619EJE.bed")
-colnames(rdhs) <- c("chr","start","end")
-rdhs <- GRanges(rdhs[,1:3])
-rdhs$thick <- IRanges(start=start(rdhs)+((end(rdhs)-start(rdhs))/2))
+ggplot2::ggplot(
+    data = ctss.cumfrac[ctss.cumfrac$distance==200,],
+    mapping = aes(
+        y = variable,
+        x = value,
+        fill = method
+      )
+    ) +
+  geom_col() +
+  scale_fill_manual(
+      values = cols3
+    ) +
+  labs(
+      x = "Cumulative unique CTSS fraction at 200bp",
+      y = "sample",
+      fill = "sample"
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [2.13.] Data wrangling for cumulative fraction
+```{r}
+regex = "^(.*)_(.*?)_(C|N|trip|ctrl|Cap_align)(\\d?)$"
+
+ctss.cumfrac <- gm12878.cumFrac %>%
+  purrr::pluck(3) %>%
+  tidyr::pivot_longer(
+      cols = dplyr::contains("GM12878_"),
+      names_to = "variable",
+      values_to = "value"
+    ) %>%
+  dplyr::mutate(
+    method = stringr::str_replace(
+        variable, "^(.*)_(.*?)_(.*)$","\\2"
+      ),
+    C_N = stringr::str_replace(
+        variable, regex,"\\3"
+      ),
+    type = base::paste0(C_N,"_",method)
+  )
+```
+
+## To be discarded
+```{r}
+# ctss.cumfrac <- melt(gm12878.cumFrac[3], id.var="distance")
+# ctss.cumfrac$method <- str_extract(ctss.cumfrac$variable, "_(.*?)_")
+# ctss.cumfrac$C_N <- str_sub(ctss.cumfrac$variable,-2,-2)
+# ctss.cumfrac$method <- gsub("_", "", ctss.cumfrac$method )
+```
+
+## [2.14.]
+```{r}
+ggplot2::ggplot(
+  data = ctss.cumfrac,
+  mapping = aes(
+      x = distance,
+      y = value,
+      group = variable,
+      color = method
+    )
+  ) +
+  geom_line() +
+  facet_wrap(
+      facets = ~ method + C_N
+    ) +
+  guides(
+      color = "none"
+    ) +
+  labs(
+      y = "CTSS to DHS cumulative fraction",
+      x = "distance to DHSs center"
+    ) +
+  scale_color_manual(
+      values = cols3
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [2.15.]
+```{r}
+ggplot2::ggplot(
+    data = ctss.cumfrac[ctss.cumfrac$distance==200,],
+    mapping = aes(
+        y = variable,
+        x = value,
+        fill = method
+      )
+    ) +
+  geom_col() +
+  theme_bw() +
+  scale_fill_manual(
+      values = cols3
+    ) +
+  labs(
+      x = "Cumulative DHS fraction at 200bp",
+      y = "sample",
+      fill = "sample"
+    )
+```
+
+# [3.] Cumulative fraction towards all ENCODE DHS sites -------------------------
+
+## [3.0.] Read in rDHS bed file form encode 
+#### File copied from "/projects/ralab/people/pcr980/DeepCompare/Raw_data"
+```{r}
+rdhs <- readr::read_delim(
+      file = base::paste0(
+          here::here("0.External_resources/"),
+          "rDHS_ENCFF619EJE.bed"
+        ),
+      col_names = base::c("chr","start","end","site"),
+      col_types = readr::cols(
+        .default = readr::col_integer(),
+        chr =  readr::col_character(),
+        site = readr::col_skip()
+      )
+    ) %>%
+  GenomicRanges::GRanges()
+
+rdhs$thick <- IRanges::IRanges(
+  start = BiocGenerics::start(rdhs) + (
+      (BiocGenerics::end(rdhs) - BiocGenerics::start(rdhs))/2
+    )
+  )
+```
+
+## To be discarded
+```{r}
+# rdhs <- read.table("/maps/projects/ralab/people/pcr980/DeepCompare/Raw_data/rDHS_ENCFF619EJE.bed")
+# colnames(rdhs) <- c("chr","start","end")
+# rdhs <- GRanges(rdhs[,1:3])
+# rdhs$thick <- IRanges(start=start(rdhs)+((end(rdhs)-start(rdhs))/2))
 ```
 
 
@@ -710,6 +874,7 @@ rdhs$thick <- IRanges(start=start(rdhs)+((end(rdhs)-start(rdhs))/2))
 rdhs <- keepStandardChromosomes(rdhs, pruning.mode="coarse")
 gm12878.rDHS.cumFrac <- cumulativeFractions(rdhs,GM12878.CTSSs.stand)
 ```
+
 ```{r}
 ctss.cumfrac <- melt(gm12878.rDHS.cumFrac[[1]], id.var="distance")
 
