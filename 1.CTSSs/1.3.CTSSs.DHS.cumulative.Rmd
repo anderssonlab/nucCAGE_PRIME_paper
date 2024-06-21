@@ -518,11 +518,11 @@ ctss.plot <- ctss.cumfrac %>%
         ordered = TRUE
       )
     ) %>%
-  dplyr::filter( ## Filter for replicates only
-    stringr::str_detect(
-      variable,"^.*_(C|N)\\d$"
+  dplyr::filter( ## Filter for replicates or pools only
+      stringr::str_detect(
+        variable,"^.*_(C|N)\\d$"
+      )
     )
-  )
 ```
 
 ## [2.5.] Plotting
