@@ -155,7 +155,7 @@ cumulativeFractions <- function(loci, ctss, max_dist = 1000, inputAssay = "count
           a <- base::as.numeric(
               SummarizedExperiment::assay(ctss, inputAssay)[o, n]
             )
-        nz <- base::t[base::which(a > 0)]
+        nz <- t[base::which(a > 0)]
         dist <- IRanges::distanceToNearest(g,nz)
         dist <- base::as.data.frame(dist)[,3]
         return(
@@ -433,10 +433,7 @@ GM12878.dhs$thick <- IRanges::IRanges(
   )
 ```
 
-## [2.2.] Calculate cumulative fractions as a function of the distance to DHSs
-#### 'gm12878.cumFrac <- cumulativeFractions(GM12878.dhs,GM12878.CTSSs.stand)'
-#### 'GM12878.p.s.CTSSs' object used for pool-plots
-#### 'GM12878.pID.s.CTSSs' object used for replicate-plots
+## [2.2.] Ensure using only standard chromosomes
 ```{r}
 GM12878.CTSSs.stand <- GenomeInfoDb::keepStandardChromosomes(
     x = GM12878.s.CTSSs,
@@ -450,12 +447,22 @@ assertthat::assert_that(
     base::all(GenomeInfoDb::seqlevels(GM12878.CTSSs.stand) == GenomeInfoDb::seqlevels(GM12878.s.CTSSs)),
     base::all(GenomeInfoDb::seqlevels(GM12878.s.CTSSs) %in% GenomeInfoDb::seqlevels(GM12878.dhs))
   )
+```
+
+## [2.3.] Calculate cumulative fractions as a function of the distance to DHSs
+#### 'GM12878.p.s.CTSSs' object used for pool-plots
+#### 'GM12878.pID.s.CTSSs' object used for replicate-plots
+```{r}
 gm12878.cumFrac <- .GlobalEnv$cumulativeFractions(
     loci = GM12878.dhs,
     ctss = GM12878.CTSSs.stand
   )
+```
 
-regex = "^(.*)_(.*?)_(C|N)\\d$" #"^(.*)_(.*?)_(C|N)$"
+## [2.4.] Data wrangling
+#### Previous regex to extract 'C_N' column: 'regex = "^(.*)_(.*?)_(C|N)\\d$"' or 'regex = "^(.*)_(.*?)_(C|N)$"'
+```{r}
+regex = "^(.*)_(.*?)_(C|N|trip|ctrl|Cap_align)(\\d?)$"
 
 ctss.cumfrac <- gm12878.cumFrac %>%
   purrr::pluck(1) %>%
@@ -473,11 +480,6 @@ ctss.cumfrac <- gm12878.cumFrac %>%
       ),
     type = base::paste0(C_N,"_",method)
   )
-
-# ctss.cumfrac <- melt(gm12878.cumFrac[[1]], id.var="distance")
-# ctss.cumfrac$method <- str_extract(ctss.cumfrac$variable, "_(.*?)_")
-# ctss.cumfrac$C_N <- str_sub(ctss.cumfrac$variable,-2,-2)
-# ctss.cumfrac$method <- gsub("_", "", ctss.cumfrac$method )
 ```
 
 #### Evaluate
@@ -487,19 +489,19 @@ dplyr::distinct(ctss.cumfrac,method)
 dplyr::distinct(ctss.cumfrac,type)
 ```
 
-## [2.3.] Data wrangling - preparing plotting
+## [2.5.] Preparing data for plotting
 ```{r}
 tps <- base::c(
     "C_500K","N_500K","C_1M",
     "N_1M","N_5M","N_10M"
   )
 vrs <- base::c(
-    "GM12878_500K_C1","GM12878_500K_C2","GM12878_500K_C3",
-    "GM12878_500K_N1","GM12878_500K_N2","GM12878_500K_N3",
-    "GM12878_1M_C1","GM12878_1M_C2","GM12878_1M_C3",
-    "GM12878_1M_N1","GM12878_1M_N2","GM12878_1M_N3",
-    "GM12878_5M_N1","GM12878_5M_N2","GM12878_5M_N3",
-    "GM12878_10M_N1","GM12878_10M_N2","GM12878_10M_N3"
+    "GM12878_500K_C","GM12878_500K_C1","GM12878_500K_C2","GM12878_500K_C3",
+    "GM12878_500K_N","GM12878_500K_N1","GM12878_500K_N2","GM12878_500K_N3",
+    "GM12878_1M_C","GM12878_1M_C1","GM12878_1M_C2","GM12878_1M_C3",
+    "GM12878_1M_N","GM12878_1M_N1","GM12878_1M_N2","GM12878_1M_N3",
+    "GM12878_5M_N","GM12878_5M_N1","GM12878_5M_N2","GM12878_5M_N3",
+    "GM12878_10M_N","GM12878_10M_N1","GM12878_10M_N2","GM12878_10M_N3"
   )
 
 ctss.plot <- ctss.cumfrac %>%
@@ -515,21 +517,26 @@ ctss.plot <- ctss.cumfrac %>%
         levels = base::rev(vrs),
         ordered = TRUE
       )
+    ) %>%
+  dplyr::filter( ## Filter for replicates only
+    stringr::str_detect(
+      variable,"^.*_(C|N)\\d$"
     )
+  )
 ```
 
-## [2.3.] Plotting
+## [2.5.] Plotting
 #### p1
 ```{r}
-  ggplot2::ggplot(
-    data = ctss.plot,
-    mapping = aes(
-        x = distance,
-        y = value,
-        group = variable, #type,
-        color = type
-      )
-    ) +
+ggplot2::ggplot(
+      data = ctss.plot,
+      mapping = aes(
+          x = distance,
+          y = value,
+          group = variable, #type,
+          color = type
+        )
+      ) +
     geom_vline(
         xintercept = 200L,
         linetype = "dashed"
@@ -560,7 +567,7 @@ ctss.plot <- ctss.cumfrac %>%
       )
 ```
 
-## [2.4.] Save plot
+## [2.6.] Save plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -582,7 +589,7 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-## [2.5.] Plotting
+## [2.7.] Plotting
 #### p1.2
 ```{r}
 ctss.plot %>%
@@ -623,7 +630,7 @@ ggplot2::ggplot(
     )
 ```
 
-## [2.6.] Save plot
+## [2.8.] Save plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
