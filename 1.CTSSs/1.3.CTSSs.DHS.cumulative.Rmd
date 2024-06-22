@@ -459,9 +459,31 @@ assertthat::assert_that(
 #### 'GM12878.p.s.CTSSs' object used for pool-plots
 #### 'GM12878.pID.s.CTSSs' object used for replicate-plots
 ```{r}
-gm12878.cumFrac <- .GlobalEnv$cumulativeFractions(
+GM12878.cumFrac <- .GlobalEnv$cumulativeFractions(
     loci = GM12878.dhs,
     ctss = GM12878.CTSSs.stand
+  )
+```
+
+```{r}
+base::saveRDS(
+  object = GM12878.cumFrac,
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      base::format(base::Sys.time(), "%Y%m%d"),
+      "_GM12878.E116dhs.cumFrac",
+      ".rds"
+    )
+  )
+```
+
+```{r}
+GM12878.cumFrac <- base::readRDS(
+  file = base::list.files(
+        path = here::here("1.CTSSs"),
+        full.names = TRUE
+      ) %>% 
+    stringr::str_subset("GM12878.E116dhs.cumFrac")
   )
 ```
 
@@ -470,7 +492,7 @@ gm12878.cumFrac <- .GlobalEnv$cumulativeFractions(
 ```{r}
 regex = "^(.*)_(.*?)_(C|N|trip|ctrl|Cap_align)(\\d?)$"
 
-ctss.cumfrac <- gm12878.cumFrac %>%
+ctss.cumfrac <- GM128787.cumFrac %>%
   purrr::pluck(1) %>%
   tidyr::pivot_longer(
       cols = dplyr::contains("GM12878_"),
@@ -665,7 +687,7 @@ for(ext in base::c("pdf", "png")){
 ```{r}
 regex = "^(.*)_(.*?)_(C|N|trip|ctrl|Cap_align)(\\d?)$"
 
-ctss.cumfrac <- gm12878.cumFrac %>%
+ctss.cumfrac <- GM12878.cumFrac %>%
   purrr::pluck(2) %>%
   tidyr::pivot_longer(
       cols = dplyr::contains("GM12878_"),
@@ -756,7 +778,7 @@ ggplot2::ggplot(
 ```{r}
 regex = "^(.*)_(.*?)_(C|N|trip|ctrl|Cap_align)(\\d?)$"
 
-ctss.cumfrac <- gm12878.cumFrac %>%
+ctss.cumfrac <- GM12878.cumFrac %>%
   purrr::pluck(3) %>%
   tidyr::pivot_longer(
       cols = dplyr::contains("GM12878_"),
@@ -997,15 +1019,15 @@ ctss.cumfrac <- gm12878.cumFrac %>%
   )
 ```
 
-## 
+## To be discarded
 ```{r}
-ctss.cumfrac <- melt(gm12878.rDHS.cumFrac[2], id.var="distance")
-ctss.cumfrac$method <- str_extract(ctss.cumfrac$variable, "_(.*?)_")
-ctss.cumfrac$C_N <- str_sub(ctss.cumfrac$variable,-2,-2)
-ctss.cumfrac$method <- gsub("_", "", ctss.cumfrac$method )
+# ctss.cumfrac <- melt(gm12878.rDHS.cumFrac[2], id.var="distance")
+# ctss.cumfrac$method <- str_extract(ctss.cumfrac$variable, "_(.*?)_")
+# ctss.cumfrac$C_N <- str_sub(ctss.cumfrac$variable,-2,-2)
+# ctss.cumfrac$method <- gsub("_", "", ctss.cumfrac$method )
 ```
 
-
+## [3.7.] Plotting
 ```{r}
 ggplot2::ggplot(
   data = ctss.cumfrac,
@@ -1033,7 +1055,7 @@ ggplot2::ggplot(
   theme_bw()
 ```
 
-
+## [3.8.] Plotting
 ```{r}
 ggplot2::ggplot(
   data = ctss.cumfrac[ctss.cumfrac$distance==200,],
@@ -1055,18 +1077,37 @@ ggplot2::ggplot(
     )
 ```
 
-
+## [3.9.] Data wragnling for cumulative fraction
 ```{r}
-ctss.cumfrac <- melt(gm12878.rDHS.cumFrac[3], id.var="distance")
+regex = "^(.*)_(.*?)_(C|N|trip|ctrl|Cap_align)(\\d?)$"
 
-
-ctss.cumfrac$method <- str_extract(ctss.cumfrac$variable, "_(.*?)_")
-ctss.cumfrac$C_N <- str_sub(ctss.cumfrac$variable,-2,-2)
-
-ctss.cumfrac$method <- gsub("_", "", ctss.cumfrac$method )
+ctss.cumfrac <- gm12878.cumFrac %>%
+  purrr::pluck(3) %>%
+  tidyr::pivot_longer(
+      cols = dplyr::contains("GM12878_"),
+      names_to = "variable",
+      values_to = "value"
+    ) %>%
+  dplyr::mutate(
+    method = stringr::str_replace(
+        variable, "^(.*)_(.*?)_(.*)$","\\2"
+      ),
+    C_N = stringr::str_replace(
+        variable, regex,"\\3"
+      ),
+    type = base::paste0(C_N,"_",method)
+  )
 ```
 
+## To be discarded
+```{r}
+# ctss.cumfrac <- melt(gm12878.rDHS.cumFrac[3], id.var="distance")
+# ctss.cumfrac$method <- str_extract(ctss.cumfrac$variable, "_(.*?)_")
+# ctss.cumfrac$C_N <- str_sub(ctss.cumfrac$variable,-2,-2)
+# ctss.cumfrac$method <- gsub("_", "", ctss.cumfrac$method)
+```
 
+## [3.10.] Plotting
 ```{r}
 ggpot2::ggplot(
   data = ctss.cumfrac,
@@ -1094,6 +1135,7 @@ ggpot2::ggplot(
     )
 ```
 
+## [3.11.] Plotting
 ```{r}
 ggplot2::ggplot(
   data = ctss.cumfrac[ctss.cumfrac$distance==200,],
@@ -1114,4 +1156,3 @@ ggplot2::ggplot(
       fill = "sample"
     )
 ```
-
