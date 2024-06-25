@@ -504,12 +504,12 @@ GM12878.s.CTSSs <- base::readRDS(
       "repSub.combined.GM12878.CTSSs.rmSingletons.rds"
     )
   )
-# GM12878.p.CTSSs <- base::readRDS(
-#     file = base::paste0(
-#       here::here("1.CTSSs/"),
-#       "poolSub.combined.GM12878.CTSSs.rmSingletons.rds"
-#     )
-#   )
+GM12878.p.CTSSs <- base::readRDS(
+    file = base::paste0(
+      here::here("1.CTSSs/"),
+      "poolSub.combined.GM12878.CTSSs.rmSingletons.rds"
+    )
+  )
 ```
 
 ## [2.1.] Quantify CTSS level annotations
@@ -522,7 +522,25 @@ samples <- dplyr::pull(subset,sample)
 
 GM12878.ann.counts <- .GlobalEnv$calcAnnoCTSS(
     data = GM12878.s.CTSSs[,samples],
-    txModels = txdb
+    txModels = txdb,
+    uniqueCTSS = FALSE # TRUE
+  )
+
+tags <- dplyr::pull(subset,totalTags)
+GM12878.ann.fracs <- GM12878.ann.counts/tags
+```
+
+```{r}
+subset <- SummarizedExperiment::colData(GM12878.p.CTSSs) %>%
+  base::as.data.frame() %>%
+  tibble::rownames_to_column(var = "sample") %>%
+  dplyr::filter(main == "yes")
+samples <- dplyr::pull(subset,sample)
+
+GM12878.ann.counts <- .GlobalEnv$calcAnnoCTSS(
+    data = GM12878.p.CTSSs[,samples],
+    txModels = txdb,
+    uniqueCTSS = FALSE # TRUE
   )
 
 tags <- dplyr::pull(subset,totalTags)
