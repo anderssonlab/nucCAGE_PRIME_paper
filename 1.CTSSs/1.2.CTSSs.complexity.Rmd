@@ -9,33 +9,30 @@ date: "2024-01-26"
 ## [0.0.] Load necesarray packages
 ```{r message=FALSE}
 base::library(tidyverse)
-base::library(CAGEfightR)
-##Packages for plotting
-base::library(epistack)
 base::library(BiocParallel)
-base::library(reshape2)
-base::library(limma)
-base::library(Matrix)
-base::library(corrplot)
 ```
 
 ## [0.1.] Load CAGEfighR extensions
-```{r}
-# base::setwd("/home/mhf817")
-# cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
+```{r message=FALSE,results='hide'}
 sep <- .Platform$file.sep
 cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
-base::source(base::paste(cfr.extensions.dir, "utils.R", sep = sep))
-base::source(base::paste(cfr.extensions.dir, "subsample.R", sep = sep))
-base::source(base::paste(cfr.extensions.dir, "complexity.R", sep = sep))
+fs <- base::c(
+    "utils","support","cumulative",
+    "decompose","enhancers","noise",
+    "coverage","complexity","subsample",
+    "dispersion"
+  )
 
-base::source(base::paste(cfr.extensions.dir, "support.R", sep = sep))
-base::source(base::paste(cfr.extensions.dir, "cumulative.R", sep = sep))
-base::source(base::paste(cfr.extensions.dir, "decompose.R", sep = sep))
-base::source(base::paste(cfr.extensions.dir, "enhancers.R", sep = sep))
-base::source(base::paste(cfr.extensions.dir, "noise.R", sep = sep))
-base::source(base::paste(cfr.extensions.dir, "coverage.R", sep = sep))
-base::source(base::paste(cfr.extensions.dir, "dispersion.R", sep = sep))
+purrr::map(
+  .x = fs,
+  .f = function(f){
+    base::source(
+      base::paste0(
+        cfr.extensions.dir, sep, f, ".R"
+        )
+      )
+    }
+  )
 ```
 
 ## [0.2.] Load annotations
@@ -72,33 +69,24 @@ gm.full.pal <- base::c(
   )
 ```
 
-## [0.4.] Set working directory
-```{r eval=FALSE}
-# base::setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/1.CTSSs/")
-```
-
 # [1.] K562 datasets -------------------------
 
-## [0.5.] Read in K562 datasets
-#### see '1.1CTSSs.processing.Rmd' for read objects
+## [1.0.] Read in K562 datasets
+#### see '1.1CTSSs.processing.Rmd' for CTSSs objects
 ```{r}
-k562.CTSSs <- base::readRDS(
+K562.CTSSs <- base::readRDS(
     file = base::paste0(
       here::here("1.CTSSs/"),
       "all.combined.k562.CTSSs.rds"
     )
   )
-```
-
-#### Additional objects
-```{r eval=FALSE}
-# k562.s.CTSSs <- base::readRDS(
+# K562.s.CTSSs <- base::readRDS(
 #   file = base::paste0(
 #       here::here("1.CTSSs/"),
 #       "repSub.combined.k562.CTSSs.rmSingletons.rds"
 #     )
 #   )
-# k562.p.CTSSs <- base::readRDS(
+# K562.p.CTSSs <- base::readRDS(
 #   file = base::paste0(
 #       here::here("1.CTSSs/"),
 #       "poolSub.combined.k562.CTSSs.rmSingletons.rds"
@@ -106,13 +94,13 @@ k562.CTSSs <- base::readRDS(
 #   )
 ```
 
-## [1.0.] Compare all CTSS level correlation
+## [1.1.] Compare all CTSS level correlation
 ```{r}
 corrplot::corrplot(
     stats::cor(
       x = base::as.matrix(
         x = SummarizedExperiment::assay(
-            x = k562.CTSSs,
+            x = K562.CTSSs,
             i = "TPM"
           )
         )
@@ -123,13 +111,15 @@ corrplot::corrplot(
     col = base::rev(corrplot::COL2("RdBu",200)),
     tl.col = 'black'
   )
+```
 
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename =base::paste0(
+      filename = base::paste0(
           here::here("1.CTSSs/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
-          "_k562.CTSSs.corr",
+          "_K562.CTSSs.corr",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
@@ -146,7 +136,7 @@ for(ext in base::c("pdf", "png")){
 #     stats::cor(
 #       x = base::as.matrix(
 #         x = SummarizedExperiment::assay(
-#             x = k562.s.CTSSs,
+#             x = K562.s.CTSSs,
 #             i = "TPM"
 #           )
 #         )
@@ -157,13 +147,16 @@ for(ext in base::c("pdf", "png")){
 #     col = base::rev(corrplot::COL2("RdBu",200)),
 #     tl.col = 'black'
 #   )
+```
+
+```{r}
 # 
 # for(ext in base::c("pdf", "png")){
 #     ggplot2::ggsave(
 #       filename =base::paste0(
 #           here::here("1.CTSSs/plots/"),
 #           base::format(base::Sys.time(), "%Y%m%d"),
-#           "_subsampled.k562.CTSSs.corr",
+#           "_subsampled.K562.CTSSs.corr",
 #           ".",ext
 #         ),
 #       plot = ggplot2::last_plot(),
@@ -180,7 +173,7 @@ for(ext in base::c("pdf", "png")){
 #     stats::cor(
 #       x = base::as.matrix(
 #         x = SummarizedExperiment::assay(
-#             x = k562.p.CTSSs,
+#             x = K562.p.CTSSs,
 #             i = "TPM"
 #           )
 #         )
@@ -191,12 +184,15 @@ for(ext in base::c("pdf", "png")){
 #     col = base::rev(corrplot::COL2("RdBu",200)),
 #     tl.col = 'black'
 #   )
+```
+
+```{r}
 # for(ext in base::c("pdf", "png")){
 #     ggplot2::ggsave(
 #       filename = base::paste0(
 #           here::here("1.CTSSs/plots/"),
 #           base::format(base::Sys.time(), "%Y%m%d"),
-#           "_pooled.k562.CTSSs.corr",
+#           "_pooled.K562.CTSSs.corr",
 #           ".", ext
 #         ),
 #       plot = ggplot2::last_plot(),
@@ -208,10 +204,10 @@ for(ext in base::c("pdf", "png")){
 #   }
 ```
 
-## [1.1.] Compare CTSS>0TPM correlations
+## [1.2.] Compare CTSS>0TPM correlations
 ```{r}
 m1 <- base::as.matrix(
-    x = SummarizedExperiment::assay(x = k562.CTSSs, i = "TPM")
+    x = SummarizedExperiment::assay(x = K562.CTSSs, i = "TPM")
   )
 m1[m1 == 0] <- NA
 corrplot::corrplot(
@@ -222,13 +218,15 @@ corrplot::corrplot(
     col = base::rev(corrplot::COL2("RdBu",200)),
     tl.col = 'black'
   )
+```
 
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
           here::here("1.CTSSs/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
-          "_k562.CTSSs.rm0.corr",
+          "_K562.CTSSs.rm0.corr",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
@@ -242,7 +240,7 @@ for(ext in base::c("pdf", "png")){
 
 ```{r}
 # m1 <- base::as.matrix(
-#     x = SummarizedExperiment::assay(x = k562.s.CTSSs, i = "TPM")
+#     x = SummarizedExperiment::assay(x = K562.s.CTSSs, i = "TPM")
 #   )
 # m1[m1 == 0] <- NA
 # corrplot::corrplot(
@@ -253,13 +251,16 @@ for(ext in base::c("pdf", "png")){
 #     col = base::rev(corrplot::COL2("RdBu",200)),
 #     tl.col = 'black'
 #   )
+```
+
+```{r}
 # 
 # for(ext in base::c("pdf", "png")){
 #     ggplot2::ggsave(
 #       filename = base::paste0(
 #           here::here("1.CTSSs/plots/"),
 #           base::format(base::Sys.time(), "%Y%m%d"),
-#           "_subsampled.k562.CTSSs.rm0.corr",
+#           "_subsampled.K562.CTSSs.rm0.corr",
 #           ".",ext
 #         ),
 #       plot = ggplot2::last_plot(),
@@ -273,7 +274,7 @@ for(ext in base::c("pdf", "png")){
 
 ```{r}
 # m1 <- base::as.matrix(
-#     x = SummarizedExperiment::assay(x = k562.p.CTSSs, i = "TPM")
+#     x = SummarizedExperiment::assay(x = K562.p.CTSSs, i = "TPM")
 #   )
 # m1[m1 == 0] <- NA
 # corrplot::corrplot(
@@ -284,13 +285,16 @@ for(ext in base::c("pdf", "png")){
 #     col = base::rev(corrplot::COL2("RdBu",200)),
 #     tl.col = 'black'
 #   )
+```
+
+```{r}
 # 
 # for(ext in base::c("pdf", "png")){
 #     ggplot2::ggsave(
 #       filename = base::paste0(
 #           here::here("1.CTSSs/plots/"),
 #           base::format(base::Sys.time(), "%Y%m%d"),
-#           "_pooled.k562.CTSSs.rm0.corr",
+#           "_pooled.K562.CTSSs.rm0.corr",
 #           ".",ext
 #         ),
 #       plot = ggplot2::last_plot(),
@@ -302,92 +306,90 @@ for(ext in base::c("pdf", "png")){
 #   }
 ```
 
-## [1.2.] Calculate CTSS level complexity
+## [1.3.] Calculate CTSS level complexity
 ```{r}
 base::set.seed(1337)
 
-comp.k562.CTSSs <- .GlobalEnv$calcCTSSComplexity(
-    object = k562.CTSSs,
+comp.K562.CTSSs <- .GlobalEnv$calcCTSSComplexity(
+    object = K562.CTSSs,
     step = 2e+6,
     minCTSSsupport = 1,
     CTSSunexpressed = 0
   )
-# comp.k562.s.CTSSs <- .GlobalEnv$calcCTSSComplexity(
-#     object = k562.s.CTSSs,
+# comp.K562.s.CTSSs <- .GlobalEnv$calcCTSSComplexity(
+#     object = K562.s.CTSSs,
 #     step = 2e+6,
 #     minCTSSsupport = 1,
 #     CTSSunexpressed = 0
 #   )
-# comp.k562.p.CTSSs <- .GlobalEnv$calcCTSSComplexity(
-#     object = k562.p.CTSSs,
+# comp.K562.p.CTSSs <- .GlobalEnv$calcCTSSComplexity(
+#     object = K562.p.CTSSs,
 #     step = 2e+6,
 #     minCTSSsupport = 1,
 #     CTSSunexpressed = 0
 #   )
 ```
 
-## [1.3.] Save & load RData container
+## [1.4.] Save & load objects
 ```{r}
-base::save(
-  comp.k562.CTSSs,
-  # comp.k562.s.CTSSs,
-  # comp.k562.p.CTSSs,
+base::saveRDS(
+  object = comp.K562.CTSSs,
   file = base::paste0(
       here::here("1.CTSSs/"),
       base::format(base::Sys.time(), "%Y%m%d"),
-      "_K562.CTSS.complexity.RData"
+      "_comp.K562.CTSSs",
+      ".rds"
     )
   )
 ```
 
 ```{r}
-f <- base::list.files(
-      path = here::here("1.CTSSs"),
-      full.names = TRUE
-    ) %>% 
-  stringr::str_subset("20240619_K562.CTSS.complexity")
-
-base::load(file = f)
+comp.K562.CTSSs <- base::readRDS(
+  file = base::list.files(
+        path = here::here("1.CTSSs"),
+        full.names = TRUE
+      ) %>% 
+    stringr::str_subset("comp.K562.CTSSs.rds")
+  )
 ```
 
-## [1.4.] Data wrangling for all K562 samples & pools
+## [1.5.] Data wrangling for all K562 samples & pools
 #### Name change of "K562_10M_N", remove "K562_Cap_align" sample
 ```{r}
  levs <- base::c(
-    "K562_C1", "K562_C2", "K562_C3", "K562_C",
-    "K562_N4", "K562_N5", "K562_N6", "K562_N",
-    "K562_10M_N1", "K562_10M_N2", "K562_10M_N3", "K562_10M_N",
+    "K562_C", "K562_C1", "K562_C2", "K562_C3",
+    "K562_N", "K562_N4", "K562_N5", "K562_N6",
+    "K562_10M_N", "K562_10M_N1", "K562_10M_N2", "K562_10M_N3"
+  )
+alts <- base::c(
     "K562_ProCap_pcr_1", "K562_ProCap_pcr_2", "K562_pcr_align",
-    "K562_groCap_1"
+    "K562_groCap_1", "K562_Cap_align"
   )
 
-comp.k562.CTSSs <- comp.k562.CTSSs %>%
-  dplyr::filter(
-     sample != "K562_Cap_align" 
-    ) %>% 
+comp.K562.CTSSs.plot <- comp.K562.CTSSs %>%
   dplyr::mutate(
     sample = dplyr::case_when(
         sample == "K562_N_10M" ~ "K562_10M_N",
         TRUE ~ sample
-      ),
+      )
+    ) %>% 
+  dplyr::filter(sample %in% levs) %>% 
+  dplyr::mutate(
     sample = base::factor(
         x = sample,
         levels = levs,
         ordered = TRUE
       ),
     method = stringr::str_replace(
-        sample,"^(.*?)(\\d?)$","\\1"
-      ) %>%
-      stringr::str_replace(
-        .,"^(.*?)(_?)$","\\1"
+        sample,"^(.*?)(_)?(\\d)?$","\\1"
       )
     )
 ```
 
-## [1.5.] Plot complexities
+## [1.6.] Plot complexities
 ```{r}
 ggplot2::ggplot(
-    data = comp.k562.CTSSs,
+    data = comp.K562.CTSSs.plot,
     mapping = aes(
         x = totalTags,
         y = numberCTSSs,
@@ -420,32 +422,13 @@ ggplot2::ggplot(
     )
 ```
 
-## [1.6.] Save complexity plot
-```{r}
-for(ext in base::c("pdf", "png")){
-    ggplot2::ggsave(
-      filename = base::paste0(
-          here::here("results/20240324_combined_analysis/"),
-          base::format(base::Sys.time(), "%Y%m%d"),
-          "_comp.comb.CTSSs_remap",
-          ".",ext
-        ),
-      plot = ggplot2::last_plot(),
-      device = ext,
-      dpi = 300,
-      width = 5,
-      height = 5
-    )
-  }
-```
-
 ## [1.7.] Plot complexities for the other objects
 ```{r}
-# comp.k562.s.CTSSs$method <- stringr::str_sub(
-#       string = comp.k562.s.CTSSs$sample, start = 1, end = -2
+# comp.K562.s.CTSSs$method <- stringr::str_sub(
+#       string = comp.K562.s.CTSSs$sample, start = 1, end = -2
 #     )
 # ggplot2::ggplot(
-#     data = comp.k562.s.CTSSs,
+#     data = comp.K562.s.CTSSs,
 #     mapping = aes(
 #         x = totalTags,
 #         y = numberCTSSs,
@@ -479,11 +462,11 @@ for(ext in base::c("pdf", "png")){
 ```
 
 ```{r}
-# comp.k562.p.CTSSs$method <- stringr::str_sub(
-#     string = comp.k562.p.CTSSs$sample, start = 1, end = -2
+# comp.K562.p.CTSSs$method <- stringr::str_sub(
+#     string = comp.K562.p.CTSSs$sample, start = 1, end = -2
 #   )
 # ggplot2::ggplot(
-#     data = comp.k562.p.CTSSs,
+#     data = comp.K562.p.CTSSs,
 #     mapping = aes(
 #         x = totalTags,
 #         y = numberCTSSs,
@@ -517,112 +500,156 @@ for(ext in base::c("pdf", "png")){
 ```
 
 ## [1.8.] Identify max values for coordinated plotting
-#### See [2.2.] below for "comp.GM12878.CTSSs" object
+#### See [2.5.] below for "comp.GM12878.CTSSs.plot" object
 ```{r}
-tt1 <- comp.k562.CTSSs %>% # 284000983
+tt1 <- comp.K562.CTSSs.plot %>% # 284000983
   dplyr::pull(totalTags) %>%
   base::max(na.rm = TRUE)
-tt2 <- comp.GM12878.combined.CTSSs %>%
+tt2 <- comp.GM12878.CTSSs.plot %>% # 399999736
   dplyr::pull(totalTags) %>%
   base::max(na.rm = TRUE)
 
-nc1 <- comp.k562.CTSSs %>% # 29717697
+nc1 <- comp.K562.CTSSs.plot %>% # 29717697
   dplyr::pull(numberCTSSs) %>%
   base::max(na.rm = TRUE)
-nc2 <- comp.GM12878.CTSSs %>%
+nc2 <- comp.GM12878.CTSSs.plot %>% # 49703283
   dplyr::pull(numberCTSSs) %>%
   base::max(na.rm = TRUE)
 
-xmax <- base::max(tt1,tt2)
-ymax <- base::max(nc1,nc2)
+xmax <- base::max(tt1,tt2) # 399999736
+ymax <- base::max(nc1,nc2) # 49703283
 ```
 
-## [1.9.] Plot all complexity curves
-#### /combined_plots/combined.k562.CTSSs.comp.pdf
+## [1.9.] Test plot all complexity curves
+#### If required change scaling with 'scale_y_log10()'
 ```{r}
 ggplot2::ggplot(
-    data = comp.k562.CTSSs,
+    data = comp.K562.CTSSs.plot,
     mapping = aes(
         x = totalTags,
         y = numberCTSSs,
-        color = sample
+        color = method,
+        group = sample
       )
     ) + 
   geom_line() +
+  geom_abline(
+      intercept = 0,
+      slope = 1,
+      linetype = "dashed",
+      color = "black",
+      size = 0.5
+    ) +
   geom_vline(
-      xintercept = base::c(29267326,98669216),
+      xintercept = base::c(28623910,96353854),
       linetype = 2
     ) +
-  scale_x_continuous(
+    scale_x_continuous(
       limits = base::c(0,xmax),
     ) +
   scale_y_continuous(
       limits = base::c(0,ymax),
     ) +
   scale_color_manual(
-      values = k.full.pal
+      values = cols3
     ) +
-  theme_bw()  +
+  theme_bw() +
   theme(
       aspect.ratio = 1,
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.position = base::c(0.95,0.05),
+      legend.background = element_rect(
+          fill = "grey95"
+        ),
+      legend.text = element_text(size = 8),
+      legend.key.size = grid::unit(0.9, "lines")
     )
 ```
 
-#### /combined_plots/combined.k562.CTSSs.comp.scaled.pdf
+## [1.10.] Plot complexity curves for replicates and pools for printing
+#### If required change scaling with 'scale_y_log10()'
 ```{r}
 ggplot2::ggplot(
-    data = comp.k562.combined.CTSSs,
+    data = comp.K562.CTSSs.plot,
     mapping = aes(
         x = totalTags,
         y = numberCTSSs,
         color = sample
       )
     ) + 
-  geom_line() +
-  theme_bw() +
-  scale_y_log10() +
-  # scale_x_log10() +
+  geom_line(
+      size = 1
+    ) +
+  geom_abline(
+      intercept = 0,
+      slope = 1,
+      linetype = "dashed",
+      color = "black",
+      size = 0.5
+    ) +
+  geom_vline(
+      xintercept = base::c(28623910,96353854),
+      linetype = "dashed",
+      color = "black",
+      size = 0.5
+    ) +
+  scale_x_continuous(
+      limits = base::c(0,xmax),
+      name = "Total number of tags"
+    ) +
+  scale_y_continuous(
+      limits = base::c(0,ymax),
+      name = "Number of CTSSs"
+    ) +
   scale_color_manual(
       values = k.full.pal
     ) +
-  geom_vline(
-      xintercept = base::c(29267326,98669216),
-      linetype = 2
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      legend.position = "none",
+      legend.background = element_rect(
+          fill = "grey95"
+        ),
+      legend.text = element_text(size = 8),
+      legend.key.size = grid::unit(0.9, "lines")
     )
 ```
 
-## [1.9.] Print data
-```{r eval=FALSE}
-for(ext in c("pdf", "png")){
+## [1.11.] Save complexity plot
+```{r}
+for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
-          here::here("1.CTSSs/"),
-          format(Sys.time(), "%Y%m%d"),
-          "_complexityCtss",
-          "_K562",
-          ".", ext
+          here::here("1.CTSSs/plots/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_complexity.K562.CTSSs",
+          "_all",
+          # "_replicates",# "_pools",
+          ".",ext
         ),
       plot = ggplot2::last_plot(),
       device = ext,
       dpi = 300,
-      width = 8,
-      height = 6
+      width = 5,
+      height = 5
     )
   }
 ```
 
-## [1.10.] Plot subsampled number of CTSSs per library
+## [1.12.] Plot subsampled number of CTSSs per library
 ## Add barplots for subsampled levels
 ```{r}
-p.max <- comp.k562.CTSSs %>%
-  dplyr::filter(target < 98669216) %>%
+p.max <- comp.K562.CTSSs.plot %>%
+  dplyr::filter(target < 96353854) %>%
   tidyr::drop_na() %>%
   dplyr::group_by(sample) %>%
   dplyr::summarize(
       compexity = base::max(numberCTSSs)
     )
-r.max <- comp.k562.CTSSs %>%
-  dplyr::filter(target < 29267326) %>%
+r.max <- comp.K562.CTSSs.plot %>%
+  dplyr::filter(target < 28623910) %>%
   tidyr::drop_na() %>%
   dplyr::group_by(sample) %>%
   dplyr::summarize(
@@ -632,7 +659,7 @@ r.max <- comp.k562.CTSSs %>%
 
 ```{r}
 ggplot2::ggplot(
-    data = r.max, # p.max,
+    data = p.max, # r.max,
     mapping = aes(
         x = compexity,
         y = forcats::fct_rev(sample),
@@ -656,44 +683,43 @@ ggplot2::ggplot(
   # scale_x_log10() +
   guides(fill = "none") +
   labs(
-      x = "numberCTSSs",
-      y = "Samples"
+      x = "Number of CTSSs"
     ) +
   theme_bw() +
   theme(
-    aspect.ratio = 2,
-    axis.text.y = element_blank(),
-    axis.ticks.y = element_blank()
-  )
+      aspect.ratio = 2,
+      axis.title.y = element_blank(),
+      axis.text.y = element_blank(),
+      axis.ticks.y = element_blank()
+    )
 ```
 
-## [1.11.] Print data
+## [1.13.] Print data
 ```{r eval=FALSE}
 for(ext in c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
           here::here("1.CTSSs/"),
           format(Sys.time(), "%Y%m%d"),
-          "_complexityCtss",
-          "_K562",
+          "_complexity.K562.CTSSs",
           "_barplots",
-          "_replicate",
-          # "_pool",
-          "_nonLog10",
+          "_all", # "_replicate", # "_pool",
+          "_poolSub", # "_repSub",
+          # "_nonLog10",
           ".", ext
         ),
       plot = ggplot2::last_plot(),
       device = ext,
       dpi = 300,
       width = 3,
-      height = 6
+      height = 5
     )
   }
 ```
 
 # [2.] GM12878 -------------------------
 
-## [0.6.] Read in GM12878 datasets
+## [2.0.] Read in GM12878 datasets
 #### see '1.1CTSSs.processing.Rmd' for read objects
 ```{r}
 GM12878.CTSSs <- base::readRDS(
@@ -702,10 +728,6 @@ GM12878.CTSSs <- base::readRDS(
       "all.combined.GM12878.CTSSs.rds"
     )
   )
-```
-
-#### Additional objects
-```{r}
 # GM12878.s.CTSSs <- base::readRDS(
 #     file = base::paste0(
 #       here::here("1.CTSSs/"),
@@ -720,7 +742,7 @@ GM12878.CTSSs <- base::readRDS(
 #   )
 ```
 
-## [2.0.] Compare all CTSS level correlation
+## [2.1.] Compare all CTSS level correlation
 ```{r}
 corrplot::corrplot(
     stats::cor(
@@ -737,7 +759,9 @@ corrplot::corrplot(
     col = base::rev(corrplot::COL2("RdBu",200)),
     tl.col = 'black'
   )
+```
 
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
@@ -771,6 +795,9 @@ for(ext in base::c("pdf", "png")){
 #     col = base::rev(corrplot::COL2("RdBu",200)),
 #     tl.col = 'black'
 #   )
+```
+
+```{r}
 # 
 # for(ext in base::c("pdf", "png")){
 #     ggplot2::ggsave(
@@ -805,6 +832,9 @@ for(ext in base::c("pdf", "png")){
 #     col = base::rev(corrplot::COL2("RdBu",200)),
 #     tl.col = 'black'
 #   )
+```
+
+```{r}
 # 
 # for(ext in base::c("pdf", "png")){
 #     ggplot2::ggsave(
@@ -823,7 +853,7 @@ for(ext in base::c("pdf", "png")){
 #   }
 ```
 
-## [2.1.] Compare CTSS>0TPM correlations
+## [2.2.] Compare CTSS>0TPM correlations
 ```{r}
 m1 <- base::as.matrix(
     x = SummarizedExperiment::assay(x = GM12878.CTSSs, i = "TPM")
@@ -837,7 +867,9 @@ corrplot::corrplot(
     col = base::rev(corrplot::COL2("RdBu",200)),
     tl.col = 'black'
   )
+```
 
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
@@ -868,6 +900,9 @@ for(ext in base::c("pdf", "png")){
 #     col = base::rev(corrplot::COL2("RdBu",200)),
 #     tl.col = 'black'
 #   )
+```
+
+```{r}
 # 
 # for(ext in base::c("pdf", "png")){
 #     ggplot2::ggsave(
@@ -899,6 +934,9 @@ for(ext in base::c("pdf", "png")){
 #     col = base::rev(corrplot::COL2("RdBu",200)),
 #     tl.col = 'black'
 #   )
+```
+
+```{r}
 # 
 # for(ext in base::c("pdf", "png")){
 #     ggplot2::ggsave(
@@ -917,7 +955,7 @@ for(ext in base::c("pdf", "png")){
 #   }
 ```
 
-## [2.2.] Calculate CTSS level complexity
+## [2.3.] Calculate CTSS level complexity
 ```{r}
 base::set.seed(1337)
 
@@ -941,34 +979,68 @@ comp.GM12878.CTSSs <- .GlobalEnv$calcCTSSComplexity(
 #   )
 ```
 
-## [2.3.] Save & load RData container
+## [2.4.] Save & load objects
 ```{r}
-base::save(
-    comp.GM12878.CTSSs,
-    comp.GM12878.s.CTSSs,
-    comp.GM12878.p.CTSSs,
-    file = base::paste0(
+base::saveRDS(
+  object = comp.GM12878.CTSSs,
+  file = base::paste0(
       here::here("1.CTSSs/"),
       base::format(base::Sys.time(), "%Y%m%d"),
-      "_GM12878.CTSS.complexity.RData"
+      "_comp.GM12878.CTSSs",
+      ".rds"
     )
   )
 ```
 
 ```{r}
-f <- base::list.files(
-      path = here::here("1.CTSSs"),
-      full.names = TRUE
-    ) %>% 
-  stringr::str_subset("GM12878.CTSS.complexity")
-
-base::load(file = f)
+comp.GM12878.CTSSs <- base::readRDS(
+  file = base::list.files(
+        path = here::here("1.CTSSs"),
+        full.names = TRUE
+      ) %>% 
+    stringr::str_subset("comp.GM12878.CTSSs.rds")
+  )
 ```
 
-## [1.4.] Plot complexities
+## [2.5.] Data wrangling for all K562 samples & pools
+#### Name change of "K562_10M_N", remove "K562_Cap_align" sample
+```{r}
+ levs <- base::c(
+    "GM12878_500K_C", "GM12878_500K_C1", "GM12878_500K_C2", "GM12878_500K_C3",
+    "GM12878_500K_N", "GM12878_500K_N1", "GM12878_500K_N2", "GM12878_500K_N3",
+    "GM12878_1M_C", "GM12878_1M_C1", "GM12878_1M_C2", "GM12878_1M_C3",
+    "GM12878_1M_N", "GM12878_1M_N1", "GM12878_1M_N2", "GM12878_1M_N3",
+    "GM12878_5M_N", "GM12878_5M_N1", "GM12878_5M_N2", "GM12878_5M_N3", 
+    "GM12878_10M_N", "GM12878_10M_N1", "GM12878_10M_N2", "GM12878_10M_N3"
+  )
+alts <- base::c(
+    "GM12878_50K_C", "GM12878_50K_C1", "GM12878_50K_C2", "GM12878_50K_C3",
+    "GM12878_250K_C", "GM12878_250K_C1", "GM12878_250K_C2", "GM12878_250K_C3",
+    "GM12878_1M_trip", "GM12878_triptolide_C1", "GM12878_triptolide_C2", "GM12878_triptolide_C3", "GM12878_triptolide_C4",
+    "GM12878_1M_ctrl", "GM12878_ctrl_C1", "GM12878_ctrl_C2", "GM12878_ctrl_C3",
+    "GM12878_10M_Cap_align", "GM12878_groCap_1"
+  )
+
+comp.GM12878.CTSSs.plot <- comp.GM12878.CTSSs %>%
+  dplyr::filter(
+      sample %in% levs
+    ) %>%
+  dplyr::mutate(
+    sample = base::factor(
+        x = sample,
+        levels = levs,
+        ordered = TRUE
+      ),
+    method = stringr::str_replace(
+        sample,"^(.*?)(_)?(\\d)?$","\\1"
+      )
+    )
+```
+
+## [2.6.] Test plotting of complexity curves for replicates and pools
 ```{r}
 ggplot2::ggplot(
-    data = comp.GM12878.CTSSs,
+    data = comp.GM12878.CTSSs.plot,
     mapping = aes(
         x = totalTags,
         y = numberCTSSs,
@@ -976,7 +1048,15 @@ ggplot2::ggplot(
         group = sample
       )
     ) + 
-  geom_line() +
+  geom_line(
+      size = 1
+    ) +
+  geom_vline(
+      xintercept = base::c(28462994,104779864),
+      linetype = "dashed",
+      color = "black",
+      size = 0.5
+    ) +
   geom_abline(
       intercept = 0,
       slope = 1,
@@ -984,10 +1064,10 @@ ggplot2::ggplot(
       color = "black",
       size = 0.5
     ) +
-  theme_bw() +
   scale_color_manual(
       values = cols3
     ) +
+  theme_bw() +
   theme(
       aspect.ratio = 1,
       legend.title = element_blank(),
@@ -1001,36 +1081,7 @@ ggplot2::ggplot(
     )
 ```
 
-#### "plots/GM12878.CTSSs.compSplit.pdf"
-```{r}
-comp.GM12878.CTSSs$method <- stringr::str_extract(
-    comp.GM12878.CTSSs$sample, "_(.*?)_"
-  )
-comp.GM12878.CTSSs$method <- base::gsub(
-    "_", "", comp.GM12878.CTSSs$method
-  )
-
-ggplot2::ggplot(
-    data = comp.GM12878.CTSSs,
-    mapping = aes(
-        x = totalTags,
-        y = numberCTSSs,
-        color = sample
-      )
-    ) + 
-  geom_line() +
-  theme_bw() + 
-  facet_wrap(
-      facets = . ~ method
-    ) +
-  theme(
-      legend.position = "none",
-      aspect.ratio = 1,
-      panel.spacing = grid::unit(0.1,"lines")
-    )
-```
-
-## [2.5.] Plot complexities for the other objects
+## [2.7.] Plot complexities for the other objects
 #### "./plots/subsampled.GM12878.CTSSs.comp.pdf"
 ```{r}
 # ggplot2::ggplot(
@@ -1103,87 +1154,49 @@ ggplot2::ggplot(
 #     )
 ```
 
-## [2.6.] Prepare plotting 
-#### 'comp.GM12878.combined.CTSSs' object is loaded in [2.3.]
-#### replaced: 'main <- comp.GM12878.combined.CTSSs[comp.GM12878.combined.CTSSs$sample %in% base::colnames(GM12878.combined.CTSSs)[GM12878.combined.CTSSs$main=="yes"],]'
-```{r}
-levs <- base::c(
-    "GM12878_500K_C1","GM12878_500K_C2","GM12878_500K_C3","GM12878_500K_C",
-    "GM12878_500K_N1","GM12878_500K_N2","GM12878_500K_N3", "GM12878_500K_N",
-    "GM12878_1M_C1","GM12878_1M_C2","GM12878_1M_C3","GM12878_1M_C",
-    "GM12878_1M_N1","GM12878_1M_N2","GM12878_1M_N3", "GM12878_1M_N",
-    "GM12878_5M_N1","GM12878_5M_N2","GM12878_5M_N3", "GM12878_5M_N",
-    "GM12878_10M_N1","GM12878_10M_N2","GM12878_10M_N3", "GM12878_10M_N"
-  )
-
-types <- GM12878.combined.CTSSs %>% 
-  SummarizedExperiment::colData() %>%
-  base::as.data.frame() %>% 
-  tibble::rownames_to_column(var = "type") %>%
-  dplyr::filter(main == "yes") %>%
-  dplyr::pull(type)
-main <- comp.GM12878.combined.CTSSs %>%
-  dplyr::filter(sample %in% types)
-
-main$sample <- base::factor(
-    main$sample,
-    levels = levs,
-    ordered = TRUE
-  )
-```
-
-## [2.7.] Plot complexities including pooled samples
-#### see [1.7.1.] for xmax, ymax
-#### "/combined_plots/combined.GM12878.CTSSs.comp.pdf"
-#### "/combined_plots/combined.GM12878.CTSSs.comp.scaled.pdf"
+## [2.8.] Plot complexities including pooled samples
+#### see [1.8.] for xmax, ymax
+#### If required, 
 ```{r}
 ggplot2::ggplot(
-    data = main,
+    data = comp.GM12878.CTSSs.plot,
     mapping = aes(
         x = totalTags,
         y = numberCTSSs,
         color = sample
       )
     ) + 
-  geom_line() +
+  geom_line(
+      size = 1
+    ) +
   geom_vline(
-      xintercept = base::c(29027358,106618677),
-      linetype = 2
+      xintercept = base::c(28462994,104779864),
+      linetype = "dashed",
+      color = "black",
+      size = 0.5
+    ) +
+  geom_abline(
+      intercept = 0,
+      slope = 1,
+      linetype = "dashed",
+      color = "black",
+      size = 0.5
     ) +
   scale_x_continuous(
       limits = base::c(0,xmax),
+      name = "Total number of tags"
     ) +
   scale_y_continuous(
       limits = base::c(0,ymax),
+      name = "Number of CTSSs"
     ) +
   scale_color_manual(
       values = gm.full.pal
     ) +
   theme_bw() +
   theme(
-      aspect.ratio = 1
-    )
-```
-
-#### log10 scaled
-```{r}
-ggplot2::ggplot(
-    data = main,
-    mapping = aes(
-        x = totalTags,
-        y = numberCTSSs,
-        color = sample
-      )
-    ) + 
-  geom_line() +
-  theme_bw() +
-  scale_y_log10() +
-  scale_color_manual(
-      values = gm.full.pal
-    ) +
-  geom_vline(
-      xintercept = base::c(29027358,106618677),
-      linetype = 2
+      aspect.ratio = 1,
+      legend.position = "none"
     )
 ```
 
@@ -1222,39 +1235,39 @@ main %>%
     )
 ```
 
-## [2.8.] Print data
-```{r eval=FALSE}
+## [2.9.] Print data
+```{r}
 for(ext in c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
-          here::here("1.CTSSs/"),
+          here::here("1.CTSSs/plots/"),
           format(Sys.time(), "%Y%m%d"),
-          "_complexityCtss",
-          "_GM12878",
-          "_Pooled",
+          "_comp.GM12878.CTSSs",
+          "_all",
+          # "_replicates",# "_pools",
           ".", ext
         ),
       plot = ggplot2::last_plot(),
       device = ext,
       dpi = 300,
-      width = 6, #10
-      height = 4
+      width = 5,
+      height = 5
     )
   }
 ```
 
-## [2.9.] Plot subsampled number of CTSSs per library
+## [2.10.] Plot subsampled number of CTSSs per library
 ## Add barplots for subsampled levels
 ```{r}
 p.max <- main %>%
-  dplyr::filter(target < 106618677L) %>%
+  dplyr::filter(target < 104779864) %>%
   tidyr::drop_na() %>%
   dplyr::group_by(sample) %>%
   dplyr::summarize(
       compexity = base::max(numberCTSSs)
     )
 r.max <- main %>%
-  dplyr::filter(target < 29027358) %>%
+  dplyr::filter(target < 28462994) %>%
   tidyr::drop_na() %>%
   dplyr::group_by(sample) %>%
   dplyr::summarize(
