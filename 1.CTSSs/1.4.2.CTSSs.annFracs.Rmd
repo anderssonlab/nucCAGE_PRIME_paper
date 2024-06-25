@@ -530,21 +530,22 @@ tags <- dplyr::pull(subset,totalTags)
 GM12878.ann.fracs <- GM12878.ann.counts/tags
 ```
 
+#### Alternative annotations for GM12878.p.CTSSs, for all and only uniqueCTSSs with 'uniqueCTSS = TRUE'
 ```{r}
-subset <- SummarizedExperiment::colData(GM12878.p.CTSSs) %>%
-  base::as.data.frame() %>%
-  tibble::rownames_to_column(var = "sample") %>%
-  dplyr::filter(main == "yes")
-samples <- dplyr::pull(subset,sample)
-
-GM12878.ann.counts <- .GlobalEnv$calcAnnoCTSS(
-    data = GM12878.p.CTSSs[,samples],
-    txModels = txdb,
-    uniqueCTSS = FALSE # TRUE
-  )
-
-tags <- dplyr::pull(subset,totalTags)
-GM12878.ann.fracs <- GM12878.ann.counts/tags
+# subset <- SummarizedExperiment::colData(GM12878.p.CTSSs) %>%
+#   base::as.data.frame() %>%
+#   tibble::rownames_to_column(var = "sample") %>%
+#   dplyr::filter(main == "yes")
+# samples <- dplyr::pull(subset,sample)
+# 
+# GM12878.ann.counts <- .GlobalEnv$calcAnnoCTSS(
+#     data = GM12878.p.CTSSs[,samples],
+#     txModels = txdb,
+#     uniqueCTSS = FALSE # TRUE
+#   )
+# 
+# tags <- dplyr::pull(subset,totalTags)
+# GM12878.ann.fracs <- GM12878.ann.counts/tags
 ```
 
 ## [2.2.] Factor levels for genomic features & cell amounts
@@ -557,11 +558,10 @@ feats <- base::c(
 amts <- base::c("500K","1M","5M","10M")
 reps <- base::c("pool","1","2","3")
 
-# sams <- base::c(
-#     "GM12878_500K_C","GM12878_500K_N",
-#     "GM12878_1M_C","GM12878_1M_N",
-#     "GM12878_5M_N","GM12878_10M_N"
-#   )
+sams <- base::c(
+    "500K_C","500K_N","1M_C",
+    "1M_N","5M_N","10M_N"
+  )
 ```
 
 ## [2.3.] Data wrangling - prepare plotting of fractions
@@ -745,145 +745,69 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-## [2.9.] Quantify CTSS level annotations
+## [2.9.]
 ```{r}
-GM12878.ann.uniqcounts <- .GlobalEnv$calcAnnoCTSS(
-    data = GM12878.s.CTSSs[,samples],
-    txModels = txdb,
-    uniqueCTSS = TRUE
-  )
-
-GM12878.ann.uniqfracs <- GM12878.ann.uniqcounts/base::rowSums(GM12878.ann.uniqcounts)
-
-gm12878.ann.uniqfracs$sample <- row.names(gm12878.ann.uniqfracs)
-gm12878.ann.uniqfracs.m <- melt(gm12878.ann.uniqfracs)
-
-
-GM12878.ann.uniqfracs.m <- GM12878.ann.uniqfracs %>%
-  tibble::rownames_to_column("sample") %>%
-  tidyr::pivot_longer(
-      cols = !sample,
-      names_to = "variable",
-      values_to = "value"
-    ) %>%
-  tidyr::separate_wider_delim(
-      cols = sample,
-      delim = "_",
-      names = base::c("cell","amount","type"),
-      cols_remove = FALSE
-    ) %>%
-  tidyr::separate(
-      col = type,
-      sep = 1,
-      into = base::c("source","rep"),
-      convert = TRUE ## Creates NAs
-    ) %>%
-  dplyr::mutate(
-    rep = dplyr::case_when(
-        base::is.na(rep) ~ "pool",
-        TRUE ~ base::as.character(rep)
-      ),
-    rep = base::factor(
-        x = rep,
-        levels = base::rev(reps),
-        ordered = TRUE
-      ),
-    amount = base::factor(
-        x = amount,
-        levels = amts,
-        ordered = TRUE
-      ),
-    source = base::factor(
-        x = source,
-        levels = base::c("C","N"),
-        ordered = TRUE
-      ),
-    variable = base::factor(
-        x = variable,
-        levels = base::rev(feats),
-        ordered = TRUE
-      )
+pools <- GM12878.ann.fracs %>%
+  tibble::rownames_to_column(var = "sample") %>% 
+  dplyr::filter(
+      stringr::str_detect(sample, "^.*_(C|N)$")
     )
+
+GM12878.ann.fracs %>%
+  tibble::rownames_to_column(var = "sample") %>% 
+  dplyr::mutate(
+    method = stringr::str_replace(
+        sample, "^.*?_(.*_(C|N))(\\d)?$","\\1"
+      ),
+    method = base::factor(
+      x = method,
+      levels = sams,
+      ordered = TRUE
+    )
+  ) %>%
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+          x = intergenic,
+          y = intron,
+          color = method,
+          group = sample
+        )
+      ) +
+    geom_point(
+        size = 2
+      ) +
+    ggrepel::geom_text_repel(
+        data = pools,
+        mapping = aes(
+            label = stringr::str_replace(sample,"GM12878_","")
+          ),
+        size = 3,
+        max.time = 10,
+        max.overlaps = Inf,
+        min.segment.length = 0,
+        xlim = base::c(0.06, NA),
+        direction = "y",
+        hjust = 0,
+        box.padding = 0.5,
+        point.padding = 0.5
+      ) +
+    scale_color_manual(
+        values = gm.full.pal
+      ) +
+    theme_bw() +
+    theme(
+        legend.position = "none",
+        aspect.ratio = 1
+      )
 ```
 
 
 ```{r}
-gm12878.ann.counts.p <- .GlobalEnv$calc_anno_CTSS(
-    GM12878.p.CTSSs[,colData(GM12878.p.CTSSs)$main=="yes"],
-    txModels = txdb
-  )
-gm12878.ann.fracs.p <- gm12878.ann.counts.p/colData(GM12878.p.CTSSs)$totalTags[colData(GM12878.p.CTSSs)$main=="yes"]
-gm12878.ann.fracs.p$sample <- row.names(gm12878.ann.fracs.p)
-gm12878.ann.fracs.p.m <- melt(gm12878.ann.fracs.p)
-
-gm12878.ann.uniqcounts.p <- .GlobalEnv$calc_anno_uniqCTSS(
-    GM12878.p.CTSSs[,colData(GM12878.p.CTSSs)$main=="yes"],
-    txModels = txdb
-  )
-gm12878.ann.uniqfracs.p <- gm12878.ann.uniqcounts.p/rowSums(gm12878.ann.uniqcounts.p)
-gm12878.ann.uniqfracs.p$sample <- row.names(gm12878.ann.uniqfracs.p)
-gm12878.ann.uniqfracs.p.m <- melt(gm12878.ann.uniqfracs.p)
-```
-
-#### /combined_plots/annFracs.GM12878.repSub.pdf
-#### See chunk in [1.5.] for previous plot part "p1"
-```{r}
-p2 <- ggplot(gm12878.ann.fracs, aes(intergenic, intron, color=sample)) +
+ggplot2::ggplot(
+  data = GM12878.ann.fracs,
+  mapping = aes(exon, intron, color=sample)) +
   geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.fracs), 
     check_overlap = F, size=3,nudge_y = 0.003) + 
   guides(color="none") + scale_color_manual(values=gm.full.pal)
-
-p3 <- ggplot(gm12878.ann.fracs, aes(exon, intron, color=sample)) +
-  geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.fracs), 
-    check_overlap = F, size=3,nudge_y = 0.003) + 
-  guides(color="none") + scale_color_manual(values=gm.full.pal)
 ```
-
-#### /combined_plots/annFracs.GM12878.poolSub.pdf
-```{r}
-p1 <- ggplot(gm12878.ann.fracs.p.m, aes(sample, value, fill=variable)) + geom_col() + coord_flip() +
-  theme_bw() + scale_fill_manual(values=custom.col)
-
-p2 <- ggplot(gm12878.ann.fracs.p, aes(intergenic, intron, color=sample)) +
-  geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.fracs.p), 
-    check_overlap = F, size=3,nudge_y = 0.003) + 
-  guides(color="none") + scale_color_manual(values=gm.full.pal)
-
-p3 <- ggplot(gm12878.ann.fracs.p, aes(exon, intron, color=sample)) +
-  geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.fracs.p), 
-    check_overlap = F, size=3,nudge_y = 0.003) + 
-  guides(color="none") + scale_color_manual(values=gm.full.pal)
-```
-
-#### /combined_plots/annuniqFracs.GM12878.repSub.pdf
-```{r}
-p1 <- ggplot(gm12878.ann.uniqfracs.m, aes(sample, value, fill=variable)) + geom_col() + coord_flip() +
-  theme_bw() + scale_fill_manual(values=custom.col)
-
-p2 <- ggplot(gm12878.ann.uniqfracs, aes(intergenic, intron, color=sample)) +
-  geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.uniqfracs), 
-    check_overlap = F, size=3,nudge_y = 0.003) + 
-  guides(color="none") + scale_color_manual(values=gm.full.pal)
-
-p3 <- ggplot(gm12878.ann.uniqfracs, aes(exon, intron, color=sample)) +
-  geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.uniqfracs), 
-    check_overlap = F, size=3,nudge_y = 0.003) + 
-  guides(color="none") + scale_color_manual(values=gm.full.pal)
-```
-
-#### /combined_plots/annuniqFracs.GM12878.poolSub.pdf
-```{r}
-p1 <- ggplot(gm12878.ann.uniqfracs.p.m, aes(sample, value, fill=variable)) + geom_col() + coord_flip() +
-  theme_bw() + scale_fill_manual(values=custom.col)
-
-p2 <- ggplot(gm12878.ann.uniqfracs.p, aes(intergenic, intron, color=sample)) +
-  geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.uniqfracs.p), 
-    check_overlap = F, size=3,nudge_y = 0.003) + 
-  guides(color="none") + scale_color_manual(values=gm.full.pal)
-
-p3 <- ggplot(gm12878.ann.uniqfracs.p, aes(exon, intron, color=sample)) +
-  geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.uniqfracs.p), 
-    check_overlap = F, size=3,nudge_y = 0.003) + 
-  guides(color="none") + scale_color_manual(values=gm.full.pal)
-```
-
