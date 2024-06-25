@@ -745,15 +745,9 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-## [2.9.]
+## [2.9.] Preparations for comparative plotting
 ```{r}
-pools <- GM12878.ann.fracs %>%
-  tibble::rownames_to_column(var = "sample") %>% 
-  dplyr::filter(
-      stringr::str_detect(sample, "^.*_(C|N)$")
-    )
-
-GM12878.ann.fracs %>%
+GM12878.ann.fracs.plot <- GM12878.ann.fracs %>%
   tibble::rownames_to_column(var = "sample") %>% 
   dplyr::mutate(
     method = stringr::str_replace(
@@ -764,50 +758,151 @@ GM12878.ann.fracs %>%
       levels = sams,
       ordered = TRUE
     )
-  ) %>%
-  ggplot2::ggplot(
-      data = .,
-      mapping = aes(
-          x = intergenic,
-          y = intron,
-          color = method,
-          group = sample
-        )
-      ) +
-    geom_point(
-        size = 2
-      ) +
-    ggrepel::geom_text_repel(
-        data = pools,
-        mapping = aes(
-            label = stringr::str_replace(sample,"GM12878_","")
-          ),
-        size = 3,
-        max.time = 10,
-        max.overlaps = Inf,
-        min.segment.length = 0,
-        xlim = base::c(0.06, NA),
-        direction = "y",
-        hjust = 0,
-        box.padding = 0.5,
-        point.padding = 0.5
-      ) +
-    scale_color_manual(
-        values = gm.full.pal
-      ) +
-    theme_bw() +
-    theme(
-        legend.position = "none",
-        aspect.ratio = 1
-      )
+  )
+
+pools <- GM12878.ann.fracs.plot %>%
+  dplyr::filter(
+      stringr::str_detect(sample, "^.*_(C|N)$")
+    )
+
+preLR <- GM12878.ann.fracs %>% 
+  tibble::rownames_to_column(var = "sample") %>%
+  dplyr::filter(
+      stringr::str_detect(sample,"10M", negate = TRUE)
+    )
+
+interLR <- stats::lm(
+    data = preLR,
+    formula = intron ~ intergenic
+  )
+exonLR <- stats::lm(
+    data = preLR,
+    formula = exon ~ intron
+  )
 ```
 
-
+## [2.10.] Comparative plotting - intergenic ~ intron
 ```{r}
 ggplot2::ggplot(
-  data = GM12878.ann.fracs,
-  mapping = aes(exon, intron, color=sample)) +
-  geom_point(size=2) + theme_bw() + geom_text( label=rownames(gm12878.ann.fracs), 
-    check_overlap = F, size=3,nudge_y = 0.003) + 
-  guides(color="none") + scale_color_manual(values=gm.full.pal)
+    data = GM12878.ann.fracs.plot,
+    mapping = aes(
+        x = intergenic,
+        y = intron,
+        color = method,
+        group = sample
+      )
+    ) +
+  geom_abline(
+      slope = interLR$coefficients[["intergenic"]],
+      intercept = interLR$coefficients[["(Intercept)"]],
+      linetype = "dashed"
+    ) +
+  geom_point(
+      size = 4,
+      alpha = 0.6
+    ) +
+  ggrepel::geom_label_repel(
+      data = pools,
+      mapping = aes(
+          label = stringr::str_replace(sample,"GM12878_","")
+        ),
+      size = 3,
+      max.time = 10,
+      max.overlaps = Inf,
+      min.segment.length = 0,
+      xlim = base::c(0.06, NA),
+      direction = "y",
+      hjust = 0,
+      box.padding = 0.5,
+      point.padding = 0.5,
+      force_pull = 0
+    ) +
+  scale_color_manual(
+      values = gm.full.pal[base::seq(4,24,4)]
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      # legend.position = "none",
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.position = base::c(0.95,0.05),
+      legend.background = element_rect(
+        fill = "grey"
+      )
+    )
+```
+
+## [2.11.] Comparative plotting - exon ~ intron
+```{r}
+ggplot2::ggplot(
+    data = GM12878.ann.fracs.plot,
+    mapping = aes(
+        x = intron,
+        y = exon,
+        color = method,
+        group = sample
+      )
+    ) +
+  geom_abline(
+      slope = exonLR$coefficients[["intron"]],
+      intercept = exonLR$coefficients[["(Intercept)"]],
+      linetype = "dashed"
+    ) +
+  geom_point(
+      size = 4,
+      alpha = 0.6
+    ) +
+  ggrepel::geom_label_repel(
+      data = pools,
+      mapping = aes(
+          label = stringr::str_replace(sample,"GM12878_","")
+        ),
+      size = 3,
+      max.time = 10,
+      max.overlaps = Inf,
+      min.segment.length = 0,
+      # xlim = base::c(0.06, NA),
+      direction = "y",
+      hjust = 0,
+      box.padding = 0.5,
+      point.padding = 0.5,
+      force_pull = 0
+    ) +
+  scale_color_manual(
+      values = gm.full.pal[base::seq(4,24,4)]
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      # legend.position = "none",
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.position = base::c(0.95,0.05),
+      legend.background = element_rect(
+        fill = "grey"
+      )
+    )
+```
+
+## [2.12.] Save complexity plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("1.CTSSs/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_GM12878.ann.fracs.plot",
+          "_all",
+          # "_IntronIntergenic",
+          "_ExonIntron",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 5,
+      height = 5
+    )
+  }
 ```
