@@ -58,14 +58,12 @@ k.full.pal <- base::c(
     "#4F5D5C"
   )
 gm.full.pal <- base::c(
-    "#F5CE00","#E2AA00","#B68D00",
-    "#FF8D00","#DF613F","#DF5643",
-    "#DD4425","#FF4425","#92B9C9",
-    "#76A5B6","#004352","#00439B",
-    "#29A957","#008E37","#007A30",
-    "#009072","#4F5D5C","#444E4C",
-    "#3D4138","#878784","#AC97C2",
-    "#977FB4","#7D62A3","#7D62D0"
+    "#F5CE00","#E2AA00","#B68D00","#FF8D00",
+    "#DF613F","#DF5643","#DD4425","#FF4425",
+    "#92B9C9","#76A5B6","#004352","#00439B",
+    "#29A957","#008E37","#007A30","#009072",
+    "#4F5D5C","#444E4C","#3D4138","#878784",
+    "#AC97C2","#977FB4","#7D62A3","#7D62D0"
   )
 ```
 
@@ -1156,83 +1154,60 @@ ggplot2::ggplot(
 
 ## [2.8.] Plot complexities including pooled samples
 #### see [1.8.] for xmax, ymax
-#### If required, 
+#### If required, use 'scale_y_log()' for altering the data scaling
 ```{r}
-ggplot2::ggplot(
-    data = comp.GM12878.CTSSs.plot,
-    mapping = aes(
-        x = totalTags,
-        y = numberCTSSs,
-        color = sample
-      )
-    ) + 
-  geom_line(
-      size = 1
-    ) +
-  geom_vline(
-      xintercept = base::c(28462994,104779864),
-      linetype = "dashed",
-      color = "black",
-      size = 0.5
-    ) +
-  geom_abline(
-      intercept = 0,
-      slope = 1,
-      linetype = "dashed",
-      color = "black",
-      size = 0.5
-    ) +
-  scale_x_continuous(
-      limits = base::c(0,xmax),
-      name = "Total number of tags"
-    ) +
-  scale_y_continuous(
-      limits = base::c(0,ymax),
-      name = "Number of CTSSs"
-    ) +
-  scale_color_manual(
-      values = gm.full.pal
-    ) +
-  theme_bw() +
-  theme(
-      aspect.ratio = 1,
-      legend.position = "none"
-    )
-```
-
-#### Only pooled samples
-#### previously: Only 500k and 5M samples, 'gm.full.ada' color palette used
-```{r}
-main %>%
+comp.GM12878.CTSSs.plot %>% 
   dplyr::filter(
-      stringr::str_detect(sample,"_N$|_C$")
+      stringr::str_detect(sample,"_N$|_C$") ## pooled samples only
     ) %>%
   ggplot2::ggplot(
-    data = .,
-    mapping = aes(
-        x = totalTags,
-        y = numberCTSSs,
-        color = sample
+      data = .,
+      mapping = aes(
+          x = totalTags,
+          y = numberCTSSs,
+          color = sample
+        )
+      ) + 
+    geom_line(
+        size = 1
+      ) +
+    geom_vline(
+        xintercept = base::c(28462994,104779864),
+        linetype = "dashed",
+        color = "black",
+        size = 0.5
+      ) +
+    geom_abline(
+        intercept = 0,
+        slope = 1,
+        linetype = "dashed",
+        color = "black",
+        size = 0.5
+      ) +
+    scale_x_continuous(
+        # limits = base::c(0,xmax),
+        name = "Total number of tags"
+      ) +
+    scale_y_continuous(
+        # limits = base::c(0,ymax),
+        name = "Number of CTSSs"
+      ) +
+    scale_color_manual(
+        values = gm.full.pal[base::seq(4,24,4)] #gm.full.pal
+      ) +
+    theme_bw() +
+    theme(
+        aspect.ratio = 1,
+        # legend.position = "none"
+        legend.title = element_blank(),
+        legend.justification = base::c(1,0),
+        legend.position = base::c(0.95,0.05),
+        legend.background = element_rect(
+            fill = "grey95"
+          ),
+        legend.text = element_text(size = 8),
+        legend.key.size = grid::unit(0.9, "lines")
       )
-    ) + 
-  geom_line() +
-  geom_vline(
-      xintercept = base::c(29027358,106618677),
-      linetype = 2
-    ) +
-  scale_x_continuous(
-      limits = base::c(0,xmax),
-    ) +
-  scale_y_continuous(
-      limits = base::c(0,ymax),
-    ) +
-  scale_color_manual(
-      values = gm.full.pal[base::seq(1,24,4)]
-    ) +
-  theme_bw() +
-  theme(
-      aspect.ratio = 1
-    )
 ```
 
 ## [2.9.] Print data
@@ -1243,8 +1218,8 @@ for(ext in c("pdf", "png")){
           here::here("1.CTSSs/plots/"),
           format(Sys.time(), "%Y%m%d"),
           "_comp.GM12878.CTSSs",
-          "_all",
-          # "_replicates",# "_pools",
+          # "_all",
+          "_pools", # "_replicates",
           ".", ext
         ),
       plot = ggplot2::last_plot(),
@@ -1276,7 +1251,7 @@ r.max <- comp.GM12878.CTSSs.plot %>%
 ```
 
 ```{r}
-p.max_pools <- main %>%
+p.max_pools <- comp.GM12878.CTSSs.plot %>%
   dplyr::filter(
       stringr::str_detect(sample,"_N$|_C$")
     ) %>%
@@ -1286,7 +1261,7 @@ p.max_pools <- main %>%
   dplyr::summarize(
       compexity = base::max(numberCTSSs)
     )
-r.max_pools <- main %>%
+r.max_pools <- comp.GM12878.CTSSs.plot %>%
   dplyr::filter(
       stringr::str_detect(sample,"_N$|_C$")
     ) %>%
@@ -1300,7 +1275,7 @@ r.max_pools <- main %>%
 
 ```{r}
 ggplot2::ggplot(
-    data = p.max, # p.max_pools, # p.max, # r.max,
+    data = p.max_pools, # r.max_pools, # p.max, # r.max,
     mapping = aes(
         x = compexity,
         y = forcats::fct_rev(sample),
@@ -1319,16 +1294,15 @@ ggplot2::ggplot(
       fontface = "bold"
     ) +
   scale_fill_manual(
-      values = gm.full.pal
+      values = gm.full.pal[base::seq(4,24,4)]
     ) +
-  # scale_x_log10() +
-  guides(fill = "none") +
   labs(
       x = "Number of CTSSs",
     ) +
   theme_bw() +
   theme(
-      aspect.ratio = 2,
+      aspect.ratio = 1,
+      legend.position = "none",
       axis.title.y = element_blank(),
       axis.text.y = element_blank(),
       axis.ticks.y = element_blank()
@@ -1340,13 +1314,14 @@ ggplot2::ggplot(
 for(ext in c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
-          here::here("1.CTSSs/"),
+          here::here("1.CTSSs/plots/"),
           format(Sys.time(), "%Y%m%d"),
           "_comp.GM12878.CTSSs",
           "_barplots",
-          "_all",
-          # "_replicate", # "_pool",
+          # "_all",
+          "_pool", # "_replicate",
           # "_nonLog10",
+          "_poolSub", # "_repSub",
           ".", ext
         ),
       plot = ggplot2::last_plot(),
@@ -1358,7 +1333,7 @@ for(ext in c("pdf", "png")){
   }
 ```
 
-## [2.11.] Combined plot
+## [2.12.] Combined plot
 ```{r}
 p1 <- ggplot2::ggplot(
     data = main,
