@@ -59,6 +59,16 @@ cols4 <- base::c(
     "#FE8D02","#FF4425","#00439B",
     "#008F72","#878784","#7D62CF"
   )
+gm.full.pal <- base::c(
+    "#F5CE00","#E2AA00","#B68D00",
+    "#FF8D00","#DF613F","#DF5643",
+    "#DD4425","#FF4425","#92B9C9",
+    "#76A5B6","#004352","#00439B",
+    "#29A957","#008E37","#007A30",
+    "#009072","#4F5D5C","#444E4C",
+    "#3D4138","#878784","#AC97C2",
+    "#977FB4","#7D62A3","#7D62D0"
+  )
 ```
 
 ## [0.4.] cumulativeFraction function
@@ -417,12 +427,12 @@ ctss.plot <- ctss.cumfrac %>%
         levels = base::rev(vrs),
         ordered = TRUE
       )
-    ) %>%
-  dplyr::filter( ## Filter for replicates or pools only
-      stringr::str_detect(
-        variable, "^.*_(C|N)\\d$" # "^.*_(C|N)$" = pools
-      )
-    )
+    )# %>%
+  # dplyr::filter( ## Filter for replicates or pools only
+  #     stringr::str_detect(
+  #       variable, "^.*_(C|N)\\d$" # "^.*_(C|N)$" = pools
+  #     )
+  #   )
 ```
 
 #### Evaluate & test plotting
@@ -439,8 +449,7 @@ ggplot2::ggplot(
     mapping = aes(
         x = distance,
         y = value,
-        color = method,
-        group = variable
+        color = variable
       )
     ) +
   geom_line() +
@@ -454,17 +463,18 @@ ggplot2::ggplot(
       x = "Distance to DHSs center"
     ) +
   scale_color_manual(
-      values = cols4
+      values = gm.full.pal
     ) +
   theme_bw() +
   theme(
-      aspect.ratio = 1,
-      legend.title = element_blank(),
-      legend.justification = base::c(1,0),
-      legend.position = base::c(0.95,0.05),
-      legend.background = element_rect(
-        fill = "grey"
-      )
+    aspect.ratio = 1,
+    legend.position = "none"
+    # legend.title = element_blank(),
+    # legend.justification = base::c(1,0),
+    # legend.position = base::c(0.95,0.05),
+    # legend.background = element_rect(
+    #     fill = "grey"
+    #   )
     )
 ```
 
@@ -477,8 +487,8 @@ for(ext in base::c("pdf", "png")){
           base::format(base::Sys.time(), "%Y%m%d"),
           "_K562",
           "_cumFracDhs",
-          "_replicates",
-          # "_pools",
+          "_all",
+          # "_replicates", # "_pools",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
@@ -501,7 +511,7 @@ ctss.plot %>%
       mapping = aes(
           x = value,
           y = variable,
-          fill = method
+          fill = variable
         )
       ) +
     geom_col() +
@@ -515,7 +525,7 @@ ctss.plot %>%
         fontface = "bold"
       ) +
     scale_fill_manual(
-        values = cols4
+        values = gm.full.pal # cols4
       ) +
     labs(
         x = "Cumulative CTSS fraction at 200bp",
@@ -541,8 +551,8 @@ for(ext in base::c("pdf", "png")){
           base::format(base::Sys.time(), "%Y%m%d"),
           "_K562",
           "_cumFracDhs",
-          "_replicates",
-          # "_pools",
+          "_all",
+          # "_replicates", # "_pools",
           "_dist200",
           ".",ext
         ),
@@ -928,12 +938,12 @@ ctss.plot <- ctss.cumfrac %>%
         levels = base::rev(vrs),
         ordered = TRUE
       )
-    ) %>%
-  dplyr::filter( ## Filter for replicates or pools only
-      stringr::str_detect(
-        variable, "^.*_(C|N)$" # "^.*_(C|N)\\d$"
-      )
-    )
+    ) # %>%
+  # dplyr::filter( ## Filter for replicates or pools only
+  #     stringr::str_detect(
+  #       variable, "^.*_(C|N)$" # "^.*_(C|N)\\d$"
+  #     )
+  #   )
 ```
 
 ## [3.6.] Plotting
@@ -943,8 +953,8 @@ ggplot2::ggplot(
       mapping = aes(
           x = distance,
           y = value,
-          group = variable, #type,
-          color = type
+          # group = variable, #type,
+          color = variable #type
         )
       ) +
     geom_vline(
@@ -965,17 +975,18 @@ ggplot2::ggplot(
         x = "Distance to DHSs center"
       ) +
     scale_color_manual(
-        values = base::rev(cols4)
+        values = gm.full.pal #base::rev(cols4)
       ) +
     theme_bw() +
     theme(
-        aspect.ratio = 1,
-        legend.title = element_blank(),
-        legend.justification = base::c(1,0),
-        legend.position = base::c(0.95,0.05),
-        legend.background = element_rect(
-          fill = "grey"
-        )
+      aspect.ratio = 1,
+      legend.position = "none"
+      # legend.title = element_blank(),
+      # legend.justification = base::c(1,0),
+      # legend.position = base::c(0.95,0.05),
+      # legend.background = element_rect(
+      #     fill = "grey"
+      #   )
       )
 ```
 
@@ -988,8 +999,8 @@ for(ext in base::c("pdf", "png")){
           base::format(base::Sys.time(), "%Y%m%d"),
           "_GM12878",
           "_cumFracDhs",
-          # "_replicates",
-          "_pools",
+          "_all",
+          # "_replicates", #"_pools",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
@@ -1012,13 +1023,13 @@ ggplot2::ggplot(
     mapping = aes(
         y = variable, #type,
         x = value,
-        fill = type
+        fill = variable #type
       )
     ) +
   geom_col() +
   geom_text(
       mapping = aes(
-        label = type
+        label = variable
       ),
       x = 0,
       hjust = -1.1,
@@ -1026,7 +1037,7 @@ ggplot2::ggplot(
       fontface = "bold"
     ) +
   scale_fill_manual(
-      values = base::rev(cols4)
+      values = base::rev(gm.full.pal) # base::rev(cols4)
     ) +
   labs(
       x = "Cumulative CTSS fraction at 200bp",
@@ -1050,8 +1061,8 @@ for(ext in base::c("pdf", "png")){
           base::format(base::Sys.time(), "%Y%m%d"),
           "_GM12878",
           "_cumFracDhs",
-          # "_replicates",
-          "_pools",
+          "_all",
+          # "_replicates", #"_pools",
           "_dist200",
           ".",ext
         ),
