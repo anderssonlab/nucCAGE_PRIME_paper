@@ -6,7 +6,7 @@ date: "2024-03-05"
 
 ## [0.] Prerequsites -------------------------
 
-## [0.0.] Load necesarray packages
+## [0.0.] Load necessary packages
 ```{r}
 library(CAGEfightR)
 
@@ -166,7 +166,6 @@ k562.TCs$sample <- base::factor(
            "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1",
            "K562_pcr_align"))
 
-k562.TCs$width <- BiocGenerics::width(k562.TCs)
 
 base::saveRDS(k562.TCs, file="repSub.TCs.k562.rds")
 ```
@@ -242,7 +241,6 @@ k562.p.TCs$sample <- base::factor(
            "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1",
            "K562_pcr_align"))
 
-k562.p.TCs$width <- BiocGenerics::width(k562.p.TCs)
 
 base::saveRDS(k562.p.TCs, file="poolSub.TCs.k562.rds")
 ```
@@ -342,7 +340,6 @@ gm12878.TCs$dhs.olap <- BiocGenerics::unlist(olaps)
 gm12878.TCs$sample <- base::factor(
   gm12878.TCs$sample)
 
-gm12878.TCs$width <- BiocGenerics::width(gm12878.TCs)
 
 base::saveRDS(gm12878.TCs, file="repSub.TCs.GM12878.rds")
 ```
@@ -410,102 +407,13 @@ gm12878.p.TCs <- BiocGenerics::unlist(gm12878.p.TCs)
 
 gm12878.p.TCs$dhs.olap <- BiocGenerics::unlist(olaps)
 
-
-
 gm12878.p.TCs$sample <- base::factor(
   gm12878.p.TCs$sample)
 
-gm12878.p.TCs$width <- BiocGenerics::width(gm12878.p.TCs)
 
 base::saveRDS(gm12878.p.TCs, file="poolSub.TCs.GM12878.rds")
 ```
 
-
-
-#Move this part to another script
-
-
-
-## [0.2.] Add custom color palette
-```{r}
-custom.col <- base::c(
-  "#FFDB6D","#C4961A","#F4EDCA", 
-  "#D16103","#C3D7A4","#52854C",
-  "#4E84C4","#293352","grey"
-  )
-
-
-gm.pal <- base::c(
-  "#F5CE00","#E2AA00","#B68D00",
-  "#DF613F","#DF5643","#DD4425",
-  "#92B9C9","#76A5B6","#004352",
-  "#29A957","#008E37","#007A30",
-  "#4F5D5C","#444E4C","#3D4138",
-  "#AC97C2","#977FB4","#7D62A3"
-  )
-                     
-gm.pooled.pal <- base::c(
-  "#FF8D00","#FF4425","#00439B",
-  "#009072","#878784","#7D62D0"
-  )
-
-gm.full.pal <- base::c(
-  "#F5CE00","#E2AA00","#B68D00",
-  "#FF8D00","#DF613F","#DF5643",
-  "#DD4425","#FF4425","#92B9C9",
-  "#76A5B6","#004352","#00439B",
-  "#29A957","#008E37","#007A30",
-  "#009072","#4F5D5C","#444E4C",
-  "#3D4138","#878784","#AC97C2",
-  "#977FB4","#7D62A3","#7D62D0"
-  )
-
-
-
-k.full.pal <- base::c(
-  "#F5CE00","#E2AA00","#B68D00",
-  "#FF8D00","#DF613F","#DF5643",
-  "#DD4425","#FF4425","#4F5D5C",
-  "#92B9C9","#76A5B6","#004352",
-  "#00439B","#29A957","#008E37",
-  "#007A30"
-  )
-```
-
-
-```{r}
-#Look at shapes 
-
-k562.TCs %>% as.data.frame(row.names=NULL) %>%  subset(score>=100) %>%
-  ggplot(aes(sample,fill=sample)) + geom_bar() + coord_flip() + theme_bw() + scale_fill_manual(values=k.full.pal) + labs(title="DLs detected score>=3") 
-
-k562.TCs %>% as.data.frame(row.names=NULL) %>%  subset(score>=3) %>%
-  ggplot(aes(txType,log10(score),fill=txType)) + geom_boxplot() + coord_flip() + theme_bw() + scale_fill_manual(values=custom.col) + labs(title="DLs detected score>=3") + facet_wrap(~sample) 
-
-k562.TCs %>% as.data.frame(row.names=NULL) %>%  subset(dhs.olap>0) %>%
-  ggplot(aes(sample,log10(score),fill=sample)) + geom_boxplot() + coord_flip() + theme_bw() + scale_fill_manual(values=k.full.pal) + labs(title="DLs detected score>=3") + facet_wrap(~txType) 
-
-k562.TCs %>% as.data.frame(row.names=NULL) %>%  subset(dhs.olap>0 & width>1 & txType=="promoter") %>%
-  ggplot(aes(shapeEntropy,fill=sample)) + geom_density() + theme_bw() + scale_fill_manual(values=k.full.pal) + labs(title="DLs detected score>=3") +facet_wrap(~sample)
-
-k562.TCs %>% as.data.frame(row.names=NULL) %>%  subset(dhs.olap>0 & score>=10  & txType=="promoter") %>%
-  ggplot(aes(log10(1+width),fill=sample)) + geom_density() + theme_bw() + scale_fill_manual(values=k.full.pal) + labs(title="DLs detected score>=3") +facet_wrap(~sample)
-
-
-k562.TCs %>% as.data.frame(row.names=NULL) %>%  subset(dhs.olap>0 & score>=3  & txType=="promoter") %>%
-  ggplot(aes(log10(1+width),fill=sample)) + geom_histogram() + theme_bw() + scale_fill_manual(values=k.full.pal) + labs(title="promoter width [bp]") +facet_wrap(~sample)
-
-
-
-k562.TCs %>% as.data.frame(row.names=NULL) %>%  subset(dhs.olap>0 & score>=3  & txType=="promoter") %>%
-  ggplot(aes(shapeEntropy,fill=sample)) + geom_histogram() + theme_bw() + scale_fill_manual(values=k.full.pal) + labs(title="promoter shapeEntropy") +facet_wrap(~sample) + xlim(-1,8)
-
-k562.TCs %>% as.data.frame(row.names=NULL) %>%  subset(dhs.olap>0 & score>=3  & txType=="promoter") %>%
-  ggplot(aes(IQR,fill=sample)) + geom_histogram() + theme_bw() + scale_fill_manual(values=k.full.pal) + labs(title="promoter 10-90IQR") +facet_wrap(~sample) + scale_x_log10()
-
-
-
-```
 
 
 

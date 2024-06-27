@@ -578,12 +578,12 @@ ggplot2::ggplot(
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
-          here::here("1.CTSSs/"),
+          here::here("1.CTSSs/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_GM12878.ann.fracs.plot",
           "_all",
-          # "_IntronIntergenic",
-          "_ExonIntron",
+          "_IntronIntergenic",
+          # "_ExonIntron",
           ".",ext
         ),
       plot = ggplot2::last_plot(),

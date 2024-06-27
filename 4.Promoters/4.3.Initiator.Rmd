@@ -4,182 +4,98 @@ output: html_document
 date: "2024-03-06"
 ---
 
+## [0.] Prerequsites -------------------------
 
-
-
+## [0.0.] Load necessary packages
 ```{r}
 library(CAGEfightR)
-
-#CAGEfighR extensions
-setwd("/home/mhf817")
-sep <- .Platform$file.sep
-cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
-source(paste(cfr.extensions.dir, "utils.R", sep = sep))
-source(paste(cfr.extensions.dir, "support.R", sep = sep))
-source(paste(cfr.extensions.dir, "cumulative.R", sep = sep))
-source(paste(cfr.extensions.dir, "decompose.R", sep = sep))
-source(paste(cfr.extensions.dir, "enhancers.R", sep = sep))
-source(paste(cfr.extensions.dir, "noise.R", sep = sep))
-source(paste(cfr.extensions.dir, "coverage.R", sep = sep))
-source(paste(cfr.extensions.dir, "complexity.R", sep = sep))
-source(paste(cfr.extensions.dir, "subsample.R", sep = sep))
-source(paste(cfr.extensions.dir, "dispersion.R", sep = sep))
-
-
-#Annotations
-library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+library(PRIME)
 library(BSgenome.Hsapiens.UCSC.hg38)
-txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-
-#Packages for plotting
-library(CAGEfightR)
-library(epistack)
 library(BiocParallel)
 library(dplyr)
-library(reshape2)
-library(limma)
-library(ggplot2)
-library(stringr)
-
-custom.col <- c("#FFDB6D", "#C4961A", "#F4EDCA", 
-                "#D16103", "#C3D7A4", "#52854C", "#4E84C4", "#293352","grey")
+```
 
 
-gm.pal <- c("#F5CE00", "#E2AA00", "#B68D00","#DF613F","#DF5643","#DD4425","#92B9C9","#76A5B6","#004352","#29A957","#008E37","#007A30","#4F5D5C","#444E4C","#3D4138",
-                     "#AC97C2","#977FB4","#7D62A3")
-                     
-gm.pooled.pal <- c("#FF8D00","#FF4425","#00439B","#009072","#878784","#7D62D0")
-
-gm.full.pal <- c("#F5CE00", "#E2AA00", "#B68D00","#FF8D00","#DF613F","#DF5643","#DD4425","#FF4425","#92B9C9","#76A5B6","#004352","#00439B","#29A957","#008E37","#007A30","#009072","#4F5D5C","#444E4C","#3D4138","#878784","#AC97C2","#977FB4","#7D62A3","#7D62D0")
-
-
-
-k.full.pal <- c("#F5CE00", "#E2AA00", "#B68D00","#FF8D00","#DF613F","#DF5643","#DD4425","#FF4425","#4F5D5C","#92B9C9","#76A5B6","#004352","#00439B","#29A957","#008E37","#007A30")
-
-
-
-#Set working directory
+## [0.1.] Set working directory
+```{r}
 setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/4.Promoters/")
-
-
 ```
 
 
-
+## [0.2.] Initiator classification function (now part of PRIME)
 ```{r}
-#Specialized funtions 
-
-getTCcoreSeq <- function(object,bsg) {
-  
-  idx <- GenomicRanges:::get_out_of_bound_index(resize(swapRanges(object), 50, fix = "center"))
-  
-  if (length(idx) > 0)  {
-    object = object[-idx]
+#Specialized funtions  (loaded with PRIME)
+initiatorScore <- function(object, bsg) {
+  # Ensure the input is of class GRanges or StitchedGPos
+  if (!inherits(object, c("GRanges", "StitchedGPos"))) {
+    stop("object must be of class GRanges or StitchedGPos")
   }
-  x = promoters(swapRanges(object), upstream=1, downstream=1)
-  x$seq = getSeq(bsg, x ,as.character=TRUE)
-  YC = c("CC", "TC")
-  YR = c("CA", "TA", "CG", "TG")
-  x$INR = "other"
-  x$INR[x$seq %in% YC] = "YC"
-  x$INR[x$seq %in% YR] = "YR"
-  x
-}
-
-getCTSScoreSeq <- function(object,bsg) {
   
+  # Remove out-of-bound indices
   idx <- GenomicRanges:::get_out_of_bound_index(object)
-  
-  if (length(idx) > 0)  {
-    object = object[-idx]
+  if (length(idx) > 0) {
+    object <- object[-idx]
   }
-  x = promoters(object, upstream=1, downstream=1)
-  x$seq = getSeq(bsg, x ,as.character=TRUE)
-  YC = c("CC", "TC")
-  YR = c("CA", "TA", "CG", "TG")
-  x$INR = "other"
-  x$INR[x$seq %in% YC] = "YC"
-  x$INR[x$seq %in% YR] = "YR"
-  x
+  
+  # Create promoters based on the class of object
+  if (class(object) == "GRanges") {
+    swapped_object <- swapRanges(object)
+    x <- promoters(swapped_object, upstream = 1, downstream = 1)
+  } else if (class(object)== "StitchedGPos") {
+    x <- promoters(object, upstream = 1, downstream = 1)
+  }
+    
+  # Get sequences
+  x$seq <- getSeq(bsg, x, as.character = TRUE)
+  
+  # Define INR categories
+  YC <- c("CC", "TC")
+  YR <- c("CA", "TA", "CG", "TG")
+  
+  # Assign INR category
+  x$INR <- "other"
+  x$INR[x$seq %in% YC] <- "YC"
+  x$INR[x$seq %in% YR] <- "YR"
+  
+  return(x)
 }
-
 ```
 
+# [1.] K562 replicate subsetted  -------------------------
 
-
+## [1.0.] Read in data run classification and create output
 ```{r}
-k562.TCs <- readRDS("./repSub.TCs.k562.rds")
+k562.TCs <- base::readRDS("./repSub.TCs.k562.rds")
+k562.TCs<- .GlobalEnv$initiatorScore(k562.TCs,Hsapiens)
+base::saveRDS(k562.TCs, file="./repSub.TCs.k562.rds")
 ```
 
 
+# [2.] K562 pool subsetted  -------------------------
+
+## [2.0.] Read in data run classification and create output
 ```{r}
-#Have to rename width to get rid of error
-#test <- k562.TCs %>% subset(dhs.olap>0 & sample=="K562_C1"& txType=="promoter"&score>=100)
-k562.TCs<- getTCcoreSeq(k562.TCs[,-8],Hsapiens)
-table(k562.TCs$INR)/length(k562.TCs$INR)
-
-
-k562.TCs$sample <- factor(k562.TCs$sample, levels=c("K562_C1","K562_C2","K562_C3","K562_C","K562_N4","K562_N5","K562_N6","K562_N",
-                                            "K562_10M_N1","K562_10M_N2","K562_10M_N3","K562_N_10M",
-                                            "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_pcr_align"))
-
-
-promoters <- subset(k562.TCs, txType%in% c("promoter")  & dhs.olap>0 & score>=3)
-table(promoters$INR)/length(promoters$INR)
-
-promoters %>% as.data.frame(row.names=NULL) %>%
-  ggplot(aes(sample, log10(score),fill=sample)) + geom_boxplot() + theme_bw() + scale_fill_manual(values=k.full.pal) + labs(title="promoter summit initiator expression >=3 counts") +facet_wrap(~INR)
-
-
-prom_sum <- promoters %>% as.data.frame(row.names=NULL)  %>%
-  group_by(sample, INR) %>% 
-  summarise(count = n()) %>% 
-  mutate(perc = count/sum(count))
-
-prom_sum %>%
-  ggplot(aes(x = INR, y = perc*100, fill = sample)) + geom_col(position="dodge") + theme_bw() + scale_fill_manual(values=k.full.pal) + labs(title="promoter summit initiator >=3 counts")
-
+k562.p.TCs <- base::readRDS("./poolSub.TCs.k562.rds")
+k562.p.TCs<- .GlobalEnv$initiatorScore(k562.p.TCs,Hsapiens)
+base::saveRDS(k562.p.TCs, file="./poolSub.TCs.k562.rds")
 ```
 
+
+# [3.] GM12878 replicate subsetted  -------------------------
+
+## [3.0.] Read in data run classification and create output
 ```{r}
-#Add a more CTSS leveled analysis
-k562.s.CTSSs <- readRDS("../1.CTSSs/repSub.combined.k562.CTSSs.rds")
+gm12878.TCs <- base::readRDS("./repSub.TCs.GM12878.rds")
+gm12878.TCs<- .GlobalEnv$initiatorScore(gm12878.TCs,Hsapiens)
+base::saveRDS(gm12878.TCs, file="./repSub.TCs.GM12878.rds")
 ```
 
 
+# [4.] GM12878 pool subsetted  -------------------------
+
+## [4.0.] Read in data run classification and create output
 ```{r}
-#Find any CTSS with TPM >=1 in a sample --> and do motif matching
-
-high.CTSSs <- lapply(unique(k562.TCs$sample), function(x) {
-  tc <- k562.TCs[k562.TCs$sample==x,]
-  ctss <- subsetByOverlaps(k562.s.CTSSs[,1], tc)
-  ctss <- ctss %>% calcPooled() %>% subset(score>=1)
-  rowData(ctss)$sample <- x
-  rd <- rowRanges(ctss)
-  rd
-})
-
-high.CTSSs <- GRangesList(high.CTSSs) 
-high.CTSSs <- unlist(high.CTSSs)
-
-test <- getCTSScoreSeq(high.CTSSs, Hsapiens)
-
-test$sample <- factor(test$sample, levels=c("K562_C1","K562_C2","K562_C3","K562_C","K562_N4","K562_N5","K562_N6","K562_N",
-                                            "K562_10M_N1","K562_10M_N2","K562_10M_N3","K562_N_10M",
-                                            "K562_groCap_1","K562_ProCap_pcr_2","K562_ProCap_pcr_1","K562_pcr_align"))
-
-test %>% as.data.frame(row.names=NULL) %>%
-  ggplot(aes(sample, log10(score),fill=sample)) + geom_boxplot() + theme_bw() + scale_fill_manual(values=k.full.pal)  +facet_wrap(~INR) + labs(title="CTSS initiator >=1 TPM")
-
-
-prom_sum <- test%>% as.data.frame(row.names=NULL)  %>%
-  group_by(sample, INR) %>% 
-  summarise(count = n()) %>% 
-  mutate(perc = count/sum(count))
-
-prom_sum %>%
-  ggplot(aes(x = INR, y = perc*100, fill = sample)) + geom_col(position="dodge") + theme_bw() + scale_fill_manual(values=k.full.pal) + labs(title="CTSS initiator >=1 TPM")
-
+gm12878.p.TCs <- base::readRDS("./poolSub.TCs.GM12878.rds")
+gm12878.p.TCs<- .GlobalEnv$initiatorScore(gm12878.p.TCs,Hsapiens)
+base::saveRDS(gm12878.p.TCs, file="./poolSub.TCs.GM12878.rds")
 ```
-
-

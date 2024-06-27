@@ -21,6 +21,9 @@ setwd("/Users/fxc326/Documents/nucCAGE/9.Noise")
 
 ```
 
+```{r}
+base::library(tidyverse)
+```
 
 ```{r}
 
@@ -62,4 +65,124 @@ for (n in names(files)) {
 
 ```
 
+## [2.0.] Identify files
+```{r}
+fs <- base::list.files(
+      path = here::here("9.Noise"),
+      full.names = TRUE
+    ) %>%
+  stringr::str_subset("divnoise.csv")
+```
+
+## [2.1.] Read in & prepare datasets
+```{r message=FALSE}
+data <- purrr::map_dfr(
+  .x = fs,
+  .f = function(f){
+    s <- stringr::str_extract(fs[1],"poolSub|repSub")
+    return(
+      readr::read_delim(
+            file = fs[1],
+            delim = ",",
+            col_names = TRUE
+          ) %>%
+        dplyr::rename(
+            quantile = 1
+          ) %>% 
+        tidyr::pivot_longer(
+            cols = !quantile,
+            names_to = "variable",
+            values_to = "value"
+          ) %>%
+        dplyr::mutate(
+            subset = s
+          )
+        )
+      }
+    )
+```
+
+```{r}
+
+```
+
+
+## [2.2.] Data wrangling
+```{r}
+reps <- base::c("pool","1","2","3")
+amts <- base::c("500K","1M","5M","10M")
+
+data.plot <- data %>%
+  dplyr::filter(
+    stringr::str_detect(
+        variable, "trip|ctrl|Cap|align|50K|250K", negate = TRUE
+      )
+    ) %>%
+  tidyr::separate_wider_delim(
+      col = variable,
+      names = base::c("cell","amount","type"),
+      delim = "_"
+    ) %>%
+  tidyr::separate(
+      col = type,
+      sep = 1,
+      into = base::c("source","rep"),
+      convert = TRUE ## Creates NAs
+    ) %>%
+  dplyr::mutate(
+    rep = dplyr::case_when(
+        base::is.na(rep) ~ "pool",
+        TRUE ~ base::as.character(rep)
+      ),
+    rep = base::factor(
+        x = rep,
+        levels = base::rev(reps),
+        ordered = TRUE
+      ),
+    amount = base::factor(
+        x = amount,
+        levels = amts,
+        ordered = TRUE
+      ),
+    source = base::factor(
+        x = source,
+        levels = base::c("C","N"),
+        ordered = TRUE
+      ),
+    quantile = stringr::str_replace(quantile, "%", "") %>%
+      base::as.double()
+    )
+```
+
+```{r}
+data.plot %>%
+  dplyr::group_by(amount,source,rep)
+```
+
+
+## [2.3.]
+```{r}
+ggplot2::ggplot(
+      data = data.plot,
+      mapping = aes(
+        x = quantile, # base::log10(quantile),
+        y = value,
+        color = rep
+      )
+    ) +
+  geom_line(
+      size = 1,
+      alpha = 0.5
+    ) +
+  facet_wrap(
+      facets = source ~ amount + subset,
+      nrow = 2
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      panel.spacing = grid::unit(0.1, "lines"),
+      # legend.position = "none"
+    )
+```
 
