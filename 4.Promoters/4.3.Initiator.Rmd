@@ -77,7 +77,7 @@ getTCcoreSeq <- function(object,bsg) {
     object = object[-idx]
   }
   x = promoters(swapRanges(object), upstream=1, downstream=1)
-  x$seq = getSeq(Hsapiens, x ,as.character=TRUE)
+  x$seq = getSeq(bsg, x ,as.character=TRUE)
   YC = c("CC", "TC")
   YR = c("CA", "TA", "CG", "TG")
   x$INR = "other"
@@ -94,7 +94,7 @@ getCTSScoreSeq <- function(object,bsg) {
     object = object[-idx]
   }
   x = promoters(object, upstream=1, downstream=1)
-  x$seq = getSeq(Hsapiens, x ,as.character=TRUE)
+  x$seq = getSeq(bsg, x ,as.character=TRUE)
   YC = c("CC", "TC")
   YR = c("CA", "TA", "CG", "TG")
   x$INR = "other"
