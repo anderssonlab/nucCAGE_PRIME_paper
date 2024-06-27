@@ -9,7 +9,6 @@ date: "2024-01-31"
 ## [0.0.] Load necesarray packages
 ```{r message=FALSE}
 base::library(tidyverse)
-base::library(BiocParallel)
 ```
 
 ## [0.1.] Load CAGEfighR extensions

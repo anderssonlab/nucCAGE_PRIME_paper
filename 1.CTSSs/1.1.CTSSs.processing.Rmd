@@ -13,7 +13,6 @@ base::library(CAGEfightR)
 base::library(PRIME)
 ```
 
-
 ## [0.1.] Register server cores / threads
 ```{r}
 BiocParallel::register(

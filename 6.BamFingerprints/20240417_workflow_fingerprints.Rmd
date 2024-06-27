@@ -8,10 +8,88 @@ date: "2024-04-17"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+## [0.] Prerequisites -------------------------
+
 ## [0.0.] Load necessary packages
 ```{r}
 base::library(tidyverse)
+BiocParallel::register(
+  BPPARAM = BiocParallel::MulticoreParam(
+      workers = 10
+    )
+  )
 ```
+
+## [0.1.] Helper function
+```{r}
+writeBw <- function(object, replicates, dir, inputAssay="TMM",splitByStrand = TRUE){
+  
+  ## Check consistency of replicates
+  assertthat::assert_that(
+      base::length(SummarizedExperiment::rowRanges(object)) == base::nrow(SummarizedExperiment::assay(object,inputAssay)),
+      base::all(replicates %in% rownames(SummarizedExperiment::colData(object)))
+    )
+  base::stopifnot("Chosen directory doesn't exist!" = base::dir.exists(dir))
+  
+  ## Parallel export across all chosen replicates
+  foreach::foreach(i=1:base::length(replicates)) %dopar% {
+    
+    ## Convert individual replicate to GRanges object
+    gr <- SummarizedExperiment::rowRanges(object)
+    S4Vectors::mcols(gr)["score"] <- SummarizedExperiment::assay(object,inputAssay)[,replicates[i]]
+    
+    ## Export replicate's plus and minus strands separately
+    if(splitByStrand){
+      for (s in base::c("+","-")){
+          grs <- gr[BiocGenerics::strand(gr) == s,]
+          s <- base::ifelse(s == "+","plus","minus")
+          fn <- base::paste0(dir,reps[i],".",inputassay,".",s,".bw")
+          
+          rtracklayer::export(
+              object = grs,
+              con = fn,
+              format = "bigWig"
+            )
+          base::message(base::paste(fn,"done.",sep = " "))
+        }
+      } else {
+        fn <- base::paste0(dir,reps[i],".",inputassay,".bw")
+        rtracklayer::export(
+              object = gr,
+              con = fn,
+              format = "bigWig"
+            )
+          base::message(base::paste(fn,"done.",sep = " "))
+      }
+    }
+  }
+```
+
+```{r}
+GM12878.s.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "repSub.combined.GM12878.CTSSs.rmSingletons.rds"
+    )
+  )
+```
+
+```{r}
+subset <- SummarizedExperiment::colData(GM12878.s.CTSSs) %>%
+  base::as.data.frame() %>%
+  tibble::rownames_to_column(var = "sample") %>%
+  dplyr::filter(main == "yes")
+samples <- dplyr::pull(subset,sample)
+
+.GlobalEnv$writeBw(
+    object = GM12878.s.CTSSs,
+    replicates = samples,
+    dir = here::here("6.BamFingerprints/20240627_bw_files/"),
+    splitByStrand = FALSE,
+    inputAssay = "counts.noSingletons"
+  )
+```
+
 
 ## [0.1.] Read in metainfo
 ```{r}

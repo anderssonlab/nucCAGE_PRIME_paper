@@ -79,7 +79,7 @@ fs <- base::list.files(
 data <- purrr::map_dfr(
   .x = fs,
   .f = function(f){
-    s <- stringr::str_extract(fs[1],"poolSub|repSub")
+    s <- stringr::str_extract(f,"poolSub|repSub")
     return(
       readr::read_delim(
             file = fs[1],
@@ -101,11 +101,6 @@ data <- purrr::map_dfr(
       }
     )
 ```
-
-```{r}
-
-```
-
 
 ## [2.2.] Data wrangling
 ```{r}
@@ -154,19 +149,13 @@ data.plot <- data %>%
     )
 ```
 
-```{r}
-data.plot %>%
-  dplyr::group_by(amount,source,rep)
-```
-
-
-## [2.3.]
+## [2.3.] Test plotting
 ```{r}
 ggplot2::ggplot(
       data = data.plot,
       mapping = aes(
         x = quantile, # base::log10(quantile),
-        y = value,
+        y = base::log2(value),
         color = rep
       )
     ) +
@@ -186,3 +175,71 @@ ggplot2::ggplot(
     )
 ```
 
+## [2.4.] Subset for quantile=f(value>0) & quantile=f(max(value))
+```{r}
+data.plot %>%
+  dplyr::filter(
+      subset == "repSub" & value > 0
+    ) %>% 
+  dplyr::group_by(amount,source,rep) %>%
+  dplyr::filter(
+      value %in% base::c(base::min(value), base::max(value))
+    ) %>% 
+  dplyr::arrange(amount,source,rep)
+```
+
+# [3.] Estimate noise levels -------------------------
+
+## [3.0.] Identify files
+```{r}
+files <- base::list.files(
+      path = here::here("1.CTSSs"),
+      full.names = TRUE
+    ) %>%
+  stringr::str_subset("CTSSs.rmSingletons.rds") %>%
+  stringr::str_subset("GM12878|k562")
+
+CTSSs <- base::readRDS(
+    file = files[1]
+  )
+```
+
+## [3.1.] Import uniquely mappable regions
+```{r}
+## uniquely mappable
+map.gr.plus <- rtracklayer::import.bed(
+  con = base::paste0(
+      "uniquely_mappable/tracks/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/",
+      "GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.plus.bed"
+    )
+  )
+map.gr.minus <- rtracklayer::import.bed(
+  con = base::paste0(
+    "uniquely_mappable/tracks/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/",
+    "GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.minus.bed"
+    )
+  )
+
+seqlevels(map.gr.plus,pruning.mode="coarse") <- seqlevels(CTSSs)
+seqlevels(map.gr.minus,pruning.mode="coarse") <- seqlevels(CTSSs)
+seqinfo(map.gr.plus) <- seqinfo(map.gr.minus) <- seqinfo(CTSSs)
+map.gr.plus <- trim(map.gr.plus)
+map.gr.minus <- trim(map.gr.minus)
+
+## mask
+blacklist <- import.bed("../0.External_resources/ENCFF356LFX.bed")
+hotspots <- import.bed("../0.External_resources/hotspots_merged_ext_300.bed")
+exons <- flank(unlist(exonsBy(TxDb.Hsapiens.UCSC.hg38.knownGene,"tx")),50,both=TRUE)
+mask <- reduce(c(blacklist,hotspots,exons))
+seqlevels(mask,pruning.mode="coarse") <- seqlevels(CTSSs)
+seqinfo(mask) <- seqinfo(CTSSs)
+mask <- trim(mask)
+
+for (n in names(files)) {
+    CTSSs <- readRDS(files[n])
+    divnoise <- estimateDivergentNoise(CTSSs, mask, map.gr.minus, map.gr.plus)
+    divnoise
+    write.csv(divnoise,paste0(n,".divnoise.csv"))
+}
+
+```
