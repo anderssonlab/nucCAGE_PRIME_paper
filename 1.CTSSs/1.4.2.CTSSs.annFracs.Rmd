@@ -435,6 +435,86 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
+## [1.7.] Preparations for comparative plotting
+```{r}
+K562.ann.fracs.m.plot <- K562.ann.fracs.m %>%
+  tidyr::pivot_wider(
+      names_from = "variable",
+      values_from = "value"
+    ) %>%
+  dplyr::mutate(
+    method = base::paste0()
+  )
+
+pools <- dplyr::filter(K562.ann.fracs.m.plot,rep == "pool")
+
+preLR <- K562.ann.fracs.m.plot %>% 
+  dplyr::filter(
+      stringr::str_detect(sample,"10M", negate = TRUE)
+    )
+
+interLR <- stats::lm(
+    data = preLR,
+    formula = intron ~ intergenic
+  )
+exonLR <- stats::lm(
+    data = preLR,
+    formula = exon ~ intron
+  )
+```
+
+## [2.10.] Comparative plotting - intergenic ~ intron
+```{r}
+ggplot2::ggplot(
+    data = K562.ann.fracs.m.plot,
+    mapping = aes(
+        x = intergenic,
+        y = intron,
+        color = method,
+        group = sample
+      )
+    ) +
+  # geom_abline(
+  #     slope = interLR$coefficients[["intergenic"]],
+  #     intercept = interLR$coefficients[["(Intercept)"]],
+  #     linetype = "dashed"
+  #   ) +
+  geom_point(
+      size = 4,
+      alpha = 0.6
+    ) +
+  ggrepel::geom_label_repel(
+      data = pools,
+      mapping = aes(
+          label = stringr::str_replace(sample,"K562_","")
+        ),
+      size = 3,
+      max.time = 10,
+      max.overlaps = Inf,
+      min.segment.length = 0,
+      xlim = base::c(0.06, NA),
+      direction = "y",
+      hjust = 0,
+      box.padding = 0.5,
+      point.padding = 0.5,
+      force_pull = 0
+    ) +
+  scale_color_manual(
+      values = gm.full.pal
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      # legend.position = "none",
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.position = base::c(0.95,0.05),
+      legend.background = element_rect(
+        fill = "grey"
+      )
+    )
+```
+
 ```{r}
 ggplot2::ggplot(
     data = K562.ann.fracs,
