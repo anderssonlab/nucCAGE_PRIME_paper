@@ -50,16 +50,13 @@ writeBw <- function(object, replicates, dir, inputAssay="TMM",splitByStrand = TR
     ## Convert individual replicate to GRanges object
     S4Vectors::mcols(gr)["score"] <- SummarizedExperiment::assay(object,inputAssay)[,replicates[i]]
     
-    # Evaluate whether NA's were introduced
-    # base::sum(base::is.na(S4Vectors::mcols(gr)$score),na.rm=TRUE)
-    
     ## Export replicate's plus and minus strands separately
     if(splitByStrand){
       for (s in base::c("+","-")){
           grs <- gr[BiocGenerics::strand(gr) == s,]
           s <- base::ifelse(s == "+","plus","minus")
           
-          fn <- base::paste0(dir,reps[i],".",inputAssay,".",s,".bw")
+          fn <- base::paste0(dir,replicates[i],".",inputAssay,".",s,".bw")
           rtracklayer::export(
               object = grs,
               con = fn,
@@ -71,28 +68,25 @@ writeBw <- function(object, replicates, dir, inputAssay="TMM",splitByStrand = TR
         
         # Aggregate counts from both strands
         grred <- IRanges::reduce(gr, ignore.strand = TRUE, with.revmap = TRUE, min.gapwidth = 0)
-        
-        # Evaluate whether NA's were introduced
-        # base::sum(base::sum(base::is.na(S4Vectors::mcols(grred)$revmap),na.rm=TRUE))
-        
         S4Vectors::mcols(grred) <- S4Vectors::aggregate(
-            gr, S4Vectors::mcols(grred)$revmap, count = base::sum(score), drop = FALSE
+            gr, S4Vectors::mcols(grred)$revmap, score = base::sum(score), drop = FALSE
           )
         
-        # Evaluate whether NA's were introduced
-        # base::sum(base::sum(base::is.na(S4Vectors::mcols(grred)$revmap),na.rm=TRUE))
+        # Keep only score metadata column
+        grred@elementMetadata <- grred@elementMetadata[,"score",drop = FALSE]
     
-        fn <- base::paste0(dir,reps[i],".",inputAssay,".bw")
+        fn <- base::paste0(dir,replicates[i],".",inputAssay,".bw")
         rtracklayer::export(
               object = grred,
               con = fn,
               format = "bigWig"
             )
-          base::message(base::paste(fn,"done.",sep = " "))
+        base::message(base::paste(fn,"done.",sep = " "))
       }
     }
   }
 ```
+
 
 ```{r}
 GM12878.s.CTSSs <- base::readRDS(
@@ -118,7 +112,6 @@ samples <- dplyr::pull(subset,sample)
     inputAssay = "counts.noSingletons"
   )
 ```
-
 
 ## [0.1.] Read in metainfo
 ```{r}
