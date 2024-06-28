@@ -13,14 +13,22 @@ knitr::opts_chunk$set(echo = TRUE)
 ## [0.0.] Load necessary packages
 ```{r}
 base::library(tidyverse)
-BiocParallel::register(
-  BPPARAM = BiocParallel::MulticoreParam(
-      workers = 10
-    )
+base::library(foreach)
+base::library(doParallel)
+doParallel::registerDoParallel(
+    cores = 24
   )
+
+# base::library(BiocParallel)
+# BiocParallel::register(
+#   BPPARAM = BiocParallel::MulticoreParam(
+#       workers = 15
+#     )
+#   )
 ```
 
 ## [0.1.] Helper function
+#### Evaluate with 'grred[S4Vectors::mcols(grred)$count>0,]'
 ```{r}
 writeBw <- function(object, replicates, dir, inputAssay="TMM",splitByStrand = TRUE){
   
@@ -31,20 +39,26 @@ writeBw <- function(object, replicates, dir, inputAssay="TMM",splitByStrand = TR
     )
   base::stopifnot("Chosen directory doesn't exist!" = base::dir.exists(dir))
   
+  gr <- GenomicRanges::GRanges(SummarizedExperiment::rowRanges(object))
+  
   ## Parallel export across all chosen replicates
   foreach::foreach(i=1:base::length(replicates)) %dopar% {
     
+    ## Print replicate when exiting
+    base::on.exit(base::cat(base::paste0("Exit due to ",replicates[i],"\n")), add = TRUE)
+    
     ## Convert individual replicate to GRanges object
-    gr <- SummarizedExperiment::rowRanges(object)
     S4Vectors::mcols(gr)["score"] <- SummarizedExperiment::assay(object,inputAssay)[,replicates[i]]
+    
+    base::sum(base::is.na(S4Vectors::mcols(gr)$score),na.rm=TRUE)
     
     ## Export replicate's plus and minus strands separately
     if(splitByStrand){
       for (s in base::c("+","-")){
           grs <- gr[BiocGenerics::strand(gr) == s,]
           s <- base::ifelse(s == "+","plus","minus")
-          fn <- base::paste0(dir,reps[i],".",inputassay,".",s,".bw")
           
+          fn <- base::paste0(dir,reps[i],".",inputAssay,".",s,".bw")
           rtracklayer::export(
               object = grs,
               con = fn,
@@ -53,9 +67,16 @@ writeBw <- function(object, replicates, dir, inputAssay="TMM",splitByStrand = TR
           base::message(base::paste(fn,"done.",sep = " "))
         }
       } else {
-        fn <- base::paste0(dir,reps[i],".",inputassay,".bw")
+        
+        # Aggregate counts from both strands
+        grred <- IRanges::reduce(gr, ignore.strand = TRUE, with.revmap = TRUE, min.gapwidth = 0)
+        S4Vectors::mcols(grred) <- S4Vectors::aggregate(
+            gr, S4Vectors::mcols(grred)$revmap, count = base::sum(score), drop = FALSE
+          )
+    
+        fn <- base::paste0(dir,reps[i],".",inputAssay,".bw")
         rtracklayer::export(
-              object = gr,
+              object = grred,
               con = fn,
               format = "bigWig"
             )
