@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ## [0.] Prerequisites -------------------------
 
 ## [0.0.] Load necessary packages
-```{r}
+```{r message=FALSE}
 base::library(tidyverse)
 base::library(foreach)
 base::library(doParallel)
@@ -45,12 +45,13 @@ writeBw <- function(object, replicates, dir, inputAssay="TMM",splitByStrand = TR
   foreach::foreach(i=1:base::length(replicates)) %dopar% {
     
     ## Print replicate when exiting
-    base::on.exit(base::cat(base::paste0("Exit due to ",replicates[i],"\n")), add = TRUE)
+    base::on.exit(base::cat(base::paste0("Exit due to ",replicates[i],".\n")), add = TRUE)
     
     ## Convert individual replicate to GRanges object
     S4Vectors::mcols(gr)["score"] <- SummarizedExperiment::assay(object,inputAssay)[,replicates[i]]
     
-    base::sum(base::is.na(S4Vectors::mcols(gr)$score),na.rm=TRUE)
+    # Evaluate whether NA's were introduced
+    # base::sum(base::is.na(S4Vectors::mcols(gr)$score),na.rm=TRUE)
     
     ## Export replicate's plus and minus strands separately
     if(splitByStrand){
@@ -70,9 +71,16 @@ writeBw <- function(object, replicates, dir, inputAssay="TMM",splitByStrand = TR
         
         # Aggregate counts from both strands
         grred <- IRanges::reduce(gr, ignore.strand = TRUE, with.revmap = TRUE, min.gapwidth = 0)
+        
+        # Evaluate whether NA's were introduced
+        # base::sum(base::sum(base::is.na(S4Vectors::mcols(grred)$revmap),na.rm=TRUE))
+        
         S4Vectors::mcols(grred) <- S4Vectors::aggregate(
             gr, S4Vectors::mcols(grred)$revmap, count = base::sum(score), drop = FALSE
           )
+        
+        # Evaluate whether NA's were introduced
+        # base::sum(base::sum(base::is.na(S4Vectors::mcols(grred)$revmap),na.rm=TRUE))
     
         fn <- base::paste0(dir,reps[i],".",inputAssay,".bw")
         rtracklayer::export(
