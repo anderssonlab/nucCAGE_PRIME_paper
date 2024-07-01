@@ -637,35 +637,6 @@ for(ext in c("pdf", "png")){
 
 ## [3.0.] Function for generating fingerprint data
 ```{r}
-fingerPrint <- function(object,replicates,inputAssay = "counts.noSingletons"){
-    return(
-      foreach::foreach(i = 1:base::length(replicates),.combine = rbind) %dopar% {
-        sam <- replicates[i]
-        col <- base::sort(
-            SummarizedExperiment::assay(object,inputAssay)[,sam]
-          )
-        csum <- base::cumsum(col)
-        totalLength <- base::length(csum)
-        totalCTSSs <- csum[totalLength]
-        csumRel <- csum / totalCTSSs
-        rank <- base::seq(1L,totalLength,1L) / totalLength
-        
-        return(
-          tibble::tibble(
-            sample = sam,
-            raw = col,
-            csum = csum,
-            csumRel = csumRel,
-            rank = rank
-          )
-        )
-      }
-    )
-  }
-```
-
-#### i = 1
-```{r}
 fingerPrint <- function(object,replicates,inputAssay = "counts",n = 100000){
       all <- base::data.frame()
       for(i in 1:base::length(replicates)){
@@ -697,7 +668,8 @@ fingerPrint <- function(object,replicates,inputAssay = "counts",n = 100000){
   }
 ```
 
-## [3.1.] Developing & testing fingerPrint()
+## [3.1.] Apply fingerPrint() to subsetted data
+#### columns subsetted via samples and rows via emptiness # 19.987.456
 ```{r}
 subset <- SummarizedExperiment::colData(GM12878.s.CTSSs) %>%
   base::as.data.frame() %>%
@@ -705,13 +677,18 @@ subset <- SummarizedExperiment::colData(GM12878.s.CTSSs) %>%
   dplyr::filter(main == "yes")
 samples <- dplyr::pull(subset,sample)
 
+keep <- Matrix::rowSums(
+    SummarizedExperiment::assay(GM12878.s.CTSSs,"counts.noSingletons")[,samples]
+  ) > 0
+GM12878.s.CTSSs.mod <- GM12878.s.CTSSs[keep,samples]
+# SummarizedExperiment::assay(GM12878.s.CTSSs.mod,"counts.noSingletons")
+
 GM12878.finger <- .GlobalEnv$fingerPrint(
-    object = GM12878.s.CTSSs,
+    object = GM12878.s.CTSSs.mod,
     replicates = samples,
     inputAssay = "counts.noSingletons"
   )
-
-dplyr::distinct(GM12878.finger,sample)
+# dplyr::distinct(GM12878.finger,sample)
 ```
 
 ## [3.2.] Save & load data
@@ -777,7 +754,7 @@ GM12878.finger.plot <- GM12878.finger %>%
         ordered = TRUE
       )
     ) %>%
-  dplyr::filter(rank >= 0.8)
+  dplyr::filter(rank >= 0.7)
 ```
 
 ```{r}
@@ -787,6 +764,7 @@ intercepts <- GM12878.finger.plot %>%
   dplyr::filter(
       csumRel == base::min(csumRel)
     )
+# base::min(intercepts$rank)
 ```
 
 #### Evaluate
@@ -798,7 +776,7 @@ GM12878.finger.plot %>%
     )
 ```
 
-## [3.4.]
+## [3.4.] Plot fingerPrints
 ```{r}
  ggplot2::ggplot(
       data = GM12878.finger.plot,
@@ -808,7 +786,7 @@ GM12878.finger.plot %>%
         color = rep
       )
     ) +
-  geom_line(size = 1L) +
+  geom_line(linewidth = 1L) +
   geom_vline(
       data = intercepts,
       mapping = aes(
@@ -817,33 +795,38 @@ GM12878.finger.plot %>%
         ),
       linetype = "dashed"
     ) +
-  ggrepel::geom_label_repel(
+  ggrepel::geom_text_repel(
       data = intercepts,
         mapping = aes(
           label = base::round(rank,digits = 3)
         ),
-      ylim = base::c(NA,0),
-      direction = "y",
-      segment.size = 0.2
+      angle = 90,
+      ylim = base::c(-0.8,0.0),
+      # direction = "x",
+      min.segment.length = 0,
+      segment.size = 0.2,
+      max.overlaps = Inf,
+      box.padding = 1,
+      max.time = 10,
+      force_pull = 0,
+      force = 0.5,
+      vjust = 0.5
     ) +
   facet_wrap(
       facets = source ~ amount,
       nrow = 1
     ) +
   scale_x_continuous(
-      limits = base::c(0.8,1),
-      breaks = base::c(0.8,0.9,1),
+      limits = base::c(0.7,1),
+      breaks = base::c(0.7,0.8,0.9,1),
       position = "top"
     ) +
+  coord_cartesian(clip = "off") +
   theme_bw() +
   theme(
       aspect.ratio = 1,
       panel.spacing = grid::unit(0.1,"lines"),
-      plot.margin = grid::unit(base::c(0.1, 0.1, 5, 0.1), "cm")
+      plot.margin = grid::unit(base::c(0.1, 0.1, 2, 0.1), "cm")
     )
-```
-
-```{r}
-
 ```
 
