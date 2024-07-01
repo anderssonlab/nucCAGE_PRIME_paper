@@ -4,25 +4,42 @@ output: html_document
 date: "2024-06-18"
 ---
 
-Estimate noise levels across libraries
+# Estimate noise levels across libraries
 
 ```{r}
-
-library(CAGEfightR)
-library(GenomicRanges)
-library(rtracklayer)
-library(GenomicFeatures)
-library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-
-setwd("/Users/fxc326/Documents/")
-source("CAGEfightR_extensions/utils.R")
-source("CAGEfightR_extensions/noise.R")
-setwd("/Users/fxc326/Documents/nucCAGE/9.Noise")
-
+# setwd("/Users/fxc326/Documents/")
+# source("CAGEfightR_extensions/utils.R")
+# source("CAGEfightR_extensions/noise.R")
+# setwd("/Users/fxc326/Documents/nucCAGE/9.Noise")
 ```
 
+## [0.0.] Load necessary packages
 ```{r message=FALSE}
 base::library(tidyverse)
+base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+```
+
+## [0.1.] Load CAGEfighR extensions
+```{r message=FALSE,results='hide'}
+sep <- .Platform$file.sep
+cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
+fs <- base::c(
+    "utils","support","cumulative",
+    "decompose","enhancers","noise",
+    "coverage","complexity","subsample",
+    "dispersion"
+  )
+
+purrr::map(
+  .x = fs,
+  .f = function(f){
+    base::source(
+      base::paste0(
+        cfr.extensions.dir, sep, f, ".R"
+        )
+      )
+    }
+  )
 ```
 
 ```{r}
@@ -197,7 +214,7 @@ files <- base::list.files(
       full.names = TRUE
     ) %>%
   stringr::str_subset("CTSSs.rmSingletons.rds") %>%
-  stringr::str_subset("GM12878|k562")
+  stringr::str_subset("combined.GM12878|combined.k562")
 
 CTSSs <- base::readRDS(
     file = files[1]
@@ -206,7 +223,6 @@ CTSSs <- base::readRDS(
 
 ## [3.1.] Import uniquely mappable regions
 ```{r}
-## uniquely mappable
 map.gr.plus <- rtracklayer::import.bed(
   con = base::paste0(
       "uniquely_mappable/tracks/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/",
@@ -219,25 +235,135 @@ map.gr.minus <- rtracklayer::import.bed(
     "GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.minus.bed"
     )
   )
+mappable <- GenomicRanges::reduce(
+    x = base::c(map.gr.plus,map.gr.minus)
+  )
+```
 
-seqlevels(map.gr.plus,pruning.mode="coarse") <- seqlevels(CTSSs)
-seqlevels(map.gr.minus,pruning.mode="coarse") <- seqlevels(CTSSs)
-seqinfo(map.gr.plus) <- seqinfo(map.gr.minus) <- seqinfo(CTSSs)
-map.gr.plus <- trim(map.gr.plus)
-map.gr.minus <- trim(map.gr.minus)
+## [3.2.] Synchronize format of objects for uniquely mappable regions
+```{r}
+GenomeInfoDb::seqlevels(map.gr.plus, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(CTSSs)
+GenomeInfoDb::seqlevels(map.gr.minus, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(CTSSs)
+GenomeInfoDb::seqlevels(mappable, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(CTSSs)
 
-## mask
-blacklist <- import.bed("../0.External_resources/ENCFF356LFX.bed")
-hotspots <- import.bed("../0.External_resources/hotspots_merged_ext_300.bed")
-exons <- flank(unlist(exonsBy(TxDb.Hsapiens.UCSC.hg38.knownGene,"tx")),50,both=TRUE)
-mask <- reduce(c(blacklist,hotspots,exons))
-seqlevels(mask,pruning.mode="coarse") <- seqlevels(CTSSs)
-seqinfo(mask) <- seqinfo(CTSSs)
-mask <- trim(mask)
+GenomeInfoDb::seqinfo(map.gr.plus) <- GenomeInfoDb::seqinfo(CTSSs)
+GenomeInfoDb::seqinfo(map.gr.minus) <- GenomeInfoDb::seqinfo(CTSSs)
+GenomeInfoDb::seqinfo(mappable) <- GenomeInfoDb::seqinfo(CTSSs)
 
+map.gr.plus <- GenomicRanges::trim(map.gr.plus)
+map.gr.minus <- GenomicRanges::trim(map.gr.minus)
+mappable <- GenomicRanges::trim(mappable) # 5.015.794
+```
+
+## [3.3.] Read in hotspots, blacklist and exons
+```{r}
+blacklist <- rtracklayer::import.bed(
+  con = base::paste0(
+      here::here("0.External_resources/"),
+      "ENCFF356LFX.bed"
+    )
+  )
+hotspots <- rtracklayer::import.bed(
+  con = base::paste0(
+      here::here("0.External_resources/"),
+      "hotspots_merged_ext_300.bed"
+    )
+  )
+exons <- GenomicRanges::flank(
+    base::unlist(
+      GenomicFeatures::exonsBy(
+          x = TxDb.Hsapiens.UCSC.hg38.knownGene,
+          by = "tx"
+        )
+      ),
+    width = 50,
+    both = TRUE
+  )
+mask <- GenomicRanges::reduce(
+    x = base::c(blacklist,hotspots,exons)
+  )
+```
+
+## [3.4.] Synchronize format of mask object
+```{r}
+GenomeInfoDb::seqlevels(mask, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(CTSSs)
+GenomeInfoDb::seqinfo(mask) <- GenomeInfoDb::seqinfo(CTSSs)
+mask <- GenomicRanges::trim(mask)
+```
+
+## Deconstruct estimateNoise()
+```{r}
+map_frac = 0.5
+win_size = 200
+num_win = 1e6
+strand = "+"
+inputAssay = "counts"
+quantiles = base::c(0.9,0.95,0.99,0.999,0.9999,0.99999)
+
+CTSSs <- base::readRDS(
+    file = files[1]
+  )
+
+## Create tiling windows # 15.155.223
+genome_gr <- GenomicRanges::tileGenome(
+    GenomeInfoDb::seqinfo(CTSSs),
+    tilewidth = win_size,
+    cut.last.tile.in.chrom = TRUE
+  )
+
+## Remove masked regions # 2.644.590
+genome_gr <- IRanges::subsetByOverlaps(
+    x = genome_gr, # 15.155.223
+    ranges = mask, # 1.134.359
+    maxgap = -1,
+    type = "any",
+    invert = TRUE
+  )
+
+## Filtering windows based on mappability # 5.112.021
+hits <- IRanges::findOverlaps(
+    query = mappable, # 5.015.794
+    subject = genome_gr, # 2.644.590
+    maxgap = -1,
+    type = "any"
+  )
+
+olaps <- IRanges::pintersect( # 5.112.021
+    x = mappable[S4Vectors::queryHits(hits)],
+    y = genome_gr[S4Vectors::subjectHits(hits)]
+  )
+
+df <- base::data.frame( # 5.112.021
+    subjectHits = S4Vectors::subjectHits(hits),
+    coverage = IRanges::width(olaps) / IRanges::width(genome_gr[S4Vectors::subjectHits(hits)])
+  )
+df <- S4Vectors::aggregate( # 1.891.718
+    x = df,
+    by = base::list(df$subjectHits),
+    FUN = base::sum
+  )
+
+## Keep windows with at least map_frac fraction of bases uniquely mappable
+df <- base::subset(df, coverage >= map_frac) # 1.781.993
+genome_gr <- genome_gr[df$Group.1]
+
+    ## Sample windows randomly
+    genome_gr <- genome_gr[sort(sample.int(length(genome_gr),min(num_win,length(genome_gr)),replace=FALSE))]
+
+    message("Quantifying expression across samples...")
+    strand(genome_gr) <- strand
+    expr <- suppressMessages(assay(quantifyClusters(object, genome_gr, inputAssay = inputAssay),inputAssay))
+
+    message("Calculating statistics...")
+    res <- apply(expr,2,quantile,prob=quantiles)
+```
+
+
+## [3.5.]
+```{r}
 for (n in names(files)) {
     CTSSs <- readRDS(files[n])
-    divnoise <- estimateDivergentNoise(CTSSs, mask, map.gr.minus, map.gr.plus)
+    divnoise <- estimateDivergentNoise(object = CTSSs, mask = mask, map.gr.minus, map.gr.plus)
     divnoise
     write.csv(divnoise,paste0(n,".divnoise.csv"))
 }
