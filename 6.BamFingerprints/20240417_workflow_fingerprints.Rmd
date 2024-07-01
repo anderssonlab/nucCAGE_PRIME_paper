@@ -16,9 +16,12 @@ base::library(tidyverse)
 base::library(foreach)
 base::library(doParallel)
 doParallel::registerDoParallel(
-    cores = 24
+    cores = 10
   )
+```
 
+
+```{r message=FALSE}
 # base::library(BiocParallel)
 # BiocParallel::register(
 #   BPPARAM = BiocParallel::MulticoreParam(
@@ -87,7 +90,7 @@ writeBw <- function(object, replicates, dir, inputAssay="TMM",splitByStrand = TR
   }
 ```
 
-
+## [0.2.] Read in data
 ```{r}
 GM12878.s.CTSSs <- base::readRDS(
   file = base::paste0(
@@ -97,6 +100,7 @@ GM12878.s.CTSSs <- base::readRDS(
   )
 ```
 
+## [0.3.] Print out bigWig files for "counts.noSingletons" assay
 ```{r}
 subset <- SummarizedExperiment::colData(GM12878.s.CTSSs) %>%
   base::as.data.frame() %>%
@@ -113,7 +117,7 @@ samples <- dplyr::pull(subset,sample)
   )
 ```
 
-## [0.1.] Read in metainfo
+## [0.4.] Read in metainfo
 ```{r}
 meta <- readr::read_delim(
     file = base::paste0(
@@ -127,6 +131,8 @@ meta <- readr::read_delim(
     )
   )
 ```
+
+# [1.] deepTools plotFingerprint -------------------------
 
 ## [1.0.] Read in data
 ```{r}
@@ -321,7 +327,7 @@ ggplot2::ggplot(
     )
 ```
 
-# [2.] QC data -------------------------
+# [2.] deepTools plotFingerprint - QC data -------------------------
 
 ## [2.0.] Read in QC data
 ```{r}
@@ -626,3 +632,102 @@ for(ext in c("pdf", "png")){
     )
   }
 ```
+
+## [3.] Custom fingerprints -------------------------
+
+## [3.0.] Function for generating fingerprint data
+```{r}
+fingerPrint <- function(object,replicates,inputAssay = "counts.noSingletons"){
+    return(
+      foreach::foreach(i = 1:base::length(replicates),.combine = rbind) %dopar% {
+        sam <- replicates[i]
+        col <- base::sort(
+            SummarizedExperiment::assay(object,inputAssay)[,sam]
+          )
+        csum <- base::cumsum(col)
+        totalLength <- base::length(csum)
+        totalCTSSs <- csum[totalLength]
+        csumRel <- csum / totalCTSSs
+        rank <- base::seq(1L,totalLength,1L) / totalLength
+        
+        return(
+          tibble::tibble(
+            sample = sam,
+            raw = col,
+            csum = csum,
+            csumRel = csumRel,
+            rank = rank
+          )
+        )
+      }
+    )
+  }
+```
+
+```{r}
+fingerPrint <- function(object,replicates){
+      all <- base::data.frame()
+      for(i in 1:base::length(replicates)){
+          sam <- replicates[i]
+          col <- base::sort(
+              SummarizedExperiment::assay(object,"counts.noSingletons")[,sam]
+            )
+          csum <- base::cumsum(col)
+          totalLength <- base::length(csum)
+          totalCTSSs <- csum[totalLength]
+          csumRel <- csum / totalCTSSs
+          rank <- base::seq(1L,totalLength,1L) / totalLength
+          
+          
+          df <- tibble::tibble(
+              sample = sam,
+              raw = col,
+              csum = csum,
+              csumRel = csumRel,
+              rank = rank
+            )
+          all <- dplyr::bind_rows(all,df)
+        }
+    return(all)
+  }
+```
+
+## [3.1.] Developing & testing fingerPrint()
+```{r}
+subset <- SummarizedExperiment::colData(GM12878.s.CTSSs) %>%
+  base::as.data.frame() %>%
+  tibble::rownames_to_column(var = "sample") %>%
+  dplyr::filter(main == "yes")
+samples <- dplyr::pull(subset,sample)
+
+GM12878.finger <- .GlobalEnv$fingerPrint(
+    object = GM12878.s.CTSSs,
+    replicates = samples
+  )
+
+dplyr::distinct(GM12878.finger,sample)
+```
+
+## [3.2.] Save & load data
+```{r}
+base::saveRDS(
+  object = GM12878.finger,
+  file = base::paste0(
+      here::here("6.BamFingerprints/"),
+      base::format(base::Sys.time(), "%Y%m%d"),
+      "_GM12878.finger",
+      ".rds"
+    )
+  )
+```
+
+```{r}
+GM12878.ann.counts <- base::readRDS(
+  file = base::list.files(
+        path = here::here("6.BamFingerprints"),
+        full.names = TRUE
+      ) %>% 
+    stringr::str_subset("GM12878.finger")
+  )
+```
+

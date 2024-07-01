@@ -158,7 +158,9 @@ k562.cor.df <- data.frame(samp=unique(k562.comb.expr$sample), correlation=unlist
 
 ## [2.3.] Write output
 ```{r}
-save(k562.cor.df,k562.comb.expr,file="./poolSub.k562.GeneLevel.RData")
+k562.p.cor.df <- k562.cor.df
+k562.p.comb.expr <- k562.comb.expr
+save(k562.p.cor.df,k562.p.comb.expr,file="./poolSub.k562.GeneLevel.RData")
 ```
 
 
