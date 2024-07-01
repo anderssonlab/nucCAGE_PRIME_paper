@@ -664,13 +664,14 @@ fingerPrint <- function(object,replicates,inputAssay = "counts.noSingletons"){
   }
 ```
 
+#### i = 1
 ```{r}
-fingerPrint <- function(object,replicates){
+fingerPrint <- function(object,replicates,inputAssay = "counts",n = 100000){
       all <- base::data.frame()
       for(i in 1:base::length(replicates)){
           sam <- replicates[i]
           col <- base::sort(
-              SummarizedExperiment::assay(object,"counts.noSingletons")[,sam]
+              SummarizedExperiment::assay(object,)[,sam]
             )
           csum <- base::cumsum(col)
           totalLength <- base::length(csum)
@@ -678,13 +679,17 @@ fingerPrint <- function(object,replicates){
           csumRel <- csum / totalCTSSs
           rank <- base::seq(1L,totalLength,1L) / totalLength
           
+          subset <- base::c(
+              base::seq(1,totalLength,base::floor(totalLength/n)),
+              totalLength
+            )
           
           df <- tibble::tibble(
               sample = sam,
-              raw = col,
-              csum = csum,
-              csumRel = csumRel,
-              rank = rank
+              raw = col[subset],
+              csum = csum[subset],
+              csumRel = csumRel[subset],
+              rank = rank[subset]
             )
           all <- dplyr::bind_rows(all,df)
         }
@@ -702,7 +707,8 @@ samples <- dplyr::pull(subset,sample)
 
 GM12878.finger <- .GlobalEnv$fingerPrint(
     object = GM12878.s.CTSSs,
-    replicates = samples
+    replicates = samples,
+    inputAssay = "counts.noSingletons"
   )
 
 dplyr::distinct(GM12878.finger,sample)
@@ -716,18 +722,128 @@ base::saveRDS(
       here::here("6.BamFingerprints/"),
       base::format(base::Sys.time(), "%Y%m%d"),
       "_GM12878.finger",
+      "_downsampled",
       ".rds"
     )
   )
 ```
 
 ```{r}
-GM12878.ann.counts <- base::readRDS(
+GM12878.finger <- base::readRDS(
   file = base::list.files(
         path = here::here("6.BamFingerprints"),
         full.names = TRUE
       ) %>% 
-    stringr::str_subset("GM12878.finger")
+    stringr::str_subset("GM12878.finger_down")
   )
+```
+
+## [3.3.] Data wrangling to prepare plotting
+```{r}
+amts <- base::c("500K","1M","5M","10M")
+reps <- base::c("pool","1","2","3")
+
+GM12878.finger.plot <- GM12878.finger %>%
+  tidyr::separate_wider_delim(
+      cols = sample,
+      delim = "_",
+      names = base::c("cell","amount","type"),
+      cols_remove = FALSE
+    ) %>%
+  tidyr::separate(
+      col = type,
+      sep = 1,
+      into = base::c("source","rep"),
+      convert = TRUE ## Creates NAs
+    ) %>%
+  dplyr::mutate(
+    rep = dplyr::case_when(
+        base::is.na(rep) ~ "pool",
+        TRUE ~ base::as.character(rep)
+      ),
+    rep = base::factor(
+        x = rep,
+        levels = base::rev(reps),
+        ordered = TRUE
+      ),
+    amount = base::factor(
+        x = amount,
+        levels = amts,
+        ordered = TRUE
+      ),
+    source = base::factor(
+        x = source,
+        levels = base::c("C","N"),
+        ordered = TRUE
+      )
+    ) %>%
+  dplyr::filter(rank >= 0.8)
+```
+
+```{r}
+intercepts <- GM12878.finger.plot %>%
+  dplyr::filter(csumRel > 0) %>% 
+  dplyr::group_by(sample) %>%
+  dplyr::filter(
+      csumRel == base::min(csumRel)
+    )
+```
+
+#### Evaluate
+```{r}
+GM12878.finger.plot %>%
+  dplyr::group_by(sample) %>%
+  dplyr::filter(
+      csumRel == base::max(csumRel)
+    )
+```
+
+## [3.4.]
+```{r}
+ ggplot2::ggplot(
+      data = GM12878.finger.plot,
+      mapping = aes(
+        x = rank,
+        y = csumRel,
+        color = rep
+      )
+    ) +
+  geom_line(size = 1L) +
+  geom_vline(
+      data = intercepts,
+      mapping = aes(
+          xintercept = rank,
+          color = rep
+        ),
+      linetype = "dashed"
+    ) +
+  ggrepel::geom_label_repel(
+      data = intercepts,
+        mapping = aes(
+          label = base::round(rank,digits = 3)
+        ),
+      ylim = base::c(NA,0),
+      direction = "y",
+      segment.size = 0.2
+    ) +
+  facet_wrap(
+      facets = source ~ amount,
+      nrow = 1
+    ) +
+  scale_x_continuous(
+      limits = base::c(0.8,1),
+      breaks = base::c(0.8,0.9,1),
+      position = "top"
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      panel.spacing = grid::unit(0.1,"lines"),
+      plot.margin = grid::unit(base::c(0.1, 0.1, 5, 0.1), "cm")
+    )
+```
+
+```{r}
+
 ```
 
