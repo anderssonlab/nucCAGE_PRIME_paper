@@ -79,7 +79,6 @@ k562.TCs <- base::readRDS("repSub.TCs.k562.rds")
 
 ## [1.1.] Plot number and activity metrics of TCs
 ```{r}
-#Number and activity
 k562.TCs %>% 
   BiocGenerics::as.data.frame(row.names=NULL) %>%
   BiocGenerics::subset(score>=10) %>%
@@ -101,7 +100,7 @@ k562.TCs %>%
     )
 
 ggplot2::ggsave(
-  filename="./plots/nTCs.10Score.pdf",
+  filename="./plots/repSub.k562.nTCs.10Score.pdf",
   plot=last_plot(),
   width=15,
   height=15)
@@ -127,7 +126,7 @@ k562.TCs %>%
     )
 
 ggplot2::ggsave(
-  filename="./plots/nTCs.dhs.pdf",
+  filename="./plots/repSub.k562.nTCs.dhs.pdf",
   plot=last_plot(),
   width=15,
   height=15)
@@ -154,7 +153,7 @@ k562.TCs %>%
     )
 
 ggplot2::ggsave(
-  filename="./plots/TCs.expression.10Score.pdf",
+  filename="./plots/repSub.k562.TCs.expression.10Score.pdf",
   plot=last_plot(),
   width=15,
   height=15)
@@ -180,18 +179,15 @@ k562.TCs %>%
     )
 
 ggplot2::ggsave(
-  filename="./plots/TCs.expression.dhs.pdf",
+  filename="./plots/repSub.k562.TCs.expression.dhs.pdf",
   plot=last_plot(),
   width=15,
   height=15)
-
-
 ```
 
 
 ## [1.2.] Plot shape metrics of TCs
 ```{r}
-
 k562.TCs %>% 
   BiocGenerics::as.data.frame(row.names=NULL) %>%
   BiocGenerics::subset(score>=10 & txType=="promoter") %>%
@@ -213,7 +209,7 @@ k562.TCs %>%
   )
 
 ggplot2::ggsave(
-  filename="./plots/promoter.shapeEntopy.10Score.pdf",
+  filename="./plots/repSub.k562.promoter.shapeEntopy.10Score.pdf",
   plot=last_plot(),
   width=15,
   height=15)
@@ -241,11 +237,10 @@ k562.TCs %>%
 
 
 ggplot2::ggsave(
-  filename="./plots/promoter.IQR.10Score.pdf",
+  filename="./plots/repSub.k562.promoter.IQR.10Score.pdf",
   plot=last_plot(),
   width=15,
   height=15)
-
 ```
 
 
@@ -253,7 +248,6 @@ ggplot2::ggsave(
 
 ## [1.2.] Plot initator metrics of TCs
 ```{r}
-
 k562.TCs %>% 
   BiocGenerics::as.data.frame(row.names=NULL) %>%
   BiocGenerics::subset(score>=10 & txType=="promoter") %>%
@@ -262,8 +256,7 @@ k562.TCs %>%
   geom_boxplot() +
   labs(title="promoter summit initiator expression >=10 counts") +
   facet_wrap(~INR,ncol=1) + 
-  coord_flip()
-  xlim(0,2.5) + 
+  coord_flip() +
   theme(
     aspect.ratio = 1,
     legend.title = element_blank(),
@@ -276,7 +269,7 @@ k562.TCs %>%
   )
   
 ggplot2::ggsave(
-  filename="./plots/promoter.initatorExpression.10Score.pdf",
+  filename="./plots/repSub.k562.promoter.initatorExpression.10Score.pdf",
   plot=last_plot(),
   width=10,
   height=15)
@@ -305,15 +298,14 @@ k562.TCs %>%
   )
 
 ggplot2::ggsave(
-  filename="./plots/promoter.nInitiators.10Score.pdf",
+  filename="./plots/repSub.k562.promoter.nInitiators.10Score.pdf",
   plot=last_plot(),
   width=10,
   height=10)
-
 ```
 
 
-## [1.4.] Plot gene level metrics°
+## [1.4.] Plot gene level metrics
 ```{r}
 k562.cor.df$sample <- k562.cor.df$samp
 k562.comb.expr %>%
@@ -339,10 +331,282 @@ k562.comb.expr %>%
   ) 
 
 ggplot2::ggsave(
-  filename="./plots/geneExpression.pdf",
+  filename="./plots/repSub.k562.geneExpression.pdf",
   plot=last_plot(),
   width=20,
   height=20)
-  
 ```
+
+
+# [2.] Plotting K562 replicate subsetted metrics  
+
+## [2.0.] Read in TC and gene level metrics
+```{r}
+base::load("./poolSub.k562.GeneLevel.RData")
+k562.TCs <- base::readRDS("poolSub.TCs.k562.rds")
+```
+
+
+## [2.1.] Plot number and activity metrics of TCs
+```{r}
+k562.TCs %>% 
+  BiocGenerics::as.data.frame(row.names=NULL) %>%
+  BiocGenerics::subset(score>=10) %>%
+  ggplot2::ggplot(aes(x=sample,fill=sample)) +
+  geom_bar() +
+  coord_flip() +
+  scale_fill_manual(values=k.full.pal) +
+  labs(title="TCs detected score>=10") +
+  facet_wrap(~txType) +
+  theme(
+      aspect.ratio = 1,
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.background = element_rect(
+          fill = "grey95"
+        ),
+      legend.text = element_text(size = 8),
+      legend.key.size = grid::unit(0.9, "lines")
+    )
+
+ggplot2::ggsave(
+  filename="./plots/poolSub.k562.nTCs.10Score.pdf",
+  plot=last_plot(),
+  width=15,
+  height=15)
+
+k562.TCs %>% 
+  BiocGenerics::as.data.frame(row.names=NULL) %>%
+  BiocGenerics::subset(dhs.olap>0) %>%
+  ggplot2::ggplot(aes(x=sample,fill=sample)) +
+  geom_bar() +
+  coord_flip() +
+  scale_fill_manual(values=k.full.pal) +
+  labs(title="TCs detected overlapping DHSs") +
+  facet_wrap(~txType) +
+  theme(
+      aspect.ratio = 1,
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.background = element_rect(
+          fill = "grey95"
+        ),
+      legend.text = element_text(size = 8),
+      legend.key.size = grid::unit(0.9, "lines")
+    )
+
+ggplot2::ggsave(
+  filename="./plots/poolSub.k562.nTCs.dhs.pdf",
+  plot=last_plot(),
+  width=15,
+  height=15)
+
+
+k562.TCs %>% 
+  BiocGenerics::as.data.frame(row.names=NULL) %>%
+  BiocGenerics::subset(score>=10) %>%
+  ggplot2::ggplot(aes(x=sample,y=log10(score),fill=sample)) +
+  geom_boxplot() +
+  coord_flip() +
+  scale_fill_manual(values=k.full.pal) +
+  labs(title="TCs expression with >=10 score") +
+  facet_wrap(~txType) +
+  theme(
+      aspect.ratio = 1,
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.background = element_rect(
+          fill = "grey95"
+        ),
+      legend.text = element_text(size = 8),
+      legend.key.size = grid::unit(0.9, "lines")
+    )
+
+ggplot2::ggsave(
+  filename="./plots/poolSub.k562.TCs.expression.10Score.pdf",
+  plot=last_plot(),
+  width=15,
+  height=15)
+
+k562.TCs %>% 
+  BiocGenerics::as.data.frame(row.names=NULL) %>%
+  BiocGenerics::subset(dhs.olap>0) %>%
+  ggplot2::ggplot(aes(x=sample,y=log10(score),fill=sample)) +
+  geom_boxplot() +
+  coord_flip() +
+  scale_fill_manual(values=k.full.pal) +
+  labs(title="TCs expression overlapping DHSs") +
+  facet_wrap(~txType) +
+  theme(
+      aspect.ratio = 1,
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.background = element_rect(
+          fill = "grey95"
+        ),
+      legend.text = element_text(size = 8),
+      legend.key.size = grid::unit(0.9, "lines")
+    )
+
+ggplot2::ggsave(
+  filename="./plots/poolSub.k562.TCs.expression.dhs.pdf",
+  plot=last_plot(),
+  width=15,
+  height=15)
+```
+
+
+## [2.2.] Plot shape metrics of TCs
+```{r}
+k562.TCs %>% 
+  BiocGenerics::as.data.frame(row.names=NULL) %>%
+  BiocGenerics::subset(score>=10 & txType=="promoter") %>%
+  ggplot2::ggplot(aes(x=shapeEntropy,fill=sample)) + 
+  geom_density() +
+  scale_fill_manual(values=k.full.pal) + 
+  labs(title="promoter shapeEntropy") +
+  facet_wrap(~sample) +
+  xlim(0,7.5) + 
+  theme(
+    aspect.ratio = 1,
+    legend.title = element_blank(),
+    legend.justification = base::c(1,0),
+    legend.background = element_rect(
+        fill = "grey95"
+      ),
+    legend.text = element_text(size = 8),
+    legend.key.size = grid::unit(0.9, "lines")
+  )
+
+ggplot2::ggsave(
+  filename="./plots/poolSub.k562.promoter.shapeEntopy.10Score.pdf",
+  plot=last_plot(),
+  width=15,
+  height=15)
+
+
+k562.TCs %>% 
+  BiocGenerics::as.data.frame(row.names=NULL) %>%
+  BiocGenerics::subset(score>=10 & txType=="promoter") %>%
+  ggplot2::ggplot(aes(log10(1+IQR),fill=sample)) + 
+  geom_density() + 
+  scale_fill_manual(values=k.full.pal) + 
+  labs(title="promoter 10-90IQR") +
+  facet_wrap(~sample) +
+  xlim(0,2.5) + 
+  theme(
+    aspect.ratio = 1,
+    legend.title = element_blank(),
+    legend.justification = base::c(1,0),
+    legend.background = element_rect(
+        fill = "grey95"
+      ),
+    legend.text = element_text(size = 8),
+    legend.key.size = grid::unit(0.9, "lines")
+  )
+
+
+ggplot2::ggsave(
+  filename="./plots/poolSub.k562.promoter.IQR.10Score.pdf",
+  plot=last_plot(),
+  width=15,
+  height=15)
+```
+
+
+
+
+## [2.3.] Plot initator metrics of TCs
+```{r}
+k562.TCs %>% 
+  BiocGenerics::as.data.frame(row.names=NULL) %>%
+  BiocGenerics::subset(score>=10 & txType=="promoter") %>%
+  ggplot2::ggplot(aes(sample, log10(score),fill=sample)) +
+  scale_fill_manual(values=k.full.pal) +
+  geom_boxplot() +
+  labs(title="promoter summit initiator expression >=10 counts") +
+  facet_wrap(~INR,ncol=1) + 
+  coord_flip() +
+  theme(
+    aspect.ratio = 1,
+    legend.title = element_blank(),
+    legend.justification = base::c(1,0),
+    legend.background = element_rect(
+        fill = "grey95"
+      ),
+    legend.text = element_text(size = 8),
+    legend.key.size = grid::unit(0.9, "lines")
+  )
+  
+ggplot2::ggsave(
+  filename="./plots/poolSub.k562.promoter.initatorExpression.10Score.pdf",
+  plot=last_plot(),
+  width=10,
+  height=15)
+
+
+k562.TCs %>% 
+  BiocGenerics::as.data.frame(row.names=NULL) %>%
+  BiocGenerics::subset(score>=10 & txType=="promoter") %>%
+  group_by(sample, INR) %>% 
+  summarise(count = n()) %>% 
+  mutate(perc = count/sum(count)) %>%
+  ggplot2::ggplot(aes(x = INR, y = perc*100, fill = sample)) + 
+  geom_col(position="dodge") + 
+  scale_fill_manual(values=k.full.pal) +
+  labs(title="promoter summit initiator >=10 counts") + 
+  coord_flip()+ 
+  theme(
+    aspect.ratio = 1,
+    legend.title = element_blank(),
+    legend.justification = base::c(1,0),
+    legend.background = element_rect(
+        fill = "grey95"
+      ),
+    legend.text = element_text(size = 8),
+    legend.key.size = grid::unit(0.9, "lines")
+  )
+
+ggplot2::ggsave(
+  filename="./plots/poolSub.k562.promoter.nInitiators.10Score.pdf",
+  plot=last_plot(),
+  width=10,
+  height=10)
+
+```
+
+
+## [2.4.] Plot gene level metrics°
+```{r}
+k562.p.cor.df$sample <- k562.p.cor.df$samp
+k562.p.comb.expr %>%
+  base::subset(TPM>0 & gene_counts>0) %>%
+  ggplot2::ggplot(aes(gene_counts,TPM,color=sample,group=sample))+
+  geom_point(size=0.5) +
+  geom_text(data=k562.p.cor.df,
+            aes(label=paste0("r=",round(correlation,3)),x=2.5e+5,y=2.5e+5,group=sample),
+            inherit.aes = FALSE,size=4) +
+  facet_wrap(~sample) + 
+  scale_x_log10() +
+  scale_y_log10() +
+  scale_color_manual(values=k.full.pal) +
+    theme(
+    aspect.ratio = 1,
+    legend.title = element_blank(),
+    legend.justification = base::c(1,0),
+    legend.background = element_rect(
+        fill = "grey95"
+      ),
+    legend.text = element_text(size = 8),
+    legend.key.size = grid::unit(0.9, "lines")
+  ) 
+
+ggplot2::ggsave(
+  filename="./plots/poolSub.k562.geneExpression.pdf",
+  plot=last_plot(),
+  width=20,
+  height=20)
+```
+
+
 
