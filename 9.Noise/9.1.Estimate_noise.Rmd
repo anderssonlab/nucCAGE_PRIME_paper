@@ -214,7 +214,7 @@ files <- base::list.files(
       full.names = TRUE
     ) %>%
   stringr::str_subset("CTSSs.rmSingletons.rds") %>%
-  stringr::str_subset("combined.GM12878|combined.k562")
+  stringr::str_subset("combined.GM12878")
 
 CTSSs <- base::readRDS(
     file = files[1]
@@ -293,79 +293,203 @@ mask <- GenomicRanges::trim(mask)
 
 ## Deconstruct estimateNoise()
 ```{r}
-map_frac = 0.5
-win_size = 200
-num_win = 1e6
-strand = "+"
-inputAssay = "counts"
-quantiles = base::c(0.9,0.95,0.99,0.999,0.9999,0.99999)
-
-CTSSs <- base::readRDS(
-    file = files[1]
-  )
-
-## Create tiling windows # 15.155.223
-genome_gr <- GenomicRanges::tileGenome(
-    GenomeInfoDb::seqinfo(CTSSs),
-    tilewidth = win_size,
-    cut.last.tile.in.chrom = TRUE
-  )
-
-## Remove masked regions # 2.644.590
-genome_gr <- IRanges::subsetByOverlaps(
-    x = genome_gr, # 15.155.223
-    ranges = mask, # 1.134.359
-    maxgap = -1,
-    type = "any",
-    invert = TRUE
-  )
-
-## Filtering windows based on mappability # 5.112.021
-hits <- IRanges::findOverlaps(
-    query = mappable, # 5.015.794
-    subject = genome_gr, # 2.644.590
-    maxgap = -1,
-    type = "any"
-  )
-
-olaps <- IRanges::pintersect( # 5.112.021
-    x = mappable[S4Vectors::queryHits(hits)],
-    y = genome_gr[S4Vectors::subjectHits(hits)]
-  )
-
-df <- base::data.frame( # 5.112.021
-    subjectHits = S4Vectors::subjectHits(hits),
-    coverage = IRanges::width(olaps) / IRanges::width(genome_gr[S4Vectors::subjectHits(hits)])
-  )
-df <- S4Vectors::aggregate( # 1.891.718
-    x = df,
-    by = base::list(df$subjectHits),
-    FUN = base::sum
-  )
-
-## Keep windows with at least map_frac fraction of bases uniquely mappable
-df <- base::subset(df, coverage >= map_frac) # 1.781.993
-genome_gr <- genome_gr[df$Group.1]
-
-    ## Sample windows randomly
-    genome_gr <- genome_gr[sort(sample.int(length(genome_gr),min(num_win,length(genome_gr)),replace=FALSE))]
-
-    message("Quantifying expression across samples...")
-    strand(genome_gr) <- strand
-    expr <- suppressMessages(assay(quantifyClusters(object, genome_gr, inputAssay = inputAssay),inputAssay))
-
-    message("Calculating statistics...")
-    res <- apply(expr,2,quantile,prob=quantiles)
+# map_frac = 0.5
+# win_size = 200
+# num_win = 1e6
+# strand = "+"
+# inputAssay = "counts"
+# quantiles = base::c(0.9,0.95,0.99,0.999,0.9999,0.99999)
+# 
+# CTSSs <- base::readRDS(
+#     file = files[1]
+#   )
+# 
+# ## Create tiling windows # 15.155.223
+# genome_gr <- GenomicRanges::tileGenome(
+#     GenomeInfoDb::seqinfo(CTSSs),
+#     tilewidth = win_size,
+#     cut.last.tile.in.chrom = TRUE
+#   )
+# 
+# ## Remove masked regions # 2.644.590
+# genome_gr <- IRanges::subsetByOverlaps(
+#     x = genome_gr, # 15.155.223
+#     ranges = mask, # 1.134.359
+#     maxgap = -1,
+#     type = "any",
+#     invert = TRUE
+#   )
+# 
+# ## Filtering windows based on mappability # 5.112.021
+# hits <- IRanges::findOverlaps(
+#     query = mappable, # 5.015.794
+#     subject = genome_gr, # 2.644.590
+#     maxgap = -1,
+#     type = "any"
+#   )
+# 
+# olaps <- IRanges::pintersect( # 5.112.021
+#     x = mappable[S4Vectors::queryHits(hits)],
+#     y = genome_gr[S4Vectors::subjectHits(hits)]
+#   )
+# 
+# df <- base::data.frame( # 5.112.021
+#     subjectHits = S4Vectors::subjectHits(hits),
+#     coverage = IRanges::width(olaps) / IRanges::width(genome_gr[S4Vectors::subjectHits(hits)])
+#   )
+# df <- S4Vectors::aggregate( # 1.891.718
+#     x = df,
+#     by = base::list(df$subjectHits),
+#     FUN = base::sum
+#   )
+# 
+# ## Keep windows with at least map_frac fraction of bases uniquely mappable
+# df <- base::subset(df, coverage >= map_frac) # 1.781.993
+# genome_gr <- genome_gr[df$Group.1] # 1.781.993
+# 
+# ## Sample windows randomly
+# genome_gr <- genome_gr[
+#   base::sort(
+#     base::sample.int(
+#       base::length(genome_gr), # 1.781.993
+#       base::min(
+#             num_win, # 1.000.000
+#             base::length(genome_gr) # 1.781.993
+#           ),
+#         replace = FALSE
+#       )
+#     )
+#   ]
+# 
+# cls <- CAGEfightR::quantifyClusters(
+#     object = CTSSs,
+#     clusters = genome_gr,
+#     inputAssay = inputAssay
+#   )
+# BiocGenerics::strand(CTSSs)
+# BiocGenerics::strand(cls)
+# ## Quantifying expression across samples
+# # BiocGenerics::strand(genome_gr) <- strand
+# expr <- base::suppressMessages(
+#   SummarizedExperiment::assay(
+#     cls,
+#     inputAssay
+#     )
+#   )
+# 
+# # Calculating statistics
+# res <- base::apply(
+#     X = expr,
+#     MARGIN = 2,
+#     FUN = quantile,
+#     probs = base::seq(0,1,0.0001)
+#   )
 ```
 
 
-## [3.5.]
+## [3.5.] Apply esimateNoise() to GM12878 data
 ```{r}
-for (n in names(files)) {
-    CTSSs <- readRDS(files[n])
-    divnoise <- estimateDivergentNoise(object = CTSSs, mask = mask, map.gr.minus, map.gr.plus)
-    divnoise
-    write.csv(divnoise,paste0(n,".divnoise.csv"))
-}
+noise <- purrr::map_dfr(
+    .x = files,
+    .f = function(f){
+      s = stringr::str_extract(f,"repSub|poolSub")
+      CTSSs <- base::readRDS(file = f)
+      
+      raw <- .GlobalEnv$estimateNoise(
+          object = CTSSs,
+          mask = mask,
+          mappable = mappable,
+          strand = "*",
+          inputAssay = "counts.noSingletons",
+          quantiles = base::seq(0,1,0.0001)
+        )
+      out <- raw %>%
+        tibble::as_tibble(
+            rownames = "percentile"
+          ) %>%
+        tidyr::pivot_longer(
+            cols = !percentile,
+            names_to = "variable",
+            values_to = "value"
+          ) %>%
+        dplyr::mutate(
+            subset = s
+          )
+      return(out)
+    }
+  )
+```
 
+## [3.6.] Data wrangling
+```{r}
+reps <- base::c("pool","1","2","3")
+amts <- base::c("500K","1M","5M","10M")
+
+data.plot <- noise %>%
+  dplyr::filter(
+    stringr::str_detect(
+        variable, "trip|ctrl|Cap|align|50K|250K", negate = TRUE
+      )
+    ) %>%
+  tidyr::separate_wider_delim(
+      col = variable,
+      names = base::c("cell","amount","type"),
+      delim = "_"
+    ) %>%
+  tidyr::separate(
+      col = type,
+      sep = 1,
+      into = base::c("source","rep"),
+      convert = TRUE ## Creates NAs
+    ) %>%
+  dplyr::mutate(
+      rep = dplyr::case_when(
+          base::is.na(rep) ~ "pool",
+          TRUE ~ base::as.character(rep)
+        ),
+      rep = base::factor(
+          x = rep,
+          levels = base::rev(reps),
+          ordered = TRUE
+        ),
+      amount = base::factor(
+          x = amount,
+          levels = amts,
+          ordered = TRUE
+        ),
+      source = base::factor(
+          x = source,
+          levels = base::c("C","N"),
+          ordered = TRUE
+        ),
+      percentile = stringr::str_replace(percentile, "%", "") %>%
+        base::as.double()
+    ) %>%
+  dplyr::filter(percentile >= 80)
+```
+
+## [3.7.] Test plotting
+```{r}
+ggplot2::ggplot(
+      data = data.plot,
+      mapping = aes(
+        x = percentile,
+        y = base::log10(value),
+        color = rep
+      )
+    ) +
+  geom_line(
+      size = 1,
+      alpha = 0.5
+    ) +
+  facet_wrap(
+      facets = source ~ amount + subset,
+      nrow = 2
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      panel.spacing = grid::unit(0.1, "lines"),
+      # legend.position = "none"
+    )
 ```
