@@ -108,3 +108,58 @@ save(k562.cor.df,k562.comb.expr,file="./repSub.k562.GeneLevel.RData")
 ```
 
 
+
+# [2.] K562 pool subsetted  -------------------------
+
+## [2.0.] Read in predefined TCs and quantify gene level expression
+```{r}
+k562.TCs <- base::readRDS("./poolSub.TCs.k562.rds")
+
+k562.TCs <- CAGEfightR::assignGeneID(k562.TCs,geneModels=txdb)
+
+k562.cageExpr <- k562.TCs %>%
+  as.data.frame(row.names=NULL) %>%
+  group_by(sample, geneID) %>% 
+  summarize(gene_counts=sum(score))
+```
+
+
+
+## [2.1.] Map IDs between CAGE and ENCODE gene expression
+```{r}
+map <- mapIds(org.Hs.eg.db,
+              keys = k562.cageExpr$geneID,
+              keytype="ENTREZID",
+              column = "ENSEMBL",
+              multiVals="first")
+
+inds <- which(!is.na(map))
+found_genes <- map[inds]
+
+k562.cageExpr <- k562.cageExpr[
+  k562.cageExpr$geneID %in% names(found_genes),]
+
+k562.cageExpr$ensembl <- as.character(found_genes)
+
+k562.comb.expr <- merge(k562.cageExpr,k562.geneExpr, by.y="ensembl",by.x="ensembl")
+```
+
+
+## [2.2.] Calculate correlations
+```{r}
+corel <- lapply(unique(k562.comb.expr$sample),function(x) {
+  samp <- k562.comb.expr[k562.comb.expr$sample==x & k562.comb.expr$TPM>0 & k562.comb.expr$gene_counts>0,]
+  cor <- cor(log10(samp$gene_counts), log10(samp$TPM))
+})
+
+k562.cor.df <- data.frame(samp=unique(k562.comb.expr$sample), correlation=unlist(corel))
+```
+
+
+## [2.3.] Write output
+```{r}
+save(k562.cor.df,k562.comb.expr,file="./poolSub.k562.GeneLevel.RData")
+```
+
+
+
