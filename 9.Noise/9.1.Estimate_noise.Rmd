@@ -225,13 +225,14 @@ CTSSs <- base::readRDS(
 ```{r}
 map.gr.plus <- rtracklayer::import.bed(
   con = base::paste0(
-      here::here("")
+      here::here("9.Noise/"),
       "uniquely_mappable/tracks/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/",
       "GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.plus.bed"
     )
   )
 map.gr.minus <- rtracklayer::import.bed(
   con = base::paste0(
+    here::here("9.Noise/"),
     "uniquely_mappable/tracks/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/",
     "GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.minus.bed"
     )
@@ -495,8 +496,7 @@ ggplot2::ggplot(
       )
     ) +
   geom_line(
-      size = 1,
-      alpha = 0.5
+      linewidth = 1
     ) +
   geom_vline(
       data = intercepts,
@@ -547,7 +547,7 @@ ggplot2::ggplot(
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
-          here::here("1.CTSSs/"),
+          here::here("9.Noise/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_GM12878.noise",
           "_all",

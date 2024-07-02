@@ -644,12 +644,15 @@ fingerPrint <- function(object,replicates,inputAssay = "counts",n = 100000){
           col <- base::sort(
               SummarizedExperiment::assay(object,)[,sam]
             )
+          
+          ## Calculate cumSum as a function of CTSSs rank
           csum <- base::cumsum(col)
           totalLength <- base::length(csum)
           totalCTSSs <- csum[totalLength]
           csumRel <- csum / totalCTSSs
           rank <- base::seq(1L,totalLength,1L) / totalLength
           
+          ## Subset to memory-efficient 100k values
           subset <- base::c(
               base::seq(1,totalLength,base::floor(totalLength/n)),
               totalLength
@@ -662,6 +665,7 @@ fingerPrint <- function(object,replicates,inputAssay = "counts",n = 100000){
               csumRel = csumRel[subset],
               rank = rank[subset]
             )
+          ## Combine
           all <- dplyr::bind_rows(all,df)
         }
     return(all)
@@ -759,7 +763,7 @@ GM12878.finger.plot <- GM12878.finger %>%
 
 ```{r}
 intercepts <- GM12878.finger.plot %>%
-  dplyr::filter(csumRel > 0) %>% 
+  dplyr::filter(csumRel > 0) %>%
   dplyr::group_by(sample) %>%
   dplyr::filter(
       csumRel == base::min(csumRel)
@@ -830,3 +834,22 @@ GM12878.finger.plot %>%
     )
 ```
 
+## [3.5.] Save complexity plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("6.BamFingerprints/plots/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_GM12878.fingerprint",
+          "_all",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 8,
+      height = 4
+    )
+  }
+```
