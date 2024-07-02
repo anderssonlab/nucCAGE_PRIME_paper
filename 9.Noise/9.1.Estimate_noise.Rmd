@@ -213,8 +213,8 @@ files <- base::list.files(
       path = here::here("1.CTSSs"),
       full.names = TRUE
     ) %>%
-  stringr::str_subset("CTSSs.rmSingletons.rds") %>%
-  stringr::str_subset("combined.GM12878")
+  # stringr::str_subset("CTSSs.rmSingletons.rds") %>%
+  stringr::str_subset("all.combined.GM12878")
 
 CTSSs <- base::readRDS(
     file = files[1]
@@ -388,11 +388,12 @@ mask <- GenomicRanges::trim(mask)
 
 
 ## [3.5.] Apply esimateNoise() to GM12878 data
+#### Evaluate with 'dplyr::distinct(noise,subset)'
 ```{r}
 noise <- purrr::map_dfr(
     .x = files,
     .f = function(f){
-      s = stringr::str_extract(f,"repSub|poolSub")
+      s = stringr::str_extract(f,"repSub|poolSub|all")
       CTSSs <- base::readRDS(file = f)
       
       raw <- .GlobalEnv$estimateNoise(
@@ -400,7 +401,7 @@ noise <- purrr::map_dfr(
           mask = mask,
           mappable = mappable,
           strand = "*",
-          inputAssay = "counts.noSingletons",
+          inputAssay = "counts", # "counts.noSingletons",
           quantiles = base::seq(0,1,0.0001)
         )
       out <- raw %>%
@@ -434,7 +435,8 @@ data.plot <- noise %>%
   tidyr::separate_wider_delim(
       col = variable,
       names = base::c("cell","amount","type"),
-      delim = "_"
+      delim = "_",
+      cols_remove = FALSE
     ) %>%
   tidyr::separate(
       col = type,
@@ -462,18 +464,31 @@ data.plot <- noise %>%
           levels = base::c("C","N"),
           ordered = TRUE
         ),
-      percentile = stringr::str_replace(percentile, "%", "") %>%
-        base::as.double()
-    ) %>%
-  dplyr::filter(percentile >= 80)
+      rank = stringr::str_replace(percentile, "%", "") %>%
+        base::as.double() %>%
+        .[]/100
+    ) # %>%
+  # dplyr::filter(percentile >= 80)
 ```
+
+```{r}
+intercepts <- data.plot %>%
+  dplyr::filter(value > 0) %>% 
+  dplyr::group_by(variable) %>%
+  dplyr::arrange(rank,value) %>% 
+  dplyr::filter(
+      # row_number() %in% base::c(1,dplyr::n())
+      dplyr::row_number() == 1L
+    )
+```
+
 
 ## [3.7.] Test plotting
 ```{r}
 ggplot2::ggplot(
       data = data.plot,
       mapping = aes(
-        x = percentile,
+        x = rank, #percentile,
         y = base::log10(value),
         color = rep
       )
@@ -482,14 +497,46 @@ ggplot2::ggplot(
       size = 1,
       alpha = 0.5
     ) +
-  facet_wrap(
-      facets = source ~ amount + subset,
-      nrow = 2
+  geom_vline(
+      data = intercepts,
+      mapping = aes(
+          xintercept = rank,
+          color = rep
+        ),
+      linetype = "dashed"
     ) +
+  ggrepel::geom_text_repel(
+      data = intercepts,
+        mapping = aes(
+          label = base::round(rank,digits = 3)
+        ),
+      y = -Inf,
+      angle = 90,
+      ylim = base::c(-4,-2),
+      # direction = "x",
+      min.segment.length = 0,
+      segment.size = 0.2,
+      max.overlaps = Inf,
+      box.padding = 1,
+      max.time = 10,
+      force_pull = 0,
+      force = 0.5,
+      vjust = 0.5
+    ) +
+  facet_wrap(
+      facets = source ~ amount, #+ subset,
+      nrow = 1
+    ) +
+  scale_x_continuous(
+      limits = base::c(0,1),
+      breaks = base::c(0,0.5,1),
+      position = "top"
+    ) +
+  coord_cartesian(clip = "off") +
   theme_bw() +
   theme(
       aspect.ratio = 1,
       panel.spacing = grid::unit(0.1, "lines"),
-      # legend.position = "none"
+      plot.margin = grid::unit(base::c(0.1, 0.1, 2, 0.1), "cm")
     )
 ```
