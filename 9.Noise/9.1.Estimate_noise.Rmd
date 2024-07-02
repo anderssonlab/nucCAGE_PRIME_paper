@@ -225,6 +225,7 @@ CTSSs <- base::readRDS(
 ```{r}
 map.gr.plus <- rtracklayer::import.bed(
   con = base::paste0(
+      here::here("")
       "uniquely_mappable/tracks/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/",
       "GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.plus.bed"
     )
@@ -539,4 +540,24 @@ ggplot2::ggplot(
       panel.spacing = grid::unit(0.1, "lines"),
       plot.margin = grid::unit(base::c(0.1, 0.1, 2, 0.1), "cm")
     )
+```
+
+## [3.8.] Save complexity plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("1.CTSSs/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_GM12878.noise",
+          "_all",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 8,
+      height = 4
+    )
+  }
 ```
