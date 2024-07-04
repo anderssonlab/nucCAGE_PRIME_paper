@@ -27,3 +27,4 @@ notuse
 .ipynb_checkpoints
 *.svg
 *.fasta
+.DS_Store
