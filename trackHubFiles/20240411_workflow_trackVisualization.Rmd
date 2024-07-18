@@ -181,31 +181,31 @@ plotTracks <- function(data, range){
 #### previous '/isdata/alab/genome/annotations/hg38/gencode.v31.annotation.gtf'
 #### see 'https://www.gencodegenes.org/human/' for updates
 ```{r}
-hg38_gff <- rtracklayer::readGFF(
-    filepath = base::paste0(
-      here::here("0.External_resources/"),
-      "gencode.v39.annotation.gtf"
-    )
-  )
-dplyr::distinct(hg38_gff,type)
-hg38_gr <- GenomicRanges::makeGRangesFromDataFrame(
-    df = hg38_gff,
-    keep.extra.columns = TRUE
-  )
-
-types <- base::c(
-    "transcription_start_site", "exon_junction", "exon",
-    "gene", "pseudogene", "ncRNA",
-    "intron", "mRNA", "protein",
-    "CDS", "five_prime_UTR", "three_prime_UTR",
-    "polyA_site", "snoRNA", "pre_miRNA",
-    "miRNA", "silencer", "enhancer",
-    "snRNA", "tRNA", "rRNA",
-    "UTR"
-  )
-hg38_gr_sub <- hg38_gr[
-    S4Vectors::elementMetadata(hg38_gr)[,"type"] %in% types,
-  ]
+# hg38_gff <- rtracklayer::readGFF(
+#     filepath = base::paste0(
+#       here::here("0.External_resources/"),
+#       "gencode.v39.annotation.gtf"
+#     )
+#   )
+# dplyr::distinct(hg38_gff,type)
+# hg38_gr <- GenomicRanges::makeGRangesFromDataFrame(
+#     df = hg38_gff,
+#     keep.extra.columns = TRUE
+#   )
+# 
+# types <- base::c(
+#     "transcription_start_site", "exon_junction", "exon",
+#     "gene", "pseudogene", "ncRNA",
+#     "intron", "mRNA", "protein",
+#     "CDS", "five_prime_UTR", "three_prime_UTR",
+#     "polyA_site", "snoRNA", "pre_miRNA",
+#     "miRNA", "silencer", "enhancer",
+#     "snRNA", "tRNA", "rRNA",
+#     "UTR"
+#   )
+# hg38_gr_sub <- hg38_gr[
+#     S4Vectors::elementMetadata(hg38_gr)[,"type"] %in% types,
+#   ]
 ```
 
 ## [1.1.] Color palette
@@ -225,14 +225,14 @@ cols <- base::c(
 ## [1.2.] Build lookup table for colors
 #### 'col2rgb(cols3[1])[1:3,] %>% unname() %>% paste(collapse = ",")'
 ```{r}
-annos <- base::unique(
-    S4Vectors::elementMetadata(hg38_gr_sub)[,"type"]
-  )
-
-lkup <- tibble::tibble(
-    txType = annos,
-    hex = cols[1:base::length(annos)]
-  )
+# annos <- base::unique(
+#     S4Vectors::elementMetadata(hg38_gr_sub)[,"type"]
+#   )
+# 
+# lkup <- tibble::tibble(
+#     txType = annos,
+#     hex = cols[1:base::length(annos)]
+#   )
 ```
 
 ## [1.4.] Load metainfo object
@@ -257,13 +257,13 @@ fs <- base::list.files(
 ## [1.6.] Load tmm.CTSSs object
 #### see [1.15.2.] in "1.1.CTSSs.processing.Rmd" for more info
 ```{r}
-fn <- base::list.files(
-      path = here::here("1.CTSSs"),
-      full.names = TRUE
-    ) %>%
-  stringr::str_subset("tmm.CTSSs")
-
-tmm.CTSSs <- base::readRDS(file = fn)
+# fn <- base::list.files(
+#       path = here::here("1.CTSSs"),
+#       full.names = TRUE
+#     ) %>%
+#   stringr::str_subset("tmm.CTSSs")
+# 
+# tmm.CTSSs <- base::readRDS(file = fn)
 ```
 
 ## [1.7.] Load  object
@@ -281,7 +281,7 @@ GM12878.CTSSs <- base::readRDS(
 ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
   tibble::as_tibble() %>%
   dplyr::filter(
-      pooled == "no" &
+      # pooled == "no" &
       stringr::str_detect(ID, "500K|5M")
     ) %>%
   dplyr::pull(ID)
@@ -296,52 +296,86 @@ SummarizedExperiment::assay(GM12878.CTSSs.sub, "counts")
 
 ## [1.9.] TMM normalise data
 ```{r}
-base::debugonce(edgeR::calcNormFactors)
-facs <- edgeR::calcNormFactors(
-    object = GM12878.CTSSs.sub,
-    method = "TMM",
-    refColumn = NULL
-  )
-GM12878.tmm.CTSSs <- .GlobalEnv$TPMnormalizeBySizeFactors(
-    object = GM12878.CTSSs.sub,
-    sizeFactors = facs$samples$lib.size * facs$samples$norm.factors,
-    inputAssay = "counts",
-    outputAssay = "TMM"
-  )
+# base::debugonce(edgeR::calcNormFactors)
+# facs <- edgeR::calcNormFactors(
+#     object = GM12878.CTSSs.sub,
+#     method = "TMM",
+#     refColumn = NULL
+#   )
+# GM12878.tmm.CTSSs <- .GlobalEnv$TPMnormalizeBySizeFactors(
+#     object = GM12878.CTSSs.sub,
+#     sizeFactors = facs$samples$lib.size * facs$samples$norm.factors,
+#     inputAssay = "counts",
+#     outputAssay = "TMM"
+#   )
 ```
 
 #### Use TMM values as "counts" and calculate TPMs on top of this
 ```{r}
-GM12878.tmm.CTSSs <- .GlobalEnv$TPMnormalizeBySizeFactors(
-      object = GM12878.CTSSs.sub,
-      sizeFactors = facs$samples$lib.size * facs$samples$norm.factors,
-      inputAssay = "counts",
-      outputAssay = "counts"
-    ) %>%
-  CAGEfightR::calcTPM()
+# GM12878.tmm.CTSSs <- .GlobalEnv$TPMnormalizeBySizeFactors(
+#       object = GM12878.CTSSs.sub,
+#       sizeFactors = facs$samples$lib.size * facs$samples$norm.factors,
+#       inputAssay = "counts",
+#       outputAssay = "counts"
+#     ) %>%
+#   CAGEfightR::calcTPM()
 ```
 
 #### Deconstructed edgeR::calcNormFactors() function
 #### "GM12878_5M_N2" is the refColumn
 ```{r}
-object <- edgeR::SE2DGEList(GM12878.CTSSs.sub)
-x <- base::as.matrix(object)
-nsamples <- base::ncol(x)
-lib.size <- Matrix::colSums(x)
-allzero <- .Internal(rowSums(x > 0, base::nrow(x), nsamples, na.rm = FALSE)) == 0L
-x <- x[!allzero, , drop = FALSE]
-f75 <- base::suppressWarnings(
-   edgeR:::.calcFactorQuantile(
-       data = x,
-       lib.size = lib.size,
-       p = 0.75
-     )
-   )
-if (stats::median(f75) < 1e-20) {
-    refColumn <- BiocGenerics::which.max(base::colSums(base::sqrt(x)))
-  } else {
-    refColumn <- BiocGenerics::which.min(base::abs(f75 - base::mean(f75)))
-  }
+# object <- edgeR::SE2DGEList(GM12878.CTSSs.sub)
+# x <- base::as.matrix(object)
+# nsamples <- base::ncol(x)
+# lib.size <- Matrix::colSums(x)
+# allzero <- .Internal(rowSums(x > 0, base::nrow(x), nsamples, na.rm = FALSE)) == 0L
+# x <- x[!allzero, , drop = FALSE]
+# f75 <- base::suppressWarnings(
+#    edgeR:::.calcFactorQuantile(
+#        data = x,
+#        lib.size = lib.size,
+#        p = 0.75
+#      )
+#    )
+# if (stats::median(f75) < 1e-20) {
+#     refColumn <- BiocGenerics::which.max(base::colSums(base::sqrt(x)))
+#   } else {
+#     refColumn <- BiocGenerics::which.min(base::abs(f75 - base::mean(f75)))
+#   }
+```
+
+## [1.10.] Read in CRISPR-gRNA locations
+```{r}
+dir = "/projects/ralab/people/pbr316/20221208_scCAGE/resources/"
+crispr <- readr::read_delim(
+    file = base::paste0(
+        dir,
+        "EPCrisprBenchmark_ensemble_data_GRCh38.tsv.gz"
+      ),
+    delim = "\t",
+    col_names = TRUE
+  )
+
+myc_locus <- crispr %>%
+  dplyr::filter(
+      measuredGeneSymbol == "MYC"
+    ) %>%
+  dplyr::summarise(
+      chr = dplyr::first(chrom),
+      start = base::min(chromStart),
+      end = base::max(chromEnd)
+    ) %>%
+  GenomicRanges::GRanges()
+
+crispr_data <- crispr %>%
+  dplyr::filter(
+      measuredGeneSymbol == "MYC"
+    ) %>%
+  dplyr::mutate(
+      y = dplyr::row_number(),
+      y_alt = 1,
+      summit = chromStart + base::round((chromEnd-chromStart+1)/2)
+    )
 ```
 
 # [2.] Prepare coordinate objects -------------------------
@@ -394,6 +428,27 @@ GenomeInfoDb::seqlevelsStyle(ran) <- "UCSC"
 #     )
 #   }
 # GenomeInfoDb::seqlevels(ran)
+```
+
+## [2.2.] Get genomic regions from GRanges input
+```{r}
+gr <- crispr %>%
+  dplyr::filter(
+      measuredGeneSymbol == "MYC" &
+      Significant == TRUE
+    ) %>%
+  dplyr::mutate(
+      summit = chromStart + base::round((chromEnd - chromStart +1)/2)
+    ) %>% 
+  GenomicRanges::GRanges()
+extend = 1000
+BiocGenerics::start(gr) <- BiocGenerics::start(gr) - extend
+BiocGenerics::end(gr) <- BiocGenerics::end(gr) + extend
+GenomeInfoDb::seqlevelsStyle(gr) <- "UCSC"
+myce38 <- IRanges::reduce(gr, ignore.strand = TRUE, with.revmap = TRUE)
+S4Vectors::mcols(myce38)$smts <- S4Vectors::aggregate(gr, S4Vectors::mcols(myce38)$revmap, smts = summit)$smts
+i = 1L
+ran <- myce38[i]
 ```
 
 ## [2.2.] Extract coordinates
@@ -451,9 +506,9 @@ cage_sel <- cage_sel %>%
 ```{r}
 ovl <- IRanges::findOverlaps(
     query = ran,
-    subject = GM12878.tmm.CTSSs
+    subject = GM12878.CTSSs.sub # GM12878.tmm.CTSSs
   )
-gr <- SummarizedExperiment::rowRanges(GM12878.tmm.CTSSs)[ovl@to,]
+gr <- SummarizedExperiment::rowRanges(GM12878.CTSSs.sub)[ovl@to,] # GM12878.tmm.CTSSs
 
 crds <- gr %>% 
   base::as.data.frame() %>%
@@ -470,7 +525,7 @@ crds <- gr %>%
 #   base::as.matrix() %>% 
 #   base::as.data.frame()
 
-scrs <- SummarizedExperiment::assay(GM12878.tmm.CTSSs,"TPM")[ovl@to,] %>%
+scrs <- SummarizedExperiment::assay(GM12878.CTSSs.sub,"TPM")[ovl@to,] %>% # GM12878.tmm.CTSSs
   base::as.matrix() %>%
   base::as.data.frame()
 
@@ -478,13 +533,13 @@ cage_sel_ <- dplyr::bind_cols(crds,scrs)
 ```
 
 ## [4.1.] Summarise data
-#### Evaluate with 'dplyr::arrange(cage_sel,dplyr::desc(tmm))'
+#### Evaluate with 'dplyr::arrange(cage_sel,dplyr::desc(score))'
 ```{r}
 cage_sel <- cage_sel_ %>%
   tidyr::pivot_longer(
       cols = tidyselect::contains("_"),
       names_to = "sample",
-      values_to = "tmm"
+      values_to = "score"
     ) %>%
   dplyr::mutate(
     replicate = stringr::str_replace(
@@ -498,9 +553,9 @@ cage_sel <- cage_sel_ %>%
       )
     ) %>%
   dplyr::mutate(
-    tmm = dplyr::case_when(
-        strand == "-" ~ (-1)*tmm,
-        TRUE ~ tmm
+    score = dplyr::case_when(
+        strand == "-" ~ (-1)*score,
+        TRUE ~ score
       ),
     strand = dplyr::case_when(
         strand == "+" ~ "plus",
