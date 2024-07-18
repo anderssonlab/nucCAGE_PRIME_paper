@@ -1,0 +1,215 @@
+---
+title: "10.3.Cell_line_vs_trait_enrichment"
+output: html_document
+date: "2024-07-01"
+---
+
+Evaluation of PRIMEloci using fine-mapped GWAS variants
+
+```{r}
+
+library(CAGEfightR)
+library(GenomicRanges)
+library(readr)
+library(rtracklayer)
+library(parallel)
+library(ggplot2)
+library(GenomicFeatures)
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+library(SummarizedExperiment)
+library(tibble)
+library(ggrepel)
+
+theme_set(theme_bw(base_size = 8))
+
+```
+
+
+```{r}
+
+PRIMEloci.thres <- 0.2
+
+pooled.PRIMEloci.files <- c("A549_C" = "../8.Genomewide_prediction/prediction_all-cell-types_with_Meena-GM12878-model/A549-on-Meena-GM12878-model_pred_all_profiles_subtnorm_tcs_C.bed",
+                            "GM12878_C" = "../8.Genomewide_prediction/prediction_all-cell-types_with_Meena-GM12878-model/GM12878-on-Meena-GM12878-model_pred_all_profiles_subtnorm_tcs_GM12878_500K_C.bed",
+                             "HCT116_C" = "../8.Genomewide_prediction/prediction_all-cell-types_with_Meena-GM12878-model/HCT116-on-Meena-GM12878-model_pred_all_profiles_subtnorm_tcs_C.bed",
+                            "HepG2_C" = "../8.Genomewide_prediction/prediction_all-cell-types_with_Meena-GM12878-model/HepG2-on-Meena-GM12878-model_pred_all_profiles_subtnorm_tcs_C.bed",
+                             "K562_C" = "../8.Genomewide_prediction/prediction_all-cell-types_with_Meena-GM12878-model/K562-on-Meena-GM12878-model_pred_all_profiles_subtnorm_tcs_K562_C.bed")
+  
+resize.width <- 200
+
+SNP.file <- "../0.External_resources/all.bg.SNPs.hg38.baseline.v1.1.bed.sorted"
+GWAS.file <- "../0.External_resources/UKBB_94traits_release1_pip01_clean_uniq_hg38.bed"
+
+GWAS.pip.thres <- 0.2
+
+```
+
+
+Read in data
+
+```{r}
+
+## Annotated CDS
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+cds <- unlist(cdsBy(txdb,"gene"))
+
+## Background SNPs (9,913,974 unique autosomal SNP locations)
+SNP.data <- import.bed(SNP.file)
+SNP.data <- sort(SNP.data)
+olap <- findOverlaps(SNP.data,cds,minoverlap=1)
+SNP.data$name <- NULL
+SNP.data <- unique(SNP.data[-queryHits(olap)])
+
+## PRIMEloci, pooled replicates
+pooled.PRIMEloci <- lapply(names(pooled.PRIMEloci.files), function(n) {
+  gr <- read_tsv(pooled.PRIMEloci.files[n],show_col_types = FALSE)
+  keep <- which(gr$score>=PRIMEloci.thres)
+  gr <- gr[keep,]
+  gr <- makeGRangesFromDataFrame(gr[,1:3])
+  seqlevels(gr,pruning.mode="coarse") <- seqlevels(SNP.data)
+  gr <- resize(gr, width=resize.width, fix="center")
+  reduce(gr)
+})
+names(pooled.PRIMEloci) <- names(pooled.PRIMEloci.files)
+
+unfiltered.PRIMEloci <- lapply(names(pooled.PRIMEloci.files), function(n) {
+  gr <- read_tsv(pooled.PRIMEloci.files[n],show_col_types = FALSE)
+  score <- gr$score
+  gr <- makeGRangesFromDataFrame(gr[,1:3])
+  gr$score <- score
+  seqlevels(gr,pruning.mode="coarse") <- seqlevels(SNP.data)
+  #gr <- resize(gr, width=resize.width, fix="center")
+  gr
+})
+names(unfiltered.PRIMEloci) <- names(pooled.PRIMEloci.files)
+
+## GWAS data
+GWAS.data <- read_tsv(GWAS.file,col_names=FALSE,show_col_types=FALSE)
+colnames(GWAS.data) <- c("chr","start","end","name","score","strand","RS_id","trait","pip")
+GWAS.data <- makeGRangesFromDataFrame(GWAS.data,keep.extra.columns = TRUE)
+GWAS.data <- subset(GWAS.data, pip >= GWAS.pip.thres)
+seqlevels(GWAS.data,pruning.mode="coarse") <- seqlevels(SNP.data)
+olap <- findOverlaps(GWAS.data,cds,minoverlap=1)
+GWAS.data <- GWAS.data[-queryHits(olap)]
+traits <- unique(GWAS.data$trait)
+
+```
+
+GWAS PRIMEloci overlap matrix
+
+```{r}
+
+trait.loci.olap <- sapply(traits, function(t) {
+  ids <- which(GWAS.data$trait==t)
+  unique(unlist(lapply(names(pooled.PRIMEloci), function(n) {
+    pd <- pooled.PRIMEloci[[n]]
+    GWAS.olap <- findOverlaps(GWAS.data[ids,], pd, minoverlap=1)
+    ids[queryHits(GWAS.olap)]
+})))
+})
+
+trait.olap.count <- sapply(trait.loci.olap, function(x) length(unique(GWAS.data[x,])))
+filtered.traits <- names(which(trait.olap.count >= 10))
+
+trait.matrices <- lapply(filtered.traits, function(t) {
+  
+  #g <- unique(GWAS.data[trait.loci.olap[[t]],])
+  g <- GWAS.data[trait.loci.olap[[t]],]
+  name <- paste0(seqnames(g),":",start(g)+1,":",end(g),":",g$RS_id)
+  m <- matrix(0,ncol=length(pooled.PRIMEloci),nrow=length(g),dimnames=list(name, names(pooled.PRIMEloci)))
+  
+  for (n in names(pooled.PRIMEloci)) {
+    pd <- unfiltered.PRIMEloci[[n]]
+    GWAS.olap <- findOverlaps(g, pd, minoverlap=1)
+    m[unique(queryHits(GWAS.olap)),n] <- as.numeric(by(pd$score[subjectHits(GWAS.olap)], queryHits(GWAS.olap), max))
+  }
+  m
+})
+names(trait.matrices) <- filtered.traits
+
+```
+
+Calculate GWAS enrichment and recall
+
+```{r}
+
+point.GWAS.df <- do.call("rbind", lapply(names(pooled.PRIMEloci), function(n) {
+  pd <- pooled.PRIMEloci[[n]]
+  bg.olap <- findOverlaps(SNP.data, pd, minoverlap=1)
+  bg.count <- length(unique(queryHits(bg.olap)))
+  GWAS.olap <- findOverlaps(GWAS.data, pd, minoverlap=1)
+  
+  do.call("rbind", lapply(filtered.traits, function(t) {
+    
+    fg <- which(GWAS.data$trait==t)
+    fg.olap <- GWAS.olap[queryHits(GWAS.olap) %in% fg,]
+    fg.count <- length(unique(queryHits(fg.olap)))
+    
+    data.frame(enrichment=(fg.count/length(fg)) / (bg.count/length(SNP.data)),
+               recall=fg.count/length(fg),
+               fg.count=fg.count,
+               bg.count=bg.count,
+               fg.n=length(fg),
+               bg.n=length(SNP.data),
+               sample=n,
+               trait=t)
+    }))
+}))
+
+point.GWAS.df
+
+
+```
+
+
+Plot GWAS results
+
+```{r}
+
+enr.mat <- matrix(0,nrow=length(filtered.traits),ncol=length(unique(point.GWAS.df$sample)), dimnames=list(filtered.traits,unique(point.GWAS.df$sample)))
+for (i in 1:nrow(point.GWAS.df)) 
+  enr.mat[point.GWAS.df[i,"trait"],point.GWAS.df[i,"sample"]] <- point.GWAS.df[i,"enrichment"]
+
+ro <- hclust(dist(log2(enr.mat+1)))$order
+co <- hclust(dist(t(log2(enr.mat+1))))$order
+
+point.GWAS.df$sample <- factor(point.GWAS.df$sample, levels=colnames(enr.mat)[co])
+point.GWAS.df$trait <- factor(point.GWAS.df$trait, levels=rownames(enr.mat)[ro])
+
+ggplot(point.GWAS.df,aes(sample,trait,fill=enrichment)) + geom_tile() +
+  theme(axis.text.x = element_text(angle=90,hjust=1)) + scale_fill_distiller(direction=1) +
+  xlab("") + ylab("")
+ggsave("plots/GWAS_trait_enrichment_vs_cell_line.pdf",width=3,height=5)
+
+```
+
+```{r}
+
+focus.traits <- as.character(unique(subset(point.GWAS.df, enrichment>=10)$trait))
+
+for (trait in focus.traits) {
+  
+  m <- trait.matrices[[trait]]
+  
+  print(dim(m))
+  
+  ro <- hclust(dist(m))$order
+  co <- hclust(dist(t(m)))$order
+  
+  df <- data.frame(score=as.numeric(m),
+                   cell.line=rep(colnames(m),each=nrow(m)),
+                   variant=rownames(m))
+  df$variant <- factor(df$variant,levels=rownames(m)[ro])
+  df$cell.line <- factor(df$cell.line, levels=colnames(m)[co])
+  
+  ggplot(df, aes(cell.line, variant, fill=score)) + geom_tile() + xlab("") + ylab("") + 
+    theme(axis.text.x = element_text(angle=90,hjust=1)) + 
+    #theme(axis.text.y = element_blank()) + 
+    scale_fill_distiller(direction=1) +
+    ggtitle(trait)
+  ggsave(paste0("plots/",trait,"_variant_PRIMEloci_score_vs_cell_line.pdf"),width=5,height=5)
+  
+}
+
+```
+
