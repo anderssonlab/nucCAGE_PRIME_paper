@@ -22,13 +22,13 @@ devtools::install_github("thomasp85/patchwork")
 ## [0.1.] Load necessary packages
 ```{r message=FALSE, warning=FALSE}
 base::library("tidyverse")
-base::library("magrittr")
-base::library("ggpubr")
-base::library("here")
-base::library("ggrastr")
-base::library("patchwork")
-
 base::library("AnnotationHub")
+base::library("parallel")
+base::library("foreach")
+base::library("doParallel")
+doParallel::registerDoParallel(
+    cores = 15
+  )
 
 utils::installed.packages() %>%
   tibble::as_tibble() %>% 
@@ -174,12 +174,13 @@ plotTracks <- function(data, range){
 
 ## [0.4.] Helper function writeBw()
 ```{r}
-writeBw <- function(object, replicates, dir, inputAssay="TMM",splitByStrand = TRUE){
+writeBw <- function(object, replicates, dir, inputAssay = "counts", splitByStrand = TRUE){
   
   ## Check consistency of replicates
   assertthat::assert_that(
       base::length(SummarizedExperiment::rowRanges(object)) == base::nrow(SummarizedExperiment::assay(object,inputAssay)),
-      base::all(replicates %in% rownames(SummarizedExperiment::colData(object)))
+      base::all(replicates %in% rownames(SummarizedExperiment::colData(object))),
+      inputAssay %in% base::names(SummarizedExperiment::assays(GM12878.CTSSs.sub))
     )
   base::stopifnot("Chosen directory doesn't exist!" = base::dir.exists(dir))
   
@@ -331,7 +332,7 @@ GM12878.CTSSs <- base::readRDS(
 ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
   tibble::as_tibble() %>%
   dplyr::filter(
-      pooled == "yes" &
+      # pooled == "yes" &
       stringr::str_detect(ID, "500K|5M")
     ) %>%
   dplyr::pull(ID)
@@ -346,13 +347,20 @@ SummarizedExperiment::assay(GM12878.CTSSs.sub, "counts")
 
 ## [1.7.] Write out bigWig files
 ```{r}
-samples = base::rownames(SummarizedExperiment::colData(GM12878.CTSSs.sub))
+samples = base::rownames(
+    SummarizedExperiment::colData(GM12878.CTSSs.sub)
+  )
 
 .GlobalEnv$writeBw(
-  object = GM12878.CTSSs,
-  replicates = samples,
-  dir = 
-)
+    object = GM12878.CTSSs,
+    replicates = samples,
+    dir = base::paste0(
+        here::here("trackHubFiles/"),
+        "20240718_bigWig/"
+      ),
+    inputAssay = "TPM",
+    splitByStrand = TRUE
+  )
 ```
 
 ## [1.9.] TMM normalise data
@@ -445,8 +453,10 @@ crispr_data <- crispr %>%
 #### suggested region "chr8:144,407,529-144,416,261", "chr10:110,291,360-110,366,023", 
 #### wider area: "chrX:48,670,569-48,746,869" with enh1: "chrX:48,676,170-48,676,946" and enh2: "chrX:48,737,065-48,737,528"
 #### enhancers - "chr9:41358750-41358940", "chr9:41,356,277-41,359,588", "chr8:134563800-134564100", "chr8:134,563,186-134,566,375"
+#### MYC-enhancer: "chr8:127,884,215-127,915,852"
+#### MYC-locus & PVT1-promoter: "chr8:127,704,301-127,810,400"
 ```{r}
-l_ <-  "chr10:110,291,360-110,366,023"
+l_ <-  "chr8:127,890,000-127,905,000"
 l <- stringr::str_replace_all(l_,",","")
 chr = stringr::str_replace(l,"^(chr.*):.*","\\1")
 s = stringr::str_replace(l,"^chr.*:(.*)-(.*)","\\1") %>%
@@ -508,7 +518,7 @@ BiocGenerics::end(gr) <- BiocGenerics::end(gr) + extend
 GenomeInfoDb::seqlevelsStyle(gr) <- "UCSC"
 myce38 <- IRanges::reduce(gr, ignore.strand = TRUE, with.revmap = TRUE)
 S4Vectors::mcols(myce38)$smts <- S4Vectors::aggregate(gr, S4Vectors::mcols(myce38)$revmap, smts = summit)$smts
-i = 6L
+i = 1L
 ran <- myce38[i]
 ```
 
@@ -564,6 +574,7 @@ cage_sel <- cage_sel %>%
 ## [4.] CAGE_preparation_CTSSs --------------------
 
 ## [4.0.] Subset & convert scores from RangedSummarizedExperiment to tibble
+#### Evaluate samples "base::rownames(SummarizedExperiment::colData(GM12878.CTSSs.sub))"
 ```{r}
 ovl <- IRanges::findOverlaps(
     query = ran,
@@ -634,6 +645,9 @@ plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
       facets = . ~ type + replicate,
       ncol = 1,
       strip.position = "right"
+    ) +
+  ggplot2::scale_y_continuous(
+      limits = base::c(-12,12)
     )
 ggrastr::rasterise(
     input = plot,
@@ -714,8 +728,8 @@ gridExtra::grid.arrange(
 ## [6.1.] Print data
 ```{r}
 outfile <- base::paste0(
-    here::here("trackHubFiles/"),
-    format(Sys.time(), "%Y%m%d"),
+    here::here("trackHubFiles/plots/"),
+    base::format(base::Sys.time(), "%Y%m%d"),
     out,
     "_500k5M",
     ".pdf"
