@@ -455,8 +455,9 @@ crispr_data <- crispr %>%
 #### enhancers - "chr9:41358750-41358940", "chr9:41,356,277-41,359,588", "chr8:134563800-134564100", "chr8:134,563,186-134,566,375"
 #### MYC-enhancer: "chr8:127,884,215-127,915,852"
 #### MYC-locus & PVT1-promoter: "chr8:127,704,300-127,810,400"
+#### HDAC6 promoter: "chrX:48,801,000-48,803,000"
 ```{r}
-l_ <-  "chr8:127,725,000-127,810,400"
+l_ <-  "chr18:54,356,823-54,359,443"
 l <- stringr::str_replace_all(l_,",","")
 chr = stringr::str_replace(l,"^(chr.*):.*","\\1")
 s = stringr::str_replace(l,"^chr.*:(.*)-(.*)","\\1") %>%
@@ -647,7 +648,7 @@ plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
       strip.position = "right"
     ) +
   ggplot2::scale_y_continuous(
-      limits = base::c(-45,45)
+      limits = base::c(-30,30)
     )
 ggrastr::rasterise(
     input = plot,
