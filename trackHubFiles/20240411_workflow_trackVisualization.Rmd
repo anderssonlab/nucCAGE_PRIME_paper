@@ -454,9 +454,9 @@ crispr_data <- crispr %>%
 #### wider area: "chrX:48,670,569-48,746,869" with enh1: "chrX:48,676,170-48,676,946" and enh2: "chrX:48,737,065-48,737,528"
 #### enhancers - "chr9:41358750-41358940", "chr9:41,356,277-41,359,588", "chr8:134563800-134564100", "chr8:134,563,186-134,566,375"
 #### MYC-enhancer: "chr8:127,884,215-127,915,852"
-#### MYC-locus & PVT1-promoter: "chr8:127,704,301-127,810,400"
+#### MYC-locus & PVT1-promoter: "chr8:127,704,300-127,810,400"
 ```{r}
-l_ <-  "chr8:127,890,000-127,905,000"
+l_ <-  "chr8:127,725,000-127,810,400"
 l <- stringr::str_replace_all(l_,",","")
 chr = stringr::str_replace(l,"^(chr.*):.*","\\1")
 s = stringr::str_replace(l,"^chr.*:(.*)-(.*)","\\1") %>%
@@ -522,7 +522,7 @@ i = 1L
 ran <- myce38[i]
 ```
 
-## [2.2.] Extract coordinates
+## [2.3.] Extract coordinates
 ```{r}
 chrom <- GenomeInfoDb::seqnames(ran) %>%
   base::as.character()
@@ -647,7 +647,7 @@ plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
       strip.position = "right"
     ) +
   ggplot2::scale_y_continuous(
-      limits = base::c(-12,12)
+      limits = base::c(-45,45)
     )
 ggrastr::rasterise(
     input = plot,
