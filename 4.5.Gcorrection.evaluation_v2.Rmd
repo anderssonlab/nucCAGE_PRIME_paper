@@ -35,10 +35,16 @@ BiocParallel::register(
   )
 ```
 
-## [0.2.] Set working directory
-## To be discarded
-```{r eval=FALSE}
-# base::setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/1.CTSSs/")
+## [0.2.] Set color palette
+```{r}
+k.full.pal <- base::c(
+  "#F5CE00","#E2AA00","#B68D00",
+  "#FF8D00","#DF613F","#DF5643",
+  "#DD4425","#FF4425","#4F5D5C",
+  "#92B9C9","#76A5B6","#004352",
+  "#00439B","#29A957","#008E37",
+  "#007A30"
+  )
 ```
 
 ## [0.3.] Function for pooling replicates
@@ -356,16 +362,9 @@ K562.TCs <- BiocGenerics::unlist(K562.TCs)
 K562.TCs<- .GlobalEnv$initiatorScore(K562.TCs,Hsapiens)
 ```
 
-## [1.8.] Classify initiator sequence
+## [1.9.] Classify initiator sequence
 ```{r}
-k.full.pal <- base::c(
-  "#F5CE00","#E2AA00","#B68D00",
-  "#FF8D00","#DF613F","#DF5643",
-  "#DD4425","#FF4425","#4F5D5C",
-  "#92B9C9","#76A5B6","#004352",
-  "#00439B","#29A957","#008E37",
-  "#007A30"
-  )
+
 
 K562.TCs %>% 
   BiocGenerics::as.data.frame(row.names=NULL) %>%
