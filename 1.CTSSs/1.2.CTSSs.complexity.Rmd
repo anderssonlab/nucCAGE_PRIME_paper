@@ -385,38 +385,42 @@ comp.K562.CTSSs.plot <- comp.K562.CTSSs %>%
 
 ## [1.6.] Plot complexities
 ```{r}
-ggplot2::ggplot(
-    data = comp.K562.CTSSs.plot,
-    mapping = aes(
-        x = totalTags,
-        y = numberCTSSs,
-        color = method,
-        group = sample
+comp.K562.CTSSs.plot %>%
+  dplyr::filter(
+      sample %in% base::c("K562_C","K562_N","K562_10M_N")
+    ) %>% 
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+          x = totalTags,
+          y = numberCTSSs,
+          color = method,
+          group = sample
+        )
+      ) + 
+    geom_line() +
+    geom_abline(
+        intercept = 0,
+        slope = 1,
+        linetype = "dashed",
+        color = "black",
+        size = 0.5
+      ) +
+    theme_bw() +
+    scale_color_manual(
+        values = cols3
+      ) +
+    theme(
+        aspect.ratio = 1,
+        legend.title = element_blank(),
+        legend.justification = base::c(1,0),
+        legend.position = base::c(0.95,0.05),
+        legend.background = element_rect(
+            fill = "grey95"
+          ),
+        legend.text = element_text(size = 8),
+        legend.key.size = grid::unit(0.9, "lines")
       )
-    ) + 
-  geom_line() +
-  geom_abline(
-      intercept = 0,
-      slope = 1,
-      linetype = "dashed",
-      color = "black",
-      size = 0.5
-    ) +
-  theme_bw() +
-  scale_color_manual(
-      values = cols3
-    ) +
-  theme(
-      aspect.ratio = 1,
-      legend.title = element_blank(),
-      legend.justification = base::c(1,0),
-      legend.position = base::c(0.95,0.05),
-      legend.background = element_rect(
-          fill = "grey95"
-        ),
-      legend.text = element_text(size = 8),
-      legend.key.size = grid::unit(0.9, "lines")
-    )
 ```
 
 ## [1.7.] Plot complexities for the other objects
@@ -520,8 +524,12 @@ ymax <- base::max(nc1,nc2) # 49703283
 ## [1.9.] Test plot all complexity curves
 #### If required change scaling with 'scale_y_log10()'
 ```{r}
-ggplot2::ggplot(
-    data = comp.K562.CTSSs.plot,
+comp.K562.CTSSs.plot %>%
+  dplyr::filter(
+      sample %in% base::c("K562_C","K562_N","K562_10M_N")
+    ) %>% 
+  ggplot2::ggplot(
+    data = .,
     mapping = aes(
         x = totalTags,
         y = numberCTSSs,
@@ -541,12 +549,12 @@ ggplot2::ggplot(
       xintercept = base::c(28623910,96353854),
       linetype = 2
     ) +
-    scale_x_continuous(
-      limits = base::c(0,xmax),
-    ) +
-  scale_y_continuous(
-      limits = base::c(0,ymax),
-    ) +
+  #   scale_x_continuous(
+  #     limits = base::c(0,xmax),
+  #   ) +
+  # scale_y_continuous(
+  #     limits = base::c(0,ymax),
+  #   ) +
   scale_color_manual(
       values = cols3
     ) +
@@ -622,8 +630,8 @@ for(ext in base::c("pdf", "png")){
           here::here("1.CTSSs/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_complexity.K562.CTSSs",
-          "_all",
-          # "_replicates",# "_pools",
+          # "_all",
+          "_pools", # "_replicates",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
