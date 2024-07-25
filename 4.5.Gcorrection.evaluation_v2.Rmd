@@ -378,6 +378,11 @@ K562.TCs %>%
         x = INR,
         levels = base::c("YC","YR","other"),
         ordered = TRUE
+      ),
+    sample = base::factor(
+        x = sample,
+        levels = base::c("K562_C_new","K562_N_new","K562_C_old","K562_N_old"),
+        ordered = TRUE
       )
     ) %>%
   ggplot2::ggplot(
@@ -449,6 +454,11 @@ K562.TCs %>%
         x = INR,
         levels = base::c("YC","YR","other"),
         ordered = TRUE
+      ),
+    sample = base::factor(
+        x = sample,
+        levels = base::c("K562_C_new","K562_N_new","K562_C_old","K562_N_old"),
+        ordered = TRUE
       )
     ) %>%
   ggplot2::ggplot(
@@ -510,8 +520,8 @@ promoters_old <- K562.TCs %>%
     ) %>%               
   CAGEfightR::swapRanges() %>%                         
   GenomicRanges::promoters(
-      upstream = 10,
-      downstream = 10
+      upstream = 5,
+      downstream = 5
     )
 
 promoter_seqs_old <- promoters_old %>%
@@ -561,8 +571,8 @@ promoters_new <- K562.TCs %>%
     ) %>%               
   CAGEfightR::swapRanges() %>%                         
   GenomicRanges::promoters(
-      upstream = 10,
-      downstream = 10
+      upstream = 5,
+      downstream = 5
     )
 
 promoter_seqs_new <- promoters_new %>%
@@ -577,7 +587,7 @@ promoter_seqs_new %>%
         data = .,
         ncol = 1
       ) +
-    ggseqlogo::theme_logo() +                     
+    # ggseqlogo::theme_logo() +              
     theme(
         axis.title.x = element_blank(),
         aspect.ratio = 1/2
