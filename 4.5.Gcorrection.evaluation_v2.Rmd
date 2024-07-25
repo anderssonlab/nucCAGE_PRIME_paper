@@ -10,7 +10,7 @@ date: "2024-07-01"
 ## [0.0.] Load necesarray packages
 ```{r message=FALSE}
 base::library(tidyverse)
-# base::library(BSgenome.Hsapiens.UCSC.hg38)
+base::library(BSgenome.Hsapiens.UCSC.hg38)
 base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 ```
@@ -38,12 +38,12 @@ BiocParallel::register(
 ## [0.2.] Set color palette
 ```{r}
 k.full.pal <- base::c(
-  "#F5CE00","#E2AA00","#B68D00",
-  "#FF8D00","#DF613F","#DF5643",
-  "#DD4425","#FF4425","#4F5D5C",
-  "#92B9C9","#76A5B6","#004352",
-  "#00439B","#29A957","#008E37",
-  "#007A30"
+    "#F5CE00","#E2AA00","#B68D00",
+    "#FF8D00","#DF613F","#DF5643",
+    "#DD4425","#FF4425","#4F5D5C",
+    "#92B9C9","#76A5B6","#004352",
+    "#00439B","#29A957","#008E37",
+    "#007A30"
   )
 ```
 
@@ -131,7 +131,7 @@ perSampleTCs<- function(ctss, inputAssay="counts") {
 initiatorScore <- function(object, bsg) {
     # Ensure the input is of class GRanges or StitchedGPos
     if (!base::inherits(object, base::c("GRanges", "StitchedGPos"))) {
-        stop("Object must be of class GRanges or StitchedGPos.")
+        base::stop("Object must be of class GRanges or StitchedGPos.")
       }
     
     # Remove out-of-bound indices
@@ -142,9 +142,12 @@ initiatorScore <- function(object, bsg) {
     
     # Create promoters based on the class of object
     if (base::class(object) == "GRanges") {
+      
         swapped_object <- CAGEfightR::swapRanges(object)
         x <- IRanges::promoters(swapped_object, upstream = 1, downstream = 1)
-      } else if (base::class(object)== "StitchedGPos") {
+        
+      } else {
+        
         x <- IRanges::promoters(object, upstream = 1, downstream = 1)
       }
       
@@ -359,153 +362,316 @@ K562.TCs <- GenomicRanges::GRangesList(K562.TCs)
 
 K562.TCs <- BiocGenerics::unlist(K562.TCs)
 
-K562.TCs<- .GlobalEnv$initiatorScore(K562.TCs,Hsapiens)
+K562.TCs <- .GlobalEnv$initiatorScore(object = K562.TCs, bsg = Hsapiens)
 ```
 
-## [1.9.] Classify initiator sequence
+## [1.9.] Plot classified initiator sequence
+#### 'Promoter summit initiator expression >=10 counts'
 ```{r}
-
-
 K562.TCs %>% 
-  BiocGenerics::as.data.frame(row.names=NULL) %>%
-  BiocGenerics::subset(score>=10 & txType=="promoter") %>%
-  ggplot2::ggplot(aes(sample, log10(score),fill=sample)) +
-  scale_fill_manual(values=k.full.pal[c(1,5,9,10)]) +
+  BiocGenerics::as.data.frame(row.names = NULL) %>%
+  BiocGenerics::subset(
+      score >= 10 & txType == "promoter"
+    ) %>%
+  dplyr::mutate(
+    INR = base::factor(
+        x = INR,
+        levels = base::c("YC","YR","other"),
+        ordered = TRUE
+      )
+    ) %>%
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = base::log10(score),
+        y = sample,
+        fill = sample
+      )
+    ) +
   geom_boxplot() +
-  labs(title="promoter summit initiator expression >=10 counts") +
-  facet_wrap(~INR) + 
+  scale_fill_manual(
+      values = k.full.pal[c(1,5,9,10)]
+    ) +
+  facet_wrap(
+      facets = . ~INR,
+      ncol = 1,
+      strip.position = "right"
+    ) + 
+  theme_bw() +
   theme(
-    aspect.ratio = 1,
-    legend.title = element_blank(),
-    legend.justification = base::c(1,0),
-    legend.background = element_rect(
-        fill = "grey95"
-      ),
-    legend.text = element_text(size = 8),
-    legend.key.size = grid::unit(0.9, "lines")
-  )
-  
-ggplot2::ggsave(
-  filename="../4.Promoters/plots/mappingComp.K562.promoter.initatorExpression.10Score.pdf",
-  plot=last_plot(),
-  width=20,
-  height=5)
-
-
-K562.TCs %>% 
-  BiocGenerics::as.data.frame(row.names=NULL) %>%
-  BiocGenerics::subset(score>=10 & txType=="promoter") %>%
-  group_by(sample, INR) %>% 
-  summarise(count = n()) %>% 
-  mutate(perc = count/sum(count)) %>%
-  ggplot2::ggplot(aes(x = INR, y = perc*100, fill = sample)) + 
-  geom_col(position="dodge") + 
-  scale_fill_manual(values=k.full.pal[c(1,5,9,10)]) +
-  labs(title="promoter summit initiator >=10 counts") + 
-  coord_flip()+ 
-  theme(
-    aspect.ratio = 1,
-    legend.title = element_blank(),
-    legend.justification = base::c(1,0),
-    legend.background = element_rect(
-        fill = "grey95"
-      ),
-    legend.text = element_text(size = 8),
-    legend.key.size = grid::unit(0.9, "lines")
-  )
-
-ggplot2::ggsave(
-  filename="../4.Promoters/plots/mappingComp.K562.promoter.nInitiators.10Score.pdf",
-  plot=last_plot(),
-  width=10,
-  height=10)
+      aspect.ratio = 1,
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.background = element_rect(
+          fill = "grey95"
+        ),
+      legend.text = element_text(size = 8),
+      panel.spacing = grid::unit(0.1, "lines"),
+      legend.key.size = grid::unit(0.9, "lines")
+    )
 ```
 
-## [1.9.] seqlogos
+## [1.10.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        # here::here("4.Promoters/plots/"),
+        here::here(""),
+        base::format(base::Sys.time(), "%Y%m%d"),
+        "_mappingComp",
+        "_K562",
+        "_promoter",
+        "_initatorExpression",
+        ".pdf"
+      ),
+    plot = ggplot2::last_plot(),
+    width = 4,
+    height = 6
+  )
+```
+
+## [1.11.] Plot classified initiator sequence
+#### 'Promoter summit initiator >=10 counts'
+```{r}
+K562.TCs %>% 
+  BiocGenerics::as.data.frame(row.names = NULL) %>%
+  BiocGenerics::subset(
+      score >= 10 & txType == "promoter"
+    ) %>%
+  dplyr::group_by(sample, INR) %>% 
+  dplyr::summarise(
+      count = dplyr::n(),
+      .groups = "drop"
+    ) %>% 
+  dplyr::mutate(
+    perc = count/base::sum(count),
+    INR = base::factor(
+        x = INR,
+        levels = base::c("YC","YR","other"),
+        ordered = TRUE
+      )
+    ) %>%
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = perc*100,
+        y = sample,
+        fill = sample
+      )
+    ) + 
+  geom_col() +
+  facet_wrap(
+      facets = . ~ INR,
+      ncol = 1,
+      strip.position = "right"
+    ) + 
+  scale_fill_manual(
+      values = k.full.pal[base::c(1,5,9,10)]
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.background = element_rect(
+          fill = "grey95"
+        ),
+      legend.text = element_text(size = 8),
+      panel.spacing = grid::unit(0.1, "lines"),
+      legend.key.size = grid::unit(0.9, "lines")
+    )
+```
+
+## [1.12.] Plot classified initiator sequence
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        # here::here("4.Promoters/plots/"),
+        here::here(""),
+        base::format(base::Sys.time(), "%Y%m%d"),
+        "_mappingComp",
+        "_K562",
+        "_promoter",
+        "_numberInitiators",
+        ".pdf"
+      ),
+    plot = ggplot2::last_plot(),
+    width = 4,
+    height = 6
+  )
+```
+
+## [1.13.] Plot seqlogos
 ```{r}
 promoters_old <- K562.TCs %>%
-  BiocGenerics::subset(score>=10 & txType=="promoter" & sample %in% c("K562_C_old","K562_N_old")) %>%               
+  BiocGenerics::subset(
+      score >= 10 & txType == "promoter" &
+      sample %in% base::c("K562_C_old","K562_N_old")
+    ) %>%               
   CAGEfightR::swapRanges() %>%                         
-  GenomicRanges::promoters(upstream=10, downstream=10)
+  GenomicRanges::promoters(
+      upstream = 10,
+      downstream = 10
+    )
 
 promoter_seqs_old <- promoters_old %>%
   BSgenome::getSeq(Hsapiens, .)
 
 promoter_seqs_old %>%                      
-    as.character %>%                   
-    split(as.factor(promoters_old$INR)) %>% 
-    ggseqlogo(data=., ncol=1) +
-    theme_logo() +                     
-    theme(axis.title.x=element_blank())
+    base::as.character() %>%                   
+    base::split(
+        base::as.factor(promoters_old$INR)
+      ) %>% 
+    ggseqlogo::ggseqlogo(
+        data = .,
+        ncol = 1
+      ) +
+    ggseqlogo::theme_logo() +                     
+    theme(
+        axis.title.x = element_blank(),
+        aspect.ratio = 1/2
+      )
+```
 
+## [1.14.] Print seqlogos
+```{r}
 ggplot2::ggsave(
-  filename="../4.Promoters/plots/mappingComp.K562.promoter.seqlogoOLD.10Score.pdf",
-  plot=last_plot(),
-  width=10,
-  height=10)
+  filename = base::paste0(
+        # here::here("4.Promoters/plots/"),
+        here::here(""),
+        base::format(base::Sys.time(), "%Y%m%d"),
+        "_mappingComp",
+        "_K562",
+        "_promoter",
+        "_seqlogoOLD",
+        ".pdf"
+      ),
+    plot = ggplot2::last_plot(),
+    width = 4,
+    height = 6
+  )
+```
 
-
-
-
+## [1.15.] Plot seqLogos
+```{r}
 promoters_new <- K562.TCs %>%
-  BiocGenerics::subset(score>=10 & txType=="promoter" & sample %in% c("K562_C_new","K562_N_new")) %>%               
+  BiocGenerics::subset(
+      score >= 10 & txType == "promoter" &
+      sample %in% base::c("K562_C_new","K562_N_new")
+    ) %>%               
   CAGEfightR::swapRanges() %>%                         
-  GenomicRanges::promoters(upstream=10, downstream=10)
+  GenomicRanges::promoters(
+      upstream = 10,
+      downstream = 10
+    )
 
 promoter_seqs_new <- promoters_new %>%
   BSgenome::getSeq(Hsapiens, .)
 
-promoter_seqs_new %>%                      
-    as.character %>%                   
-    split(as.factor(promoters_new$INR)) %>% 
-    ggseqlogo(data=., ncol=1) +
-    theme_logo() +                     
-    theme(axis.title.x=element_blank())
-
-ggplot2::ggsave(
-  filename="../4.Promoters/plots/mappingComp.K562.promoter.seqlogoNEW.10Score.pdf",
-  plot=last_plot(),
-  width=10,
-  height=10)
+promoter_seqs_new %>%
+    base::as.character() %>%
+    base::split(
+        base::as.factor(promoters_new$INR)
+      ) %>%
+    ggseqlogo::ggseqlogo(
+        data = .,
+        ncol = 1
+      ) +
+    ggseqlogo::theme_logo() +                     
+    theme(
+        axis.title.x = element_blank(),
+        aspect.ratio = 1/2
+      )
 ```
 
-
-## [1.10.] Shift positions in old to correct for trimming
+## [1.16.] Print seqlogos
 ```{r}
-shiftStranded<-function(x, shift=0L,...) GenomicRanges::shift(x ,shift=shift*ifelse('-'==strand(x),-1,1),...)
+ggplot2::ggsave(
+    filename = base::paste0(
+        # here::here("4.Promoters/plots/"),
+        here::here(""),
+        base::format(base::Sys.time(), "%Y%m%d"),
+        "_mappingComp",
+        "_K562",
+        "_promoter",
+        "_seqlogoNEW",
+        ".pdf"
+      ), 
+    plot = ggplot2::last_plot(),
+    width = 4,
+    height = 6
+  )
+```
+
+## [1.17.] Shift positions in old to correct for trimming
+```{r}
+shiftStranded <- function(x, shift = 0L,...){
+    GenomicRanges::shift(x , shift = shift*base::ifelse('-' == BiocGenerics::strand(x),-1,1),...)
+  }
+
 shifted_promoters_old <- promoters_old %>%             
   CAGEfightR::swapRanges() %>%
-  shiftStranded(-1)
+  .GlobalEnv$shiftStranded(-1)
 
-shifted_promoters_old$thick <- ranges(shifted_promoters_old)
+shifted_promoters_old$thick <- IRanges::ranges(shifted_promoters_old)
 
-shifted_promoters_old<- .GlobalEnv$initiatorScore(shifted_promoters_old,Hsapiens)
-shifted_promoters_old$sample <- paste(shifted_promoters_old$sample,"shifted", sep="_")
-
-K562.TCs.2 <- c(K562.TCs, shifted_promoters_old)
-
-
-K562.TCs.2 %>% 
-  BiocGenerics::as.data.frame(row.names=NULL) %>%
-  BiocGenerics::subset(score>=10 & txType=="promoter") %>%
-  group_by(sample, INR) %>% 
-  summarise(count = n()) %>% 
-  mutate(perc = count/sum(count)) %>%
-  ggplot2::ggplot(aes(x = INR, y = perc*100, fill = sample)) + 
-  geom_col(position="dodge") + 
-  scale_fill_manual(values=k.full.pal[c(1,5,9,10,2,6,11,15)]) +
-  labs(title="promoter summit initiator >=10 counts") + 
-  coord_flip()+ 
-  theme(
-    aspect.ratio = 1,
-    legend.title = element_blank(),
-    legend.justification = base::c(1,0),
-    legend.background = element_rect(
-        fill = "grey95"
-      ),
-    legend.text = element_text(size = 8),
-    legend.key.size = grid::unit(0.9, "lines")
+shifted_promoters_old <- .GlobalEnv$initiatorScore(
+    object = shifted_promoters_old, bsg = Hsapiens
   )
+shifted_promoters_old$sample <- base::paste(
+    shifted_promoters_old$sample, "shifted", sep = "_"
+  )
+
+K562.TCs.2 <- base::c(K562.TCs, shifted_promoters_old)
+```
+
+## [1.18.] Plot seqLogos
+#### 'Promoter summit initiator >=10 counts'
+```{r}
+K562.TCs.2 %>% 
+  BiocGenerics::as.data.frame(row.names = NULL) %>%
+  BiocGenerics::subset(
+      score >= 10 & txType == "promoter"
+    ) %>%
+  dplyr::group_by(sample, INR) %>% 
+  dplyr::summarise(count = dplyr::n()) %>% 
+  dplyr::mutate(
+      perc = count/base::sum(count),
+      INR = base::factor(
+        x = INR,
+        levels = base::c("YC","YR","other"),
+        ordered = TRUE
+      )
+    ) %>%
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = perc*100,
+        y = sample,
+        fill = sample
+      )
+    ) + 
+  geom_col() +
+  facet_wrap(
+      facets = . ~INR,
+      ncol = 1,
+      strip.position = "right"
+    ) + 
+  scale_fill_manual(
+      values = k.full.pal[base::c(1,5,9,10,2,6,11,15)]
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.background = element_rect(
+          fill = "grey95"
+        ),
+      legend.text = element_text(size = 8),
+      panel.spacing = grid::unit(0.1, "lines"),
+      legend.key.size = grid::unit(0.9, "lines")
+    )
 ```
 
 
