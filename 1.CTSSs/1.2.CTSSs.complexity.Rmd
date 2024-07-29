@@ -525,9 +525,9 @@ ymax <- base::max(nc1,nc2) # 49703283
 #### If required change scaling with 'scale_y_log10()'
 ```{r}
 comp.K562.CTSSs.plot %>%
-  dplyr::filter(
-      sample %in% base::c("K562_C","K562_N","K562_10M_N")
-    ) %>% 
+  # dplyr::filter(
+  #     sample %in% base::c("K562_C","K562_N","K562_10M_N")
+  #   ) %>% 
   ggplot2::ggplot(
     data = .,
     mapping = aes(
@@ -630,8 +630,8 @@ for(ext in base::c("pdf", "png")){
           here::here("1.CTSSs/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_complexity.K562.CTSSs",
-          # "_all",
-          "_pools", # "_replicates",
+          "_all",
+          # "_pools", # "_replicates",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
