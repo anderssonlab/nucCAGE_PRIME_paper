@@ -533,8 +533,9 @@ comp.K562.CTSSs.plot %>%
     mapping = aes(
         x = totalTags,
         y = numberCTSSs,
-        color = method,
-        group = sample
+        color = sample
+        # color = method,
+        # group = sample
       )
     ) + 
   geom_line() +
