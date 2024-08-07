@@ -254,10 +254,7 @@ base::saveRDS(k562.p.TCs, file="poolSub.TCs.k562.rds")
 ## [3.0.] Load and resize GM12878 DNase regions
 ```{r}
 gm12878.dhs <- readr::read_delim(
-      file = base::paste0(
-          here::here("0.External_resources/"),
-          "E114-DNase.macs2.hg38.narrowPeak"
-        ),
+      file = base::paste0("../0.External_resources/E114-DNase.macs2.hg38.narrowPeak"),
       col_names = base::c("chr","start","end","rank"),
       col_types = readr::cols(
         .default = readr::col_integer(),
@@ -282,10 +279,7 @@ gm12878.dhs <- gm12878.dhs %>%
 ## [3.1.] Read in gm12878 replicate subsetted CTSSs
 ```{r}
 gm12878.CTSSs<- base::readRDS(
-    file = base::paste0(
-      here::here("1.CTSSs/"),
-      "repSub.combined.GM12878.CTSSs.rmSingletons.rds"
-    )
+    file = base::paste0("../1.CTSSs/repSub.combined.GM12878.CTSSs.rmSingletons.rds")
   )
 ```
 
@@ -320,12 +314,11 @@ gm12878.TCs <- BiocParallel::bplapply(
                                     pooled=CAGEfightR::calcPooled(gm12878.CTSSs[,x])), 
   BPPARAM = bpparam)
 
-gm12878.TCs <- BiocParallel::bplapply(
+gm12878.TCs <- lapply(
   1:base::length(gm12878.TCs),
   function(x) CAGEfightR::calcShape(object=gm12878.TCs[[x]],
                                     pooled=CAGEfightR::calcPooled(gm12878.CTSSs[,x]),
-                                    shapeFunction=shapeEntropy, outputColumn="shapeEntropy"), 
-  BPPARAM = bpparam)
+                                    shapeFunction=shapeEntropy, outputColumn="shapeEntropy"))
 ```
 
 
@@ -350,11 +343,8 @@ base::saveRDS(gm12878.TCs, file="repSub.TCs.GM12878.rds")
 ## [4.1.] Read in gm12878 pool subsetted CTSSs
 ```{r}
 gm12878.p.CTSSs<- base::readRDS(
-    file = base::paste0(
-      here::here("1.CTSSs/"),
-      "poolSub.combined.GM12878.CTSSs.rmSingletons.rds"
+    file = base::paste0("../1.CTSSs/poolSub.combined.GM12878.CTSSs.rmSingletons.rds")
     )
-  )
 ```
 
 
@@ -384,18 +374,16 @@ gm12878.p.TCs <- base::suppressWarnings(
 
 ##[4.4.] Calculate promoter shape metrics
 ```{r}
-gm12878.p.TCs <- BiocParallel::bplapply(
+gm12878.p.TCs <- lapply(
   1:base::length(gm12878.p.TCs),
   function(x) CAGEfightR::calcShape(gm12878.p.TCs[[x]],
-                                    pooled=CAGEfightR::calcPooled(gm12878.p.CTSSs[,x])), 
-  BPPARAM = bpparam)
+                                    pooled=CAGEfightR::calcPooled(gm12878.p.CTSSs[,x])))
 
-gm12878.p.TCs <- BiocParallel::bplapply(
+gm12878.p.TCs <- lapply(
   1:base::length(gm12878.p.TCs),
   function(x) CAGEfightR::calcShape(object=gm12878.p.TCs[[x]],
                                     pooled=CAGEfightR::calcPooled(gm12878.p.CTSSs[,x]),
-                                    shapeFunction=shapeEntropy, outputColumn="shapeEntropy"), 
-  BPPARAM = bpparam)
+                                    shapeFunction=shapeEntropy, outputColumn="shapeEntropy"))
 ```
 
 

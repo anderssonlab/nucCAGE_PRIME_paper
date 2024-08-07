@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # [0.] Packages -------------------------
 
 ## [0.0.] Install necessary packages
-```{r}
+```{r eval=FALSE}
 BiocManager::install("AnnotationHub")
 BiocManager::install("remotes")
 BiocManager::install("Bioconductor/RBGL")
