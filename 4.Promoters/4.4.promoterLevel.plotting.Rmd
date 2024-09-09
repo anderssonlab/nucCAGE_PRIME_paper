@@ -1604,7 +1604,7 @@ for(ext in base::c("pdf", "png")){
 ```{r}
 gm12878.TCs %>% 
   BiocGenerics::as.data.frame(row.names=NULL) %>%
-  BiocGenerics::subset(score>=10 & txType=="promoter") %>%
+  BiocGenerics::subset(score>=20 & txType=="promoter") %>%
   ggplot2::ggplot(aes(x=shapeEntropy,fill=sample)) + 
   geom_density() +
   scale_fill_manual(values=gm.full.pal) + 

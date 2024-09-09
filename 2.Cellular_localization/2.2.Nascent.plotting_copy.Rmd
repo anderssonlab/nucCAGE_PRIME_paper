@@ -1,0 +1,519 @@
+---
+title: "Plotting nascent enrichment in DHSs"
+output: html_document
+date: "2024-07-04"
+---
+
+## [0.] Prerequsites -------------------------
+
+## [0.0.] Load necessary packages
+```{r}
+base::library(CAGEfightR)
+base::library(dplyr)
+base::library(ggplot2)
+base::library(tidyverse)
+base::library(ggrastr)
+```
+
+## [0.2.] Add custom color palettes
+```{r}
+custom.col <- base::c(
+  "#FFDB6D","#C4961A","#F4EDCA", 
+  "#D16103","#C3D7A4","#52854C",
+  "#4E84C4","#293352","grey"
+  )
+
+
+gm.pal <- base::c(
+  "#F5CE00","#E2AA00","#B68D00",
+  "#DF613F","#DF5643","#DD4425",
+  "#92B9C9","#76A5B6","#004352",
+  "#29A957","#008E37","#007A30",
+  "#4F5D5C","#444E4C","#3D4138",
+  "#AC97C2","#977FB4","#7D62A3"
+  )
+                     
+gm.pooled.pal <- base::c(
+  "#FF8D00","#FF4425","#00439B",
+  "#009072","#878784","#7D62D0"
+  )
+
+gm.full.pal <- base::c(
+  "#F5CE00","#E2AA00","#B68D00",
+  "#FF8D00","#DF613F","#DF5643",
+  "#DD4425","#FF4425","#92B9C9",
+  "#76A5B6","#004352","#00439B",
+  "#29A957","#008E37","#007A30",
+  "#009072","#4F5D5C","#444E4C",
+  "#3D4138","#878784","#AC97C2",
+  "#977FB4","#7D62A3","#7D62D0"
+  )
+
+k.full.pal <- base::c(
+  "#F5CE00","#E2AA00","#B68D00",
+  "#FF8D00","#DF613F","#DF5643",
+  "#DD4425","#FF4425","#4F5D5C",
+  "#92B9C9","#76A5B6","#004352",
+  "#00439B","#29A957","#008E37",
+  "#007A30"
+  )
+```
+
+## [0.3.] Set working directory
+```{r}
+# base::setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/2.Cellular_localization/")
+```
+
+# [1.] Plotting GM12878 pooled subsetted DHSs quantifications -------------------------
+
+## [1.0.] Read DHS quantified regions
+```{r}
+GM12878.dhs.p <- base::readRDS(
+    file = "poolSub.DHSs.quantified.GM12878.rds"
+  )
+## Rep subsetted used for gro-cap comparison
+GM12878.dhs <- base::readRDS(
+    file = "poolSub.DHSs.quantified.GM12878.rds"
+  )
+```
+
+## [1.1.] Prepare plotting data frame with relevant metrics
+```{r}
+gm12878.expr.df.p <- base::as.data.frame(
+    SummarizedExperiment::assay(GM12878.dhs.p, "TPM")
+  )
+gm12878.expr.df.p$txType <- SummarizedExperiment::rowData(GM12878.dhs.p)$txType
+
+gm12878.expr.df.p$tripMean <- base::rowMeans(
+    gm12878.expr.df.p[,base::c("GM12878_1M_trip","GM12878_1M_ctrl")]
+  )
+
+gm12878.expr.df.p$tripFC <- base::log2(
+    base::c(gm12878.expr.df.p$GM12878_1M_trip+0.1)/(gm12878.expr.df.p$GM12878_1M_ctrl+0.1)
+  )
+
+gm12878.expr.df.p$groFC <- base::log2(
+    base::c(gm12878.expr.df$GM12878_groCap_1+0.1)/(gm12878.expr.df$GM12878_1M_ctrl+0.1)
+  )
+```
+
+
+## [1.1.] Plot C vs N with triptolide FC and gro-cap coloring, split between gene proximal and distal DHSs
+```{r}
+gm12878.expr.df.p$grp <- "proximal"
+gm12878.expr.df.p$grp[gm12878.expr.df.p$txType %in% base::c("intron","intergenic")] <- "distal"
+gm12878.expr.df.p$grp <- base::factor(gm12878.expr.df.p$grp, levels = base::c("proximal", "distal"))
+
+
+gm12878.expr.df.p.m <- gm12878.expr.df.p %>%
+  dplyr::select(
+      "grp", "tripFC", #"groFC",
+      "GM12878_500K_C","GM12878_1M_N","GM12878_5M_N"
+    ) %>%
+  tidyr::pivot_longer(
+      cols = base::c("GM12878_1M_N","GM12878_5M_N")
+    )
+```
+
+
+```{r}
+plot <- gm12878.expr.df.p.m %>% 
+  dplyr::filter(
+      GM12878_500K_C > 0 | value > 0
+    ) %>%
+  dplyr::mutate(
+      tripGrp = dplyr::case_when(
+          tripFC <= 0 ~ "low",
+          tripFC > 0 ~ "high"
+        ),
+      tripGrp = base::factor(
+        x = tripGrp,
+        levels = base::c("low","high"),
+        ordered = TRUE
+      )
+    ) %>%
+  dplyr::group_by(tripGrp) %>% 
+  dplyr::arrange(
+      tripGrp, base::abs(tripFC)
+    ) %>%
+  # dplyr::filter(
+  #   row_number() %in% base::c(1,dplyr::n())
+  # )
+ggplot2::ggplot(
+  data = .,
+     aes(
+         x = GM12878_500K_C,
+         y = value,
+         fill = tripFC
+       )
+     ) + 
+  geom_point(
+      shape = 21,
+      color = "black",
+      # alpha = 0.1,
+      stroke = 0.01
+    ) +
+  # geom_density_2d(
+  #     color = "black"
+  #   ) +
+  scale_y_log10() +
+  scale_x_log10() +
+  scale_fill_gradient2(
+      low = "blue",
+      high = "darkred",
+      mid = "white"
+    )  +
+  geom_abline(
+      intercept = 0,
+      linetype = "dashed"
+    ) +
+  labs(
+      x = "500K cells CAGE [TPM]",
+      y = "nuclei CAGE [TPM]"
+    ) +
+  facet_wrap(
+      facets = tripGrp ~ grp + name,
+      nrow = 2
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.background = element_rect(
+          fill = "grey95"
+        ),
+      legend.text = element_text(
+          size = 8
+        ),
+      legend.key.size = grid::unit(0.9, "lines"),
+      panel.spacing = grid::unit(0.1,"lines")
+    )
+ggrastr::rasterise(
+    input = plot,
+    layers = "Point",
+    dpi = 300
+  )
+```
+
+```{r}
+gm12878.expr.df.p.m %>%
+  dplyr::mutate(
+      ratio = value / GM12878_500K_C
+    ) %>%
+    # dplyr::filter(
+    #   GM12878_500K_C > 0 | value > 0
+    # ) %>%
+  # dplyr::mutate(
+  #     tripGrp = dplyr::case_when(
+  #         tripFC <= 0 ~ "low",
+  #         tripFC > 0 ~ "high"
+  #       ),
+  #     tripGrp = base::factor(
+  #       x = tripGrp,
+  #       levels = base::c("low","high"),
+  #       ordered = TRUE
+  #     )
+  #   ) %>%
+  # dplyr::group_by(tripGrp) %>% 
+  # dplyr::arrange(
+  #     tripGrp, base::abs(tripFC)
+  #   ) %>%
+  ggplot2::ggplot(
+  data = .,
+     aes(
+         x = log2(ratio),
+         y = tripFC,
+         fill = tripFC
+       )
+     ) + 
+  geom_point(
+      shape = 21,
+      color = "black",
+      # alpha = 0.1,
+      stroke = 0.01
+    ) +
+  # geom_density_2d(
+  #     color = "black"
+  #   ) +
+  # scale_y_log10() +
+  # scale_x_log10() +
+  scale_fill_gradient2(
+      low = "blue",
+      high = "darkred",
+      mid = "white"
+    )  +
+  geom_vline(
+      xintercept = 0,
+      linetype = "dashed"
+    ) +
+  labs(
+      x = "500K cells CAGE [TPM]",
+      y = "nuclei CAGE [TPM]"
+    ) +
+  facet_wrap(
+      facets = ~ grp + name, # tripGrp ~ grp + name
+      nrow = 2
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.background = element_rect(
+          fill = "grey95"
+        ),
+      legend.text = element_text(
+          size = 8
+        ),
+      legend.key.size = grid::unit(0.9, "lines"),
+      panel.spacing = grid::unit(0.1,"lines")
+    )
+```
+
+
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0("./plots/",
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_tripFC.GM12878.DHSs.main",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 10,
+      height = 10
+    )
+  }
+```
+
+
+```{r}
+ggplot2::ggplot(gm12878.expr.df.p.m[gm12878.expr.df.p.m$GM12878_500K_C>0 | gm12878.expr.df.p.m$value>0,],
+       aes(GM12878_500K_C,value,color=groFC)) + 
+  rasterise(geom_point()) +
+  scale_y_log10() +
+  scale_x_log10() +
+  scale_colour_gradient2(low = "steelblue", high = "orange",mid="white")  +
+  geom_abline(intercept = 0) +
+  theme_bw() +
+  theme(
+    aspect.ratio = 1,
+    legend.title = element_blank(),
+    legend.justification = base::c(1,0),
+    legend.background = element_rect(
+      fill = "grey95"
+        ),
+    legend.text = element_text(size = 8),
+    legend.key.size = grid::unit(0.9, "lines")
+    ) + 
+  facet_wrap(~grp+name) +
+  labs(x="500K cells CAGE [TPM]", y="nuclei CAGE [TPM]")
+```
+
+
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0("./plots/",
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_groCap.GM12878.DHSs.main",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 10,
+      height = 10
+    )
+  }
+```
+
+
+
+
+
+
+# [2.] Plotting GM12878 pooled subsetted DHSs quantifications
+
+## [2.0.] Read DHS quantified regions
+```{r}
+GM12878.dhs <- base::readRDS("poolSub.DHSs.quantified.GM12878.rds")
+```
+
+
+## [2.1.] Prepare plotting data frame with relevant metrics
+```{r}
+gm12878.expr.df <- base::as.data.frame(assay(GM12878.dhs, "TPM"))
+gm12878.expr.df$txType <- SummarizedExperiment::rowData(GM12878.dhs)$txType
+
+gm12878.expr.df$tripMean <- base::rowMeans(
+  gm12878.expr.df[,c("GM12878_1M_trip","GM12878_1M_ctrl")])
+
+gm12878.expr.df$tripFC <- base::log2(
+  c(gm12878.expr.df$GM12878_1M_trip+0.1)/(gm12878.expr.df$GM12878_1M_ctrl+0.1))
+```
+
+
+## [2.1.] Plot C vs N with triptolide FC and gro-cap coloring, split between gene proximal and distal DHSs
+```{r}
+gm12878.expr.df$grp <- "proximal"
+gm12878.expr.df$grp[gm12878.expr.df$txType %in% c("intron","intergenic")] <- "distal"
+gm12878.expr.df$grp <- base::factor(gm12878.expr.df$grp, levels = c("proximal", "distal"))
+
+ggplot2::ggplot(gm12878.expr.df[(gm12878.expr.df$GM12878_1M_C>0 | gm12878.expr.df$GM12878_5M_N>0) & gm12878.expr.df$grp=="proximal",],
+       aes(GM12878_1M_C,GM12878_5M_N,color=tripFC)) + 
+  geom_point() +
+  scale_y_log10() +
+  scale_x_log10() +
+  scale_colour_gradient2(low = "steelblue", high = "orange",mid="white")  +
+  geom_abline(intercept = 0) +
+  theme_bw() +
+  theme(
+    aspect.ratio = 1,
+    legend.title = element_blank(),
+    legend.justification = base::c(1,0),
+    legend.background = element_rect(
+      fill = "grey95"
+        ),
+    legend.text = element_text(size = 8),
+    legend.key.size = grid::unit(0.9, "lines")
+    ) + 
+  labs(x="1M cells CAGE [TPM]", y="5M nuclei CAGE [TPM]")
+
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0("./plots/",
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_tripFC.proximal.GM12878.DHSs",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 5,
+      height = 5
+    )
+  }
+
+ggplot2::ggplot(gm12878.expr.df[(gm12878.expr.df$GM12878_1M_C>0 | gm12878.expr.df$GM12878_5M_N>0) & gm12878.expr.df$grp=="distal",],
+       aes(GM12878_1M_C,GM12878_5M_N,color=tripFC)) + 
+  geom_point() +
+  scale_y_log10() +
+  scale_x_log10() +
+  scale_colour_gradient2(low = "steelblue", high = "orange",mid="white")  +
+  geom_abline(intercept = 0) +
+  theme_bw() +
+  theme(
+    aspect.ratio = 1,
+    legend.title = element_blank(),
+    legend.justification = base::c(1,0),
+    legend.background = element_rect(
+      fill = "grey95"
+        ),
+    legend.text = element_text(size = 8),
+    legend.key.size = grid::unit(0.9, "lines")
+    ) + 
+  labs(x="1M cells CAGE [TPM]", y="5M nuclei CAGE [TPM]")
+
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0("./plots/",
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_tripFC.distal.GM12878.DHSs",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 5,
+      height = 5
+    )
+  }
+
+
+ggplot2::ggplot(gm12878.expr.df[(gm12878.expr.df$GM12878_1M_C>0 | gm12878.expr.df$GM12878_5M_N>0) & gm12878.expr.df$grp=="proximal",],
+       aes(GM12878_1M_C,GM12878_5M_N,color=log10(0.1+GM12878_groCap_1))) + 
+  geom_point() +
+  scale_y_log10() +
+  scale_x_log10() +
+  scale_colour_gradient2(low = "steelblue", high = "orange",mid="white", midpoint = c(-0.25))  +
+  geom_abline(intercept = 0) +
+  theme_bw() +
+  theme(
+    aspect.ratio = 1,
+    legend.title = element_blank(),
+    legend.justification = base::c(1,0),
+    legend.background = element_rect(
+      fill = "grey95"
+        ),
+    legend.text = element_text(size = 8),
+    legend.key.size = grid::unit(0.9, "lines")
+    ) + 
+  labs(x="1M cells CAGE [TPM]", y="5M nuclei CAGE [TPM]")
+
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0("./plots/",
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_groCap.proximal.GM12878.DHSs",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 5,
+      height = 5
+    )
+  }
+
+ggplot2::ggplot(gm12878.expr.df[(gm12878.expr.df$GM12878_1M_C>0 | gm12878.expr.df$GM12878_5M_N>0) & gm12878.expr.df$grp=="distal",],
+       aes(GM12878_1M_C,GM12878_5M_N,color=log10(0.1+GM12878_groCap_1))) + 
+  geom_point() +
+  scale_y_log10() +
+  scale_x_log10() +
+  scale_colour_gradient2(low = "steelblue", high = "orange",mid="white", midpoint = c(-0.25))  +
+  geom_abline(intercept = 0) +
+  theme_bw() +
+  theme(
+    aspect.ratio = 1,
+    legend.title = element_blank(),
+    legend.justification = base::c(1,0),
+    legend.background = element_rect(
+      fill = "grey95"
+        ),
+    legend.text = element_text(size = 8),
+    legend.key.size = grid::unit(0.9, "lines")
+    ) + 
+  labs(x="1M cells CAGE [TPM]", y="5M nuclei CAGE [TPM]")
+
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0("./plots/",
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_groCap.distal.GM12878.DHSs",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 5,
+      height = 5
+    )
+  }
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
