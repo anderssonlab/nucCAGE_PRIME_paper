@@ -176,6 +176,7 @@ plot <- ggplot2::ggplot(
     ) +
   facet_wrap(
       facets = tripGrp ~ grp + name,
+      # facets =  ~ grp + name,
       nrow = 2
     ) +
   theme_bw() +
@@ -217,13 +218,13 @@ gm12878.expr.df.p.m %>%
       shape = 21,
       color = "black",
       # alpha = 0.1,
-      stroke = 0.01
+      stroke = 0.05
     ) +
-  # geom_density_2d(
-  #     color = "black"
-  #   ) +
-  # scale_y_log10() +
-  # scale_x_log10() +
+  geom_density_2d(
+      color = "black",
+      bins = 50,
+      alpha = 0.5
+    ) +
   scale_fill_gradient2(
       low = "blue",
       high = "darkred",
@@ -234,12 +235,11 @@ gm12878.expr.df.p.m %>%
       linetype = "dashed"
     ) +
   labs(
-      x = "500K cells CAGE [TPM]",
-      y = "nuclei CAGE [TPM]"
+      x = "nuclei / 500K cells",
+      y = "triptolide FC"
     ) +
-  facet_wrap(
-      facets = ~ grp + name, # tripGrp ~ grp + name
-      nrow = 2
+  facet_grid(
+    rows = name ~ grp
     ) +
   theme_bw() +
   theme(
@@ -275,7 +275,7 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-
+## [1.5.] Prepare groFC plotting
 ```{r}
 plot.df <- gm12878.expr.df.p.m %>% 
   dplyr::filter(
@@ -298,7 +298,7 @@ plot.df <- gm12878.expr.df.p.m %>%
     )
 ```
 
-
+## [1.6.] Plot groFC onto nuclei-vs.cell CAGE comparison
 ```{r}
 plot <- ggplot2::ggplot(
     data = plot.df,
@@ -352,6 +352,61 @@ ggrastr::rasterise(
   )
 ```
 
+```{r}
+gm12878.expr.df.p.m %>%
+  dplyr::mutate(
+      ratio = value / GM12878_500K_C
+    ) %>%
+  ggplot2::ggplot(
+  data = .,
+     aes(
+         x = log2(ratio),
+         y = groFC,
+         fill = groFC
+       )
+     ) + 
+  geom_point(
+      shape = 21,
+      color = "black",
+      # alpha = 0.1,
+      stroke = 0.05
+    ) +
+  geom_density_2d(
+      color = "black",
+      bins = 30,
+      alpha = 0.5
+    ) +
+  scale_fill_gradient2(
+      low = "blue",
+      high = "darkred",
+      mid = "white"
+    )  +
+  geom_vline(
+      xintercept = 0,
+      linetype = "dashed"
+    ) +
+  labs(
+      x = "nuclei / 500K cells",
+      y = "triptolide FC"
+    ) +
+  facet_grid(
+    rows = name ~ grp
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.background = element_rect(
+          fill = "grey95"
+        ),
+      legend.text = element_text(
+          size = 8
+        ),
+      legend.key.size = grid::unit(0.9, "lines"),
+      panel.spacing = grid::unit(0.1,"lines")
+    )
+```
 
 ```{r}
 for(ext in base::c("pdf", "png")){
