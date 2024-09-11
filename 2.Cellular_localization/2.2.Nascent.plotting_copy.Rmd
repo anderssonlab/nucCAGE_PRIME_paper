@@ -210,20 +210,35 @@ ggrastr::rasterise(
   )
 ```
 
-## [1.4.] Plot ratio vs. triptolide signal
+## [1.4.] Prepare annotations for triptolide plot
 ```{r}
-gm12878.expr.df.p.m %>%
+annos <- gm12878.expr.df.p.m %>%
   dplyr::mutate(
       ratio = value / GM12878_500K_C
     ) %>%
 dplyr::group_by(name,grp) %>%
   dplyr::summarise(
-    upLeft = base::sum(base::log2(ratio) < 0 & tripFC > 0, na.rm = TRUE),
-    upRight = base::sum(base::log2(ratio) > 0 & tripFC > 0, na.rm = TRUE)
-  )
+      low_Left = base::sum(base::log2(ratio) < -1 & tripFC < -1, na.rm = TRUE),
+      up_Left = base::sum(base::log2(ratio) < -1 & tripFC > 1, na.rm = TRUE),
+      low_Right = base::sum(base::log2(ratio) > 1 & tripFC < -1, na.rm = TRUE),
+      up_Right = base::sum(base::log2(ratio) > 1 & tripFC > 1, na.rm = TRUE),
+      total = base::sum(tripFC < Inf, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+  tidyr::pivot_longer(
+      cols = tidyr::contains("_"),
+      names_to = "quadr",
+      values_to = "count"
+    ) %>%
+  dplyr::mutate(
+      xpos = base::rep(base::c(-Inf,-Inf,Inf,Inf),4),
+      ypos = base::rep(base::c(-Inf, Inf,-Inf,Inf),4),
+      hjustvar = base::rep(base::c(0,0,1,1),4),
+      vjustvar = base::rep(base::c(0,1,0,1),4)
+    )
 ```
 
-
+## [1.5.] Plot ratio vs. triptolide signal
 ```{r}
 coef = 0.1
 cols <- base::c(
@@ -265,21 +280,26 @@ plot <- gm12878.expr.df.p.m %>%
           color = ..level..
         ),
       # binwidth = 0.1,
-      bins = 60,
+      bins = 30,
       size = 0.5
     ) +
   geom_vline(
-      xintercept =0,
-      linetype = "dashed"
-    ) +
-  geom_vline(
       xintercept = base::c(-1,1),
-      linetype = "dotted",
-      color = "grey25"
+      linetype = "dashed"
     ) +
   geom_hline(
-      yintercept = 0,
+      yintercept = base::c(-1,1),
       linetype = "dashed"
+    ) +
+  geom_text(
+      data = annos,
+      mapping = aes(
+        x = xpos,
+        y = ypos,
+        hjust = hjustvar,
+        vjust = vjustvar,
+        label = count
+      )
     ) +
   scale_colour_gradientn(
       colours = cols
@@ -318,11 +338,12 @@ ggrastr::rasterise(
   )
 ```
 
-## [1.4.] Print plots
+## [1.6.] Print plots
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(
+          here::here("/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_tripFC.GM12878.DHSs.main",
           "_alternative",
@@ -337,6 +358,44 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
+## [1.7.] Prepare stats for plot
+#### Run Wilcoxon rank sum test
+```{r}
+stats <- gm12878.expr.df.p.m %>%
+  dplyr::mutate(
+      ratio = base::log2(value / GM12878_500K_C),
+      ratGrp = dplyr::case_when(
+        ratio < 0 ~ "neg",
+        ratio >= 0 ~ "pos"
+      )
+    ) %>%
+  dplyr::filter(
+      ratio <= -1 | ratio >= 1
+    ) %>%
+  dplyr::group_by(grp, name) %>%
+  tidyr::nest() %>%
+  dplyr::mutate(
+    wrst = purrr::map_dbl(
+        .x = data,
+        .f = function(df){
+          return(
+            stats::wilcox.test(
+              formula = tripFC ~ ratGrp,
+              data = df
+            )$p.value
+          )
+        }
+      )
+    ) %>%
+  dplyr::select(-data) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(
+      xpos = base::rep(1.5,4),
+      ypos = base::rep(-6.5,4)
+    )
+```
+
+## [1.8.] Plot data distributions
 ```{r}
 gm12878.expr.df.p.m %>%
   dplyr::mutate(
@@ -364,7 +423,15 @@ gm12878.expr.df.p.m %>%
       outlier.shape = NA,
       nudge = 0.025
     ) +
-  ylim(-6.5,5) +
+   geom_text(
+      data = stats,
+      mapping = aes(
+        x = xpos,
+        y = ypos,
+        label = wrst
+      )
+    ) +
+  ylim(-7.5,3.1) +
   # geom_violin() +
   # geom_boxplot() +
   # see::geom_violinhalf(
@@ -391,58 +458,7 @@ gm12878.expr.df.p.m %>%
     )
 ```
 
-```{r}
-gm12878.expr.df.p.m %>%
-  dplyr::mutate(
-      ratio = base::log2(value / GM12878_500K_C),
-      ratGrp = dplyr::case_when(
-        ratio < 0 ~ "neg",
-        ratio >= 0 ~ "pos"
-      )
-    ) %>%
-  dplyr::filter(
-      ratio <= -1 | ratio >= 1
-    ) %>%
-  dplyr::group_by(grp, name) %>%
-  tidyr::nest() %>%
-  dplyr::mutate(
-    wrst = purrr::map_dbl(
-      .x = data,
-      .f = function(df){
-        return(
-          stats::wilcox.test(
-            formula = tripFC ~ ratGrp,
-            data = df
-          )$p.value
-        )
-      }
-    )
-  )
-```
-
-
-```{r}
-# test.df <- gm12878.expr.df.p.m %>%
-#   dplyr::mutate(
-#       ratio = base::log2(value / GM12878_500K_C),
-#       ratGrp = dplyr::case_when(
-#         ratio < 0 ~ "neg",
-#         ratio >= 0 ~ "pos"
-#       )
-#     ) %>%
-#   dplyr::filter(
-#       ( ratio <= -1 | ratio >= 1 ) &
-#       ( grp == "proximal" & name == "GM12878_1M_N" )
-#     )
-# test.stat <- stats::wilcox.test(
-#     formula = tripFC ~ ratGrp,
-#     data = test.df
-#   )
-# test.stat$p.value
-```
-
-
-## [1.5.] Prepare groFC plotting
+## [1.9.] Prepare groFC plotting
 ```{r}
 plot.df <- gm12878.expr.df.p.m %>% 
   dplyr::filter(
@@ -465,7 +481,7 @@ plot.df <- gm12878.expr.df.p.m %>%
     )
 ```
 
-## [1.6.] Plot groFC onto nuclei-vs.cell CAGE comparison
+## [1.10.] Plot groFC onto nuclei-vs.cell CAGE comparison
 ```{r}
 plot <- ggplot2::ggplot(
     data = plot.df,
@@ -519,62 +535,134 @@ ggrastr::rasterise(
   )
 ```
 
+## [1.11.] Prepare annotations for groFC plot
 ```{r}
-gm12878.expr.df.p.m %>%
+annos <- gm12878.expr.df.p.m %>%
+  dplyr::mutate(
+      ratio = value / GM12878_500K_C
+    ) %>%
+  dplyr::group_by(name,grp) %>%
+    dplyr::summarise(
+        low_Left = base::sum(base::log2(ratio) < -1 & groFC < -1, na.rm = TRUE),
+        up_Left = base::sum(base::log2(ratio) < -1 & groFC > 1, na.rm = TRUE),
+        low_Right = base::sum(base::log2(ratio) > 1 & groFC < -1, na.rm = TRUE),
+        up_Right = base::sum(base::log2(ratio) > 1 & groFC > 1, na.rm = TRUE),
+        total = base::sum(tripFC < Inf, na.rm = TRUE),
+        .groups = "drop"
+      ) %>%
+    tidyr::pivot_longer(
+        cols = tidyr::contains("_"),
+        names_to = "quadr",
+        values_to = "count"
+      ) %>%
+    dplyr::mutate(
+        xpos = base::rep(base::c(-Inf,-Inf,Inf,Inf),4),
+        ypos = base::rep(base::c(-Inf, Inf,-Inf,Inf),4),
+        hjustvar = base::rep(base::c(0,0,1,1),4),
+        vjustvar = base::rep(base::c(0,1,0,1),4)
+      )
+```
+
+## [1.12.] Plot groFC onto nuclei-vs.cell CAGE comparison
+```{r}
+coef = 0.1
+cols <- base::c(
+  grDevices::colorRampPalette(
+      base::c("#e7f0fa", "#c9e2f6", "#95cbee", "#0099dc", "#4ab04a", "#ffd73e")
+    )(coef*100),
+  grDevices::colorRampPalette(
+      c("#eec73a", "#e29421", "#e29421", "#f05336","#ce472e"),
+      bias=2
+    )((1-coef)*100)
+  )
+
+plot <- gm12878.expr.df.p.m %>%
   dplyr::mutate(
       ratio = value / GM12878_500K_C
     ) %>%
   ggplot2::ggplot(
-  data = .,
-     aes(
-         x = log2(ratio),
-         y = groFC,
-         fill = groFC
+     data = .,
+     mapping = aes(
+         x = base::log2(ratio),
+         y = groFC
        )
      ) + 
-  geom_point(
+    geom_point(
       shape = 21,
       color = "black",
       # alpha = 0.1,
-      stroke = 0.05
+      stroke = 0.05,
+      fill = "white"
     ) +
-  geom_density_2d(
-      color = "black",
-      bins = 30,
-      alpha = 0.5
+  # geom_density_2d(
+  #     color = "black",
+  #     bins = 50,
+  #     alpha = 0.5
+  #   ) +
+  geom_density2d(
+      mapping = aes(
+          color = ..level..
+        ),
+      # binwidth = 0.1,
+      bins = 15,
+      size = 0.5
     ) +
-  scale_fill_gradient2(
-      low = "blue",
-      high = "darkred",
-      mid = "white"
-    )  +
   geom_vline(
-      xintercept = 0,
+      xintercept = base::c(-1,1),
       linetype = "dashed"
     ) +
+  geom_hline(
+      yintercept = base::c(-1,1),
+      linetype = "dashed"
+    ) +
+  geom_text(
+      data = annos,
+      mapping = aes(
+        x = xpos,
+        y = ypos,
+        hjust = hjustvar,
+        vjust = vjustvar,
+        label = count
+      )
+    ) +
+  scale_colour_gradientn(
+      colours = cols
+    ) +
+  # scale_fill_gradient2(
+  #     low = "blue",
+  #     high = "darkred",
+  #     mid = "white"
+  #   )  +
   labs(
       x = "nuclei / 500K cells",
       y = "triptolide FC"
     ) +
   facet_grid(
-    rows = name ~ grp
+      rows = name ~ grp
     ) +
   theme_bw() +
   theme(
       aspect.ratio = 1,
-      legend.title = element_blank(),
-      legend.justification = base::c(1,0),
-      legend.background = element_rect(
-          fill = "grey95"
-        ),
-      legend.text = element_text(
-          size = 8
-        ),
-      legend.key.size = grid::unit(0.9, "lines"),
+      legend.position = "none",
+      # legend.title = element_blank(),
+      # legend.justification = base::c(1,0),
+      # legend.background = element_rect(
+      #     fill = "grey95"
+      #   ),
+      # legend.text = element_text(
+      #     size = 8
+      #   ),
+      # legend.key.size = grid::unit(0.9, "lines"),
       panel.spacing = grid::unit(0.1,"lines")
     )
+ggrastr::rasterise(
+    input = plot,
+    layers = "Point",
+    dpi = 300
+  )
 ```
 
+## [1.13.] Print plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -592,18 +680,130 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
+## [1.14.] Prepare stats for plot
+#### Run Wilcoxon rank sum test
+```{r}
+stats <- gm12878.expr.df.p.m %>%
+  dplyr::mutate(
+      ratio = base::log2(value / GM12878_500K_C),
+      ratGrp = dplyr::case_when(
+        ratio < 0 ~ "neg",
+        ratio >= 0 ~ "pos"
+      )
+    ) %>%
+  dplyr::filter(
+      ratio <= -1 | ratio >= 1
+    ) %>%
+  dplyr::group_by(grp, name) %>%
+  tidyr::nest() %>%
+  dplyr::mutate(
+    wrst = purrr::map_dbl(
+        .x = data,
+        .f = function(df){
+          return(
+            stats::wilcox.test(
+              formula = groFC ~ ratGrp,
+              data = df
+            )$p.value
+          )
+        }
+      )
+    ) %>%
+  dplyr::select(-data) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(
+      xpos = base::rep(1.5,4),
+      ypos = base::rep(-6.5,4)
+    )
+```
 
+## [1.15.] Plot data distributions
+```{r}
+gm12878.expr.df.p.m %>%
+  dplyr::mutate(
+      ratio = base::log2(value / GM12878_500K_C),
+      ratGrp = dplyr::case_when(
+        ratio < 0 ~ "neg",
+        ratio >= 0 ~ "pos"
+      )
+    ) %>%
+  dplyr::filter(
+      ratio <= -1 | ratio >= 1
+    ) %>%
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = ratGrp,
+        y = groFC
+      )
+    ) +
+  gghalves::geom_half_violin(
+      nudge = 0.025
+    ) +
+  gghalves::geom_half_boxplot(
+      side = "r",
+      outlier.shape = NA,
+      nudge = 0.025
+    ) +
+   geom_text(
+      data = stats,
+      mapping = aes(
+        x = xpos,
+        y = ypos,
+        label = wrst
+      )
+    ) +
+  ylim(-7.5,3.1) +
+  # geom_violin() +
+  # geom_boxplot() +
+  # see::geom_violinhalf(
+  #     position = position_nudge(
+  #       x = 0.15,
+  #       y = 0
+  #     )
+  #   ) +
+  # geom_jitter(
+  #     shape = 21,
+  #     color = "black",
+  #     alpha = 0.1,
+  #     stroke = 0.05,
+  #     height = 0,
+  #     width = 0.1
+  #   ) +
+  facet_grid(
+      rows = name ~ grp
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      panel.spacing = grid::unit(0.1,"lines")
+    )
+```
 
+## [1.16.] Print plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0("./plots/",
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_groCap.GM12878.DHSs.main",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 10,
+      height = 10
+    )
+  }
+```
 
-
-
-# [2.] Plotting GM12878 pooled subsetted DHSs quantifications
+# [2.] Plotting GM12878 pooled subsetted DHSs quantifications -------------------------
 
 ## [2.0.] Read DHS quantified regions
 ```{r}
 GM12878.dhs <- base::readRDS("poolSub.DHSs.quantified.GM12878.rds")
 ```
-
 
 ## [2.1.] Prepare plotting data frame with relevant metrics
 ```{r}
