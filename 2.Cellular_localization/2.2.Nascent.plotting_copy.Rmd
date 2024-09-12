@@ -216,26 +216,26 @@ annos <- gm12878.expr.df.p.m %>%
   dplyr::mutate(
       ratio = value / GM12878_500K_C
     ) %>%
-dplyr::group_by(name,grp) %>%
-  dplyr::summarise(
-      low_Left = base::sum(base::log2(ratio) < -1 & tripFC < -1, na.rm = TRUE),
-      up_Left = base::sum(base::log2(ratio) < -1 & tripFC > 1, na.rm = TRUE),
-      low_Right = base::sum(base::log2(ratio) > 1 & tripFC < -1, na.rm = TRUE),
-      up_Right = base::sum(base::log2(ratio) > 1 & tripFC > 1, na.rm = TRUE),
-      total = base::sum(tripFC < Inf, na.rm = TRUE),
-      .groups = "drop"
-    ) %>%
-  tidyr::pivot_longer(
-      cols = tidyr::contains("_"),
-      names_to = "quadr",
-      values_to = "count"
-    ) %>%
-  dplyr::mutate(
-      xpos = base::rep(base::c(-Inf,-Inf,Inf,Inf),4),
-      ypos = base::rep(base::c(-Inf, Inf,-Inf,Inf),4),
-      hjustvar = base::rep(base::c(0,0,1,1),4),
-      vjustvar = base::rep(base::c(0,1,0,1),4)
-    )
+  dplyr::group_by(name,grp) %>%
+    dplyr::summarise(
+        low_Left = base::sum(base::log2(ratio) < -1 & tripFC < -1, na.rm = TRUE),
+        up_Left = base::sum(base::log2(ratio) < -1 & tripFC > 1, na.rm = TRUE),
+        low_Right = base::sum(base::log2(ratio) > 1 & tripFC < -1, na.rm = TRUE),
+        up_Right = base::sum(base::log2(ratio) > 1 & tripFC > 1, na.rm = TRUE),
+        total = base::sum(tripFC < Inf, na.rm = TRUE),
+        .groups = "drop"
+      ) %>%
+    tidyr::pivot_longer(
+        cols = tidyr::contains("_"),
+        names_to = "quadr",
+        values_to = "count"
+      ) %>%
+    dplyr::mutate(
+        xpos = base::rep(base::c(-Inf,-Inf,Inf,Inf),4),
+        ypos = base::rep(base::c(-Inf, Inf,-Inf,Inf),4),
+        hjustvar = base::rep(base::c(0,0,1,1),4),
+        vjustvar = base::rep(base::c(0,1,0,1),4)
+      )
 ```
 
 ## [1.5.] Plot ratio vs. triptolide signal
@@ -343,7 +343,7 @@ ggrastr::rasterise(
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
-          here::here("/plots/"),
+          here::here("2.Cellular_localization/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_tripFC.GM12878.DHSs.main",
           "_alternative",
@@ -458,7 +458,27 @@ gm12878.expr.df.p.m %>%
     )
 ```
 
-## [1.9.] Prepare groFC plotting
+## [1.9.] Print plots
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("2.Cellular_localization/plots/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_tripFC.GM12878.DHSs.main",
+          "_statistics",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 5,
+      height = 5
+    )
+  }
+```
+
+## [1.10.] Prepare groFC plotting
 ```{r}
 plot.df <- gm12878.expr.df.p.m %>% 
   dplyr::filter(
@@ -635,7 +655,7 @@ plot <- gm12878.expr.df.p.m %>%
   #   )  +
   labs(
       x = "nuclei / 500K cells",
-      y = "triptolide FC"
+      y = "groFC"
     ) +
   facet_grid(
       rows = name ~ grp
@@ -666,16 +686,18 @@ ggrastr::rasterise(
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(
+          here::here("2.Cellular_localization/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_groCap.GM12878.DHSs.main",
+          "_alternative",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
       device = ext,
       dpi = 300,
-      width = 10,
-      height = 10
+      width = 5,
+      height = 5
     )
   }
 ```
@@ -784,16 +806,18 @@ gm12878.expr.df.p.m %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(
+          here::here("2.Cellular_localization/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_groCap.GM12878.DHSs.main",
+          "_statistics",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
       device = ext,
       dpi = 300,
-      width = 10,
-      height = 10
+      width = 5,
+      height = 5
     )
   }
 ```
