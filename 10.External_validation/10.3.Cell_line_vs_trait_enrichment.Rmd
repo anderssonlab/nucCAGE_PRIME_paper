@@ -86,7 +86,7 @@ names(unfiltered.PRIMEloci) <- names(pooled.PRIMEloci.files)
 ## GWAS data
 GWAS.data <- read_tsv(GWAS.file,col_names=FALSE,show_col_types=FALSE)
 colnames(GWAS.data) <- c("chr","start","end","name","score","strand","RS_id","trait","pip")
-GWAS.data <- makeGRangesFromDataFrame(GWAS.data,keep.extra.columns = TRUE)
+GWAS.data <- makeGRangesFromDataFrame(GWAS.data,keep.extra.columns = TRUE, starts.in.df.are.0based=TRUE)
 GWAS.data <- subset(GWAS.data, pip >= GWAS.pip.thres)
 seqlevels(GWAS.data,pruning.mode="coarse") <- seqlevels(SNP.data)
 olap <- findOverlaps(GWAS.data,cds,minoverlap=1)
