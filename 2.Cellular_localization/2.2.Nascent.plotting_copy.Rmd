@@ -15,59 +15,7 @@ utils::install.packages("gghalves")
 ## [0.0.] Load necessary packages
 ```{r}
 base::library(CAGEfightR)
-base::library(dplyr)
-base::library(ggplot2)
 base::library(tidyverse)
-base::library(ggrastr)
-```
-
-## [0.2.] Add custom color palettes
-```{r}
-custom.col <- base::c(
-  "#FFDB6D","#C4961A","#F4EDCA", 
-  "#D16103","#C3D7A4","#52854C",
-  "#4E84C4","#293352","grey"
-  )
-
-
-gm.pal <- base::c(
-  "#F5CE00","#E2AA00","#B68D00",
-  "#DF613F","#DF5643","#DD4425",
-  "#92B9C9","#76A5B6","#004352",
-  "#29A957","#008E37","#007A30",
-  "#4F5D5C","#444E4C","#3D4138",
-  "#AC97C2","#977FB4","#7D62A3"
-  )
-                     
-gm.pooled.pal <- base::c(
-  "#FF8D00","#FF4425","#00439B",
-  "#009072","#878784","#7D62D0"
-  )
-
-gm.full.pal <- base::c(
-  "#F5CE00","#E2AA00","#B68D00",
-  "#FF8D00","#DF613F","#DF5643",
-  "#DD4425","#FF4425","#92B9C9",
-  "#76A5B6","#004352","#00439B",
-  "#29A957","#008E37","#007A30",
-  "#009072","#4F5D5C","#444E4C",
-  "#3D4138","#878784","#AC97C2",
-  "#977FB4","#7D62A3","#7D62D0"
-  )
-
-k.full.pal <- base::c(
-  "#F5CE00","#E2AA00","#B68D00",
-  "#FF8D00","#DF613F","#DF5643",
-  "#DD4425","#FF4425","#4F5D5C",
-  "#92B9C9","#76A5B6","#004352",
-  "#00439B","#29A957","#008E37",
-  "#007A30"
-  )
-```
-
-## [0.3.] Set working directory
-```{r}
-# base::setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/2.Cellular_localization/")
 ```
 
 # [1.] Plotting GM12878 pooled subsetted DHSs quantifications -------------------------
@@ -78,9 +26,9 @@ GM12878.dhs.p <- base::readRDS(
     file = "poolSub.DHSs.quantified.GM12878.rds"
   )
 ## Rep subsetted used for gro-cap comparison
-GM12878.dhs <- base::readRDS(
-    file = "poolSub.DHSs.quantified.GM12878.rds"
-  )
+# GM12878.dhs <- base::readRDS(
+#     file = "poolSub.DHSs.quantified.GM12878.rds"
+#   )
 ```
 
 ## [1.1.] Prepare plotting data frame with relevant metrics
@@ -101,23 +49,31 @@ gm12878.expr.df.p$tripFC <- base::log2(
 gm12878.expr.df.p$groFC <- base::log2(
     base::c(gm12878.expr.df.p$GM12878_groCap_1+0.1)/(gm12878.expr.df.p$GM12878_1M_ctrl+0.1)
   )
+
+# SummarizedExperiment::rowRanges(GM12878.dhs.p)
+gm12878.expr.df.p$loc <- base::paste0(
+    GenomeInfoDb::seqnames(GM12878.dhs.p)@values, ":",
+    BiocGenerics::start(GM12878.dhs.p), "-",
+    BiocGenerics::end(GM12878.dhs.p)
+  )
 ```
 
-## [1.1.] Plot C vs N with triptolide FC and gro-cap coloring, split between gene proximal and distal DHSs
+## [1.1.] Split between gene proximal and distal DHSs
 ```{r}
 gm12878.expr.df.p$grp <- "proximal"
-gm12878.expr.df.p$grp[gm12878.expr.df.p$txType %in% base::c("intron","intergenic")] <- "distal"
+gm12878.expr.df.p$grp[
+    gm12878.expr.df.p$txType %in% base::c("intron","intergenic")
+  ] <- "distal"
 gm12878.expr.df.p$grp <- base::factor(
     x = gm12878.expr.df.p$grp,
     levels = base::c("distal", "proximal"),
     ordered = TRUE
   )
 
-
 gm12878.expr.df.p.m <- gm12878.expr.df.p %>%
   dplyr::select(
-      "grp", "tripFC", "groFC",
-      "GM12878_500K_C","GM12878_1M_N","GM12878_5M_N"
+      "loc", "grp", "tripFC", "groFC",
+      "GM12878_500K_C","GM12878_1M_N","GM12878_5M_N",
     ) %>%
   tidyr::pivot_longer(
       cols = base::c("GM12878_1M_N","GM12878_5M_N")
