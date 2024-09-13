@@ -302,8 +302,8 @@ fs <- base::list.files(
       full.names = TRUE
     ) %>%
   stringr::str_subset("PoolSub|repSub", negate = TRUE) %>% 
-  # stringr::str_subset("_500K_|_5M_") # GM12878-specific
-  stringr::str_subset("K562") # K562-specific
+  stringr::str_subset("_500K_|_5M_") # GM12878-specific
+  # stringr::str_subset("K562") # K562-specific
 ```
 
 ## [1.4.] Load tmm.CTSSs object
@@ -340,11 +340,20 @@ K562.CTSSs <- base::readRDS(
 ## [1.6.] Subset for samples of interest
 #### Evaluate with 'SummarizedExperiment::colData(GM12878.CTSSs.sub)' & 'SummarizedExperiment::assay(GM12878.CTSSs.sub, "counts")'
 ```{r}
+##GM12878 5M and 500k samples
 ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
-  tibble::as_tibble() %>%
+  tibble::as_tibble(rownames = "type") %>%
   dplyr::filter(
       pooled == "yes" &
       stringr::str_detect(ID, "500K|5M")
+    ) %>%
+  dplyr::pull(ID)
+
+##Triptolide samples
+ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
+  tibble::as_tibble(rownames = "type") %>%
+  dplyr::filter(
+      stringr::str_detect(Pool, "trip")
     ) %>%
   dplyr::pull(ID)
 

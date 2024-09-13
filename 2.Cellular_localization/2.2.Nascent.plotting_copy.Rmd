@@ -21,17 +21,21 @@ base::library(tidyverse)
 # [1.] Plotting GM12878 pooled subsetted DHSs quantifications -------------------------
 
 ## [1.0.] Read DHS quantified regions
+#### Evaluate with 'SummarizedExperiment::colData(GM12878.dhs.p) %>% tibble::as_tibble(rownames = "type")'
 ```{r}
 GM12878.dhs.p <- base::readRDS(
     file = "poolSub.DHSs.quantified.GM12878.rds"
   )
-## Rep subsetted used for gro-cap comparison
+```
+
+#### Rep subsetted used for gro-cap comparison
+```{r eval=FALSE}
 # GM12878.dhs <- base::readRDS(
 #     file = "poolSub.DHSs.quantified.GM12878.rds"
 #   )
 ```
 
-## [1.1.] Prepare plotting data frame with relevant metrics
+## [1.1.] Transform RangedSummarizedExperiment into a dataframe
 ```{r}
 gm12878.expr.df.p <- base::as.data.frame(
     SummarizedExperiment::assay(GM12878.dhs.p, "TPM")
@@ -432,6 +436,40 @@ for(ext in base::c("pdf", "png")){
       height = 5
     )
   }
+```
+
+```{r}
+gm12878.expr.df.p.m %>%
+  dplyr::mutate(
+      ratio = base::log2(value / GM12878_500K_C),
+      intg = base::sqrt(ratio^2 + tripFC^2)
+    ) %>%
+  dplyr::filter(  
+      ratio > 1 &
+      tripFC < -1 &
+      !base::is.infinite(ratio) &
+      grp == "proximal" &
+      name == "GM12878_5M_N"
+    ) %>%
+  dplyr::arrange(dplyr::desc(intg))
+
+
+#chr1:120850732-120851131
+gm12878.expr.df.p.m %>%
+  dplyr::mutate(
+      ratio = base::log2(value / GM12878_500K_C),
+      intg = base::sqrt(ratio^2 + tripFC^2)
+    ) %>%
+  dplyr::filter(  
+      ratio > 1 &
+      tripFC < -1 &
+      GM12878_500K_C > 1 &
+      value > 1 & 
+      !base::is.infinite(ratio) &
+      grp == "proximal" &
+      name == "GM12878_5M_N"
+    ) %>%
+  dplyr::arrange(dplyr::desc(intg))
 ```
 
 ## [1.10.] Prepare groFC plotting
