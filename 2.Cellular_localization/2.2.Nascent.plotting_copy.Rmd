@@ -56,7 +56,7 @@ gm12878.expr.df.p$groFC <- base::log2(
 
 # SummarizedExperiment::rowRanges(GM12878.dhs.p)
 gm12878.expr.df.p$loc <- base::paste0(
-    GenomeInfoDb::seqnames(GM12878.dhs.p)@values, ":",
+    S4Vectors::decode(GenomeInfoDb::seqnames(GM12878.dhs.p)), ":",
     BiocGenerics::start(GM12878.dhs.p), "-",
     BiocGenerics::end(GM12878.dhs.p)
   )
@@ -461,13 +461,13 @@ gm12878.expr.df.p.m %>%
       intg = base::sqrt(ratio^2 + tripFC^2)
     ) %>%
   dplyr::filter(  
+      grp == "proximal" &
+      name == "GM12878_5M_N" &
       ratio > 1 &
       tripFC < -1 &
-      GM12878_500K_C > 1 &
-      value > 1 & 
-      !base::is.infinite(ratio) &
-      grp == "proximal" &
-      name == "GM12878_5M_N"
+      # GM12878_500K_C > 1 &
+      # value > 1 & 
+      !base::is.infinite(ratio)
     ) %>%
   dplyr::arrange(dplyr::desc(intg))
 ```
