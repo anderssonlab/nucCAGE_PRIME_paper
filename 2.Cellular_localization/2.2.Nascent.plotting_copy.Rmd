@@ -442,19 +442,20 @@ for(ext in base::c("pdf", "png")){
 gm12878.expr.df.p.m %>%
   dplyr::mutate(
       ratio = base::log2(value / GM12878_500K_C),
-      intg = base::sqrt(ratio^2 + tripFC^2)
+      intg = base::sqrt(ratio^2 + groFC^2)
     ) %>%
   dplyr::filter(  
       ratio > 1 &
-      tripFC < -1 &
+      groFC < -1 &
       !base::is.infinite(ratio) &
       grp == "proximal" &
       name == "GM12878_5M_N"
     ) %>%
   dplyr::arrange(dplyr::desc(intg))
 
+# proximal_GM12878_5M_ratio>1:# 1) chr6:32971379-32971778 2) chr19:36,772,089-36,773,671 3) chr1:161524172-161524571
 
-#chr1:120850732-120851131
+# distal_GM12878_5M_ratio<-1: 2) chr1:160,708,482-160,708,881 3) chr10:3,783,346-3,783,745 (KLF6) 4) chr1:116377854-116378253 
 gm12878.expr.df.p.m %>%
   dplyr::mutate(
       ratio = base::log2(value / GM12878_500K_C),
@@ -464,7 +465,7 @@ gm12878.expr.df.p.m %>%
       grp == "proximal" &
       name == "GM12878_5M_N" &
       ratio > 1 &
-      tripFC < -1 &
+      tripFC < -3.75 &
       # GM12878_500K_C > 1 &
       # value > 1 & 
       !base::is.infinite(ratio)
@@ -841,7 +842,10 @@ gm12878.expr.df$tripFC <- base::log2(
 gm12878.expr.df$grp <- "proximal"
 gm12878.expr.df$grp[gm12878.expr.df$txType %in% c("intron","intergenic")] <- "distal"
 gm12878.expr.df$grp <- base::factor(gm12878.expr.df$grp, levels = c("proximal", "distal"))
+```
 
+
+```{r}
 ggplot2::ggplot(gm12878.expr.df[(gm12878.expr.df$GM12878_1M_C>0 | gm12878.expr.df$GM12878_5M_N>0) & gm12878.expr.df$grp=="proximal",],
        aes(GM12878_1M_C,GM12878_5M_N,color=tripFC)) + 
   geom_point() +
@@ -861,7 +865,10 @@ ggplot2::ggplot(gm12878.expr.df[(gm12878.expr.df$GM12878_1M_C>0 | gm12878.expr.d
     legend.key.size = grid::unit(0.9, "lines")
     ) + 
   labs(x="1M cells CAGE [TPM]", y="5M nuclei CAGE [TPM]")
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -876,7 +883,10 @@ for(ext in base::c("pdf", "png")){
       height = 5
     )
   }
+```
 
+
+```{r}
 ggplot2::ggplot(gm12878.expr.df[(gm12878.expr.df$GM12878_1M_C>0 | gm12878.expr.df$GM12878_5M_N>0) & gm12878.expr.df$grp=="distal",],
        aes(GM12878_1M_C,GM12878_5M_N,color=tripFC)) + 
   geom_point() +
@@ -896,7 +906,10 @@ ggplot2::ggplot(gm12878.expr.df[(gm12878.expr.df$GM12878_1M_C>0 | gm12878.expr.d
     legend.key.size = grid::unit(0.9, "lines")
     ) + 
   labs(x="1M cells CAGE [TPM]", y="5M nuclei CAGE [TPM]")
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -911,8 +924,10 @@ for(ext in base::c("pdf", "png")){
       height = 5
     )
   }
+```
 
 
+```{r}
 ggplot2::ggplot(gm12878.expr.df[(gm12878.expr.df$GM12878_1M_C>0 | gm12878.expr.df$GM12878_5M_N>0) & gm12878.expr.df$grp=="proximal",],
        aes(GM12878_1M_C,GM12878_5M_N,color=log10(0.1+GM12878_groCap_1))) + 
   geom_point() +
@@ -932,7 +947,10 @@ ggplot2::ggplot(gm12878.expr.df[(gm12878.expr.df$GM12878_1M_C>0 | gm12878.expr.d
     legend.key.size = grid::unit(0.9, "lines")
     ) + 
   labs(x="1M cells CAGE [TPM]", y="5M nuclei CAGE [TPM]")
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -947,7 +965,10 @@ for(ext in base::c("pdf", "png")){
       height = 5
     )
   }
+```
 
+
+```{r}
 ggplot2::ggplot(gm12878.expr.df[(gm12878.expr.df$GM12878_1M_C>0 | gm12878.expr.df$GM12878_5M_N>0) & gm12878.expr.df$grp=="distal",],
        aes(GM12878_1M_C,GM12878_5M_N,color=log10(0.1+GM12878_groCap_1))) + 
   geom_point() +
@@ -967,7 +988,10 @@ ggplot2::ggplot(gm12878.expr.df[(gm12878.expr.df$GM12878_1M_C>0 | gm12878.expr.d
     legend.key.size = grid::unit(0.9, "lines")
     ) + 
   labs(x="1M cells CAGE [TPM]", y="5M nuclei CAGE [TPM]")
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",

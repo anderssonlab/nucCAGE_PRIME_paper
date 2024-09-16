@@ -357,6 +357,14 @@ ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
     ) %>%
   dplyr::pull(ID)
 
+##GRO-cap samples
+ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
+  tibble::as_tibble(rownames = "type") %>%
+  dplyr::filter(
+      stringr::str_detect(type, "groCap")
+    ) %>%
+  dplyr::pull(ID)
+
 GM12878.CTSSs.sub <- S4Vectors::subset(
     x = GM12878.CTSSs,
     select = SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids
