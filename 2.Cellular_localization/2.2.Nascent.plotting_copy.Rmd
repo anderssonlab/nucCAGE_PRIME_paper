@@ -807,6 +807,7 @@ for(ext in base::c("pdf", "png")){
 
 ## [2.9.] Identify prototypical GRO-cap examples
 ## no good "proximal" examples
+## distal: 1) chr8:127900815-127901214 (PVT1) 2) chr8:6729374-6729773
 ```{r}
 gm12878.expr.df.p.m %>%
   dplyr::mutate(
@@ -814,11 +815,11 @@ gm12878.expr.df.p.m %>%
       intg = base::sqrt(ratio^2 + groFC^2)
     ) %>%
   dplyr::filter(  
-      ratio > 4 &
+      ratio > 7 &
       groFC > 1 &
-      GM12878_500K_C > 0.1 &
+      # GM12878_500K_C > 0.1 &
       !base::is.infinite(ratio) &
-      grp == "proximal" &
+      grp == "distal" &
       name == "GM12878_5M_N"
     ) %>%
   dplyr::arrange(dplyr::desc(intg))
