@@ -438,24 +438,10 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-```{r}
-gm12878.expr.df.p.m %>%
-  dplyr::mutate(
-      ratio = base::log2(value / GM12878_500K_C),
-      intg = base::sqrt(ratio^2 + groFC^2)
-    ) %>%
-  dplyr::filter(  
-      ratio > 1 &
-      groFC < -1 &
-      !base::is.infinite(ratio) &
-      grp == "proximal" &
-      name == "GM12878_5M_N"
-    ) %>%
-  dplyr::arrange(dplyr::desc(intg))
-
+## [1.10.] Identify ptototypical examples
 # proximal_GM12878_5M_ratio>1:# 1) chr6:32971379-32971778 2) chr19:36,772,089-36,773,671 3) chr1:161524172-161524571
-
 # distal_GM12878_5M_ratio<-1: 2) chr1:160,708,482-160,708,881 3) chr10:3,783,346-3,783,745 (KLF6) 4) chr1:116377854-116378253 
+```{r}
 gm12878.expr.df.p.m %>%
   dplyr::mutate(
       ratio = base::log2(value / GM12878_500K_C),
@@ -473,7 +459,9 @@ gm12878.expr.df.p.m %>%
   dplyr::arrange(dplyr::desc(intg))
 ```
 
-## [1.10.] Prepare groFC plotting
+## [2.] GRO-cap data integration & plotting -----
+
+## [2.0.] Prepare groFC plotting
 ```{r}
 plot.df <- gm12878.expr.df.p.m %>% 
   dplyr::filter(
@@ -496,7 +484,7 @@ plot.df <- gm12878.expr.df.p.m %>%
     )
 ```
 
-## [1.10.] Plot groFC onto nuclei-vs.cell CAGE comparison
+## [2.1.] Plot groFC onto nuclei-vs.cell CAGE comparison
 ```{r}
 plot <- ggplot2::ggplot(
     data = plot.df,
@@ -550,7 +538,7 @@ ggrastr::rasterise(
   )
 ```
 
-## [1.11.] Prepare annotations for groFC plot
+## [2.3.] Prepare annotations for groFC plot
 ```{r}
 annos <- gm12878.expr.df.p.m %>%
   dplyr::mutate(
@@ -578,7 +566,7 @@ annos <- gm12878.expr.df.p.m %>%
       )
 ```
 
-## [1.12.] Plot groFC onto nuclei-vs.cell CAGE comparison
+## [2.4.] Plot groFC onto nuclei-vs.cell CAGE comparison
 ```{r}
 coef = 0.1
 cols <- base::c(
@@ -677,7 +665,7 @@ ggrastr::rasterise(
   )
 ```
 
-## [1.13.] Print plot
+## [2.5.] Print plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -697,7 +685,7 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-## [1.14.] Prepare stats for plot
+## [2.6.] Prepare stats for plot
 #### Run Wilcoxon rank sum test
 ```{r}
 stats <- gm12878.expr.df.p.m %>%
@@ -734,7 +722,7 @@ stats <- gm12878.expr.df.p.m %>%
     )
 ```
 
-## [1.15.] Plot data distributions
+## [2.7.] Plot data distributions
 ```{r}
 gm12878.expr.df.p.m %>%
   dplyr::mutate(
@@ -797,7 +785,7 @@ gm12878.expr.df.p.m %>%
     )
 ```
 
-## [1.16.] Print plot
+## [2.8.] Print plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -817,206 +805,22 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-# [2.] Plotting GM12878 pooled subsetted DHSs quantifications -------------------------
-
-## [2.0.] Read DHS quantified regions
+## [2.9.] Identify prototypical GRO-cap examples
+## no good "proximal" examples
 ```{r}
-GM12878.dhs <- base::readRDS("poolSub.DHSs.quantified.GM12878.rds")
+gm12878.expr.df.p.m %>%
+  dplyr::mutate(
+      ratio = base::log2(value / GM12878_500K_C),
+      intg = base::sqrt(ratio^2 + groFC^2)
+    ) %>%
+  dplyr::filter(  
+      ratio > 4 &
+      groFC > 1 &
+      GM12878_500K_C > 0.1 &
+      !base::is.infinite(ratio) &
+      grp == "proximal" &
+      name == "GM12878_5M_N"
+    ) %>%
+  dplyr::arrange(dplyr::desc(intg))
 ```
-
-## [2.1.] Prepare plotting data frame with relevant metrics
-```{r}
-gm12878.expr.df <- base::as.data.frame(assay(GM12878.dhs, "TPM"))
-gm12878.expr.df$txType <- SummarizedExperiment::rowData(GM12878.dhs)$txType
-
-gm12878.expr.df$tripMean <- base::rowMeans(
-  gm12878.expr.df[,c("GM12878_1M_trip","GM12878_1M_ctrl")])
-
-gm12878.expr.df$tripFC <- base::log2(
-  c(gm12878.expr.df$GM12878_1M_trip+0.1)/(gm12878.expr.df$GM12878_1M_ctrl+0.1))
-```
-
-
-## [2.1.] Plot C vs N with triptolide FC and gro-cap coloring, split between gene proximal and distal DHSs
-```{r}
-gm12878.expr.df$grp <- "proximal"
-gm12878.expr.df$grp[gm12878.expr.df$txType %in% c("intron","intergenic")] <- "distal"
-gm12878.expr.df$grp <- base::factor(gm12878.expr.df$grp, levels = c("proximal", "distal"))
-```
-
-
-```{r}
-ggplot2::ggplot(gm12878.expr.df[(gm12878.expr.df$GM12878_1M_C>0 | gm12878.expr.df$GM12878_5M_N>0) & gm12878.expr.df$grp=="proximal",],
-       aes(GM12878_1M_C,GM12878_5M_N,color=tripFC)) + 
-  geom_point() +
-  scale_y_log10() +
-  scale_x_log10() +
-  scale_colour_gradient2(low = "steelblue", high = "orange",mid="white")  +
-  geom_abline(intercept = 0) +
-  theme_bw() +
-  theme(
-    aspect.ratio = 1,
-    legend.title = element_blank(),
-    legend.justification = base::c(1,0),
-    legend.background = element_rect(
-      fill = "grey95"
-        ),
-    legend.text = element_text(size = 8),
-    legend.key.size = grid::unit(0.9, "lines")
-    ) + 
-  labs(x="1M cells CAGE [TPM]", y="5M nuclei CAGE [TPM]")
-```
-
-
-```{r}
-for(ext in base::c("pdf", "png")){
-    ggplot2::ggsave(
-      filename = base::paste0("./plots/",
-          base::format(base::Sys.time(), "%Y%m%d"),
-          "_tripFC.proximal.GM12878.DHSs",
-          ".",ext
-        ),
-      plot = ggplot2::last_plot(),
-      device = ext,
-      dpi = 300,
-      width = 5,
-      height = 5
-    )
-  }
-```
-
-
-```{r}
-ggplot2::ggplot(gm12878.expr.df[(gm12878.expr.df$GM12878_1M_C>0 | gm12878.expr.df$GM12878_5M_N>0) & gm12878.expr.df$grp=="distal",],
-       aes(GM12878_1M_C,GM12878_5M_N,color=tripFC)) + 
-  geom_point() +
-  scale_y_log10() +
-  scale_x_log10() +
-  scale_colour_gradient2(low = "steelblue", high = "orange",mid="white")  +
-  geom_abline(intercept = 0) +
-  theme_bw() +
-  theme(
-    aspect.ratio = 1,
-    legend.title = element_blank(),
-    legend.justification = base::c(1,0),
-    legend.background = element_rect(
-      fill = "grey95"
-        ),
-    legend.text = element_text(size = 8),
-    legend.key.size = grid::unit(0.9, "lines")
-    ) + 
-  labs(x="1M cells CAGE [TPM]", y="5M nuclei CAGE [TPM]")
-```
-
-
-```{r}
-for(ext in base::c("pdf", "png")){
-    ggplot2::ggsave(
-      filename = base::paste0("./plots/",
-          base::format(base::Sys.time(), "%Y%m%d"),
-          "_tripFC.distal.GM12878.DHSs",
-          ".",ext
-        ),
-      plot = ggplot2::last_plot(),
-      device = ext,
-      dpi = 300,
-      width = 5,
-      height = 5
-    )
-  }
-```
-
-
-```{r}
-ggplot2::ggplot(gm12878.expr.df[(gm12878.expr.df$GM12878_1M_C>0 | gm12878.expr.df$GM12878_5M_N>0) & gm12878.expr.df$grp=="proximal",],
-       aes(GM12878_1M_C,GM12878_5M_N,color=log10(0.1+GM12878_groCap_1))) + 
-  geom_point() +
-  scale_y_log10() +
-  scale_x_log10() +
-  scale_colour_gradient2(low = "steelblue", high = "orange",mid="white", midpoint = c(-0.25))  +
-  geom_abline(intercept = 0) +
-  theme_bw() +
-  theme(
-    aspect.ratio = 1,
-    legend.title = element_blank(),
-    legend.justification = base::c(1,0),
-    legend.background = element_rect(
-      fill = "grey95"
-        ),
-    legend.text = element_text(size = 8),
-    legend.key.size = grid::unit(0.9, "lines")
-    ) + 
-  labs(x="1M cells CAGE [TPM]", y="5M nuclei CAGE [TPM]")
-```
-
-
-```{r}
-for(ext in base::c("pdf", "png")){
-    ggplot2::ggsave(
-      filename = base::paste0("./plots/",
-          base::format(base::Sys.time(), "%Y%m%d"),
-          "_groCap.proximal.GM12878.DHSs",
-          ".",ext
-        ),
-      plot = ggplot2::last_plot(),
-      device = ext,
-      dpi = 300,
-      width = 5,
-      height = 5
-    )
-  }
-```
-
-
-```{r}
-ggplot2::ggplot(gm12878.expr.df[(gm12878.expr.df$GM12878_1M_C>0 | gm12878.expr.df$GM12878_5M_N>0) & gm12878.expr.df$grp=="distal",],
-       aes(GM12878_1M_C,GM12878_5M_N,color=log10(0.1+GM12878_groCap_1))) + 
-  geom_point() +
-  scale_y_log10() +
-  scale_x_log10() +
-  scale_colour_gradient2(low = "steelblue", high = "orange",mid="white", midpoint = c(-0.25))  +
-  geom_abline(intercept = 0) +
-  theme_bw() +
-  theme(
-    aspect.ratio = 1,
-    legend.title = element_blank(),
-    legend.justification = base::c(1,0),
-    legend.background = element_rect(
-      fill = "grey95"
-        ),
-    legend.text = element_text(size = 8),
-    legend.key.size = grid::unit(0.9, "lines")
-    ) + 
-  labs(x="1M cells CAGE [TPM]", y="5M nuclei CAGE [TPM]")
-```
-
-
-```{r}
-for(ext in base::c("pdf", "png")){
-    ggplot2::ggsave(
-      filename = base::paste0("./plots/",
-          base::format(base::Sys.time(), "%Y%m%d"),
-          "_groCap.distal.GM12878.DHSs",
-          ".",ext
-        ),
-      plot = ggplot2::last_plot(),
-      device = ext,
-      dpi = 300,
-      width = 5,
-      height = 5
-    )
-  }
-```
-
-
-
-
-
-
-
-
-
-
-
-
 
