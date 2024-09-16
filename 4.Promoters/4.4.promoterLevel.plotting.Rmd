@@ -4,27 +4,24 @@ output: html_document
 date: "2024-06-27"
 ---
 
-
-
 ## [0.] Prerequsites -------------------------
 
 ## [0.0.] Load necessary packages
 ```{r}
-library(CAGEfightR)
-library(dplyr)
-library(ggplot2)
-library(forcats)
+base::library(CAGEfightR)
+base::library(dplyr)
+base::library(ggplot2)
+base::library(forcats)
 ```
 
 
-## [0.2.] Add custom color palettes
+## [0.1.] Add custom color palettes
 ```{r}
 custom.col <- base::c(
   "#FFDB6D","#C4961A","#F4EDCA", 
   "#D16103","#C3D7A4","#52854C",
   "#4E84C4","#293352","grey"
   )
-
 
 gm.pal <- base::c(
   "#F5CE00","#E2AA00","#B68D00",
@@ -52,8 +49,6 @@ gm.full.pal <- base::c(
   "hotpink"
   )
 
-
-
 k.full.pal <- base::c(
   "#F5CE00","#E2AA00","#B68D00",
   "#FF8D00","#DF613F","#DF5643",
@@ -63,13 +58,8 @@ k.full.pal <- base::c(
   )
 ```
 
-## [0.3.] Set working directory
-```{r}
-base::setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/4.Promoters/")
-```
 
-
-# [1.] Plotting K562 replicate subsetted metrics  
+# [1.] Plotting K562 replicate subsetted metrics -------------------------
 
 ## [1.0.] Read in TC and gene level metrics
 ```{r}
@@ -79,7 +69,6 @@ k562.TCs <- base::readRDS("repSub.TCs.k562.rds")
 use <- base::levels(k562.TCs$sample)[-c(14,16)]
 k562.TCs <- k562.TCs[k562.TCs$sample %in% use,]
 ```
-
 
 ## [1.1.] Plot number and activity metrics of TCs
 ```{r}
@@ -104,7 +93,10 @@ k562.TCs %>%
       legend.key.size = grid::unit(0.9, "lines")
     ) + 
   labs(x="Sample")
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -119,8 +111,10 @@ for(ext in base::c("pdf", "png")){
       height = 15
     )
 }
+```
 
 
+```{r}
 k562.TCs %>% 
   BiocGenerics::as.data.frame(row.names=NULL) %>%
   BiocGenerics::subset(dhs.olap>0) %>%
@@ -142,7 +136,10 @@ k562.TCs %>%
       legend.key.size = grid::unit(0.9, "lines")
     ) +
   labs(x="Sample")
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -157,9 +154,10 @@ for(ext in base::c("pdf", "png")){
       height = 15
     )
 }
+```
 
 
-
+```{r}
 k562.TCs %>% 
   BiocGenerics::as.data.frame(row.names=NULL) %>%
   BiocGenerics::subset(score>=10) %>%
@@ -181,7 +179,10 @@ k562.TCs %>%
       legend.key.size = grid::unit(0.9, "lines")
     ) +
   labs(x="Sample")
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -196,9 +197,10 @@ for(ext in base::c("pdf", "png")){
       height = 15
     )
 }
+```
 
 
-
+```{r}
 k562.TCs %>% 
   BiocGenerics::as.data.frame(row.names=NULL) %>%
   BiocGenerics::subset(dhs.olap>0) %>%
@@ -220,7 +222,10 @@ k562.TCs %>%
       legend.key.size = grid::unit(0.9, "lines")
     ) +
   labs(x="Sample")
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -234,8 +239,7 @@ for(ext in base::c("pdf", "png")){
       width = 15,
       height = 15
     )
-}
-
+  }
 ```
 
 
@@ -261,7 +265,10 @@ k562.TCs %>%
     legend.text = element_text(size = 8),
     legend.key.size = grid::unit(0.9, "lines")
   )
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -276,9 +283,10 @@ for(ext in base::c("pdf", "png")){
       height = 5
     )
 }
+```
 
 
-
+```{r}
 k562.TCs %>% 
   BiocGenerics::as.data.frame(row.names=NULL) %>%
   BiocGenerics::subset(score>=10 & txType=="promoter") %>%
@@ -299,8 +307,10 @@ k562.TCs %>%
     legend.text = element_text(size = 8),
     legend.key.size = grid::unit(0.9, "lines")
   )
+```
 
 
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -314,8 +324,7 @@ for(ext in base::c("pdf", "png")){
       width = 15,
       height = 5
     )
-}
-
+  }
 ```
 
 
@@ -343,7 +352,10 @@ k562.TCs %>%
     legend.text = element_text(size = 8),
     legend.key.size = grid::unit(0.9, "lines")
   )
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -358,10 +370,10 @@ for(ext in base::c("pdf", "png")){
       height = 15
     )
 }
-  
+```
 
 
-
+```{r}
 k562.TCs %>% 
   BiocGenerics::as.data.frame(row.names=NULL) %>%
   BiocGenerics::subset(score>=10 & txType=="promoter") %>%
@@ -384,7 +396,10 @@ k562.TCs %>%
     legend.text = element_text(size = 8),
     legend.key.size = grid::unit(0.9, "lines")
   )
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -398,8 +413,7 @@ for(ext in base::c("pdf", "png")){
       width = 10,
       height = 10
     )
-}
-
+  }
 ```
 
 
@@ -408,8 +422,10 @@ for(ext in base::c("pdf", "png")){
 k562.cor.df$sample <- k562.cor.df$samp
 k562.comb.expr <- k562.comb.expr[k562.comb.expr$sample %in% use,]
 k562.cor.df <- k562.cor.df[k562.cor.df$sample %in% use,]
+```
 
 
+```{r}
 k562.comb.expr %>%
   base::subset(TPM>0 & gene_counts>0) %>%
   ggplot2::ggplot(aes(gene_counts,TPM,color=sample,group=sample))+
@@ -431,8 +447,11 @@ k562.comb.expr %>%
       ),
     legend.text = element_text(size = 8),
     legend.key.size = grid::unit(0.9, "lines")
-  ) 
+  )
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -446,12 +465,10 @@ for(ext in base::c("pdf", "png")){
       width = 20,
       height = 5
     )
-}
-
+  }
 ```
 
-
-# [2.] Plotting K562 pool subsetted metrics  
+# [2.] Plotting K562 pool subsetted metrics -------------------------
 
 ## [2.0.] Read in TC and gene level metrics
 ```{r}
@@ -459,15 +476,15 @@ rm(k562.comb.expr,k562.cor.df,k562.TCs)
 base::load("./poolSub.k562.GeneLevel.RData")
 k562.TCs <- base::readRDS("poolSub.TCs.k562.rds")
 
-use <- c("K562_C1","K562_C2","K562_C3","K562_C",
-         "K562_N4","K562_N5","K562_N6","K562_N",
-         "K562_10M_N1","K562_10M_N2","K562_10M_N3","K562_N_10M",
-         "K562_groCap_1","K562_ProCap_pcr_2")
+use <- base::c(
+    "K562_C1","K562_C2","K562_C3","K562_C",
+    "K562_N4","K562_N5","K562_N6","K562_N",
+    "K562_10M_N1","K562_10M_N2","K562_10M_N3","K562_N_10M",
+    "K562_groCap_1","K562_ProCap_pcr_2"
+  )
 
 k562.TCs <- k562.TCs[k562.TCs$sample %in% use,]
-
 ```
-
 
 ## [2.1.] Plot number and activity metrics of TCs
 ```{r}
@@ -492,7 +509,10 @@ k562.TCs %>%
       legend.key.size = grid::unit(0.9, "lines")
     ) + 
   labs(x="Sample")
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -506,9 +526,11 @@ for(ext in base::c("pdf", "png")){
       width = 15,
       height = 15
     )
-}
+  }
+```
 
 
+```{r}
 k562.TCs %>% 
   BiocGenerics::as.data.frame(row.names=NULL) %>%
   BiocGenerics::subset(dhs.olap>0) %>%
@@ -530,7 +552,10 @@ k562.TCs %>%
       legend.key.size = grid::unit(0.9, "lines")
     ) +
   labs(x="Sample")
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -544,10 +569,11 @@ for(ext in base::c("pdf", "png")){
       width = 15,
       height = 15
     )
-}
+  }
+```
 
 
-
+```{r}
 k562.TCs %>% 
   BiocGenerics::as.data.frame(row.names=NULL) %>%
   BiocGenerics::subset(score>=10) %>%
@@ -569,7 +595,10 @@ k562.TCs %>%
       legend.key.size = grid::unit(0.9, "lines")
     ) +
   labs(x="Sample")
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -583,10 +612,11 @@ for(ext in base::c("pdf", "png")){
       width = 15,
       height = 15
     )
-}
+  }
+```
 
 
-
+```{r}
 k562.TCs %>% 
   BiocGenerics::as.data.frame(row.names=NULL) %>%
   BiocGenerics::subset(dhs.olap>0) %>%
@@ -608,7 +638,10 @@ k562.TCs %>%
       legend.key.size = grid::unit(0.9, "lines")
     ) +
   labs(x="Sample")
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -625,7 +658,6 @@ for(ext in base::c("pdf", "png")){
 }
 
 ```
-
 
 ## [2.2.] Plot shape metrics of TCs
 ```{r}
@@ -649,7 +681,10 @@ k562.TCs %>%
     legend.text = element_text(size = 8),
     legend.key.size = grid::unit(0.9, "lines")
   )
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -663,10 +698,11 @@ for(ext in base::c("pdf", "png")){
       width = 15,
       height = 5
     )
-}
+  }
+```
 
 
-
+```{r}
 k562.TCs %>% 
   BiocGenerics::as.data.frame(row.names=NULL) %>%
   BiocGenerics::subset(score>=10 & txType=="promoter") %>%
@@ -687,8 +723,10 @@ k562.TCs %>%
     legend.text = element_text(size = 8),
     legend.key.size = grid::unit(0.9, "lines")
   )
+```
 
 
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -702,8 +740,7 @@ for(ext in base::c("pdf", "png")){
       width = 15,
       height = 5
     )
-}
-
+  }
 ```
 
 
@@ -731,7 +768,10 @@ k562.TCs %>%
     legend.text = element_text(size = 8),
     legend.key.size = grid::unit(0.9, "lines")
   )
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -745,11 +785,11 @@ for(ext in base::c("pdf", "png")){
       width = 10,
       height = 15
     )
-}
-  
+  }
+```
 
 
-
+```{r}
 k562.TCs %>% 
   BiocGenerics::as.data.frame(row.names=NULL) %>%
   BiocGenerics::subset(score>=10 & txType=="promoter") %>%
@@ -772,7 +812,10 @@ k562.TCs %>%
     legend.text = element_text(size = 8),
     legend.key.size = grid::unit(0.9, "lines")
   )
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -786,8 +829,7 @@ for(ext in base::c("pdf", "png")){
       width = 10,
       height = 10
     )
-}
-
+  }
 ```
 
 
@@ -798,7 +840,10 @@ k562.p.comb.expr <- k562.p.comb.expr[k562.p.comb.expr$sample %in% use,]
 k562.p.cor.df <- k562.p.cor.df[k562.p.cor.df$sample %in% use,]
 k562.p.comb.expr$sample <- factor(k562.p.comb.expr$sample, levels=use)
 k562.p.cor.df$sample <- factor(k562.p.cor.df$sample, levels=use)
+```
 
+
+```{r}
 k562.p.comb.expr %>%
   base::subset(TPM>0 & gene_counts>0) %>%
   ggplot2::ggplot(aes(gene_counts,TPM,color=sample,group=sample))+
@@ -820,8 +865,11 @@ k562.p.comb.expr %>%
       ),
     legend.text = element_text(size = 8),
     legend.key.size = grid::unit(0.9, "lines")
-  ) 
+  )
+```
 
+
+```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
@@ -835,7 +883,7 @@ for(ext in base::c("pdf", "png")){
       width = 20,
       height = 5
     )
-}
+  }
 ```
 
 
