@@ -174,13 +174,17 @@ plotTracks <- function(data, range){
 
 ## [0.4.] Helper function writeBw()
 ```{r}
-writeBw <- function(object, replicates, dir, inputAssay = "counts", splitByStrand = TRUE){
+writeBw <- function(object, dir, replicates = "all", inputAssay = "counts", splitByStrand = TRUE){
+  
+  if(replicates == "all"){
+      replicates <- base::rownames(SummarizedExperiment::colData(object))
+    }
   
   ## Check consistency of replicates
   assertthat::assert_that(
       base::length(SummarizedExperiment::rowRanges(object)) == base::nrow(SummarizedExperiment::assay(object,inputAssay)),
-      base::all(replicates %in% rownames(SummarizedExperiment::colData(object))),
-      inputAssay %in% base::names(SummarizedExperiment::assays(GM12878.CTSSs.sub))
+      base::all(replicates %in% base::rownames(SummarizedExperiment::colData(object))),
+      inputAssay %in% base::names(SummarizedExperiment::assays(object))
     )
   base::stopifnot("Chosen directory doesn't exist!" = base::dir.exists(dir))
   
@@ -337,6 +341,34 @@ K562.CTSSs <- base::readRDS(
   )
 ```
 
+#### Load HepG2-, HCT116-, A549-CTSS objects & adapt names
+```{r}
+CTSSs.objects_ <- base::list.files(
+      path = here::here("1.CTSSs"),
+      full.names = TRUE
+    ) %>%
+  stringr::str_subset("poolSub") %>%
+  stringr::str_subset("HepG2|HCT116|A549")
+
+CTSSs.objects <- purrr::map(
+    .x = CTSSs.objects_,
+    .f = base::readRDS
+  )
+base::names(CTSSs.objects) <- stringr::str_replace(
+    CTSSs.objects_, ".*/poolSub\\.(.*?)\\.CTSSs.*", "\\1"
+  )
+CTSSs.objects <- purrr::map(
+    .x = base::names(CTSSs.objects),
+    .f = function(rsen){
+      base::rownames(SummarizedExperiment::colData(CTSSs.objects[[rsen]])) <- base::paste0(
+          rsen, "_",
+          base::rownames(SummarizedExperiment::colData(CTSSs.objects[[rsen]]))
+        )
+      return(CTSSs.objects[[rsen]])
+    }
+  )
+```
+
 ## [1.6.] Subset for samples of interest
 #### Evaluate with 'SummarizedExperiment::colData(GM12878.CTSSs.sub)' & 'SummarizedExperiment::assay(GM12878.CTSSs.sub, "counts")'
 ```{r}
@@ -426,6 +458,20 @@ samples = base::rownames(
         here::here("trackHubFiles/"),
         "20240718_bigWig/"
       ),
+    inputAssay = "TPM",
+    splitByStrand = TRUE
+  )
+```
+
+#### Write out HepG2-, HCT116-, A549-CTSS samples
+```{r}
+purrr::map(
+    .x = CTSSs.objects,
+    .f = .GlobalEnv$writeBw,
+    dir = base::paste0(
+          here::here("trackHubFiles/"),
+          "20240718_bigWig/"
+        ),
     inputAssay = "TPM",
     splitByStrand = TRUE
   )
