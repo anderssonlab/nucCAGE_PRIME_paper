@@ -34,43 +34,44 @@ K562.TCs <- base::readRDS(
 ## [0.2.] Add custom color palettes
 ```{r}
 custom.col <- base::c(
-  "#FFDB6D","#C4961A","#F4EDCA", 
-  "#D16103","#C3D7A4","#52854C",
-  "#4E84C4","#293352","grey"
+    "#FFDB6D","#C4961A","#F4EDCA", 
+    "#D16103","#C3D7A4","#52854C",
+    "#4E84C4","#293352","grey"
   )
 
 gm.pal <- base::c(
-  "#F5CE00","#E2AA00","#B68D00",
-  "#DF613F","#DF5643","#DD4425",
-  "#92B9C9","#76A5B6","#004352",
-  "#29A957","#008E37","#007A30",
-  "#4F5D5C","#444E4C","#3D4138",
-  "#AC97C2","#977FB4","#7D62A3"
+    "#F5CE00","#E2AA00","#B68D00",
+    "#DF613F","#DF5643","#DD4425",
+    "#92B9C9","#76A5B6","#004352",
+    "#29A957","#008E37","#007A30",
+    "#4F5D5C","#444E4C","#3D4138",
+    "#AC97C2","#977FB4","#7D62A3"
   )
                      
 gm.pooled.pal <- base::c(
-  "#FF8D00","#FF4425","#00439B",
-  "#009072","#878784","#7D62D0"
+    "#FF8D00","#FF4425","#00439B",
+    "#009072","#878784","#7D62D0",
+    "hotpink"
   )
 
 gm.full.pal <- base::c(
-  "#F5CE00","#E2AA00","#B68D00",
-  "#FF8D00","#DF613F","#DF5643",
-  "#DD4425","#FF4425","#92B9C9",
-  "#76A5B6","#004352","#00439B",
-  "#29A957","#008E37","#007A30",
-  "#009072","#4F5D5C","#444E4C",
-  "#3D4138","#878784","#AC97C2",
-  "#977FB4","#7D62A3","#7D62D0",
-  "hotpink"
+    "#F5CE00","#E2AA00","#B68D00",
+    "#FF8D00","#DF613F","#DF5643",
+    "#DD4425","#FF4425","#92B9C9",
+    "#76A5B6","#004352","#00439B",
+    "#29A957","#008E37","#007A30",
+    "#009072","#4F5D5C","#444E4C",
+    "#3D4138","#878784","#AC97C2",
+    "#977FB4","#7D62A3","#7D62D0",
+    "hotpink"
   )
 
 k.full.pal <- base::c(
-  "#F5CE00","#E2AA00","#B68D00",
-  "#FF8D00","#DF613F","#DF5643",
-  "#DD4425","#FF4425","#4F5D5C",
-  "#92B9C9","#76A5B6","#004352",
-  "#00439B","#29A957"
+    "#F5CE00","#E2AA00","#B68D00",
+    "#FF8D00","#DF613F","#DF5643",
+    "#DD4425","#FF4425","#4F5D5C",
+    "#92B9C9","#76A5B6","#004352",
+    "#00439B","#29A957"
   )
 ```
 
@@ -904,8 +905,8 @@ for(ext in base::c("pdf", "png")){
 ```{r}
 samp_use <- base::c(
     "GM12878_500K_C1","GM12878_500K_C2","GM12878_500K_C3","GM12878_500K_C",
-    "GM12878_500K_N1","GM12878_500K_N2","GM12878_500K_N3","GM12878_500K_N",
     "GM12878_1M_C1","GM12878_1M_C2","GM12878_1M_C3","GM12878_1M_C",
+    "GM12878_500K_N1","GM12878_500K_N2","GM12878_500K_N3","GM12878_500K_N",
     "GM12878_1M_N1","GM12878_1M_N2","GM12878_1M_N3","GM12878_1M_N",
     "GM12878_5M_N1","GM12878_5M_N2","GM12878_5M_N3","GM12878_5M_N",
     "GM12878_10M_N1","GM12878_10M_N2","GM12878_10M_N3","GM12878_10M_N",
@@ -1060,7 +1061,7 @@ GM12878.TCs.tbl %>%
     )
 ```
 
-## [3.6.] 
+## [3.6.] Print plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -1078,16 +1079,25 @@ for(ext in base::c("pdf", "png")){
  }
 ```
 
-
+## [3.7.] Expression of only those TCs overlapping with DHSs
 ```{r}
-GM12878.TCs %>% 
-  BiocGenerics::as.data.frame(row.names=NULL) %>%
-  BiocGenerics::subset(dhs.olap>0) %>%
-  ggplot2::ggplot(aes(x=sample,y=log10(score),fill=sample)) +
+GM12878.TCs.tbl %>%
+  dplyr::filter(dhs.olap > 0) %>%
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = base::log10(score),
+        y = sample,
+        fill = sample
+      )
+    ) +
   geom_boxplot() +
-  coord_flip() +
-  scale_fill_manual(values=gm.full.pal) +
-  labs(title="TCs expression overlapping DHSs") +
+  scale_fill_manual(
+      values = gm.full.pal
+    ) +
+  labs(
+      title = "TCs expression overlapping DHSs"
+    ) +
   facet_wrap(~txType) +
   theme_bw() +
   theme(
@@ -1102,7 +1112,7 @@ GM12878.TCs %>%
     )
 ```
 
-
+## [3.8.] Print plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -1120,32 +1130,42 @@ for(ext in base::c("pdf", "png")){
  }
 ```
 
-
-## [3.2.] Plot shape metrics of TCs
+## [3.9.] Plot shape metrics of promoters above score 10 for all samples
 ```{r}
-GM12878.TCs %>% 
-  BiocGenerics::as.data.frame(row.names=NULL) %>%
-  BiocGenerics::subset(score>=10 & txType=="promoter") %>%
-  ggplot2::ggplot(aes(x=shapeEntropy,fill=sample)) + 
+GM12878.TCs.tbl %>%
+  dplyr::filter(
+      score >= 10 & txType == "promoter"
+    ) %>%
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = shapeEntropy,
+        fill = sample
+      )
+    ) + 
   geom_density() +
-  scale_fill_manual(values=gm.full.pal) + 
-  labs(title="promoter shapeEntropy") +
+  scale_fill_manual(
+      values = gm.full.pal
+    ) + 
+  labs(
+      title = "promoter shapeEntropy"
+    ) +
   facet_wrap(~sample) +
   xlim(0,7.5) + 
   theme_bw() +
   theme(
-    aspect.ratio = 1,
-    legend.title = element_blank(),
-    legend.justification = base::c(1,0),
-    legend.background = element_rect(
-        fill = "grey95"
-      ),
-    legend.text = element_text(size = 8),
-    legend.key.size = grid::unit(0.9, "lines")
-  )
+      aspect.ratio = 1,
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.background = element_rect(
+          fill = "grey95"
+        ),
+      legend.text = element_text(size = 8),
+      legend.key.size = grid::unit(0.9, "lines")
+    )
 ```
 
-
+## [3.10.] Print plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -1163,31 +1183,42 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-
+## [3.11.] Plot IQR as a measure of dispersion for promoters of all samples
 ```{r}
-GM12878.TCs %>% 
-  BiocGenerics::as.data.frame(row.names=NULL) %>%
-  BiocGenerics::subset(score>=10 & txType=="promoter") %>%
-  ggplot2::ggplot(aes(log10(1+IQR),fill=sample)) + 
+GM12878.TCs.tbl %>%
+    dplyr::filter(
+      score >= 10 & txType == "promoter"
+    ) %>%
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = base::log10(1+IQR),
+        fill = sample
+      )
+    ) + 
   geom_density() + 
-  scale_fill_manual(values=gm.full.pal) + 
-  labs(title="promoter 10-90IQR") +
+  scale_fill_manual(
+      values = gm.full.pal
+    ) + 
+  labs(
+      title = "promoter 10-90IQR"
+    ) +
   facet_wrap(~sample) +
   xlim(0,2.5) + 
   theme_bw() +
   theme(
-    aspect.ratio = 1,
-    legend.title = element_blank(),
-    legend.justification = base::c(1,0),
-    legend.background = element_rect(
-        fill = "grey95"
-      ),
-    legend.text = element_text(size = 8),
-    legend.key.size = grid::unit(0.9, "lines")
-  )
+      aspect.ratio = 1,
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.background = element_rect(
+          fill = "grey95"
+        ),
+      legend.text = element_text(size = 8),
+      legend.key.size = grid::unit(0.9, "lines")
+    )
 ```
 
-
+## [3.12.] Print plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -1205,97 +1236,196 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-
+## [3.13.] Plot shape entopies for promoter with expression above 10
 ```{r}
-GM12878.TCs %>% 
-  BiocGenerics::as.data.frame(row.names=NULL) %>%
-  BiocGenerics::subset(score>=10 & txType=="promoter"& sample %in% main_samples) %>%
-  ggplot2::ggplot(aes(x=shapeEntropy,fill=sample)) + 
+GM12878.TCs.tbl %>%
+  dplyr::filter(
+      score >= 10 & txType == "promoter" & sample %in% main_samples
+    ) %>%
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = shapeEntropy,
+        fill = sample
+      )
+    ) + 
   geom_density() +
-  scale_fill_manual(values=gm.full.pal[c(4,8,12,16,20,24,25)]) + 
-  labs(title="promoter shapeEntropy") +
-  facet_wrap(~sample,nrow=1) +
+  scale_fill_manual(
+      values = gm.full.pal[base::c(4,8,12,16,20,24,25)]
+    ) + 
+  labs(
+      title = "promoter shapeEntropy"
+    ) +
+  facet_wrap(
+      facets = ~ sample,
+      nrow = 1
+    ) +
   xlim(0,7.5) + 
   theme_bw() +
   theme(
-    aspect.ratio = 1,
-    legend.title = element_blank(),
-    legend.justification = base::c(1,0),
-    legend.background = element_rect(
-        fill = "grey95"
-      ),
-    legend.text = element_text(size = 8),
-    legend.key.size = grid::unit(0.9, "lines")
-  )
+      aspect.ratio = 1,
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.background = element_rect(
+          fill = "grey95"
+        ),
+      legend.text = element_text(size = 8),
+      legend.key.size = grid::unit(0.9, "lines")
+    )
 ```
 
+## [3.14.] Alternative plotting of shape entopies for promoter with expression above 10
+```{r}
+GM12878.TCs.tbl %>%
+  dplyr::filter(
+      score >= 10 & txType == "promoter" & sample %in% main_samples
+    ) %>%
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = shapeEntropy,
+        y = sample,
+        fill = sample
+      )
+    ) + 
+  ggridges::geom_density_ridges(
+      scale = 3,
+      alpha = 0.8
+    ) +
+  geom_vline(
+      xintercept = base::c(2,3.3),
+      linetype = "dashed",
+      alpha = 0.5
+    ) +
+  scale_fill_manual(
+      values = gm.pooled.pal
+    ) +
+  xlim(0,7.5) + 
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      legend.position = "none",
+      axis.title.y = element_blank()
+    )
+```
 
+## [3.15.] Print plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(
+          here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.GM12878.promoter.shapeEntopy.10Score.main",
+          "_alternative",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
       device = ext,
       dpi = 300,
-      width = 25,
+      width = 5,
       height = 5
     )
   }
 ```
 
-
+## [3.16.] Plot IQR for pooled samples only
 ```{r}
-GM12878.TCs %>% 
-  BiocGenerics::as.data.frame(row.names=NULL) %>%
-  BiocGenerics::subset(score>=10 & txType=="promoter"& sample %in% main_samples) %>%
-  ggplot2::ggplot(aes(log10(1+IQR),fill=sample)) + 
+GM12878.TCs.tbl %>%
+  dplyr::filter(
+      score >= 10 & txType == "promoter" & sample %in% main_samples
+    ) %>%
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = base::log10(1+IQR),
+        fill = sample
+      )
+    ) + 
   geom_density() + 
-  scale_fill_manual(values=gm.full.pal[c(4,8,12,16,20,24,25)]) + 
-  labs(title="promoter 10-90IQR") +
-  facet_wrap(~sample,nrow=1) +
+  scale_fill_manual(
+      values = gm.pooled.pal
+    ) + 
+  labs(
+      title = "promoter 10-90IQR"
+    ) +
+  facet_wrap(
+      facets = ~sample,
+      nrow = 1
+    ) +
   xlim(0,2.5) + 
   theme_bw() +
   theme(
-    aspect.ratio = 1,
-    legend.title = element_blank(),
-    legend.justification = base::c(1,0),
-    legend.background = element_rect(
-        fill = "grey95"
-      ),
-    legend.text = element_text(size = 8),
-    legend.key.size = grid::unit(0.9, "lines")
-  )
+      aspect.ratio = 1,
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.background = element_rect(
+          fill = "grey95"
+        ),
+      legend.text = element_text(size = 8),
+      legend.key.size = grid::unit(0.9, "lines")
+    )
 ```
 
+## [3.17.] Alternative plotting of IQRs for pooled samples only
+```{r}
+GM12878.TCs.tbl %>%
+  dplyr::filter(
+      score >= 10 & txType == "promoter" & sample %in% main_samples
+    ) %>%
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = base::log10(IQR + 1),
+        y = sample,
+        fill = sample
+      )
+    ) + 
+  ggridges::geom_density_ridges(
+      scale = 3,
+      alpha = 0.8
+    ) +
+  scale_fill_manual(
+      values = gm.pooled.pal
+    ) +
+  xlim(0,2.5) + 
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      legend.position = "none",
+      axis.title.y = element_blank()
+    )
+```
 
+## [3.17.] Print plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(
+          here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.GM12878.promoter.IQR.10Score.main",
+          "_alternative",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
       device = ext,
       dpi = 300,
-      width = 25,
+      width = 5,
       height = 5
     )
   }
 ```
 
-
-## [3.3.] Plot initator metrics of TCs
+## [3.18.] Plot initator metrics of TCs
 ```{r}
-GM12878.TCs %>% 
-  BiocGenerics::as.data.frame(row.names=NULL) %>%
-  BiocGenerics::subset(score>=10 & txType=="promoter") %>%
-  ggplot2::ggplot(aes(sample, log10(score),fill=sample)) +
+GM12878.TCs.tbl %>%
+  dplyr::filter(
+      score >= 10 & txType == "promoter"
+    ) %>% 
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(sample, log10(score),fill=sample)) +
   scale_fill_manual(values=gm.full.pal) +
   geom_boxplot() +
   scale_x_discrete(limits = rev(levels(GM12878.TCs$sample))) +
