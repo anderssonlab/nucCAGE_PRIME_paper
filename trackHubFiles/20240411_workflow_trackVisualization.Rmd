@@ -791,7 +791,46 @@ ggrastr::rasterise(
 ```
 
 ```{r}
-
+plot <- cage_sel %>%
+  dplyr::filter(
+      sample != "GM12878_10M_Cap_align"
+    ) %>% 
+  dplyr::mutate(
+    type = base::factor(
+        x = type,
+        levels = base::c("500K_C","500K_N","5M_N","1M_trip","groCap","10M_Cap_align"),
+        ordered = TRUE
+      ),
+    score = dplyr::case_when(
+        strand == "minus" & type %in% base::c("10M_Cap_align","1M_trip","groCap") ~ score,
+        strand == "minus" & type %in% base::c("500K_N","5M_N","500K_C") ~ score*200,
+        TRUE ~ score
+      )
+    ) %>%
+  .GlobalEnv$plotTracks(., ran) +
+    ggplot2::facet_wrap(
+        facets = . ~ type,
+        ncol = 1,
+        strip.position = "right",
+        scales = "free_y"
+      ) +
+    ggh4x::facetted_pos_scales(
+      y = base::list(
+        type %in% base::c("10M_Cap_align","1M_trip","groCap") ~ scale_y_continuous(
+            limits = base::c(-3,3)
+          ),
+        type %in% base::c("500K_N","5M_N","500K_C") ~ scale_y_continuous(
+            limits = base::c(-300,300),
+            breaks = base::c(-200,0,200),
+            labels = base::c(-1,0,200)
+          )
+        )
+      )
+ggrastr::rasterise(
+    input = plot,
+    layers = "Bar",
+    dpi = 300
+  )
 ```
 
 
