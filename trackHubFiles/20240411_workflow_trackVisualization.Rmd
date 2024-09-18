@@ -401,6 +401,7 @@ CTSSs.objects <- purrr::map(
 ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
   tibble::as_tibble(rownames = "type") %>%
   dplyr::filter(
+      (pooled == "yes" & stringr::str_detect(type, "trip")) |
       (stringr::str_detect(type, "groCap")) |
       (pooled == "yes" & stringr::str_detect(ID, "500K|5M"))
     ) %>%
@@ -576,7 +577,7 @@ crispr_data <- crispr %>%
 #### KLF2 promoter: "chr19:16,324,467-16,325,106"
 #### BCL2 promoter/PROMPTs: "chr18:63,317,868-63,320,926"
 ```{r}
-l_ <- "chr8:6729374-6729773"
+l_ <- "chr4:159,101,737-159,104,305"
 l <- stringr::str_replace_all(l_,",","")
 chr = stringr::str_replace(l,"^(chr.*):.*","\\1")
 s = stringr::str_replace(l,"^chr.*:(.*)-(.*)","\\1") %>%
@@ -768,7 +769,8 @@ plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
   ggplot2::facet_wrap(
       facets = . ~ type + replicate,
       ncol = 1,
-      strip.position = "right"
+      strip.position = "right",
+      scales = "free_y"
     ) # +
   # ggplot2::scale_y_continuous(
   #     limits = base::c(-50,50)

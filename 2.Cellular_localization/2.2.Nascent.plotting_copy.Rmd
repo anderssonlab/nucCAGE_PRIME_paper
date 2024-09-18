@@ -52,7 +52,8 @@ gm12878.expr.df.p$tripFC <- base::log2(
 
 gm12878.expr.df.p$groFC <- base::log2(
     # base::c(gm12878.expr.df.p$GM12878_groCap_1+0.1)/(gm12878.expr.df.p$GM12878_1M_ctrl+0.1)
-    base::c(gm12878.expr.df.p$GM12878_groCap_1 + 0.1) / (gm12878.expr.df.p$GM12878_500K_C + 0.1)
+    # base::c(gm12878.expr.df.p$GM12878_groCap_1 + 0.1) / (gm12878.expr.df.p$GM12878_500K_C + 0.1)
+    base::c(gm12878.expr.df.p$GM12878_groCap_1 + 0.1) / (gm12878.expr.df.p$GM12878_500K_N + 0.1)
   )
 
 # SummarizedExperiment::rowRanges(GM12878.dhs.p)
@@ -79,6 +80,7 @@ gm12878.expr.df.p.m <- gm12878.expr.df.p %>%
   dplyr::select(
       "loc", "grp", "tripFC", "groFC",
       "GM12878_500K_C","GM12878_1M_N","GM12878_5M_N",
+      "GM12878_1M_trip", "GM12878_groCap_1"
     ) %>%
   tidyr::pivot_longer(
       cols = base::c("GM12878_1M_N","GM12878_5M_N")
@@ -600,16 +602,16 @@ plot <- gm12878.expr.df.p.m %>%
      data = .,
      mapping = aes(
          x = base::log2(ratio),
-         y = groFC
+         y = base::log2(GM12878_groCap_1)  #groFC
        )
      ) + 
     geom_point(
-      shape = 21,
-      color = "black",
-      # alpha = 0.1,
-      stroke = 0.05,
-      fill = "white"
-    ) +
+        shape = 21,
+        color = "black",
+        # alpha = 0.1,
+        stroke = 0.05,
+        fill = "white"
+      ) +
   # geom_density_2d(
   #     color = "black",
   #     bins = 50,
@@ -627,10 +629,10 @@ plot <- gm12878.expr.df.p.m %>%
       xintercept = base::c(-1,1),
       linetype = "dashed"
     ) +
-  geom_hline(
-      yintercept = base::c(-1,1),
-      linetype = "dashed"
-    ) +
+  # geom_hline(
+  #     yintercept = base::c(-1,1),
+  #     linetype = "dashed"
+  #   ) +
   geom_text(
       data = annos,
       mapping = aes(
@@ -651,7 +653,7 @@ plot <- gm12878.expr.df.p.m %>%
   #   )  +
   labs(
       x = "nuclei / 500k cells",
-      y = "GRO-cap / 500k cells" # "groFC"
+      y = "GRO-cap" # "GRO-cap / 500k cells" # "groFC"
     ) +
   facet_grid(
       rows = name ~ grp
@@ -685,9 +687,10 @@ for(ext in base::c("pdf", "png")){
       filename = base::paste0(
           here::here("2.Cellular_localization/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
-          # "_groCap.GM12878.DHSs.main",
-          "_groCap500kCells.GM12878.DHSs.main",
+          "_groCap.GM12878.DHSs.main",
+          # "_groCap500kCells.GM12878.DHSs.main",
           "_alternative",
+          "_uncontrolled",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
