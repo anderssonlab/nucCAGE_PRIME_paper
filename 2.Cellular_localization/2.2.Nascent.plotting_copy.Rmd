@@ -37,21 +37,22 @@ GM12878.dhs.p <- base::readRDS(
 
 ## [1.1.] Transform RangedSummarizedExperiment into a dataframe
 ```{r}
-gm12878.expr.df.p <- base::as.data.frame(
-    SummarizedExperiment::assay(GM12878.dhs.p, "TPM")
-  )
+gm12878.expr.df.p <- SummarizedExperiment::assay(GM12878.dhs.p, "TPM") %>%
+  tibble::as_tibble()
 gm12878.expr.df.p$txType <- SummarizedExperiment::rowData(GM12878.dhs.p)$txType
 
-gm12878.expr.df.p$tripMean <- base::rowMeans(
-    gm12878.expr.df.p[,base::c("GM12878_1M_trip","GM12878_1M_ctrl")]
-  )
+# gm12878.expr.df.p$tripMean <- base::rowMeans(
+#     gm12878.expr.df.p[,base::c("GM12878_1M_trip","GM12878_1M_ctrl")]
+#   )
 
 gm12878.expr.df.p$tripFC <- base::log2(
-    base::c(gm12878.expr.df.p$GM12878_1M_trip+0.1)/(gm12878.expr.df.p$GM12878_1M_ctrl+0.1)
+    # (gm12878.expr.df.p$GM12878_1M_trip + 0.1) / (gm12878.expr.df.p$GM12878_1M_ctrl + 0.1)
+    (gm12878.expr.df.p$GM12878_1M_trip + 0.1) / (gm12878.expr.df.p$GM12878_500K_C + 0.1)
   )
 
 gm12878.expr.df.p$groFC <- base::log2(
-    base::c(gm12878.expr.df.p$GM12878_groCap_1+0.1)/(gm12878.expr.df.p$GM12878_1M_ctrl+0.1)
+    # base::c(gm12878.expr.df.p$GM12878_groCap_1+0.1)/(gm12878.expr.df.p$GM12878_1M_ctrl+0.1)
+    base::c(gm12878.expr.df.p$GM12878_groCap_1 + 0.1) / (gm12878.expr.df.p$GM12878_500K_C + 0.1)
   )
 
 # SummarizedExperiment::rowRanges(GM12878.dhs.p)
@@ -200,7 +201,7 @@ annos <- gm12878.expr.df.p.m %>%
 
 ## [1.5.] Plot ratio vs. triptolide signal
 ```{r}
-coef = 0.1
+coef = 0.3
 cols <- base::c(
   grDevices::colorRampPalette(
       base::c("#e7f0fa", "#c9e2f6", "#95cbee", "#0099dc", "#4ab04a", "#ffd73e")
@@ -271,7 +272,7 @@ plot <- gm12878.expr.df.p.m %>%
   #   )  +
   labs(
       x = "nuclei / 500K cells",
-      y = "triptolide FC"
+      y = "1M trip nuclei / 500k cells" # "triptolide FC"
     ) +
   facet_grid(
       rows = name ~ grp
@@ -305,7 +306,7 @@ for(ext in base::c("pdf", "png")){
       filename = base::paste0(
           here::here("2.Cellular_localization/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
-          "_tripFC.GM12878.DHSs.main",
+          "_trip500kCells.GM12878.DHSs.main",
           "_alternative",
           ".",ext
         ),
@@ -375,14 +376,17 @@ gm12878.expr.df.p.m %>%
         y = tripFC
       )
     ) +
-  gghalves::geom_half_violin(
-      nudge = 0.025
+  geom_boxplot(
+      alpha = 0.1
     ) +
-  gghalves::geom_half_boxplot(
-      side = "r",
-      outlier.shape = NA,
-      nudge = 0.025
-    ) +
+  # gghalves::geom_half_violin(
+  #     nudge = 0.025
+  #   ) +
+  # gghalves::geom_half_boxplot(
+  #     side = "r",
+  #     outlier.shape = NA,
+  #     nudge = 0.025
+  #   ) +
    geom_text(
       data = stats,
       mapping = aes(
@@ -425,7 +429,8 @@ for(ext in base::c("pdf", "png")){
       filename = base::paste0(
           here::here("2.Cellular_localization/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
-          "_tripFC.GM12878.DHSs.main",
+          # "_tripFC.GM12878.DHSs.main",
+          "_trip500kCells.GM12878.DHSs.main",
           "_statistics",
           ".",ext
         ),
@@ -440,7 +445,8 @@ for(ext in base::c("pdf", "png")){
 
 ## [1.10.] Identify ptototypical examples
 # proximal_GM12878_5M_ratio>1:# 1) chr6:32971379-32971778 2) chr19:36,772,089-36,773,671 3) chr1:161524172-161524571
-# distal_GM12878_5M_ratio<-1: 2) chr1:160,708,482-160,708,881 3) chr10:3,783,346-3,783,745 (KLF6) 4) chr1:116377854-116378253 
+# distal_GM12878_5M_ratio<-1: 2) chr1:160,708,482-160,708,881 3) chr10:3,783,346-3,783,745 (KLF6) 4) chr1:116377854-116378253
+# proximal_trip500kcells: ) chr4:159,101,737-159,104,305 ) chr1:40161219-40161618 ) chr8:38918070-38918469
 ```{r}
 gm12878.expr.df.p.m %>%
   dplyr::mutate(
@@ -450,16 +456,23 @@ gm12878.expr.df.p.m %>%
   dplyr::filter(  
       grp == "proximal" &
       name == "GM12878_5M_N" &
-      ratio > 1 &
-      tripFC < -3.75 &
+      ratio > 2.5 &
+      tripFC < -2.5 &
       # GM12878_500K_C > 1 &
       # value > 1 & 
       !base::is.infinite(ratio)
     ) %>%
+  dplyr::left_join(
+      y = dplyr::select(gm12878.expr.df.p,loc,GM12878_1M_trip),
+      by = "loc"
+    ) %>% 
+  dplyr::filter(
+      GM12878_1M_trip > 1
+    ) %>% 
   dplyr::arrange(dplyr::desc(intg))
 ```
 
-## [2.] GRO-cap data integration & plotting -----
+## [2.] GRO-cap data integration & plotting -------------------------
 
 ## [2.0.] Prepare groFC plotting
 ```{r}
@@ -568,7 +581,7 @@ annos <- gm12878.expr.df.p.m %>%
 
 ## [2.4.] Plot groFC onto nuclei-vs.cell CAGE comparison
 ```{r}
-coef = 0.1
+coef = 0.3
 cols <- base::c(
   grDevices::colorRampPalette(
       base::c("#e7f0fa", "#c9e2f6", "#95cbee", "#0099dc", "#4ab04a", "#ffd73e")
@@ -637,8 +650,8 @@ plot <- gm12878.expr.df.p.m %>%
   #     mid = "white"
   #   )  +
   labs(
-      x = "nuclei / 500K cells",
-      y = "groFC"
+      x = "nuclei / 500k cells",
+      y = "GRO-cap / 500k cells" # "groFC"
     ) +
   facet_grid(
       rows = name ~ grp
@@ -672,7 +685,8 @@ for(ext in base::c("pdf", "png")){
       filename = base::paste0(
           here::here("2.Cellular_localization/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
-          "_groCap.GM12878.DHSs.main",
+          # "_groCap.GM12878.DHSs.main",
+          "_groCap500kCells.GM12878.DHSs.main",
           "_alternative",
           ".",ext
         ),
@@ -742,14 +756,17 @@ gm12878.expr.df.p.m %>%
         y = groFC
       )
     ) +
-  gghalves::geom_half_violin(
-      nudge = 0.025
+  geom_boxplot(
+      alpha = 0.1
     ) +
-  gghalves::geom_half_boxplot(
-      side = "r",
-      outlier.shape = NA,
-      nudge = 0.025
-    ) +
+  # gghalves::geom_half_violin(
+  #     nudge = 0.025
+  #   ) +
+  # gghalves::geom_half_boxplot(
+  #     side = "r",
+  #     outlier.shape = NA,
+  #     nudge = 0.025
+  #   ) +
    geom_text(
       data = stats,
       mapping = aes(
@@ -792,7 +809,8 @@ for(ext in base::c("pdf", "png")){
       filename = base::paste0(
           here::here("2.Cellular_localization/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
-          "_groCap.GM12878.DHSs.main",
+          # "_groCap.GM12878.DHSs.main",
+          "_groCap500kCells.GM12878.DHSs.main",
           "_statistics",
           ".",ext
         ),
