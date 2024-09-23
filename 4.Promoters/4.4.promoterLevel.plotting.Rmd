@@ -961,7 +961,7 @@ cnts <- GM12878.TCs.tbl %>%
       )
     ) %>%
   dplyr::filter(sample %in% main_samples) %>% 
-  # dplyr::filter(score >= 10) %>%
+  dplyr::filter(score >= 10) %>%
   dplyr::group_by(sample, txType) %>% 
   dplyr::summarise(
       cnt = dplyr::n(),
@@ -995,6 +995,9 @@ ggplot2::ggplot(
   theme(
       aspect.ratio = 1,
       axis.text.x = element_blank(),
+      # axis.text = element_text(
+      #     angle = 90
+      #   ),
       axis.title = element_blank(),
       legend.position = "bottom",
       legend.title = element_blank(),
@@ -1008,47 +1011,48 @@ ggplot2::ggplot(
     )
 ```
 
+## To be discarded
 ```{r}
-GM12878.TCs.tbl %>% 
-  dplyr::filter(sample %in% main_samples) %>% 
-  dplyr::filter(score >= 10) %>%
-  ggplot2::ggplot(
-    data = .,
-    mapping = aes(
-        x = score,
-        y = sample,
-        fill = sample
-      )
-    ) +
-  ggridges::geom_density_ridges(
-      scale = 1,
-      alpha = 0.8
-    ) +
-  scale_fill_manual(
-      values = gm.pooled.pal
-    ) +
-  scale_x_continuous(
-      limits = base::c(0,100)
-    ) +
-  # labs(
-  #     title = "TCs detected score>=10"
-  #   ) +
-  facet_wrap(
-      facets = . ~ txType,
-      nrow = 1
-    ) +
-  theme_bw() +
-  theme(
-      aspect.ratio = 1,
-      legend.title = element_blank(),
-      legend.justification = base::c(1,0),
-      legend.background = element_rect(
-          fill = "grey95"
-        ),
-      legend.text = element_text(size = 8),
-      legend.key.size = grid::unit(0.9, "lines"),
-      panel.spacing = grid::unit(0.1, "lines")
-    )
+# GM12878.TCs.tbl %>% 
+#   dplyr::filter(sample %in% main_samples) %>% 
+#   dplyr::filter(score >= 10) %>%
+#   ggplot2::ggplot(
+#     data = .,
+#     mapping = aes(
+#         x = score,
+#         y = sample,
+#         fill = sample
+#       )
+#     ) +
+#   ggridges::geom_density_ridges(
+#       scale = 1,
+#       alpha = 0.8
+#     ) +
+#   scale_fill_manual(
+#       values = gm.pooled.pal
+#     ) +
+#   scale_x_continuous(
+#       limits = base::c(0,100)
+#     ) +
+#   # labs(
+#   #     title = "TCs detected score>=10"
+#   #   ) +
+#   facet_wrap(
+#       facets = . ~ txType,
+#       nrow = 1
+#     ) +
+#   theme_bw() +
+#   theme(
+#       aspect.ratio = 1,
+#       legend.title = element_blank(),
+#       legend.justification = base::c(1,0),
+#       legend.background = element_rect(
+#           fill = "grey95"
+#         ),
+#       legend.text = element_text(size = 8),
+#       legend.key.size = grid::unit(0.9, "lines"),
+#       panel.spacing = grid::unit(0.1, "lines")
+#     )
 ```
 
 ## [3.2.] Print plot
@@ -1058,7 +1062,7 @@ for(ext in base::c("pdf", "png")){
       filename = base::paste0(
           here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
-          "_repSub.GM12878.nTCs",
+          "_repSub.GM12878.nTCs.score10",
           "_alternative",
           ".",ext
         ),
@@ -1073,31 +1077,31 @@ for(ext in base::c("pdf", "png")){
 
 ## [3.3.] Number of TCs overlapping DHSs
 ```{r}
-GM12878.TCs.tbl %>%
-  dplyr::filter(dhs.olap > 0) %>%
-  ggplot2::ggplot(
-    data = .,
-    mapping = aes(
-        x = sample,
-        fill = sample
-      )
-    ) +
-  geom_bar() +
-  coord_flip() +
-  scale_fill_manual(values = gm.full.pal) +
-  labs(title = "TCs detected overlapping DHSs") +
-  facet_wrap(~txType) +
-  theme_bw() +
-  theme(
-      aspect.ratio = 1,
-      legend.title = element_blank(),
-      legend.justification = base::c(1,0),
-      legend.background = element_rect(
-          fill = "grey95"
-        ),
-      legend.text = element_text(size = 8),
-      legend.key.size = grid::unit(0.9, "lines")
-    )
+# GM12878.TCs.tbl %>%
+#   dplyr::filter(dhs.olap > 0) %>%
+#   ggplot2::ggplot(
+#     data = .,
+#     mapping = aes(
+#         x = sample,
+#         fill = sample
+#       )
+#     ) +
+#   geom_bar() +
+#   coord_flip() +
+#   scale_fill_manual(values = gm.full.pal) +
+#   labs(title = "TCs detected overlapping DHSs") +
+#   facet_wrap(~txType) +
+#   theme_bw() +
+#   theme(
+#       aspect.ratio = 1,
+#       legend.title = element_blank(),
+#       legend.justification = base::c(1,0),
+#       legend.background = element_rect(
+#           fill = "grey95"
+#         ),
+#       legend.text = element_text(size = 8),
+#       legend.key.size = grid::unit(0.9, "lines")
+#     )
 ```
 
 ```{r}
@@ -1176,11 +1180,11 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-## [3.5.] Number of TCs with expression above 10
+## [3.5.] Number of TCs with expression (above 10)
 ```{r}
-GM12878.TCs.tbl %>% 
+plot <- GM12878.TCs.tbl %>% 
   dplyr::filter(sample %in% main_samples) %>% 
-  # dplyr::filter(score >= 10) %>%
+  dplyr::filter(score >= 10) %>%
    dplyr::mutate(
       txType = base::factor(
         x = txType,
@@ -1222,6 +1226,11 @@ GM12878.TCs.tbl %>%
       legend.key.size = grid::unit(0.9, "lines"),
       panel.spacing = grid::unit(0.1, "lines")
     )
+ggrastr::rasterise(
+    input = plot,
+    layers = "Boxplot",
+    dpi = 300
+  )
 ```
 
 ## [3.6.] Print plot
@@ -1230,8 +1239,9 @@ for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
           base::format(base::Sys.time(), "%Y%m%d"),
-          "_repSub.GM12878.TCs.expression",
+          "_repSub.GM12878.TCs.expression.score10",
           "_alternative",
+          "_rasterise",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
@@ -1245,7 +1255,7 @@ for(ext in base::c("pdf", "png")){
 
 ## [3.7.] Expression of only those TCs overlapping with DHSs
 ```{r}
-GM12878.TCs.tbl %>% 
+plot <- GM12878.TCs.tbl %>% 
   dplyr::filter(sample %in% main_samples) %>% 
    dplyr::mutate(
       txType = base::factor(
@@ -1289,6 +1299,11 @@ GM12878.TCs.tbl %>%
       legend.key.size = grid::unit(0.9, "lines"),
       panel.spacing = grid::unit(0.1, "lines")
     )
+ggrastr::rasterise(
+    input = plot,
+    layers = "Boxplot",
+    dpi = 300
+  )
 ```
 
 ## [3.8.] Print plot
@@ -1299,6 +1314,7 @@ for(ext in base::c("pdf", "png")){
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.GM12878.TCs.expression.dhs",
           "_alternative",
+          "_rasterise",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
@@ -1458,7 +1474,9 @@ GM12878.TCs.tbl %>%
 ```{r}
 GM12878.TCs.tbl %>%
   dplyr::filter(
-      score >= 10 & txType == "promoter" & sample %in% main_samples
+      # score >= 10 &
+      txType == "promoter" &
+      sample %in% main_samples
     ) %>%
   ggplot2::ggplot(
     data = .,
@@ -1599,7 +1617,7 @@ for(ext in base::c("pdf", "png")){
 
 ## [3.18.] Plot initator metrics of TCs
 ```{r}
-GM12878.TCs.tbl %>% 
+plot <- GM12878.TCs.tbl %>% 
   dplyr::filter(sample %in% main_samples) %>% 
    dplyr::mutate(
       txType = base::factor(
@@ -1642,6 +1660,11 @@ GM12878.TCs.tbl %>%
       legend.position = "none",
       panel.spacing = grid::unit(0.1,"lines")
     )
+ggrastr::rasterise(
+    input = plot,
+    layers = "Boxplot",
+    dpi = 300
+  )
 ```
 
 ```{r}
@@ -1691,8 +1714,9 @@ for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
           base::format(base::Sys.time(), "%Y%m%d"),
-          "_repSub.GM12878.promoter.initatorExpressionx",
+          "_repSub.GM12878.promoter.initatorExpression",
           "_alternative",
+          "_rasterise",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
