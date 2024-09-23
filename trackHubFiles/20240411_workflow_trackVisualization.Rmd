@@ -908,12 +908,11 @@ gridExtra::grid.arrange(
 outfile <- base::paste0(
     here::here("trackHubFiles/plots/"),
     base::format(base::Sys.time(), "%Y%m%d"),
-    "_distalGro",
+    "_proximalTripGro",
     out,
-    "_AGPAT5",
+    "_RAPGEF2",
     "_GM12878",
     "_poolsOnly",
-    "_tripCtrl",
     ".pdf"
   )
 
