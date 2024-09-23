@@ -46,14 +46,14 @@ gm12878.expr.df.p$txType <- SummarizedExperiment::rowData(GM12878.dhs.p)$txType
 #   )
 
 gm12878.expr.df.p$tripFC <- base::log2(
-    # (gm12878.expr.df.p$GM12878_1M_trip + 0.1) / (gm12878.expr.df.p$GM12878_1M_ctrl + 0.1)
-    (gm12878.expr.df.p$GM12878_1M_trip + 0.1) / (gm12878.expr.df.p$GM12878_500K_C + 0.1)
+    (gm12878.expr.df.p$GM12878_1M_trip + 0.1) / (gm12878.expr.df.p$GM12878_1M_ctrl + 0.1)
+    # (gm12878.expr.df.p$GM12878_1M_trip + 0.1) / (gm12878.expr.df.p$GM12878_500K_C + 0.1)
   )
 
 gm12878.expr.df.p$groFC <- base::log2(
-    # base::c(gm12878.expr.df.p$GM12878_groCap_1+0.1)/(gm12878.expr.df.p$GM12878_1M_ctrl+0.1)
+    base::c(gm12878.expr.df.p$GM12878_groCap_1+0.1)/(gm12878.expr.df.p$GM12878_1M_ctrl+0.1)
     # base::c(gm12878.expr.df.p$GM12878_groCap_1 + 0.1) / (gm12878.expr.df.p$GM12878_500K_C + 0.1)
-    base::c(gm12878.expr.df.p$GM12878_groCap_1 + 0.1) / (gm12878.expr.df.p$GM12878_500K_N + 0.1)
+    # base::c(gm12878.expr.df.p$GM12878_groCap_1 + 0.1) / (gm12878.expr.df.p$GM12878_500K_N + 0.1)
   )
 
 # SummarizedExperiment::rowRanges(GM12878.dhs.p)
@@ -203,7 +203,7 @@ annos <- gm12878.expr.df.p.m %>%
 
 ## [1.5.] Plot ratio vs. triptolide signal
 ```{r}
-coef = 0.3
+coef = 0.1 # 0.3
 cols <- base::c(
   grDevices::colorRampPalette(
       base::c("#e7f0fa", "#c9e2f6", "#95cbee", "#0099dc", "#4ab04a", "#ffd73e")
@@ -274,7 +274,7 @@ plot <- gm12878.expr.df.p.m %>%
   #   )  +
   labs(
       x = "nuclei / 500K cells",
-      y = "1M trip nuclei / 500k cells" # "triptolide FC"
+      y = "1M trip nuclei / 1M nuclei" # "1M trip nuclei / 500k cells" # "triptolide FC"
     ) +
   facet_grid(
       rows = name ~ grp
@@ -308,7 +308,8 @@ for(ext in base::c("pdf", "png")){
       filename = base::paste0(
           here::here("2.Cellular_localization/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
-          "_trip500kCells.GM12878.DHSs.main",
+          "_trip.GM12878.DHSs.main",
+          # "_trip500kCells.GM12878.DHSs.main",
           "_alternative",
           ".",ext
         ),
@@ -333,7 +334,8 @@ stats <- gm12878.expr.df.p.m %>%
       )
     ) %>%
   dplyr::filter(
-      ratio <= -1 | ratio >= 1
+      # (groFC <= -1 | groFC >=1) &
+      (ratio <= -1 | ratio >= 1)
     ) %>%
   dplyr::group_by(grp, name) %>%
   tidyr::nest() %>%
@@ -354,7 +356,7 @@ stats <- gm12878.expr.df.p.m %>%
   dplyr::ungroup() %>%
   dplyr::mutate(
       xpos = base::rep(1.5,4),
-      ypos = base::rep(-6.5,4)
+      ypos = base::rep(-2.5,4)
     )
 ```
 
@@ -369,7 +371,8 @@ gm12878.expr.df.p.m %>%
       )
     ) %>%
   dplyr::filter(
-      ratio <= -1 | ratio >= 1
+      # (groFC <= -1 | groFC >=1) &
+      (ratio <= -1 | ratio >= 1)
     ) %>%
   ggplot2::ggplot(
       data = .,
@@ -379,7 +382,9 @@ gm12878.expr.df.p.m %>%
       )
     ) +
   geom_boxplot(
-      alpha = 0.1
+      alpha = 0.1,
+      outlier.shape = NA,
+      outlier.colour = NA
     ) +
   # gghalves::geom_half_violin(
   #     nudge = 0.025
@@ -397,7 +402,10 @@ gm12878.expr.df.p.m %>%
         label = wrst
       )
     ) +
-  ylim(-7.5,3.1) +
+  ylim(-3.1,1.2) +
+  labs(
+      y = "1M trip nuclei / 1M nuclei"
+    ) +
   # geom_violin() +
   # geom_boxplot() +
   # see::geom_violinhalf(
@@ -431,9 +439,10 @@ for(ext in base::c("pdf", "png")){
       filename = base::paste0(
           here::here("2.Cellular_localization/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
-          # "_tripFC.GM12878.DHSs.main",
-          "_trip500kCells.GM12878.DHSs.main",
+          "_tripFC.GM12878.DHSs.main",
+          # "_trip500kCells.GM12878.DHSs.main",
           "_statistics",
+          "_boxOnly",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
@@ -653,7 +662,7 @@ plot <- gm12878.expr.df.p.m %>%
   #   )  +
   labs(
       x = "nuclei / 500k cells",
-      y = "GRO-cap / 500k nuclei" # "groFC" # "GRO-cap"
+      y = "GRO-cap / 1M nuclei" # "GRO-cap / 500k nuclei" # "groFC" # "GRO-cap"
     ) +
   facet_grid(
       rows = name ~ grp
@@ -713,7 +722,8 @@ stats <- gm12878.expr.df.p.m %>%
       )
     ) %>%
   dplyr::filter(
-      ratio <= -1 | ratio >= 1
+      # (groFC <= -1 | groFC >=1) &
+      (ratio <= -1 | ratio >= 1)
     ) %>%
   dplyr::group_by(grp, name) %>%
   tidyr::nest() %>%
@@ -749,7 +759,8 @@ gm12878.expr.df.p.m %>%
       )
     ) %>%
   dplyr::filter(
-      ratio <= -1 | ratio >= 1
+      # (groFC <= -1 | groFC >=1) &
+      (ratio <= -1 | ratio >= 1)
     ) %>%
   ggplot2::ggplot(
       data = .,
@@ -777,7 +788,7 @@ gm12878.expr.df.p.m %>%
         label = wrst
       )
     ) +
-  ylim(-7.5,3.1) +
+  # ylim(-7.5,3.1) +
   # geom_violin() +
   # geom_boxplot() +
   # see::geom_violinhalf(
@@ -811,9 +822,10 @@ for(ext in base::c("pdf", "png")){
       filename = base::paste0(
           here::here("2.Cellular_localization/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
-          # "_groCap.GM12878.DHSs.main",
-          "_groCap500kCells.GM12878.DHSs.main",
+          "_groCap.GM12878.DHSs.main",
+          # "_groCap500kCells.GM12878.DHSs.main",
           "_statistics",
+          "_withGroNonSig",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
