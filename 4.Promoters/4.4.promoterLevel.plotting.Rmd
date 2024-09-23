@@ -1629,12 +1629,16 @@ GM12878.TCs.tbl %>%
   facet_wrap(
       facets = . ~ INR,
       nrow = 1
-    ) + 
-  coord_flip() +
+    ) +
   theme_bw() +
   theme(
       aspect.ratio = 1,
-      axis.title.y = element_blank(),
+      axis.title.x = element_blank(),
+      axis.text = element_text(
+          angle = 90,
+          hjust = 1,
+          vjust = -1
+        ),
       legend.position = "none",
       panel.spacing = grid::unit(0.1,"lines")
     )
@@ -1700,9 +1704,10 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-## [3.21.]
+## [3.20.] Plot number of promoter initiators with a score above 10
 ```{r}
 GM12878.TCs.tbl %>%
+  dplyr::filter(sample %in% main_samples) %>% 
   dplyr::filter(
       score >= 10 & txType == "promoter"
     ) %>%
@@ -1717,38 +1722,50 @@ GM12878.TCs.tbl %>%
   ggplot2::ggplot(
     data = .,
     mapping = aes(
-      x = INR, y = perc*100, fill = fct_rev(sample))) + 
-  geom_col(position="dodge") + 
-  scale_fill_manual(values=rev(gm.full.pal)) +
-  labs(title="promoter summit initiator >=10 counts") + 
-  coord_flip()+ 
+        y = cnt_rel*100,
+        x = sample,
+        fill = sample
+      )
+    ) + 
+  geom_bar(
+      stat = "identity"
+    ) +
+  scale_fill_manual(
+      values = gm.pooled.pal
+    ) +
+  facet_wrap(
+      facets = . ~ INR,
+      nrow = 1
+    ) +
   theme_bw() +
   theme(
-    aspect.ratio = 1,
-    legend.title = element_blank(),
-    legend.justification = base::c(1,0),
-    legend.background = element_rect(
-        fill = "grey95"
-      ),
-    legend.text = element_text(size = 8),
-    legend.key.size = grid::unit(0.9, "lines")
-  )
+      aspect.ratio = 1,
+      axis.title.x = element_blank(),
+      axis.text = element_text(
+          angle = 90,
+          hjust = 1,
+          vjust = -1
+        ),
+      legend.position = "none",
+      panel.spacing = grid::unit(0.1,"lines")
+    )
 ```
 
-
+## [3.21.] Print plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.GM12878.promoter.nInitiators.10Score",
+          "_alternative",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
       device = ext,
       dpi = 300,
-      width = 15,
-      height = 15
+      width = 8,
+      height = 5
     )
   }
 ```
