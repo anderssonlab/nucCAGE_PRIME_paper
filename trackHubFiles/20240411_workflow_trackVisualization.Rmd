@@ -402,7 +402,7 @@ CTSSs.objects <- purrr::map(
 ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
   tibble::as_tibble(rownames = "type") %>%
   dplyr::filter(
-      (pooled == "yes" & stringr::str_detect(type, "trip")) |
+      (pooled == "yes" & stringr::str_detect(type, "trip|ctrl")) |
       (stringr::str_detect(type, "groCap")) |
       (pooled == "yes" & stringr::str_detect(ID, "500K|5M"))
     ) %>%
@@ -775,7 +775,7 @@ plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
     ) +
   ggh4x::facetted_pos_scales(
     y = base::list(
-      type %in% base::c("10M_Cap_align","1M_trip","groCap") ~ scale_y_continuous(
+      type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ scale_y_continuous(
           limits = base::c(-3,3)
         ),
       type %in% base::c("500K_N","5M_N","500K_C") ~ scale_y_continuous(
@@ -798,11 +798,11 @@ plot <- cage_sel %>%
   dplyr::mutate(
     type = base::factor(
         x = type,
-        levels = base::c("500K_C","500K_N","5M_N","1M_trip","groCap","10M_Cap_align"),
+        levels = base::c("500K_C","500K_N","5M_N","1M_trip","1M_ctrl","groCap","10M_Cap_align"),
         ordered = TRUE
       ),
     score = dplyr::case_when(
-        strand == "minus" & type %in% base::c("10M_Cap_align","1M_trip","groCap") ~ score,
+        strand == "minus" & type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ score,
         strand == "minus" & type %in% base::c("500K_N","5M_N","500K_C") ~ score*200,
         TRUE ~ score
       )
@@ -816,7 +816,7 @@ plot <- cage_sel %>%
       ) +
     ggh4x::facetted_pos_scales(
       y = base::list(
-        type %in% base::c("10M_Cap_align","1M_trip","groCap") ~ scale_y_continuous(
+        type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ scale_y_continuous(
             limits = base::c(-3,3)
           ),
         type %in% base::c("500K_N","5M_N","500K_C") ~ scale_y_continuous(
