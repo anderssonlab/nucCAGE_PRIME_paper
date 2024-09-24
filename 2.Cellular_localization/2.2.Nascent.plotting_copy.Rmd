@@ -323,53 +323,6 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-```{r}
-gm12878.expr.df.p.m %>%
-  dplyr::mutate(
-      ratio = base::log2(value / GM12878_500K_C)
-    ) %>%
-  tidyr::drop_na(ratio) %>%
-  dplyr::filter(
-      !base::is.infinite(ratio)
-    ) %>%
-  dplyr::group_by(grp,name) %>%
-  tidyr::nest() %>%
-  dplyr::mutate(
-    wrst = purrr::map(
-        .x = data,
-        .f = function(df){
-          s <- stats::cor.test(
-              x = df$ratio,
-              y = df$tripFC,
-              method = "pearson"
-            )
-          base::return(base::c(s$estimate,s$p.value))
-        }
-      )
-    ) %>%
-  dplyr::select(-data) %>%
-  dplyr::ungroup() %>%
-  tidyr::unnest_wider(col = wrst, names_sep = NULL)
-
-
-
-s <- gm12878.expr.df.p.m %>%
-  dplyr::mutate(
-      ratio = base::log2(value / GM12878_500K_C)
-    ) %>%
-  tidyr::drop_na(ratio) %>%
-  dplyr::filter(
-      !base::is.infinite(ratio)
-    ) %$%
-  stats::cor.test(
-      x = ratio,
-      y = tripFC,
-      method = "pearson"
-    )
-str(s)
-```
-
-
 ## [1.7.] Prepare stats for plot
 #### Run Wilcoxon rank sum test
 ```{r}
@@ -502,7 +455,38 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-## [1.10.] Identify ptototypical examples
+## [1.10.] Run correlation analysis
+```{r}
+gm12878.expr.df.p.m %>%
+  dplyr::mutate(
+      ratio = base::log2(value / GM12878_500K_C)
+    ) %>%
+  tidyr::drop_na(ratio) %>%
+  dplyr::filter(
+      !base::is.infinite(ratio)
+    ) %>%
+  dplyr::group_by(grp,name) %>%
+  tidyr::nest() %>%
+  dplyr::mutate(
+    corr = purrr::map(
+        .x = data,
+        .f = function(df){
+          s <- stats::cor.test(
+              x = df$ratio,
+              y = df$tripFC,
+              method = "spearman"
+            )
+          base::names(s$p.value) <- "p_value"
+          base::return(base::c(s$estimate,s$p.value))
+        }
+      )
+    ) %>%
+  dplyr::select(-data) %>%
+  dplyr::ungroup() %>%
+  tidyr::unnest_wider(col = corr, names_sep = NULL)
+```
+
+## [1.11.] Identify ptototypical examples
 # proximal_GM12878_5M_ratio>1:# 1) chr6:32971379-32971778 2) chr19:36,772,089-36,773,671 3) chr1:161524172-161524571
 # distal_GM12878_5M_ratio<-1: 2) chr1:160,708,482-160,708,881 3) chr10:3,783,346-3,783,745 (KLF6) 4) chr1:116377854-116378253
 # proximal_trip500kcells: ) chr4:159,101,737-159,104,305 ) chr1:40161219-40161618 ) chr8:38918070-38918469
@@ -662,32 +646,44 @@ plot <- gm12878.expr.df.p.m %>%
          y = groFC
        )
      ) + 
-  geom_point(
-      shape = 21,
-      color = "black",
-      # alpha = 0.1,
-      stroke = 0.05,
-      fill = "white"
-    ) +
+  # geom_point(
+  #     shape = 21,
+  #     color = "black",
+  #     # alpha = 0.1,
+  #     stroke = 0.05,
+  #     fill = "white"
+  #   ) +
   # geom_density_2d(
   #     color = "black",
   #     bins = 50,
   #     alpha = 0.5
   #   ) +
-  geom_density2d(
+  # geom_density2d(
+  #     mapping = aes(
+  #         color = ..level..
+  #       ),
+  #     # binwidth = 0.1,
+  #     bins = 15,
+  #     size = 0.5
+  #   ) +
+  # scale_colour_gradientn(
+  #       colours = cols
+  #     ) +
+  geom_hex(
+     bins = 30 
+    ) +
+  scale_fill_gradientn(
+      colours = cols
+    ) +
+   geom_segment(
+      data = segs,
       mapping = aes(
-          color = ..level..
+          x = x1,
+          xend = x2,
+          y = y1,
+          yend = y2
         ),
-      # binwidth = 0.1,
-      bins = 15,
-      size = 0.5
-    ) +
-  geom_vline(
-      xintercept = base::c(-1,1),
-      linetype = "dashed"
-    ) +
-  geom_hline(
-      yintercept = base::c(-1,1),
+      colour = "black",
       linetype = "dashed"
     ) +
   geom_text(
@@ -700,14 +696,6 @@ plot <- gm12878.expr.df.p.m %>%
         label = count
       )
     ) +
-  scale_colour_gradientn(
-      colours = cols
-    ) +
-  # scale_fill_gradient2(
-  #     low = "blue",
-  #     high = "darkred",
-  #     mid = "white"
-  #   )  +
   labs(
       x = "nuclei / 500k cells",
       y = "GRO-cap / 1M nuclei" # "GRO-cap / 500k nuclei" # "groFC" # "GRO-cap"
@@ -719,15 +707,6 @@ plot <- gm12878.expr.df.p.m %>%
   theme(
       aspect.ratio = 1,
       legend.position = "none",
-      # legend.title = element_blank(),
-      # legend.justification = base::c(1,0),
-      # legend.background = element_rect(
-      #     fill = "grey95"
-      #   ),
-      # legend.text = element_text(
-      #     size = 8
-      #   ),
-      # legend.key.size = grid::unit(0.9, "lines"),
       panel.spacing = grid::unit(0.1,"lines")
     )
 ggrastr::rasterise(
@@ -885,7 +864,38 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-## [2.9.] Identify prototypical GRO-cap examples
+## [2.9.] Run correlation analysis
+```{r}
+gm12878.expr.df.p.m %>%
+  dplyr::mutate(
+      ratio = base::log2(value / GM12878_500K_C)
+    ) %>%
+  # tidyr::drop_na(ratio) %>%
+  dplyr::filter(
+      !base::is.infinite(ratio)
+    ) %>%
+  dplyr::group_by(grp,name) %>%
+  tidyr::nest() %>%
+  dplyr::mutate(
+    corr = purrr::map(
+        .x = data,
+        .f = function(df){
+          s <- stats::cor.test(
+              x = df$ratio,
+              y = df$groFC,
+              method = ""
+            )
+          base::names(s$p.value) <- "p_value"
+          base::return(base::c(s$estimate,s$p.value))
+        }
+      )
+    ) %>%
+  dplyr::select(-data) %>%
+  dplyr::ungroup() %>%
+  tidyr::unnest_wider(col = corr, names_sep = NULL)
+```
+
+## [2.10.] Identify prototypical GRO-cap examples
 ## no good "proximal" examples
 ## distal: 1) chr8:127900815-127901214 (PVT1) 2) chr8:6729374-6729773
 ```{r}
