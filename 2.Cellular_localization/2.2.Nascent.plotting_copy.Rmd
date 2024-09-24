@@ -872,9 +872,11 @@ gm12878.expr.df.p.m %>%
     ) %>%
   # tidyr::drop_na(ratio) %>%
   dplyr::filter(
+      (groFC <= -1 | groFC >=1) &
+      (ratio <= -1 | ratio >= 1) &
       !base::is.infinite(ratio)
     ) %>%
-  dplyr::group_by(grp,name) %>%
+  dplyr::group_by(name,grp) %>%
   tidyr::nest() %>%
   dplyr::mutate(
     corr = purrr::map(
@@ -883,7 +885,7 @@ gm12878.expr.df.p.m %>%
           s <- stats::cor.test(
               x = df$ratio,
               y = df$groFC,
-              method = ""
+              method = "spearman"
             )
           base::names(s$p.value) <- "p_value"
           base::return(base::c(s$estimate,s$p.value))
