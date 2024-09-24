@@ -17,6 +17,11 @@ utils::install.packages("gghalves")
 base::library(CAGEfightR)
 base::library(tidyverse)
 base::library(magrittr)
+base::library(doParallel)
+base::library(foreach)
+doParallel::registerDoParallel(
+    cores = 40
+  )
 ```
 
 # [1.] Plotting GM12878 pooled subsetted DHSs quantifications -------------------------
@@ -897,6 +902,7 @@ gm12878.expr.df.p.m %>%
   tidyr::unnest_wider(col = corr, names_sep = NULL)
 ```
 
+## [2.10.] Test Chi square test implementation
 ```{r}
 gm12878.expr.df.p.m %>%
   dplyr::mutate(
@@ -931,8 +937,9 @@ gm12878.expr.df.p.m %>%
     ) %>% str
 ```
 
+## [2.11.] Chi square test for actual distribution
 ```{r}
-gm12878.expr.df.p.m %>%
+chi <- gm12878.expr.df.p.m %>%
   dplyr::mutate(
       ratio = base::log2(value / GM12878_500K_C),
       ratio = dplyr::case_when(
@@ -981,24 +988,135 @@ gm12878.expr.df.p.m %>%
   tidyr::unnest_wider(col = res, names_sep = NULL)
 ```
 
+## [2.12.] Chi square test for randomised distributions to acquoire a background
 ```{r}
-gm12878.expr.df.p.m %>%
-  dplyr::mutate(
-      ratio = base::log2(value / GM12878_500K_C),
-      ratio = dplyr::case_when(
-          ratio == -Inf ~ -100,
-          ratio == Inf ~ 100,
-          TRUE ~ ratio
+chi_all <- foreach::foreach(i = 1:10000) %dopar% {
+    base::set.seed(i)
+    gm12878.expr.df.p.m %>%
+      dplyr::mutate(
+          ratio = base::log2(value / GM12878_500K_C),
+          ratio = dplyr::case_when(
+              ratio == -Inf ~ -100,
+              ratio == Inf ~ 100,
+              TRUE ~ ratio
+            )
+          ) %>% 
+      dplyr::filter(
+          (groFC <= -1 | groFC >= 1) &
+          (ratio <= -1 | ratio >= 1)
+        ) %>%
+      dplyr::select(
+          grp,name,groFC,ratio
+        ) %>%
+      dplyr::mutate(
+          groFC_rand = base::sample(groFC),
+          ratio_rand = base::sample(ratio)
+        ) %>%
+      dplyr::group_by(name,grp) %>%
+      tidyr::nest() %>% 
+      dplyr::mutate(
+        res = purrr::map(
+          .x = data,
+          .f = function(df){
+            o <- df %>%
+              dplyr::mutate(
+                GRO = dplyr::case_when(
+                    groFC_rand <= -1 ~ FALSE,
+                    groFC_rand >= 1 ~ TRUE,
+                    TRUE ~ NA
+                  ),
+                Nuc = dplyr::case_when(
+                    ratio_rand <= -1 ~ FALSE,
+                    ratio_rand >= 1 ~ TRUE,
+                    TRUE ~ NA
+                  )
+                ) %>%
+              dplyr::group_by(GRO,Nuc) %$% 
+              stats::chisq.test(
+                  x = GRO,
+                  y = Nuc
+                )
+            base::names(o$p.value) <- "p_value"
+            base::return(
+                base::c(o$statistic,o$p.value)
+              )
+            }
+          )
+        ) %>%
+      dplyr::select(-data) %>%
+      dplyr::ungroup() %>%
+      tidyr::unnest_wider(col = res, names_sep = NULL) %>%
+      dplyr::mutate(
+          seed = i
         )
-      ) %>% 
-  dplyr::filter(
-      (groFC <= -1 | groFC >=1) &
-      (ratio <= -1 | ratio >= 1)
-    ) 
+    } %>%
+  dplyr::bind_rows()
+```
+
+## [2.13.] Visualize X-squared statistics
+```{r}
+ggplot2::ggplot(
+      data = chi_all,
+      mapping = aes(
+        x = base::log2(`X-squared`)
+      )
+    ) +
+  geom_density() +
+  geom_vline(
+      data = chi,
+      mapping = aes(
+        xintercept = base::log2(`X-squared`)
+      )
+    ) +
+  facet_grid(
+      facets = name ~ grp
+    )
+
+ggplot2::ggplot(
+      data = chi_all,
+      mapping = aes(
+        x = `X-squared`
+      )
+    ) +
+  geom_density() +
+  geom_vline(
+      data = chi,
+      mapping = aes(
+        xintercept = `X-squared`
+      )
+    ) +
+  facet_grid(
+      facets = name ~ grp
+    )
+```
+
+## [2.14.] Visualize X-squared p-values
+```{r}
+ggplot2::ggplot(
+      data = chi_all,
+      mapping = aes(
+        x = p_value
+      )
+    ) +
+  geom_histogram(
+      bins = 1000
+    ) +
+  geom_vline(
+      data = chi,
+      mapping = aes(
+        xintercept = p_value
+      ),
+      color = "red",
+      linetype = "dashed"
+    ) +
+  facet_grid(
+      facets = name ~ grp
+    )
 ```
 
 
-## [2.10.] Identify prototypical GRO-cap examples
+
+## [2.15.] Identify prototypical GRO-cap examples
 ## no good "proximal" examples
 ## distal: 1) chr8:127900815-127901214 (PVT1) 2) chr8:6729374-6729773
 ```{r}
