@@ -897,6 +897,107 @@ gm12878.expr.df.p.m %>%
   tidyr::unnest_wider(col = corr, names_sep = NULL)
 ```
 
+```{r}
+gm12878.expr.df.p.m %>%
+  dplyr::mutate(
+      ratio = base::log2(value / GM12878_500K_C),
+      ratio = dplyr::case_when(
+          ratio == -Inf ~ -100,
+          ratio == Inf ~ 100,
+          TRUE ~ ratio
+        )
+      ) %>% 
+  dplyr::filter(
+      (groFC <= -1 | groFC >=1) &
+      (ratio <= -1 | ratio >= 1) &
+      grp == "distal" & name == "GM12878_5M_N"
+    ) %>%
+  dplyr::mutate(
+    GRO = dplyr::case_when(
+        groFC <= -1 ~ FALSE,
+        groFC >= 1 ~ TRUE,
+        TRUE ~ NA
+      ),
+    Nuc = dplyr::case_when(
+        ratio <= -1 ~ FALSE,
+        ratio >= 1 ~ TRUE,
+        TRUE ~ NA
+      )
+    ) %>%
+  dplyr::group_by(GRO,Nuc) %$% 
+  stats::chisq.test(
+      x = GRO,
+      y = Nuc
+    ) %>% str
+```
+
+```{r}
+gm12878.expr.df.p.m %>%
+  dplyr::mutate(
+      ratio = base::log2(value / GM12878_500K_C),
+      ratio = dplyr::case_when(
+          ratio == -Inf ~ -100,
+          ratio == Inf ~ 100,
+          TRUE ~ ratio
+        )
+      ) %>% 
+  dplyr::filter(
+      (groFC <= -1 | groFC >=1) &
+      (ratio <= -1 | ratio >= 1)
+    ) %>%
+  dplyr::group_by(name,grp) %>%
+  tidyr::nest() %>% 
+  dplyr::mutate(
+    res = purrr::map(
+      .x = data,
+      .f = function(df){
+        o <- df %>%
+          dplyr::mutate(
+            GRO = dplyr::case_when(
+                groFC <= -1 ~ FALSE,
+                groFC >= 1 ~ TRUE,
+                TRUE ~ NA
+              ),
+            Nuc = dplyr::case_when(
+                ratio <= -1 ~ FALSE,
+                ratio >= 1 ~ TRUE,
+                TRUE ~ NA
+              )
+            ) %>%
+          dplyr::group_by(GRO,Nuc) %$% 
+          stats::chisq.test(
+              x = GRO,
+              y = Nuc
+            )
+        base::names(o$p.value) <- "p_value"
+        base::return(
+            base::c(o$statistic,o$p.value)
+          )
+        }
+      )
+    ) %>%
+  dplyr::select(-data) %>%
+  dplyr::ungroup() %>%
+  tidyr::unnest_wider(col = res, names_sep = NULL)
+```
+
+```{r}
+gm12878.expr.df.p.m %>%
+  dplyr::mutate(
+      ratio = base::log2(value / GM12878_500K_C),
+      ratio = dplyr::case_when(
+          ratio == -Inf ~ -100,
+          ratio == Inf ~ 100,
+          TRUE ~ ratio
+        )
+      ) %>% 
+  dplyr::filter(
+      (groFC <= -1 | groFC >=1) &
+      (ratio <= -1 | ratio >= 1)
+    ) 
+```
+
+
 ## [2.10.] Identify prototypical GRO-cap examples
 ## no good "proximal" examples
 ## distal: 1) chr8:127900815-127901214 (PVT1) 2) chr8:6729374-6729773
