@@ -19,21 +19,29 @@ library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 library(SummarizedExperiment)
 library(tibble)
 library(ggrepel)
+library(scales)
+library(dplyr)
 
 theme_set(theme_bw(base_size = 8))
+
+col.scheme <- c("#377eb8", "#d39200","#93aa00","#4daf4a","#984ea3","#ff7f01","#e41b1c","#256866","#f8bc24")
 
 ```
 
 
 ```{r}
 
-PRIMEloci.thres <- 0.2
+PRIMEloci.thres <- 0.75
 
-pooled.PRIMEloci.files <- c("A549_C" = "../8.Genomewide_prediction/prediction_all-cell-types_with_Meena-GM12878-model/A549-on-Meena-GM12878-model_pred_all_profiles_subtnorm_tcs_C.bed",
-                            "GM12878_C" = "../8.Genomewide_prediction/prediction_all-cell-types_with_Meena-GM12878-model/GM12878-on-Meena-GM12878-model_pred_all_profiles_subtnorm_tcs_GM12878_500K_C.bed",
-                             "HCT116_C" = "../8.Genomewide_prediction/prediction_all-cell-types_with_Meena-GM12878-model/HCT116-on-Meena-GM12878-model_pred_all_profiles_subtnorm_tcs_C.bed",
-                            "HepG2_C" = "../8.Genomewide_prediction/prediction_all-cell-types_with_Meena-GM12878-model/HepG2-on-Meena-GM12878-model_pred_all_profiles_subtnorm_tcs_C.bed",
-                             "K562_C" = "../8.Genomewide_prediction/prediction_all-cell-types_with_Meena-GM12878-model/K562-on-Meena-GM12878-model_pred_all_profiles_subtnorm_tcs_K562_C.bed")
+pooled.PRIMEloci.files <- c("A549_C" = "../8.Genomewide_prediction/A549_sld_on_PRIMEloci1.0_C.bed",
+                            "A549_N" = "../8.Genomewide_prediction/A549_sld_on_PRIMEloci1.0_N.bed",
+                            "GM12878_C" = "../8.Genomewide_prediction/GM12878_sld_on_PRIMEloci1.0_C_1M.bed",
+                            "GM12878_N" = "../8.Genomewide_prediction/GM12878_sld_on_PRIMEloci1.0_N_1M.bed",
+                            "HCT116_C" = "../8.Genomewide_prediction/HCT116_sld_on_PRIMEloci1.0_C.bed",
+                            "HepG2_C" = "../8.Genomewide_prediction/HepG2_sld_on_PRIMEloci1.0_C.bed",
+                            "HepG2_N" = "../8.Genomewide_prediction/HepG2_sld_on_PRIMEloci1.0_N.bed",
+                            "K562_C" = "../8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_C.bed",
+                            "K562_N" = "../8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N.bed")
   
 resize.width <- 200
 
@@ -165,18 +173,22 @@ point.GWAS.df
 Plot GWAS results
 
 ```{r}
+point.GWAS.df <- point.GWAS.df %>%
+  group_by(trait) %>%
+  mutate(scaled_enrichment = rescale(enrichment)) %>%
+  ungroup()
 
+point.GWAS.df <- as.data.frame(point.GWAS.df)
 enr.mat <- matrix(0,nrow=length(filtered.traits),ncol=length(unique(point.GWAS.df$sample)), dimnames=list(filtered.traits,unique(point.GWAS.df$sample)))
 for (i in 1:nrow(point.GWAS.df)) 
-  enr.mat[point.GWAS.df[i,"trait"],point.GWAS.df[i,"sample"]] <- point.GWAS.df[i,"enrichment"]
+  enr.mat[point.GWAS.df[i,"trait"],point.GWAS.df[i,"sample"]] <- point.GWAS.df[i,"scaled_enrichment"]*point.GWAS.df[i,"recall"]
 
 ro <- hclust(dist(log2(enr.mat+1)))$order
-co <- hclust(dist(t(log2(enr.mat+1))))$order
 
-point.GWAS.df$sample <- factor(point.GWAS.df$sample, levels=colnames(enr.mat)[co])
+point.GWAS.df$sample <- factor(point.GWAS.df$sample, levels=c("K562_C","K562_N","GM12878_C","GM12878_N","HepG2_C","HepG2_N","A549_C","A549_N","HCT116_C"))
 point.GWAS.df$trait <- factor(point.GWAS.df$trait, levels=rownames(enr.mat)[ro])
 
-ggplot(point.GWAS.df,aes(sample,trait,fill=enrichment)) + geom_tile() +
+ggplot(point.GWAS.df,aes(sample,trait,fill=scaled_enrichment)) + geom_tile() +
   theme(axis.text.x = element_text(angle=90,hjust=1)) + scale_fill_distiller(direction=1) +
   xlab("") + ylab("")
 ggsave("plots/GWAS_trait_enrichment_vs_cell_line.pdf",width=3,height=5)
@@ -212,4 +224,190 @@ for (trait in focus.traits) {
 }
 
 ```
+
+
+
+
+```{r}
+enrichment.precision.recall <- function(data, fg.data, bg.data, assay) {
+  
+  do.call("rbind", lapply(names(data), function(n) {
+
+    gr <- data[[n]]
+    scores <- seq(0,1,by=0.05)
+    cnt <- sapply(scores, function(sco) sum(gr$score>=sco))
+    scores <- scores[cnt>=10]
+    
+    gr.fg.olap <- findOverlaps(fg.data, gr, minoverlap=1)
+    gr.bg.olap <- findOverlaps(bg.data, gr, minoverlap=1)
+    
+    do.call("rbind", lapply(scores, function(sco) {
+      
+      selection <- which(gr$score>=sco)
+      fg.count <- length(unique(queryHits(gr.fg.olap)[which(subjectHits(gr.fg.olap) %in% selection)]))
+      bg.count <- length(unique(queryHits(gr.bg.olap)[which(subjectHits(gr.bg.olap) %in% selection)]))
+      
+      data.frame(enrichment=(fg.count/length(fg.data))/(bg.count/length(bg.data)),
+                 precision=fg.count/(fg.count+bg.count),
+                 recall=fg.count/length(fg.data),
+                 fg.count=fg.count,
+                 bg.count=bg.count,
+                 score=sco,
+                 sample=n,
+                 assay=assay[n])
+    }))
+    
+  }))
+}
+
+
+run_enrichment_for_trait <- function(trait) {
+  enrichment.precision.recall(
+    unfiltered.PRIMEloci,
+    GWAS.data[GWAS.data$trait == trait,], 
+    SNP.data, 
+    names(unfiltered.PRIMEloci)
+  )
+}
+
+per.trait.results <- mclapply(filtered.traits, run_enrichment_for_trait,mc.cores=30)
+names(per.trait.results) <- focus.traits 
+
+lapply(seq_along(per.trait.results), function(i) {
+  trait_name <- filtered.traits[i]
+  data <- per.trait.results[[i]]
+  
+  # Create plots
+  pr <- ggplot(data, aes(recall, enrichment, color = sample)) +
+    geom_line(aes(group = sample)) +
+    theme(aspect.ratio = 1) +
+    xlab(paste0("recall")) +
+    ggtitle(paste("Recall vs Enrichment for", trait_name))
+  
+  
+  # Save arranged plots
+  ggsave(filename = paste0("plots/cellLinePlots/", trait_name, "_enrichment_recall_plot.pdf"),
+         plot = pr, device = "pdf")
+})
+```
+
+
+
+
+
+
+
+```{r}
+#Over pooled traits
+blood.traits <- c("HbA1c","Hb","RBC","MCV","MCH","MCHC")
+hep.traits <- c("ApoB", "TC", "TBil", "SHBG", "LDLC", "TG","Alb")
+
+blood.GWAS.data <- subset(GWAS.data, trait %in% blood.traits)
+hep.GWAS.data <- subset(GWAS.data, trait %in% hep.traits)
+
+
+cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data <- enrichment.precision.recall(unfiltered.PRIMEloci, blood.GWAS.data, SNP.data, names(unfiltered.PRIMEloci))
+cellLines.PRIMEloci.hep.GWAS.enrichment.recall.data <- enrichment.precision.recall(unfiltered.PRIMEloci, hep.GWAS.data, SNP.data, names(unfiltered.PRIMEloci))
+
+
+ggplot(cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data, aes(recall, enrichment, color=sample)) + geom_line(aes(group=sample)) +
+  theme(aspect.ratio=1)  + xlab(paste0("recall (n=",length(blood.GWAS.data$name),")")) + scale_color_manual(values=col.scheme) + 
+  geom_point(data=cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data[cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data$score==0.75,])
+
+ggsave(filename = paste0("plots/cellLinePlots/", "bloodTraits", "_enrichment_recall_plot.pdf"), device = "pdf")
+
+
+ggplot(cellLines.PRIMEloci.hep.GWAS.enrichment.recall.data, aes(recall, enrichment, color=sample)) + geom_line(aes(group=sample)) +
+  theme(aspect.ratio=1)  + xlab(paste0("recall (n=",length(hep.GWAS.data$name),")")) + scale_color_manual(values=col.scheme)+ 
+  geom_point(data=cellLines.PRIMEloci.hep.GWAS.enrichment.recall.data[cellLines.PRIMEloci.hep.GWAS.enrichment.recall.data$score==0.75,])
+
+
+ggsave(filename = paste0("plots/cellLinePlots/", "hepTraits", "_enrichment_recall_plot.pdf"), device = "pdf")
+```
+
+
+
+```{r}
+ggplot(point.GWAS.df[point.GWAS.df$trait%in%blood.traits,],aes(sample,trait,fill=enrichment)) + geom_tile() +
+  theme(axis.text.x = element_text(angle=90,hjust=1)) + scale_fill_distiller(direction=1,palette=7) +
+  xlab("") + ylab("")
+
+ggsave(filename = paste0("plots/cellLinePlots/", "bloodTraits", "_enrichment_hm.pdf"), device = "pdf",width=7,height=5)
+
+ggplot(point.GWAS.df[point.GWAS.df$trait%in%blood.traits,],aes(sample,trait,fill=recall)) + geom_tile() +
+  theme(axis.text.x = element_text(angle=90,hjust=1)) + scale_fill_distiller(direction=1,palette=2) +
+  xlab("") + ylab("")
+
+ggsave(filename = paste0("plots/cellLinePlots/", "bloodTraits", "_recall_hm.pdf"), device = "pdf",width=7,height=5)
+
+
+ggplot(point.GWAS.df[point.GWAS.df$trait%in%hep.traits,],aes(sample,trait,fill=enrichment)) + geom_tile() +
+  theme(axis.text.x = element_text(angle=90,hjust=1)) + scale_fill_distiller(direction=1,palette=7) +
+  xlab("") + ylab("")
+
+ggsave(filename = paste0("plots/cellLinePlots/", "hepTraits", "_enrichment_hm.pdf"), device = "pdf",width=7,height=5)
+
+ggplot(point.GWAS.df[point.GWAS.df$trait%in%hep.traits,],aes(sample,trait,fill=recall)) + geom_tile() +
+  theme(axis.text.x = element_text(angle=90,hjust=1)) + scale_fill_distiller(direction=1,palette=2) +
+  xlab("") + ylab("")
+
+ggsave(filename = paste0("plots/cellLinePlots/", "hepTraits", "_recall_hm.pdf"), device = "pdf",width=7,height=5)
+```
+
+
+```{r}
+
+trait.loci.olap <- sapply(traits, function(t) {
+  ids <- which(GWAS.data$trait==t)
+  unique(unlist(lapply(names(unfiltered.PRIMEloci), function(n) {
+    pd <- unfiltered.PRIMEloci[[n]]
+    GWAS.olap <- findOverlaps(GWAS.data[ids,], pd, minoverlap=1)
+    ids[queryHits(GWAS.olap)]
+})))
+})
+
+trait.matrices <- lapply(c(blood.traits,hep.traits), function(t) {
+  
+  #g <- unique(GWAS.data[trait.loci.olap[[t]],])
+  g <- GWAS.data[trait.loci.olap[[t]],]
+  name <- paste0(seqnames(g),":",start(g)+1,":",end(g),":",g$RS_id)
+  m <- matrix(0,ncol=length(unfiltered.PRIMEloci),nrow=length(g),dimnames=list(name, names(unfiltered.PRIMEloci)))
+  
+  for (n in names(unfiltered.PRIMEloci)) {
+    pd <- unfiltered.PRIMEloci[[n]]
+    GWAS.olap <- findOverlaps(g, pd, minoverlap=1)
+    m[unique(queryHits(GWAS.olap)),n] <- as.numeric(by(pd$score[subjectHits(GWAS.olap)], queryHits(GWAS.olap), max))
+  }
+  m
+})
+names(trait.matrices) <- c(blood.traits,hep.traits)
+
+for (trait in c(blood.traits,hep.traits)) {
+  
+  m <- trait.matrices[[trait]]
+  
+  print(dim(m))
+  
+  ro <- hclust(dist(m))$order
+  #co <- hclust(dist(t(m)))$order
+  
+  df <- data.frame(score=as.numeric(m),
+                   cell.line=rep(colnames(m),each=nrow(m)),
+                   variant=rownames(m))
+  df$variant <- factor(df$variant,levels=rownames(m)[ro])
+  #df$cell.line <- factor(df$cell.line, levels=colnames(m)[co])
+  
+  ggplot(df, aes(cell.line, variant, fill=score)) + geom_tile() + xlab("") + ylab("") + 
+    theme(axis.text.x = element_text(angle=90,hjust=1)) + 
+    #theme(axis.text.y = element_blank()) + 
+    scale_fill_distiller(direction=1) +
+    ggtitle(trait)
+  ggsave(paste0("plots/",trait,"_variant_PRIMEloci_score_vs_cell_line.pdf"),width=5,height=5)
+  
+}
+```
+
+
+
+
 

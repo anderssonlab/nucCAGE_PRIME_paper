@@ -23,32 +23,26 @@ library(ggrepel)
 
 theme_set(theme_bw(base_size = 10))
 
+col.scheme <- c("#377eb8", "#d39200","#93aa00","#4daf4a","#984ea3","#ff7f01","#e41b1c","#256866","#f8bc24")
+
+
 ```
 
 Parameters
-
 ```{r}
 
-pooled.focus.samples <- c("K562_C","K562_N")
-focus.samples <- c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6")
+pooled.focus.samples <- c("K562_sld_C","K562_sld_N")
+#focus.samples <- c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6")
 
-PRIMEloci.thres <- 0.2
+PRIMEloci.thres <- 0.75
 
-PRIMEloci.files <- paste("../8.Genomewide_prediction/pred_all_repSub_tcs_",focus.samples,".bed",sep="")
-names(PRIMEloci.files) <- focus.samples
 
-PRIMEloci.names <- c("K562_C1" = "PRIMEloci CAGE cells replicates",
-                     "K562_C2" = "PRIMEloci CAGE cells replicates",
-                     "K562_C3" = "PRIMEloci CAGE cells replicates",
-                     "K562_N4" = "PRIMEloci CAGE nuclei replicates",
-                     "K562_N5" = "PRIMEloci CAGE nuclei replicates",
-                     "K562_N6" = "PRIMEloci CAGE nuclei replicates")
 
-pooled.PRIMEloci.files <- c("K562_C" = "../8.Genomewide_prediction/prediction_all-cell-types_with_Meena-GM12878-model/K562-on-Meena-GM12878-model_pred_all_profiles_subtnorm_tcs_K562_C.bed",
-                            "K562_N" = "../8.Genomewide_prediction/prediction_all-cell-types_with_Meena-GM12878-model/K562-on-Meena-GM12878-model_pred_all_profiles_subtnorm_tcs_K562_N.bed")
+pooled.PRIMEloci.files <- c("K562_sld_C" = "../8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_C.bed",
+                            "K562_sld_N" = "../8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N.bed")
 
-pooled.PRIMEloci.names <- c("K562_C" = "PRIMEloci CAGE cells pooled",
-                            "K562_N" = "PRIMEloci CAGE nuclei pooled")
+pooled.PRIMEloci.names <- c("K562_sld_C" = "PRIMEloci CAGE cells pooled",
+                            "K562_sld_N" = "PRIMEloci CAGE nuclei pooled")
 
 pooled.DL.file <- "../3.DivergentLoci/poolSub.k562.summitDLs.rmSingletons.rds"
 pooled.noise.file <- "../9.Noise/K562.poolSub.divnoise.csv"
@@ -82,14 +76,13 @@ FANTOM5.file <- "../0.External_resources/F5.hg38.enhancers.expression.matrix.gz"
 FANTOM5.enhancers.file <- "../0.External_resources/F5.hg38.enhancers.bed.gz"
 FANTOM5.id <- "CNhs12334"
 
-CRISPR.pos.file <- "../5.EPCrisprBenchmark/1.EPC.pos.gr.rds"
-CRISPR.neg.file <- "../5.EPCrisprBenchmark/1.EPC.neg.notsig.gr.rds"
+CRISPR.pos.file <- "../5.EPCrisprBenchmark/epc_pos_gr.rds"
+CRISPR.neg.file <- "../5.EPCrisprBenchmark/epc_neg_gr.rds"
 
 ```
 
 
 Read in data
-
 ```{r}
 
 ## Annotated CDS
@@ -107,21 +100,6 @@ SNP.data <- unique(SNP.data[-queryHits(olap)])
 seqlevels(txdb,pruning.mode="coarse") <- seqlevels(SNP.data)
 promoters <- promoters(txdb,upstream=500,downstream=500)
 
-## PRIMEloci, replicates
-PRIMEloci <- lapply(names(PRIMEloci.files), function(n) {
-  gr <- read_tsv(PRIMEloci.files[n],show_col_types = FALSE)
-  score <- gr$score
-  gr <- makeGRangesFromDataFrame(gr[,1:3])
-  gr$score <- score
-  seqlevels(gr,pruning.mode="coarse") <- seqlevels(SNP.data)
-  gr <- resize(gr, width=resize.width, fix="center")
-  pc <- rep("distal",length(gr))
-  olap <- findOverlaps(gr,promoters,minoverlap = 1)
-  pc[queryHits(olap)] <- "proximal"
-  gr$class <- pc
-  gr
-})
-names(PRIMEloci) <- names(PRIMEloci.files)
 
 ## PRIMEloci, pooled replicates
 pooled.PRIMEloci <- lapply(names(pooled.PRIMEloci.files), function(n) {
@@ -144,7 +122,7 @@ pooled.DLs <- readRDS(pooled.DL.file)
 if (is.list(pooled.DLs))
   pooled.DLs <- do.call("c",pooled.DLs)
 seqlevels(pooled.DLs, pruning.mode="coarse") <- seqlevels(SNP.data)
-pooled.DLs <- pooled.DLs[pooled.DLs$sample %in% pooled.focus.samples]
+pooled.DLs <- pooled.DLs[pooled.DLs$sample %in% c("K562_C","K562_N")]
 pooled.DLs <- resize(pooled.DLs, width=resize.width, fix="center")
 dlc <- rep("distal",length(pooled.DLs))
 olap <- findOverlaps(pooled.DLs,promoters,minoverlap = 1)
@@ -153,7 +131,8 @@ pooled.DLs$class <- dlc
 
 ## noise estimates
 pooled.noise.thresholds <- read_csv(pooled.noise.file,col_names=TRUE,show_col_types=FALSE)
-pooled.noise.thresholds <- pooled.noise.thresholds[pooled.noise.thresholds[,1]=="95%",pooled.focus.samples]
+pooled.noise.thresholds <- pooled.noise.thresholds[pooled.noise.thresholds[,1]=="95%",c("K562_C","K562_N","K562_C","K562_N")]
+
 
 ## eQTL data
 eQTL.data <- read_tsv(eQTL.file,col_names=FALSE,show_col_types=FALSE)[,c(1,3)]
@@ -254,7 +233,7 @@ FANTOM5.enhancers <- flank(swapRanges(import.bed(FANTOM5.enhancers.file)),200,bo
 FANTOM5.enhancers <- FANTOM5.enhancers[FANTOM5.enhancers$name %in% deframe(FANTOM5.data[FANTOM5.data[2]>0,1])]
 point.data[["FANTOM5 enhancers"]] <- FANTOM5.enhancers
 
-for (sample in pooled.focus.samples) {
+for (sample in c("K562_C","K562_N")) {
   gr <- pooled.DLs[pooled.DLs$sample==sample]
   gr <- gr[which(gr$score > deframe(pooled.noise.thresholds[,sample]))]
   point.data[[pooled.DL.names[sample]]] <- gr
@@ -294,7 +273,6 @@ CRISPR.n <- length(CRISPR.pos.data)
 ```
 
 Point estimates
-
 ```{r}
 
 point.enrichment.precision.recall <- function(data, fg.data, bg.data, assay, location) {
@@ -335,15 +313,18 @@ point.CRISPR.df
 ```
 
 Plot ClinVar point estimate results
-
 ```{r}
-
 point.ClinVar.genome.df <- subset(point.ClinVar.df, loc=="genome")
 point.ClinVar.non.genome.df <- subset(point.ClinVar.df, loc!="genome")
 
+col.scheme <- setNames(col.scheme, c("DHS","Divergent loci CAGE cells","Divergent loci CAGE nuclei",
+                                     "dREG PRO-seq","dREG qPRO-seq","ENCODE cCRE",
+                                     "PINTS GRO/PRO-cap","PRIMEloci CAGE cells pooled","PRIMEloci CAGE nuclei pooled"))
+
+
 ggplot(point.ClinVar.genome.df, aes(recall, enrichment, color=assay, label=sample)) + 
   geom_point() + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
-  xlab(paste0("recall (n=",ClinVar.n,")"))
+  xlab(paste0("recall (n=",ClinVar.n,")")) + scale_color_manual(values=col.scheme)
 ggsave(paste0("plots/K562_ClinVar_enrichment_vs_recall_point_estimates.pdf"),width=8,height=7)
 
 ## Supplementary Figure
@@ -354,20 +335,19 @@ ggsave(paste0("plots/K562_ClinVar_enrichment_vs_recall_point_estimates.pdf"),wid
 
 ## Figure 1 E bar plots
 point.ClinVar.genome.df$sample <- factor(point.ClinVar.genome.df$sample, levels=point.ClinVar.genome.df$sample[order(point.ClinVar.genome.df$recall, decreasing = TRUE)])
-ggplot(point.ClinVar.genome.df, aes(sample, recall)) + geom_bar(stat="identity") + 
-  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1)) + ylab(paste0("recall (n=",ClinVar.n,")"))
+ggplot(point.ClinVar.genome.df, aes(sample, recall,fill=sample)) + geom_bar(stat="identity") + 
+  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1)) + ylab(paste0("recall (n=",ClinVar.n,")"))+ scale_fill_manual(values=col.scheme)
 ggsave(paste0("plots/K562_ClinVar_recall_point_estimates_bar.pdf"),width=3,height=3)
 
 ##  Figure 1 E
 point.ClinVar.genome.df$sample <- factor(point.ClinVar.genome.df$sample, levels=point.ClinVar.genome.df$sample[order(point.ClinVar.genome.df$enrichment, decreasing = TRUE)])
-ggplot(point.ClinVar.genome.df, aes(sample, enrichment)) + geom_bar(stat="identity") + 
-  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1))
+ggplot(point.ClinVar.genome.df, aes(sample, enrichment,fill=sample)) + geom_bar(stat="identity") + 
+  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1)) + scale_fill_manual(values=col.scheme)
 ggsave(paste0("plots/K562_ClinVar_enrichment_point_estimates_bar.pdf"),width=3,height=3)
 
 ```
 
 Plot eQTL point estimate results
-
 ```{r}
 
 point.eQTL.genome.df <- subset(point.eQTL.df, loc=="genome")
@@ -375,7 +355,7 @@ point.eQTL.non.genome.df <- subset(point.eQTL.df, loc!="genome")
 
 ggplot(point.eQTL.genome.df, aes(recall, enrichment, color=assay, label=sample)) + 
   geom_point() + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
-  xlab(paste0("recall (n=",eQTL.n,")"))
+  xlab(paste0("recall (n=",eQTL.n,")")) + scale_color_manual(values=col.scheme)
 ggsave(paste0("plots/K562_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,"_point_estimates.pdf"),width=8,height=7)
 
 ## Supplementary Figure
@@ -386,20 +366,19 @@ ggsave(paste0("plots/K562_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,"_point
 
 #  Figure 1 F
 point.eQTL.genome.df$sample <- factor(point.eQTL.genome.df$sample, levels=point.eQTL.genome.df$sample[order(point.eQTL.genome.df$recall, decreasing = TRUE)])
-ggplot(point.eQTL.genome.df, aes(sample, recall)) + geom_bar(stat="identity") + 
-  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1)) + ylab(paste0("recall (n=",eQTL.n,")"))
+ggplot(point.eQTL.genome.df, aes(sample, recall,fill=sample)) + geom_bar(stat="identity") + 
+  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1)) + ylab(paste0("recall (n=",eQTL.n,")")) + scale_fill_manual(values=col.scheme)
 ggsave(paste0("plots/K562_eQTL_recall_PIP_",eQTL.pip.thres,"_point_estimates_bar.pdf"),width=3,height=3)
 
 #  Figure 1 F
 point.eQTL.genome.df$sample <- factor(point.eQTL.genome.df$sample, levels=point.eQTL.genome.df$sample[order(point.eQTL.genome.df$enrichment, decreasing = TRUE)])
-ggplot(point.eQTL.genome.df, aes(sample, enrichment)) + geom_bar(stat="identity") + 
-  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1))
+ggplot(point.eQTL.genome.df, aes(sample, enrichment,fill=sample)) + geom_bar(stat="identity") + 
+  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1))+ scale_fill_manual(values=col.scheme)
 ggsave(paste0("plots/K562_eQTL_enrichment_PIP_",eQTL.pip.thres,"_point_estimates_bar.pdf"),width=3,height=3)
 
 ```
 
 Plot GWAS point estimate results
-
 ```{r}
 
 point.GWAS.genome.df <- subset(point.GWAS.df, loc=="genome")
@@ -407,7 +386,7 @@ point.GWAS.non.genome.df <- subset(point.GWAS.df, loc!="genome")
 
 ggplot(point.GWAS.genome.df, aes(recall, enrichment, color=assay, label=sample)) + 
   geom_point() + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
-  xlab(paste0("recall (n=",GWAS.n,")"))
+  xlab(paste0("recall (n=",GWAS.n,")")) + scale_color_manual(values=col.scheme)
 ggsave(paste0("plots/K562_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,"_point_estimates.pdf"),width=8,height=7)
 
 #ggplot(point.GWAS.non.genome.df, aes(recall, enrichment, color=assay, label=sample)) + 
@@ -416,19 +395,18 @@ ggsave(paste0("plots/K562_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,"_point
 #ggsave(paste0("plots/K562_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,"_point_estimates_proximal_vs_distal.pdf"),width=8,height=7)
 
 point.GWAS.genome.df$sample <- factor(point.GWAS.genome.df$sample, levels=point.GWAS.genome.df$sample[order(point.GWAS.genome.df$recall, decreasing = TRUE)])
-ggplot(point.GWAS.genome.df, aes(sample, recall)) + geom_bar(stat="identity") + 
-  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1)) + ylab(paste0("recall (n=",GWAS.n,")"))
+ggplot(point.GWAS.genome.df, aes(sample, recall,fill=sample)) + geom_bar(stat="identity") + 
+  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1)) + ylab(paste0("recall (n=",GWAS.n,")")) + scale_fill_manual(values=col.scheme)
 ggsave(paste0("plots/K562_GWAS_recall_PIP_",GWAS.pip.thres,"_point_estimates_bar.pdf"),width=3,height=3)
 
 point.GWAS.genome.df$sample <- factor(point.GWAS.genome.df$sample, levels=point.GWAS.genome.df$sample[order(point.GWAS.genome.df$enrichment, decreasing = TRUE)])
-ggplot(point.GWAS.genome.df, aes(sample, enrichment)) + geom_bar(stat="identity") + 
-  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1))
+ggplot(point.GWAS.genome.df, aes(sample, enrichment, fill=sample)) + geom_bar(stat="identity") + 
+  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1))+ scale_fill_manual(values=col.scheme)
 ggsave(paste0("plots/K562_GWAS_enrichment_PIP_",GWAS.pip.thres,"_point_estimates_bar.pdf"),width=3,height=3)
 
 ```
 
 Plot CRISPR point estimate results
-
 ```{r}
 
 point.CRISPR.genome.df <- subset(point.CRISPR.df, loc=="genome")
@@ -436,7 +414,7 @@ point.CRISPR.non.genome.df <- subset(point.CRISPR.df, loc!="genome")
 
 ggplot(point.CRISPR.genome.df, aes(recall, precision, color=assay, label=sample)) + 
   geom_point() + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
-  xlab(paste0("recall (n=",CRISPR.n,")"))
+  xlab(paste0("recall (n=",CRISPR.n,")")) + scale_color_manual(values=col.scheme)
 ggsave(paste0("plots/K562_CRISPR_precision_vs_recall_point_estimates.pdf"),width=8,height=7)
 
 #ggplot(point.CRISPR.non.genome.df, aes(recall, precision, color=assay, label=sample)) + 
@@ -445,20 +423,19 @@ ggsave(paste0("plots/K562_CRISPR_precision_vs_recall_point_estimates.pdf"),width
 #ggsave(paste0("plots/K562_CRISPR_precision_vs_recall_point_estimates_proximal_vs_distal.pdf"),width=8,height=7)
 
 point.CRISPR.genome.df$sample <- factor(point.CRISPR.genome.df$sample, levels=point.CRISPR.genome.df$sample[order(point.CRISPR.genome.df$recall, decreasing = TRUE)])
-ggplot(point.CRISPR.genome.df, aes(sample, recall)) + geom_bar(stat="identity") + 
-  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1)) + ylab(paste0("recall (n=",CRISPR.n,")"))
+ggplot(point.CRISPR.genome.df, aes(sample, recall,fill=sample)) + geom_bar(stat="identity") + 
+  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1)) + ylab(paste0("recall (n=",CRISPR.n,")")) + scale_fill_manual(values=col.scheme)
 ggsave(paste0("plots/K562_CRISPR_recall_point_estimates_bar.pdf"),width=3,height=3)
 
 point.CRISPR.genome.df$sample <- factor(point.CRISPR.genome.df$sample, levels=point.CRISPR.genome.df$sample[order(point.CRISPR.genome.df$precision, decreasing = TRUE)])
-ggplot(point.CRISPR.genome.df, aes(sample, precision)) + geom_bar(stat="identity") + 
-  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1))
+ggplot(point.CRISPR.genome.df, aes(sample, precision,fill=sample)) + geom_bar(stat="identity") + 
+  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1)) + scale_fill_manual(values=col.scheme)
 ggsave(paste0("plots/K562_CRISPR_precision_point_estimates_bar.pdf"),width=3,height=3)
 
 ```
 
 
 Enrichment, precision, and recall versus score threshold
-
 ```{r}
 
 enrichment.precision.recall <- function(data, fg.data, bg.data, assay) {
@@ -508,27 +485,26 @@ pooled.PRIMEloci.CRISPR.enrichment.recall.data <- enrichment.precision.recall(po
 
 
 Plot results
-
 ```{r}
 
-ggplot(pooled.PRIMEloci.ClinVar.enrichment.recall.data, aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
+ggplot(pooled.PRIMEloci.ClinVar.enrichment.recall.data[pooled.PRIMEloci.CRISPR.enrichment.recall.data$recall>0.01,], aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
   theme(aspect.ratio=1) +
-  geom_point(data=subset(point.ClinVar.df,loc=="genome")) + xlab(paste0("recall (n=",ClinVar.n,")"))
+  geom_point(data=subset(point.ClinVar.df,loc=="genome")) + xlab(paste0("recall (n=",ClinVar.n,")")) + scale_color_manual(values=col.scheme)
 ggsave("plots/K562_pooled_PRIMEloci_ClinVar_enrichment_vs_recall_and_point_estimates_genome.pdf",width=7,height=5)
 
-ggplot(pooled.PRIMEloci.eQTL.enrichment.recall.data, aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
+ggplot(pooled.PRIMEloci.eQTL.enrichment.recall.data[pooled.PRIMEloci.CRISPR.enrichment.recall.data$recall>0.01,], aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
   theme(aspect.ratio=1) +
-  geom_point(data=point.eQTL.genome.df) + xlab(paste0("recall (n=",eQTL.n,")"))
+  geom_point(data=point.eQTL.genome.df) + xlab(paste0("recall (n=",eQTL.n,")")) + scale_color_manual(values=col.scheme)
 ggsave(paste0("plots/K562_pooled_PRIMEloci_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,"_and_point_estimates_genome.pdf"),width=7,height=5)
 
-ggplot(pooled.PRIMEloci.GWAS.enrichment.recall.data, aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
+ggplot(pooled.PRIMEloci.GWAS.enrichment.recall.data[pooled.PRIMEloci.CRISPR.enrichment.recall.data$recall>0.01,], aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
   theme(aspect.ratio=1) +
-  geom_point(data=point.GWAS.genome.df) + xlab(paste0("recall (n=",GWAS.n,")"))
+  geom_point(data=point.GWAS.genome.df) + xlab(paste0("recall (n=",GWAS.n,")")) + scale_color_manual(values=col.scheme)
 ggsave(paste0("plots/K562_pooled_PRIMEloci_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,"_and_point_estimates_genome.pdf"),width=7,height=5)
 
-ggplot(pooled.PRIMEloci.CRISPR.enrichment.recall.data, aes(recall, precision, color=assay)) + geom_line(aes(group=sample)) +
+ggplot(pooled.PRIMEloci.CRISPR.enrichment.recall.data[pooled.PRIMEloci.CRISPR.enrichment.recall.data$recall>0.01,], aes(recall, precision, color=assay)) + geom_line(aes(group=sample)) +
   theme(aspect.ratio=1) +
-  geom_point(data=point.CRISPR.genome.df) + xlab(paste0("recall (n=",CRISPR.n,")"))
+  geom_point(data=point.CRISPR.genome.df) + xlab(paste0("recall (n=",CRISPR.n,")")) + scale_color_manual(values=col.scheme)
 ggsave(paste0("plots/K562_pooled_PRIMEloci_CRISPR_precision_vs_recall_and_point_estimates_genome.pdf"),width=7,height=5)
 
 ```
