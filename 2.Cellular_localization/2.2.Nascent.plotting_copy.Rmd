@@ -492,7 +492,148 @@ gm12878.expr.df.p.m %>%
   tidyr::unnest_wider(col = corr, names_sep = NULL)
 ```
 
-## [1.11.] Identify ptototypical examples
+```{r}
+test <- gm12878.expr.df.p.m %>%
+  dplyr::mutate(
+      ratio = base::log2(value / GM12878_500K_C),
+      ratio = dplyr::case_when(
+          ratio == -Inf ~ -100,
+          ratio == Inf ~ 100,
+          TRUE ~ ratio
+        )
+      ) %>% 
+  dplyr::filter(
+      (tripFC <= -1 | tripFC >= 1) &
+      (ratio <= -1 | ratio >= 1)
+    ) %>%
+  dplyr::filter(
+      name == "GM12878_5M_N" & grp == "distal"
+    ) %>%
+  dplyr::mutate(
+    TRIP = dplyr::case_when(
+        tripFC <= -1 ~ FALSE,
+        tripFC >= 1 ~ TRUE,
+        TRUE ~ NA
+      ),
+    Nuc = dplyr::case_when(
+        ratio <= -1 ~ FALSE,
+        ratio >= 1 ~ TRUE,
+        TRUE ~ NA
+      )
+    ) %>%
+  dplyr::group_by(TRIP,Nuc)
+
+test %>%
+  dplyr::count() %>%
+  dplyr::pull(n) %>%
+  base::paste(.,collapse = "_")
+```
+
+
+```{r}
+chi_trip <- gm12878.expr.df.p %>%
+  dplyr::select(
+      "loc", "grp", "tripFC", "groFC",
+      "GM12878_500K_C","GM12878_1M_N","GM12878_5M_N",
+      "GM12878_1M_trip", "GM12878_1M_ctrl", "GM12878_groCap_1"
+    ) %>%
+  tidyr::pivot_longer(
+      cols = base::c("GM12878_1M_N","GM12878_5M_N")
+    ) %>% 
+  dplyr::mutate(
+      ratio = base::log2(value / GM12878_500K_C),
+      ratio = dplyr::case_when(
+          ratio == -Inf ~ -100,
+          ratio == Inf ~ 100,
+          TRUE ~ ratio
+        )
+      ) %>% 
+  dplyr::filter(
+      (tripFC <= -1 | tripFC >= 1) &
+      (ratio <= -1 | ratio >= 1)
+    ) %>%
+  dplyr::filter(
+      GM12878_1M_ctrl > 0.5
+    ) %>% 
+  dplyr::group_by(name,grp) %>%
+  tidyr::nest() %>% 
+  dplyr::mutate(
+    res = purrr::map(
+      .x = data,
+      .f = function(df){
+        o <- df %>%
+          dplyr::mutate(
+            TRIP = dplyr::case_when(
+                tripFC <= -1 ~ FALSE,
+                tripFC >= 1 ~ TRUE,
+                TRUE ~ NA
+              ),
+            Nuc = dplyr::case_when(
+                ratio <= -1 ~ FALSE,
+                ratio >= 1 ~ TRUE,
+                TRUE ~ NA
+              )
+            ) %>%
+          dplyr::group_by(TRIP,Nuc)
+        
+        num <-  o %>%
+          dplyr::count() %>%
+          dplyr::pull(n) %>%
+          base::paste(.,collapse = "_")
+        
+        out <- o %$% 
+          stats::chisq.test(
+              x = TRIP,
+              y = Nuc
+            )
+        base::names(out$p.value) <- "p_value"
+        base::names(num) <- "counts"
+        base::return(
+            base::c(out$statistic,out$p.value,num)
+          )
+        }
+      )
+    ) %>%
+  dplyr::select(-data) %>%
+  dplyr::ungroup() %>%
+  tidyr::unnest_wider(col = res, names_sep = NULL)
+```
+
+```{r}
+gm12878.expr.df.p %>%
+  dplyr::select(
+      "loc", "grp", "tripFC", "groFC",
+      "GM12878_500K_C","GM12878_1M_N","GM12878_5M_N",
+      "GM12878_1M_trip", "GM12878_1M_ctrl", "GM12878_groCap_1"
+    ) %>%
+  tidyr::pivot_longer(
+      cols = tidyselect::contains("_"),
+      names_to = "sample",
+      values_to = "score"
+    ) %>%
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = base::log10(score)
+      )
+    ) +
+  geom_density() +
+  geom_vline(
+      xintercept = base::log10(0.5),
+      linetype = "dashed"
+    ) +
+  facet_wrap(
+      facets = . ~ sample,
+      nrow = 1
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+
+## [1.12.] Identify ptototypical examples
 # proximal_GM12878_5M_ratio>1:# 1) chr6:32971379-32971778 2) chr19:36,772,089-36,773,671 3) chr1:161524172-161524571
 # distal_GM12878_5M_ratio<-1: 2) chr1:160,708,482-160,708,881 3) chr10:3,783,346-3,783,745 (KLF6) 4) chr1:116377854-116378253
 # proximal_trip500kcells: ) chr4:159,101,737-159,104,305 ) chr1:40161219-40161618 ) chr8:38918070-38918469
@@ -951,7 +1092,7 @@ chi <- gm12878.expr.df.p.m %>%
         )
       ) %>% 
   dplyr::filter(
-      (groFC <= -1 | groFC >=1) &
+      (groFC <= -1 | groFC >= 1) &
       (ratio <= -1 | ratio >= 1)
     ) %>%
   dplyr::group_by(name,grp) %>%
