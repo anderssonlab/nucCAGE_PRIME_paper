@@ -492,44 +492,8 @@ gm12878.expr.df.p.m %>%
   tidyr::unnest_wider(col = corr, names_sep = NULL)
 ```
 
-```{r}
-test <- gm12878.expr.df.p.m %>%
-  dplyr::mutate(
-      ratio = base::log2(value / GM12878_500K_C),
-      ratio = dplyr::case_when(
-          ratio == -Inf ~ -100,
-          ratio == Inf ~ 100,
-          TRUE ~ ratio
-        )
-      ) %>% 
-  dplyr::filter(
-      (tripFC <= -1 | tripFC >= 1) &
-      (ratio <= -1 | ratio >= 1)
-    ) %>%
-  dplyr::filter(
-      name == "GM12878_5M_N" & grp == "distal"
-    ) %>%
-  dplyr::mutate(
-    TRIP = dplyr::case_when(
-        tripFC <= -1 ~ FALSE,
-        tripFC >= 1 ~ TRUE,
-        TRUE ~ NA
-      ),
-    Nuc = dplyr::case_when(
-        ratio <= -1 ~ FALSE,
-        ratio >= 1 ~ TRUE,
-        TRUE ~ NA
-      )
-    ) %>%
-  dplyr::group_by(TRIP,Nuc)
-
-test %>%
-  dplyr::count() %>%
-  dplyr::pull(n) %>%
-  base::paste(.,collapse = "_")
-```
-
-
+## [1.11.] Run Chi-square test
+#### Triptolide contol "GM12878_1M_ctrl" required to show an expression above 0.5
 ```{r}
 chi_trip <- gm12878.expr.df.p %>%
   dplyr::select(
@@ -596,9 +560,121 @@ chi_trip <- gm12878.expr.df.p %>%
     ) %>%
   dplyr::select(-data) %>%
   dplyr::ungroup() %>%
-  tidyr::unnest_wider(col = res, names_sep = NULL)
+  tidyr::unnest_wider(
+      col = res, names_sep = NULL
+    ) %>%
+  dplyr::mutate(
+      p_value = base::as.numeric(p_value)
+    )
+base::print(chi_trip)
 ```
 
+## [1.12.] Chi square test for randomised distributions to acquoire a background
+```{r}
+chi_all <- foreach::foreach(i = 1:10000) %dopar% {
+    base::set.seed(i)
+    gm12878.expr.df.p %>%
+      dplyr::select(
+          "loc", "grp", "tripFC", "groFC",
+          "GM12878_500K_C","GM12878_1M_N","GM12878_5M_N",
+          "GM12878_1M_trip", "GM12878_1M_ctrl", "GM12878_groCap_1"
+        ) %>%
+      tidyr::pivot_longer(
+          cols = base::c("GM12878_1M_N","GM12878_5M_N")
+        ) %>% 
+      dplyr::mutate(
+          ratio = base::log2(value / GM12878_500K_C),
+          ratio = dplyr::case_when(
+              ratio == -Inf ~ -100,
+              ratio == Inf ~ 100,
+              TRUE ~ ratio
+            )
+          ) %>% 
+      dplyr::filter(
+          (tripFC <= -1 | tripFC >= 1) &
+          (ratio <= -1 | ratio >= 1)
+        ) %>%
+      dplyr::filter(
+          GM12878_1M_ctrl > 0.5
+        ) %>%
+      dplyr::select(
+          grp,name,tripFC,ratio
+        ) %>%
+      dplyr::mutate(
+          tripFC_rand = base::sample(tripFC),
+          ratio_rand = base::sample(ratio)
+        ) %>%
+      dplyr::group_by(name,grp) %>%
+      tidyr::nest() %>% 
+      dplyr::mutate(
+        res = purrr::map(
+          .x = data,
+          .f = function(df){
+            o <- df %>%
+              dplyr::mutate(
+                TRIP = dplyr::case_when(
+                    tripFC_rand <= -1 ~ FALSE,
+                    tripFC_rand >= 1 ~ TRUE,
+                    TRUE ~ NA
+                  ),
+                Nuc = dplyr::case_when(
+                    ratio_rand <= -1 ~ FALSE,
+                    ratio_rand >= 1 ~ TRUE,
+                    TRUE ~ NA
+                  )
+                ) %>%
+              dplyr::group_by(TRIP,Nuc) %$% 
+              stats::chisq.test(
+                  x = TRIP,
+                  y = Nuc
+                )
+            base::names(o$p.value) <- "p_value"
+            base::return(
+                base::c(o$statistic,o$p.value)
+              )
+            }
+          )
+        ) %>%
+      dplyr::select(-data) %>%
+      dplyr::ungroup() %>%
+      tidyr::unnest_wider(col = res, names_sep = NULL) %>%
+      dplyr::mutate(
+          seed = i
+        )
+    } %>%
+  dplyr::bind_rows()
+```
+
+## [1.13.]
+```{r}
+ggplot2::ggplot(
+      data = chi_all,
+      mapping = aes(
+        x = p_value
+      )
+    ) +
+  geom_histogram(
+      bins = 100
+    ) +
+  geom_vline(
+      data = chi_trip,
+      mapping = aes(
+        xintercept = p_value
+      ),
+      color = "red",
+      linetype = "dashed"
+    ) +
+  facet_grid(
+      facets = name ~ grp
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      panel.spacing = grid::unit(0.1,"lines")
+    )
+```
+
+## [1.14.] Inspect overall expression distribution
 ```{r}
 gm12878.expr.df.p %>%
   dplyr::select(
@@ -633,7 +709,7 @@ gm12878.expr.df.p %>%
 ```
 
 
-## [1.12.] Identify ptototypical examples
+## [1.15.] Identify ptototypical examples
 # proximal_GM12878_5M_ratio>1:# 1) chr6:32971379-32971778 2) chr19:36,772,089-36,773,671 3) chr1:161524172-161524571
 # distal_GM12878_5M_ratio<-1: 2) chr1:160,708,482-160,708,881 3) chr10:3,783,346-3,783,745 (KLF6) 4) chr1:116377854-116378253
 # proximal_trip500kcells: ) chr4:159,101,737-159,104,305 ) chr1:40161219-40161618 ) chr8:38918070-38918469
@@ -1196,7 +1272,7 @@ chi_all <- foreach::foreach(i = 1:10000) %dopar% {
   dplyr::bind_rows()
 ```
 
-## [2.13.] Visualize X-squared statistics
+## [2.13.] Visualize Chi-square statistics
 ```{r}
 ggplot2::ggplot(
       data = chi_all,
