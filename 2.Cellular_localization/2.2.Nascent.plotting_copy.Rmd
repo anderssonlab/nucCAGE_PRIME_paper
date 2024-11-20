@@ -1341,7 +1341,7 @@ ggplot2::ggplot(
       )
     ) +
   geom_histogram(
-      bins = 100
+      bins = 1000
     ) +
   geom_vline(
       data = chi_gro,
@@ -1371,7 +1371,7 @@ for(ext in base::c("pdf", "png")){
           "_groCap.GM12878.DHSs.main",
           # "_groCap500kCells.GM12878.DHSs.main",
           "_Xsquare",
-          "_bin100",
+          "_bin1000",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
