@@ -571,7 +571,7 @@ base::print(chi_trip)
 
 ## [1.12.] Chi square test for randomised distributions to acquoire a background
 ```{r}
-chi_all <- foreach::foreach(i = 1:10000) %dopar% {
+chi_all_trip <- foreach::foreach(i = 1:10000) %dopar% {
     base::set.seed(i)
     gm12878.expr.df.p %>%
       dplyr::select(
@@ -645,10 +645,10 @@ chi_all <- foreach::foreach(i = 1:10000) %dopar% {
   dplyr::bind_rows()
 ```
 
-## [1.13.]
+## [1.13.] Plot Chi-square p-values
 ```{r}
 ggplot2::ggplot(
-      data = chi_all,
+      data = chi_all_trip,
       mapping = aes(
         x = p_value
       )
@@ -674,7 +674,29 @@ ggplot2::ggplot(
     )
 ```
 
-## [1.14.] Inspect overall expression distribution
+## [1.14.] Print plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("2.Cellular_localization/plots/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_tripFC.GM12878.DHSs.main",
+          # "_trip500kCells.GM12878.DHSs.main",
+          "_Xsquare",
+          "_bins100",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 5,
+      height = 5
+    )
+  }
+```
+
+## [1.15.] Inspect overall expression distribution
 ```{r}
 gm12878.expr.df.p %>%
   dplyr::select(
@@ -708,8 +730,7 @@ gm12878.expr.df.p %>%
     )
 ```
 
-
-## [1.15.] Identify ptototypical examples
+## [1.16.] Identify ptototypical examples
 # proximal_GM12878_5M_ratio>1:# 1) chr6:32971379-32971778 2) chr19:36,772,089-36,773,671 3) chr1:161524172-161524571
 # distal_GM12878_5M_ratio<-1: 2) chr1:160,708,482-160,708,881 3) chr10:3,783,346-3,783,745 (KLF6) 4) chr1:116377854-116378253
 # proximal_trip500kcells: ) chr4:159,101,737-159,104,305 ) chr1:40161219-40161618 ) chr8:38918070-38918469
@@ -1158,7 +1179,7 @@ gm12878.expr.df.p.m %>%
 
 ## [2.11.] Chi square test for actual distribution
 ```{r}
-chi <- gm12878.expr.df.p.m %>%
+chi_gro <- gm12878.expr.df.p.m %>%
   dplyr::mutate(
       ratio = base::log2(value / GM12878_500K_C),
       ratio = dplyr::case_when(
@@ -1205,11 +1226,12 @@ chi <- gm12878.expr.df.p.m %>%
   dplyr::select(-data) %>%
   dplyr::ungroup() %>%
   tidyr::unnest_wider(col = res, names_sep = NULL)
+base::print(chi_gro)
 ```
 
 ## [2.12.] Chi square test for randomised distributions to acquoire a background
 ```{r}
-chi_all <- foreach::foreach(i = 1:10000) %dopar% {
+chi_all_gro <- foreach::foreach(i = 1:10000) %dopar% {
     base::set.seed(i)
     gm12878.expr.df.p.m %>%
       dplyr::mutate(
@@ -1270,19 +1292,20 @@ chi_all <- foreach::foreach(i = 1:10000) %dopar% {
         )
     } %>%
   dplyr::bind_rows()
+base::print(chi_all_gro)
 ```
 
 ## [2.13.] Visualize Chi-square statistics
 ```{r}
 ggplot2::ggplot(
-      data = chi_all,
+      data = chi_all_gro,
       mapping = aes(
         x = base::log2(`X-squared`)
       )
     ) +
   geom_density() +
   geom_vline(
-      data = chi,
+      data = chi_gro,
       mapping = aes(
         xintercept = base::log2(`X-squared`)
       )
@@ -1292,14 +1315,14 @@ ggplot2::ggplot(
     )
 
 ggplot2::ggplot(
-      data = chi_all,
+      data = chi_all_gro,
       mapping = aes(
         x = `X-squared`
       )
     ) +
   geom_density() +
   geom_vline(
-      data = chi,
+      data = chi_gro,
       mapping = aes(
         xintercept = `X-squared`
       )
@@ -1312,16 +1335,16 @@ ggplot2::ggplot(
 ## [2.14.] Visualize X-squared p-values
 ```{r}
 ggplot2::ggplot(
-      data = chi_all,
+      data = chi_all_gro,
       mapping = aes(
         x = p_value
       )
     ) +
   geom_histogram(
-      bins = 1000
+      bins = 100
     ) +
   geom_vline(
-      data = chi,
+      data = chi_gro,
       mapping = aes(
         xintercept = p_value
       ),
@@ -1348,6 +1371,7 @@ for(ext in base::c("pdf", "png")){
           "_groCap.GM12878.DHSs.main",
           # "_groCap500kCells.GM12878.DHSs.main",
           "_Xsquare",
+          "_bin100",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
