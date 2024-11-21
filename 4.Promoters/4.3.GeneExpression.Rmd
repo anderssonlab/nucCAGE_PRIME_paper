@@ -4,7 +4,6 @@ output: html_document
 date: "2024-03-11"
 ---
 
-
 ## [0.] Prerequsites -------------------------
 
 ## [0.0.] Load necessary packages
@@ -13,60 +12,21 @@ base::library(tidyverse)
 base::library(magrittr)
 base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 base::library(org.Hs.eg.db)
-# base::library(CAGEfightR)
-# base::library(BSgenome.Hsapiens.UCSC.hg38)
-# base::library(AnnotationDbi)
 
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-```
-
-## To be discarded
-```{r}
-# #CAGEfighR extensions replace with PRIME
-# setwd("/home/mhf817")
-# sep <- .Platform$file.sep
-# cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
-# source(paste(cfr.extensions.dir, "utils.R", sep = sep))
-# source(paste(cfr.extensions.dir, "support.R", sep = sep))
-# source(paste(cfr.extensions.dir, "cumulative.R", sep = sep))
-# source(paste(cfr.extensions.dir, "decompose.R", sep = sep))
-# source(paste(cfr.extensions.dir, "enhancers.R", sep = sep))
-# source(paste(cfr.extensions.dir, "noise.R", sep = sep))
-# source(paste(cfr.extensions.dir, "coverage.R", sep = sep))
-# source(paste(cfr.extensions.dir, "complexity.R", sep = sep))
-# source(paste(cfr.extensions.dir, "subsample.R", sep = sep))
-# source(paste(cfr.extensions.dir, "dispersion.R", sep = sep))
-# library(dplyr)
-# library(reshape2)
-```
-
-## [0.1.] Load data
-#### Load environment: 'base::load("./repSub.GM12878.GeneLevel.RData")'; 'base::load("./repSub.K562.GeneLevel.RData")'
-```{r}
-GM12878.TCs <- base::readRDS(
-  file = base::paste0(
-      here::here("4.Promoters/"),
-      "repSub.TCs.GM12878.rds"
-    )
-  )
-K562.TCs <- base::readRDS(
-  file = base::paste0(
-      here::here("4.Promoters/"),
-      "repSub.TCs.k562.rds"
-    )
-  )
-```
-
-## [0.1.] Set working directory
-## To be discarded
-```{r}
-# base::setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/4.Promoters/")
 ```
 
 # [1.] K562 replicate subsetted  -------------------------
 
 ## [1.0.] Read in predefined TCs and quantify gene level expression
 ```{r}
+K562.TCs <- base::readRDS(
+  file = base::paste0(
+      here::here("4.Promoters/"),
+      "repSub.TCs.k562.rds"
+    )
+  )
+
 K562.TCs <- CAGEfightR::assignGeneID(
     object = K562.TCs,
     geneModels = txdb
@@ -124,7 +84,7 @@ K562.comb.expr <- dplyr::left_join(
   )
 ```
 
-## [1.3.]
+## [1.3.] Prepare correlation analysis
 ```{r}
 K562.cor.data <- K562.cageExpr %>%
   tidyr::pivot_wider(
@@ -144,18 +104,19 @@ K562.cor.data <- K562.cageExpr %>%
       )
     ) %>%
   dplyr::select(-geneID,-ensembl)
+```
 
-
-base::expand.grid(
+## [1.4.] Pearson correlation analysis
+```{r}
+corrs <- base::expand.grid(
       x = base::colnames(K562.cor.data),
       y = base::colnames(K562.cor.data)
     ) %>% 
+  # dplyr::filter(row_number() %in% 1:10) %>% 
   dplyr::mutate(
     cor = purrr::pmap_dbl(
       .l = base::list(x,y),
       .f = function(x,y){
-        # x = "K562_C1"
-        # y = "K562_C"
         d <- K562.cor.data %>%
           dplyr::select(x,y) %>% 
           dplyr::filter(
@@ -164,117 +125,306 @@ base::expand.grid(
                 .fns = ~ . > 0
               )
             )
-        nrow(d)
-        # c <- stats::cor(x = base::log10(d[,x]),y = base::log10(d[,y]))
-        # return(base::unlist(base::unname(c)))
-      }
+        c <- stats::cor(
+            x = base::log10(d[,x]),
+            y = base::log10(d[,y])
+          )
+        return(
+            base::unlist(base::unname(c))
+          )
+        }
+      )
     )
+```
+
+## [1.5.] Visualization of pearson correlation coefficients
+```{r}
+cols <- grDevices::colorRampPalette(
+    base::rev(RColorBrewer::brewer.pal(11,"RdBu"))
+  )(100)
+
+ggplot2::ggplot(
+      data = corrs,
+      mapping = aes(
+        x = x,
+        y = y,
+        fill = cor
+      )
+    ) +
+  geom_tile(
+      stat = "identity",
+      width = 0.9,
+      height = 0.9
+    ) +
+  geom_text(
+    mapping = aes(
+          label = base::round(cor,2),
+          color = base::ifelse(cor>0.8,"on","off")
+        ),
+      size = 3
+    ) +
+  scale_fill_gradientn(
+      colors = .GlobalEnv$cols,
+      limits = base::c(0L,1L)
+    ) +
+  scale_color_manual(
+      values = base::c(on="white",off="black")
+    ) +
+  theme(
+      axis.text.x = element_text(
+        angle = 90,
+        hjust = 1,
+        vjust = 0.5,
+        size = 8
+      ),
+      axis.text.y = element_text(
+        size = 8
+      ),
+      aspect.ratio = 1,
+      axis.title = element_blank()
+    ) +
+  guides(
+      fill = guide_colorbar(
+        label.position = "right",
+        title = NULL,
+        title.position = "left",
+        title.theme = element_text(
+          angle = 90,
+          hjust = 0.5
+        ),
+        ticks=T,
+        nbin=100,
+        barheight=5,
+        label=T,
+        barwidth=0.5
+      ),
+      color = "none"
+    )
+```
+
+## [1.6.] Calculate correlations
+#### Evaluate with 'x = "K562_C1"'
+```{r}
+corel <- base::lapply(
+  X = base::unique(K562.comb.expr$sample),
+  FUN = function(x) {
+    samp <- K562.comb.expr[
+        K562.comb.expr$sample == x &
+        K562.comb.expr$TPM > 0 &
+        K562.comb.expr$gene_counts > 0,
+      ]
+    cor <- stats::cor(
+        x = base::log10(samp$gene_counts), ## includes NAs
+        y = base::log10(samp$TPM) ## includes NAs
+      )
+    }
   )
 
+K562.cor.df <- data.frame(
+    samp = base::unique(K562.comb.expr$sample),
+    correlation = base::unlist(corel)
+  )
 ```
 
-## [1.3.] Calculate correlations
+## [1.7.] Save files in RData container
 ```{r}
-corel <- lapply(unique(k562.comb.expr$sample),function(x) {
-  samp <- k562.comb.expr[k562.comb.expr$sample==x & k562.comb.expr$TPM>0 & k562.comb.expr$gene_counts>0,]
-  cor <- cor(log10(samp$gene_counts), log10(samp$TPM))
-})
-
-k562.cor.df <- data.frame(samp=unique(k562.comb.expr$sample), correlation=unlist(corel))
+base::save(
+  k562.cor.df,k562.comb.expr,
+  file = base::paste0(
+      here::here("4.Promoters/"),
+      "repSub.k562.GeneLevel.RData"
+    )
+  )
 ```
-
-
-## [1.4.] Write output
-```{r}
-save(k562.cor.df,k562.comb.expr,file="./repSub.k562.GeneLevel.RData")
-```
-
-
 
 # [2.] K562 pool subsetted  -------------------------
 
 ## [2.0.] Read in predefined TCs and quantify gene level expression
 ```{r}
-K562.TCs <- base::readRDS("./poolSub.TCs.k562.rds")
+K562.TCs <- base::readRDS(
+  file = base::paste0(
+      here::here("4.Promoters/"),
+      "poolSub.TCs.k562.rds"
+    )
+  )
 
-K562.TCs <- CAGEfightR::assignGeneID(K562.TCs,geneModels=txdb)
+K562.TCs <- CAGEfightR::assignGeneID( # 47.99 %, 29227
+    object = K562.TCs,
+    geneModels = txdb
+  )
 
-k562.cageExpr <- K562.TCs %>%
-  as.data.frame(row.names=NULL) %>%
-  group_by(sample, geneID) %>% 
-  summarize(gene_counts=sum(score))
+K562.cageExpr <- K562.TCs %>%
+  base::as.data.frame(row.names = NULL) %>%
+  dplyr::group_by(sample, geneID) %>% 
+  dplyr::summarize(
+      gene_counts = base::sum(score),
+      .groups = "drop"
+    ) %>%
+  dplyr::mutate(
+      sample = base::as.character(sample)
+    )
+
+dplyr::distinct(K562.cageExpr,sample)
 ```
-
-
 
 ## [2.1.] Map IDs between CAGE and ENCODE gene expression
 ```{r}
-map <- mapIds(org.Hs.eg.db,
-              keys = k562.cageExpr$geneID,
-              keytype="ENTREZID",
-              column = "ENSEMBL",
-              multiVals="first")
+map <- AnnotationDbi::mapIds(
+    x = org.Hs.eg.db,
+    keys = K562.cageExpr$geneID,
+    keytype = "ENTREZID",
+    column = "ENSEMBL",
+    multiVals = "first"
+  )
 
-inds <- which(!is.na(map))
-found_genes <- map[inds]
+found_genes <- map[base::which(!base::is.na(map))]
+K562.cageExpr <- K562.cageExpr[
+    K562.cageExpr$geneID %in% base::names(found_genes),
+  ]
+K562.cageExpr$ensembl <- base::as.character(found_genes)
 
-k562.cageExpr <- k562.cageExpr[
-  k562.cageExpr$geneID %in% names(found_genes),]
-
-k562.cageExpr$ensembl <- as.character(found_genes)
-
-k562.comb.expr <- merge(k562.cageExpr,k562.geneExpr, by.y="ensembl",by.x="ensembl")
+K562.comb.expr <- dplyr::left_join(
+    x = K562.cageExpr,
+    y = K562.geneExpr,
+    by = "ensembl"
+  )
 ```
 
-
-## [2.2.] Calculate correlations
+## [2.2.] Prepare correlation analysis
 ```{r}
-corel <- lapply(unique(k562.comb.expr$sample),function(x) {
-  samp <- k562.comb.expr[k562.comb.expr$sample==x & k562.comb.expr$TPM>0 & k562.comb.expr$gene_counts>0,]
-  cor <- cor(log10(samp$gene_counts), log10(samp$TPM))
-})
-
-k562.cor.df <- data.frame(samp=unique(k562.comb.expr$sample), correlation=unlist(corel))
+K562.cor.data <- K562.cageExpr %>%
+  tidyr::pivot_wider(
+      names_from = "sample",
+      values_from = "gene_counts"
+    ) %>%
+  tidyr::drop_na(geneID) %>% 
+  dplyr::left_join(
+      x = .,
+      y = dplyr::select(K562.geneExpr,"ensembl", "TPM"),
+      by = "ensembl"
+    ) %>% #dplyr::filter(is.na(geneID))
+  dplyr::mutate(
+    dplyr::across(
+        .cols = tidyselect::everything(),
+        .fns = ~ tidyr::replace_na(.,0)
+      )
+    ) %>%
+  dplyr::select(-geneID,-ensembl)
 ```
 
+## [2.3.] Pearson correlation analysis
+```{r}
+corrs <- base::expand.grid(
+      x = base::colnames(K562.cor.data),
+      y = base::colnames(K562.cor.data)
+    ) %>%
+  dplyr::mutate(
+    cor = purrr::pmap_dbl(
+      .l = base::list(x,y),
+      .f = function(x,y){
+        d <- K562.cor.data %>%
+          dplyr::select(x,y) %>% 
+          dplyr::filter(
+              dplyr::across(
+                .cols = tidyselect::everything(),
+                .fns = ~ . > 0
+              )
+            )
+        c <- stats::cor(
+            x = base::log10(d[,x]),
+            y = base::log10(d[,y])
+          )
+        return(
+            base::unlist(base::unname(c))
+          )
+        }
+      )
+    )
+```
 
-## [2.3.] Write output
+## [2.4.] Calculate correlations
+```{r}
+corel <- base::lapply(
+    X = base::unique(K562.comb.expr$sample),
+    FUN = function(x) {
+    samp <- K562.comb.expr[
+        K562.comb.expr$sample == x &
+        K562.comb.expr$TPM > 0 &
+        K562.comb.expr$gene_counts > 0,
+      ]
+    cor <- stats::cor(
+        base::log10(samp$gene_counts),
+        base::log10(samp$TPM)
+      )
+    }
+  )
+
+K562.cor.df <- base::data.frame(
+    samp = base::unique(k562.comb.expr$sample),
+    correlation = base::unlist(corel)
+  )
+```
+
+## [2.5.] Save data
 ```{r}
 k562.p.cor.df <- k562.cor.df
 k562.p.comb.expr <- k562.comb.expr
-save(k562.p.cor.df,k562.p.comb.expr,file="./poolSub.k562.GeneLevel.RData")
+
+base::save(
+    k562.p.cor.df,
+    k562.p.comb.expr,
+    file = base::paste0(
+      here::here("4.Promoters/"),
+      "poolSub.k562.GeneLevel.RData"
+    )
+  )
 ```
-
-
-
-
 
 # [3.] GM12878 replicate subsetted  -------------------------
 
 ## [3.0.] Read in predefined TCs and quantify gene level expression
 ```{r}
-GM12878.TCs <- base::readRDS("./repSub.TCs.GM12878.rds")
+GM12878.TCs <- base::readRDS(
+  file = base::paste0(
+      here::here("4.Promoters/"),
+      "repSub.TCs.GM12878.rds"
+    )
+  )
 
-GM12878.TCs <- CAGEfightR::assignGeneID(GM12878.TCs,geneModels=txdb)
+GM12878.TCs <- CAGEfightR::assignGeneID(
+    object = GM12878.TCs,
+    geneModels = txdb
+  )
 
-gm12878.cageExpr <- GM12878.TCs %>%
-  as.data.frame(row.names=NULL) %>%
-  group_by(sample, geneID) %>% 
-  summarize(gene_counts=sum(score))
+GM12878.cageExpr <- GM12878.TCs %>%
+  base::as.data.frame(row.names = NULL) %>%
+  dplyr::group_by(sample, geneID) %>% 
+  dplyr::summarize(
+      gene_counts = base::sum(score),
+      .groups = "drop"
+    ) %>%
+  dplyr::mutate(
+      sample = base::as.character(sample)
+    )
+
+dplyr::distinct(GM12878.cageExpr, sample)
 ```
-
 
 ## [3.1.] Read in and format ENCODE gene expression
 ```{r}
-gm12878.geneExpr <- utils::read.table(
-  "../0.External_resources/ENCFF345SHY.tsv",
-  header=T)
-
-gm12878.geneExpr$ensembl <- base::gsub(
-  "\\..*","",
-  gm12878.geneExpr$gene_id)
+GM12878.geneExpr <- utils::read.table(
+      file = base::paste0(
+          here::here("0.External_resources/"),
+          "ENCFF345SHY.tsv"
+        ),
+      header = TRUE
+    ) %>% 
+  dplyr::mutate(
+    ensembl = stringr::str_replace(
+        gene_id,"\\..*",""
+      )
+    )
 ```
-
 
 ## [3.2.] Map IDs between CAGE and ENCODE gene expression
 ```{r}
@@ -293,6 +443,28 @@ gm12878.cageExpr <- gm12878.cageExpr[
 gm12878.cageExpr$ensembl <- as.character(found_genes)
 
 gm12878.comb.expr <- merge(gm12878.cageExpr,gm12878.geneExpr, by.y="ensembl",by.x="ensembl")
+```
+
+```{r}
+map <- AnnotationDbi::mapIds(
+    x = org.Hs.eg.db,
+    keys = K562.cageExpr$geneID,
+    keytype = "ENTREZID",
+    column = "ENSEMBL",
+    multiVals = "first"
+  )
+
+found_genes <- map[base::which(!base::is.na(map))]
+K562.cageExpr <- K562.cageExpr[
+    K562.cageExpr$geneID %in% base::names(found_genes),
+  ]
+K562.cageExpr$ensembl <- base::as.character(found_genes)
+
+K562.comb.expr <- dplyr::left_join(
+    x = K562.cageExpr,
+    y = K562.geneExpr,
+    by = "ensembl"
+  )
 ```
 
 
