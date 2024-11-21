@@ -9,11 +9,11 @@ date: "2024-03-11"
 
 ## [0.0.] Load necessary packages
 ```{r}
-base::library(CAGEfightR)
+# base::library(CAGEfightR)
 base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-base::library(BSgenome.Hsapiens.UCSC.hg38)
-base::library(org.Hs.eg.db)
-base::library(AnnotationDbi)
+# base::library(BSgenome.Hsapiens.UCSC.hg38)
+# base::library(org.Hs.eg.db)
+# base::library(AnnotationDbi)
 
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 ```
@@ -65,49 +65,83 @@ K562.TCs <- base::readRDS(
 
 ## [1.0.] Read in predefined TCs and quantify gene level expression
 ```{r}
-K562.TCs <- base::readRDS("./repSub.TCs.k562.rds")
-
 K562.TCs <- CAGEfightR::assignGeneID(
     object = K562.TCs,
     geneModels = txdb
   )
 
-k562.cageExpr <- K562.TCs %>%
+K562.cageExpr <- K562.TCs %>%
   base::as.data.frame(row.names = NULL) %>%
   dplyr::group_by(sample, geneID) %>% 
-  dplyr::summarize(gene_counts = base::sum(score))
+  dplyr::summarize(
+      gene_counts = base::sum(score),
+      .groups = "drop"
+    ) %>%
+  dplyr::mutate(
+      sample = base::as.character(sample)
+    ) # %>%
+  # dplyr::filter(is.na(geneID))
 ```
-
 
 ## [1.1.] Read in and format ENCODE gene expression
 ```{r}
-k562.geneExpr <- utils::read.table(
-  "../0.External_resources/ENCFF928NYA.tsv",
-  header=T)
-
-k562.geneExpr$ensembl <- base::gsub(
-  "\\..*","",
-  k562.geneExpr$gene_id)
+K562.geneExpr <- utils::read.table(
+      file = base::paste0(
+          here::here("0.External_resources/"),
+          "ENCFF928NYA.tsv"
+        ),
+      header = TRUE
+    ) %>% 
+  dplyr::mutate(
+    ensembl = stringr::str_replace(
+        gene_id,"\\..*",""
+      )
+    )
 ```
-
 
 ## [1.2.] Map IDs between CAGE and ENCODE gene expression
 ```{r}
-map <- mapIds(org.Hs.eg.db,
-              keys = k562.cageExpr$geneID,
-              keytype="ENTREZID",
-              column = "ENSEMBL",
-              multiVals="first")
+map <- AnnotationDbi::mapIds(
+    x = org.Hs.eg.db,
+    keys = K562.cageExpr$geneID,
+    keytype = "ENTREZID",
+    column = "ENSEMBL",
+    multiVals = "first"
+  )
 
-inds <- which(!is.na(map))
-found_genes <- map[inds]
+found_genes <- map[base::which(!base::is.na(map))]
+K562.cageExpr <- K562.cageExpr[
+    K562.cageExpr$geneID %in% base::names(found_genes),
+  ]
+K562.cageExpr$ensembl <- base::as.character(found_genes)
 
-k562.cageExpr <- k562.cageExpr[
-  k562.cageExpr$geneID %in% names(found_genes),]
+K562.comb.expr <- dplyr::left_join(
+    x = K562.cageExpr,
+    y = K562.geneExpr,
+    by = "ensembl"
+  )
+```
 
-k562.cageExpr$ensembl <- as.character(found_genes)
-
-k562.comb.expr <- merge(k562.cageExpr,k562.geneExpr, by.y="ensembl",by.x="ensembl")
+```{r}
+K562.cageExpr %>%
+  tidyr::pivot_wider(
+      names_from = "sample",
+      values_from = "gene_counts"
+    ) %>% tidyr::drop_na(geneID)
+  dplyr::left_join(
+      x = .,
+      y = dplyr::select(K562.geneExpr,"ensembl", "TPM"),
+      by = "ensembl"
+    ) %>%
+  
+  
+  
+  dplyr::mutate(
+    dplyr::across(
+        .cols = tidyselect::everything(),
+        .fns = ~ tidyr::replace_na(.,0)
+      )
+    )
 ```
 
 
