@@ -428,47 +428,100 @@ GM12878.geneExpr <- utils::read.table(
 
 ## [3.2.] Map IDs between CAGE and ENCODE gene expression
 ```{r}
-map <- mapIds(org.Hs.eg.db,
-              keys = gm12878.cageExpr$geneID,
-              keytype="ENTREZID",
-              column = "ENSEMBL",
-              multiVals="first")
-
-inds <- which(!is.na(map))
-found_genes <- map[inds]
-
-gm12878.cageExpr <- gm12878.cageExpr[
-  gm12878.cageExpr$geneID %in% names(found_genes),]
-
-gm12878.cageExpr$ensembl <- as.character(found_genes)
-
-gm12878.comb.expr <- merge(gm12878.cageExpr,gm12878.geneExpr, by.y="ensembl",by.x="ensembl")
+# map <- mapIds(org.Hs.eg.db,
+#               keys = gm12878.cageExpr$geneID,
+#               keytype="ENTREZID",
+#               column = "ENSEMBL",
+#               multiVals="first")
+# 
+# inds <- which(!is.na(map))
+# found_genes <- map[inds]
+# 
+# gm12878.cageExpr <- gm12878.cageExpr[
+#   gm12878.cageExpr$geneID %in% names(found_genes),]
+# 
+# gm12878.cageExpr$ensembl <- as.character(found_genes)
+# 
+# gm12878.comb.expr <- merge(gm12878.cageExpr,gm12878.geneExpr, by.y="ensembl",by.x="ensembl")
 ```
 
 ```{r}
 map <- AnnotationDbi::mapIds(
     x = org.Hs.eg.db,
-    keys = K562.cageExpr$geneID,
+    keys = GM12878.cageExpr$geneID,
     keytype = "ENTREZID",
     column = "ENSEMBL",
     multiVals = "first"
   )
 
 found_genes <- map[base::which(!base::is.na(map))]
-K562.cageExpr <- K562.cageExpr[
-    K562.cageExpr$geneID %in% base::names(found_genes),
+GM12878.cageExpr <- GM12878.cageExpr[
+    GM12878.cageExpr$geneID %in% base::names(found_genes),
   ]
-K562.cageExpr$ensembl <- base::as.character(found_genes)
+GM12878.cageExpr$ensembl <- base::as.character(found_genes)
 
-K562.comb.expr <- dplyr::left_join(
-    x = K562.cageExpr,
-    y = K562.geneExpr,
+GM12878.comb.expr <- dplyr::left_join(
+    x = GM12878.cageExpr,
+    y = GM12878.geneExpr,
     by = "ensembl"
   )
 ```
 
+##<<bookmark>>
 
-## [3.3.] Calculate correlations
+## [3.3.] Prepare correlation analysis
+```{r}
+GM12878.cor.data <- GM12878.cageExpr %>%
+  tidyr::pivot_wider(
+      names_from = "sample",
+      values_from = "gene_counts"
+    ) %>%
+  tidyr::drop_na(geneID) %>% 
+  dplyr::left_join(
+      x = .,
+      y = dplyr::select(GM12878.geneExpr,"ensembl", "TPM"),
+      by = "ensembl"
+    ) %>% # dplyr::filter(is.na(geneID))
+  dplyr::mutate(
+    dplyr::across(
+        .cols = tidyselect::everything(),
+        .fns = ~ tidyr::replace_na(.,0)
+      )
+    ) %>%
+  dplyr::select(-geneID,-ensembl)
+```
+
+## [3.4.] Pearson correlation analysis
+```{r}
+corrs <- base::expand.grid(
+      x = base::colnames(GM12878.cor.data),
+      y = base::colnames(GM12878.cor.data)
+    ) %>%
+  dplyr::mutate(
+    cor = purrr::pmap_dbl(
+      .l = base::list(x,y),
+      .f = function(x,y){
+        d <- K562.cor.data %>%
+          dplyr::select(x,y) %>% 
+          dplyr::filter(
+              dplyr::across(
+                .cols = tidyselect::everything(),
+                .fns = ~ . > 0
+              )
+            )
+        c <- stats::cor(
+            x = base::log10(d[,x]),
+            y = base::log10(d[,y])
+          )
+        return(
+            base::unlist(base::unname(c))
+          )
+        }
+      )
+    )
+```
+
+## [3.5.] Calculate correlations
 ```{r}
 corel <- lapply(unique(gm12878.comb.expr$sample),function(x) {
   samp <- gm12878.comb.expr[gm12878.comb.expr$sample==x & gm12878.comb.expr$TPM>0 & gm12878.comb.expr$gene_counts>0,]
@@ -483,7 +536,6 @@ gm12878.cor.df <- data.frame(samp=unique(gm12878.comb.expr$sample), correlation=
 ```{r}
 save(gm12878.cor.df,gm12878.comb.expr,file="./repSub.GM12878.GeneLevel.RData")
 ```
-
 
 
 # [4.] GM12878 pool subsetted  -------------------------
