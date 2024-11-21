@@ -8,11 +8,13 @@ date: "2024-03-11"
 ## [0.] Prerequsites -------------------------
 
 ## [0.0.] Load necessary packages
-```{r}
-# base::library(CAGEfightR)
+```{r message=FALSE,warning=FALSE}
+base::library(tidyverse)
+base::library(magrittr)
 base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+base::library(org.Hs.eg.db)
+# base::library(CAGEfightR)
 # base::library(BSgenome.Hsapiens.UCSC.hg38)
-# base::library(org.Hs.eg.db)
 # base::library(AnnotationDbi)
 
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
@@ -122,28 +124,54 @@ K562.comb.expr <- dplyr::left_join(
   )
 ```
 
+## [1.3.]
 ```{r}
-K562.cageExpr %>%
+K562.cor.data <- K562.cageExpr %>%
   tidyr::pivot_wider(
       names_from = "sample",
       values_from = "gene_counts"
-    ) %>% tidyr::drop_na(geneID)
+    ) %>%
+  tidyr::drop_na(geneID) %>% 
   dplyr::left_join(
       x = .,
       y = dplyr::select(K562.geneExpr,"ensembl", "TPM"),
       by = "ensembl"
-    ) %>%
-  
-  
-  
+    ) %>% #dplyr::filter(is.na(geneID))
   dplyr::mutate(
     dplyr::across(
         .cols = tidyselect::everything(),
         .fns = ~ tidyr::replace_na(.,0)
       )
-    )
-```
+    ) %>%
+  dplyr::select(-geneID,-ensembl)
 
+
+base::expand.grid(
+      x = base::colnames(K562.cor.data),
+      y = base::colnames(K562.cor.data)
+    ) %>% 
+  dplyr::mutate(
+    cor = purrr::pmap_dbl(
+      .l = base::list(x,y),
+      .f = function(x,y){
+        # x = "K562_C1"
+        # y = "K562_C"
+        d <- K562.cor.data %>%
+          dplyr::select(x,y) %>% 
+          dplyr::filter(
+              dplyr::across(
+                .cols = tidyselect::everything(),
+                .fns = ~ . > 0
+              )
+            )
+        nrow(d)
+        # c <- stats::cor(x = base::log10(d[,x]),y = base::log10(d[,y]))
+        # return(base::unlist(base::unname(c)))
+      }
+    )
+  )
+
+```
 
 ## [1.3.] Calculate correlations
 ```{r}
