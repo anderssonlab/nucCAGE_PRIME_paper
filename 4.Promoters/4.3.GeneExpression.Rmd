@@ -9,53 +9,73 @@ date: "2024-03-11"
 
 ## [0.0.] Load necessary packages
 ```{r}
-library(CAGEfightR)
+base::library(CAGEfightR)
+base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+base::library(BSgenome.Hsapiens.UCSC.hg38)
+base::library(org.Hs.eg.db)
+base::library(AnnotationDbi)
 
-#CAGEfighR extensions replace with PRIME
-setwd("/home/mhf817")
-sep <- .Platform$file.sep
-cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
-source(paste(cfr.extensions.dir, "utils.R", sep = sep))
-source(paste(cfr.extensions.dir, "support.R", sep = sep))
-source(paste(cfr.extensions.dir, "cumulative.R", sep = sep))
-source(paste(cfr.extensions.dir, "decompose.R", sep = sep))
-source(paste(cfr.extensions.dir, "enhancers.R", sep = sep))
-source(paste(cfr.extensions.dir, "noise.R", sep = sep))
-source(paste(cfr.extensions.dir, "coverage.R", sep = sep))
-source(paste(cfr.extensions.dir, "complexity.R", sep = sep))
-source(paste(cfr.extensions.dir, "subsample.R", sep = sep))
-source(paste(cfr.extensions.dir, "dispersion.R", sep = sep))
-
-
-#Annotations
-library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-library(BSgenome.Hsapiens.UCSC.hg38)
-library(org.Hs.eg.db)
-library(AnnotationDbi)
-library(dplyr)
-library(reshape2)
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 ```
 
-
-## [0.1.] Set working directory
+## To be discarded
 ```{r}
-base::setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/4.Promoters/")
+# #CAGEfighR extensions replace with PRIME
+# setwd("/home/mhf817")
+# sep <- .Platform$file.sep
+# cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
+# source(paste(cfr.extensions.dir, "utils.R", sep = sep))
+# source(paste(cfr.extensions.dir, "support.R", sep = sep))
+# source(paste(cfr.extensions.dir, "cumulative.R", sep = sep))
+# source(paste(cfr.extensions.dir, "decompose.R", sep = sep))
+# source(paste(cfr.extensions.dir, "enhancers.R", sep = sep))
+# source(paste(cfr.extensions.dir, "noise.R", sep = sep))
+# source(paste(cfr.extensions.dir, "coverage.R", sep = sep))
+# source(paste(cfr.extensions.dir, "complexity.R", sep = sep))
+# source(paste(cfr.extensions.dir, "subsample.R", sep = sep))
+# source(paste(cfr.extensions.dir, "dispersion.R", sep = sep))
+# library(dplyr)
+# library(reshape2)
 ```
 
+## [0.1.] Load data
+#### Load environment: 'base::load("./repSub.GM12878.GeneLevel.RData")'; 'base::load("./repSub.K562.GeneLevel.RData")'
+```{r}
+GM12878.TCs <- base::readRDS(
+  file = base::paste0(
+      here::here("4.Promoters/"),
+      "repSub.TCs.GM12878.rds"
+    )
+  )
+K562.TCs <- base::readRDS(
+  file = base::paste0(
+      here::here("4.Promoters/"),
+      "repSub.TCs.k562.rds"
+    )
+  )
+```
+
+## [0.1.] Set working directory
+## To be discarded
+```{r}
+# base::setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/4.Promoters/")
+```
 
 # [1.] K562 replicate subsetted  -------------------------
 
 ## [1.0.] Read in predefined TCs and quantify gene level expression
 ```{r}
-k562.TCs <- base::readRDS("./repSub.TCs.k562.rds")
+K562.TCs <- base::readRDS("./repSub.TCs.k562.rds")
 
-k562.TCs <- CAGEfightR::assignGeneID(k562.TCs,geneModels=txdb)
+K562.TCs <- CAGEfightR::assignGeneID(
+    object = K562.TCs,
+    geneModels = txdb
+  )
 
-k562.cageExpr <- k562.TCs %>%
-  as.data.frame(row.names=NULL) %>%
-  group_by(sample, geneID) %>% 
-  summarize(gene_counts=sum(score))
+k562.cageExpr <- K562.TCs %>%
+  base::as.data.frame(row.names = NULL) %>%
+  dplyr::group_by(sample, geneID) %>% 
+  dplyr::summarize(gene_counts = base::sum(score))
 ```
 
 
@@ -113,11 +133,11 @@ save(k562.cor.df,k562.comb.expr,file="./repSub.k562.GeneLevel.RData")
 
 ## [2.0.] Read in predefined TCs and quantify gene level expression
 ```{r}
-k562.TCs <- base::readRDS("./poolSub.TCs.k562.rds")
+K562.TCs <- base::readRDS("./poolSub.TCs.k562.rds")
 
-k562.TCs <- CAGEfightR::assignGeneID(k562.TCs,geneModels=txdb)
+K562.TCs <- CAGEfightR::assignGeneID(K562.TCs,geneModels=txdb)
 
-k562.cageExpr <- k562.TCs %>%
+k562.cageExpr <- K562.TCs %>%
   as.data.frame(row.names=NULL) %>%
   group_by(sample, geneID) %>% 
   summarize(gene_counts=sum(score))
@@ -171,11 +191,11 @@ save(k562.p.cor.df,k562.p.comb.expr,file="./poolSub.k562.GeneLevel.RData")
 
 ## [3.0.] Read in predefined TCs and quantify gene level expression
 ```{r}
-gm12878.TCs <- base::readRDS("./repSub.TCs.GM12878.rds")
+GM12878.TCs <- base::readRDS("./repSub.TCs.GM12878.rds")
 
-gm12878.TCs <- CAGEfightR::assignGeneID(gm12878.TCs,geneModels=txdb)
+GM12878.TCs <- CAGEfightR::assignGeneID(GM12878.TCs,geneModels=txdb)
 
-gm12878.cageExpr <- gm12878.TCs %>%
+gm12878.cageExpr <- GM12878.TCs %>%
   as.data.frame(row.names=NULL) %>%
   group_by(sample, geneID) %>% 
   summarize(gene_counts=sum(score))
@@ -236,11 +256,11 @@ save(gm12878.cor.df,gm12878.comb.expr,file="./repSub.GM12878.GeneLevel.RData")
 
 ## [4.0.] Read in predefined TCs and quantify gene level expression
 ```{r}
-gm12878.TCs <- base::readRDS("./poolSub.TCs.GM12878.rds")
+GM12878.TCs <- base::readRDS("./poolSub.TCs.GM12878.rds")
 
-gm12878.TCs <- CAGEfightR::assignGeneID(gm12878.TCs,geneModels=txdb)
+GM12878.TCs <- CAGEfightR::assignGeneID(GM12878.TCs,geneModels=txdb)
 
-gm12878.cageExpr <- gm12878.TCs %>%
+gm12878.cageExpr <- GM12878.TCs %>%
   as.data.frame(row.names=NULL) %>%
   group_by(sample, geneID) %>% 
   summarize(gene_counts=sum(score))

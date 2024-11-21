@@ -1736,7 +1736,7 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-## [3.20.] Plot number of promoter initiators with a score above 10
+## [3.21.] Plot number of promoter initiators with a score above 10
 ```{r}
 GM12878.TCs.tbl %>%
   dplyr::filter(sample %in% main_samples) %>% 
@@ -1783,7 +1783,7 @@ GM12878.TCs.tbl %>%
     )
 ```
 
-## [3.21.] Print plot
+## [3.22.] Print plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -1802,31 +1802,51 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-
+## [3.23.] Promoter summit expression for scores above 10
 ```{r}
 GM12878.TCs %>% 
-  BiocGenerics::as.data.frame(row.names=NULL) %>%
-  BiocGenerics::subset(score>=10 & txType=="promoter" & sample %in% main_samples) %>%
-  ggplot2::ggplot(aes(fct_rev(sample), log10(score),fill=fct_rev(sample))) +
-  scale_fill_manual(values=rev(gm.full.pal[c(4,8,12,16,20,24,25)])) +
+  BiocGenerics::as.data.frame(row.names = NULL) %>%
+  BiocGenerics::subset(
+      score >= 10 &
+      txType == "promoter" &
+      sample %in% main_samples
+    ) %>%
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = fct_rev(sample),
+        y = log10(score),
+        fill = fct_rev(sample)
+      )
+    ) +
+  scale_fill_manual(
+      values = rev(gm.full.pal[c(4,8,12,16,20,24,25)])
+    ) +
   geom_boxplot() +
-  labs(title="promoter summit initiator expression >=10 counts") +
-  facet_wrap(~INR,ncol=1) + 
+  labs(
+      title="promoter summit initiator expression >=10 counts"
+    ) +
+  facet_wrap(
+      facets = . ~ INR,
+      nrow = 1
+    ) + 
   coord_flip() +
   theme_bw() +
   theme(
-    aspect.ratio = 1,
-    legend.title = element_blank(),
-    legend.justification = base::c(1,0),
-    legend.background = element_rect(
-        fill = "grey95"
-      ),
-    legend.text = element_text(size = 8),
-    legend.key.size = grid::unit(0.9, "lines")
-  )
+      aspect.ratio = 1,
+      legend.position = "none",
+      panel.spacing = grid::unit(0.1,"lines")
+      # legend.title = element_blank(),
+      # legend.justification = base::c(1,0),
+      # legend.background = element_rect(
+      #     fill = "grey95"
+      #   ),
+      # legend.text = element_text(size = 8),
+      # legend.key.size = grid::unit(0.9, "lines")
+    )
 ```
 
-
+## [3.24.] Print plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -1844,33 +1864,52 @@ for(ext in base::c("pdf", "png")){
 }
 ```
 
-
+## [3.25.] Promoter summit initiator counts with score above 10
 ```{r}
 GM12878.TCs %>% 
-  BiocGenerics::as.data.frame(row.names=NULL) %>%
-  BiocGenerics::subset(score>=10 & txType=="promoter" & sample %in% main_samples) %>%
-  group_by(sample, INR) %>% 
-  summarise(count = n()) %>% 
-  mutate(perc = count/sum(count)) %>%
-  ggplot2::ggplot(aes(x = INR, y = perc*100, fill = fct_rev(sample))) + 
-  geom_col(position="dodge") + 
-  scale_fill_manual(values=rev(gm.full.pal[c(4,8,12,16,20,24,25)])) +
-  labs(title="promoter summit initiator >=10 counts") + 
+  BiocGenerics::as.data.frame(row.names = NULL) %>%
+  BiocGenerics::subset(
+      score >= 10 &
+      txType == "promoter" &
+      sample %in% main_samples
+    ) %>%
+  dplyr::group_by(sample, INR) %>% 
+  dplyr::summarise(count = dplyr::n()) %>% 
+  dplyr::mutate(
+      perc = count/base::sum(count)
+    ) %>%
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = INR,
+        y = perc*100,
+        fill = fct_rev(sample)
+      )
+    ) + 
+  geom_col(
+      position = "dodge"
+    ) + 
+  scale_fill_manual(
+      values = base::rev(gm.full.pal[c(4,8,12,16,20,24,25)])
+    ) +
+  labs(
+      title = "promoter summit initiator >=10 counts"
+    ) + 
   coord_flip()+ 
   theme_bw() +
   theme(
-    aspect.ratio = 1,
-    legend.title = element_blank(),
-    legend.justification = base::c(1,0),
-    legend.background = element_rect(
-        fill = "grey95"
-      ),
-    legend.text = element_text(size = 8),
-    legend.key.size = grid::unit(0.9, "lines")
-  )
+      aspect.ratio = 1,
+      legend.title = element_blank(),
+      legend.justification = base::c(1,0),
+      legend.background = element_rect(
+          fill = "grey95"
+        ),
+      legend.text = element_text(size = 8),
+      legend.key.size = grid::unit(0.9, "lines")
+    )
 ```
 
-
+## [3.26.] Print plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -1888,7 +1927,6 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-
 ## [3.4.] Plot gene level metrics
 ```{r}
 GM12878.cor.df$sample <- GM12878.cor.df$samp
@@ -1897,9 +1935,12 @@ GM12878.cor.df$sample <- factor(GM12878.cor.df$sample, levels=samp_use)
 
 GM12878.comb.expr <- GM12878.comb.expr[GM12878.comb.expr$sample %in% samp_use,]
 GM12878.comb.expr$sample <- factor(GM12878.comb.expr$sample, levels=samp_use)
+```
 
+
+```{r}
 GM12878.comb.expr %>%
-  base::subset(TPM>0 & gene_counts>0) %>%
+  base::subset(TPM > 0 & gene_counts > 0) %>%
   ggplot2::ggplot(aes(gene_counts,TPM,color=sample,group=sample))+
   geom_point(size=0.5) +
   geom_text(data=GM12878.cor.df,
