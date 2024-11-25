@@ -591,34 +591,123 @@ for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0("./plots/",
           base::format(base::Sys.time(), "%Y%m%d"),
-          "_repSub.K562.nTCs.10Score",
+          "_repSub.TCs.GM12878",
+          "_correlationPlot",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
       device = ext,
       dpi = 300,
-      width = 15,
-      height = 15
+      width = 10,
+      height = 10
     )
 }
 ```
 
-
+## [3.6.] Visualization of pearson correlation coefficients for main samples only
 ```{r}
 main_samples <- base::c(
-    "GM12878_500K_C","GM12878_500K_N","GM12878_1M_C","GM12878_1M_N",
-    "GM12878_5M_N","GM12878_10M_N","GM12878_groCap_1"
+    "GM12878_500K_C","GM12878_1M_C","GM12878_500K_N","GM12878_1M_N",
+    "GM12878_5M_N","GM12878_10M_N","GM12878_groCap_1", "TPM"
   )
-corrs
+
+corrs %>%
+  dplyr::filter(
+      x %in% main_samples & y %in% main_samples
+    ) %>%
+  dplyr::mutate(
+      x = base::factor(
+          x = x,
+          levels = main_samples,
+          ordered = TRUE
+        ),
+      y = base::factor(
+        x = y,
+        levels = main_samples,
+        ordered = TRUE
+      )
+    ) %>% 
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = x,
+        y = y,
+        fill = cor
+      )
+    ) +
+  geom_tile(
+      stat = "identity",
+      width = 0.9,
+      height = 0.9
+    ) +
+  geom_text(
+    mapping = aes(
+          label = base::round(cor,2),
+          color = base::ifelse(cor>0.8,"on","off")
+        ),
+      size = 3
+    ) +
+  scale_fill_gradientn(
+      colors = .GlobalEnv$cols,
+      limits = base::c(0L,1L)
+    ) +
+  scale_color_manual(
+      values = base::c(on="white",off="black")
+    ) +
+  theme_bw() +
+  theme(
+      axis.text.x = element_text(
+        angle = 90,
+        hjust = 1,
+        vjust = 0.5,
+        size = 8
+      ),
+      axis.text.y = element_text(
+        size = 8
+      ),
+      aspect.ratio = 1,
+      axis.title = element_blank()
+    ) +
+  guides(
+      fill = guide_colorbar(
+          label.position = "right",
+          title = NULL,
+          title.position = "left",
+          title.theme = element_text(
+              angle = 90,
+              hjust = 0.5
+            ),
+          ticks = T,
+          nbin = 100,
+          barheight = 5,
+          label = TRUE,
+          barwidth = 0.5
+        ),
+      color = "none"
+    )
 ```
 
 
 ```{r}
-
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0("./plots/",
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_repSub.TCs.GM12878",
+          "_correlationPlot",
+          "_subset",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 5,
+      height = 5
+    )
+  }
 ```
 
-
-## [3.6.] Calculate correlations
+## [3.7.] Calculate correlations
 ```{r}
 # corel <- base::lapply(
 #     X = base::unique(GM12878.comb.expr$sample),
@@ -641,7 +730,7 @@ corrs
 #   )
 ```
 
-## [3.7.] Write output
+## [3.8.] Write output
 ## To be discarded
 ```{r}
 # base::save(
