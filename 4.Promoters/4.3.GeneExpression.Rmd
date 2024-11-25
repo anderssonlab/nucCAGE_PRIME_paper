@@ -521,6 +521,83 @@ corrs <- base::expand.grid(
     )
 ```
 
+```{r}
+corrs <- base::expand.grid(
+      x = base::colnames(GM12878.cor.data),
+      y = base::colnames(GM12878.cor.data)
+    ) %>%
+  dplyr::mutate(
+    cor = purrr::pmap_dbl(
+      .l = base::list(x,y),
+      .f = function(x,y){
+        d <- GM12878.cor.data %>%
+          dplyr::select(x,y) %>% 
+          dplyr::filter(
+              dplyr::if_any(
+                .cols = tidyselect::everything(),
+                .fns = ~ . > 0
+              )
+            )
+        c <- stats::cor(
+            x = d[,x], y = d[,y]
+          )
+        return(
+            base::unlist(base::unname(c))
+          )
+        }
+      )
+    )
+```
+
+#### Evaluation
+```{r}
+GM12878.cor.data %>%
+  dplyr::select("GM12878_10M_N","TPM") %>% 
+  dplyr::filter(
+    dplyr::if_any(
+          .cols = tidyselect::everything(),
+          .fns = ~ base::is.nan(.)
+        ) &
+      dplyr::if_any(
+        .cols = tidyselect::everything(),
+        .fns = ~ base::is.na(.)
+      )
+    )
+
+GM12878.cor.data %>%
+  dplyr::select("GM12878_10M_N","TPM") %>% 
+  dplyr::filter(
+      dplyr::if_any(
+        .cols = tidyselect::everything(),
+        .fns = ~ . > 0
+      )
+    )
+
+GM12878.cor.data %>%
+  dplyr::select("GM12878_10M_N","TPM") %>% 
+  dplyr::filter(
+      dplyr::if_all(
+        .cols = tidyselect::everything(),
+        .fns = ~ . > 0
+      )
+    )
+
+
+d <- GM12878.cor.data %>%
+  dplyr::select("GM12878_10M_N","TPM") %>% 
+  dplyr::filter(
+          dplyr::if_any(
+        .cols = tidyselect::everything(),
+        .fns = ~ . > 0
+      )
+    )
+c <- stats::cor(
+    x = d[,1],
+    y = d[,2]
+  )
+```
+
+
 ## [3.5.] Visualization of pearson correlation coefficients
 ```{r}
 cols <- grDevices::colorRampPalette(
@@ -765,7 +842,6 @@ corrs <- base::list.files(
       file = .
     )
 ```
-
 
 # [4.] GM12878 pool subsetted  -------------------------
 
