@@ -501,7 +501,7 @@ corrs <- base::expand.grid(
     cor = purrr::pmap_dbl(
       .l = base::list(x,y),
       .f = function(x,y){
-        d <- K562.cor.data %>%
+        d <- GM12878.cor.data %>%
           dplyr::select(x,y) %>% 
           dplyr::filter(
               dplyr::across(
@@ -521,20 +521,160 @@ corrs <- base::expand.grid(
     )
 ```
 
-## [3.5.] Calculate correlations
+## [3.5.] Visualization of pearson correlation coefficients
 ```{r}
-corel <- lapply(unique(gm12878.comb.expr$sample),function(x) {
-  samp <- gm12878.comb.expr[gm12878.comb.expr$sample==x & gm12878.comb.expr$TPM>0 & gm12878.comb.expr$gene_counts>0,]
-  cor <- cor(log10(samp$gene_counts), log10(samp$TPM))
-})
+cols <- grDevices::colorRampPalette(
+    base::rev(RColorBrewer::brewer.pal(11,"RdBu"))
+  )(100)
 
-gm12878.cor.df <- data.frame(samp=unique(gm12878.comb.expr$sample), correlation=unlist(corel))
+ggplot2::ggplot(
+      data = corrs,
+      mapping = aes(
+        x = x,
+        y = y,
+        fill = cor
+      )
+    ) +
+  geom_tile(
+      stat = "identity",
+      width = 0.9,
+      height = 0.9
+    ) +
+  # geom_text(
+  #   mapping = aes(
+  #         label = base::round(cor,2),
+  #         color = base::ifelse(cor>0.8,"on","off")
+  #       ),
+  #     size = 3
+  #   ) +
+  scale_fill_gradientn(
+      colors = .GlobalEnv$cols,
+      limits = base::c(0L,1L)
+    ) +
+  # scale_color_manual(
+  #     values = base::c(on="white",off="black")
+  #   ) +
+  theme(
+      axis.text.x = element_text(
+        angle = 90,
+        hjust = 1,
+        vjust = 0.5,
+        size = 8
+      ),
+      axis.text.y = element_text(
+        size = 8
+      ),
+      aspect.ratio = 1,
+      axis.title = element_blank()
+    ) +
+  guides(
+      fill = guide_colorbar(
+          label.position = "right",
+          title = NULL,
+          title.position = "left",
+          title.theme = element_text(
+              angle = 90,
+              hjust = 0.5
+            ),
+          ticks = T,
+          nbin = 100,
+          barheight = 5,
+          label = TRUE,
+          barwidth = 0.5
+        ),
+      color = "none"
+    )
+```
+
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0("./plots/",
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_repSub.K562.nTCs.10Score",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 15,
+      height = 15
+    )
+}
 ```
 
 
-## [3.4.] Write output
 ```{r}
-save(gm12878.cor.df,gm12878.comb.expr,file="./repSub.GM12878.GeneLevel.RData")
+main_samples <- base::c(
+    "GM12878_500K_C","GM12878_500K_N","GM12878_1M_C","GM12878_1M_N",
+    "GM12878_5M_N","GM12878_10M_N","GM12878_groCap_1"
+  )
+corrs
+```
+
+
+```{r}
+
+```
+
+
+## [3.6.] Calculate correlations
+```{r}
+# corel <- base::lapply(
+#     X = base::unique(GM12878.comb.expr$sample),
+#     FUN = function(x) {
+#       samp <- GM12878.comb.expr[
+#           GM12878.comb.expr$sample == x &
+#           GM12878.comb.expr$TPM > 0 &
+#           GM12878.comb.expr$gene_counts > 0,
+#         ]
+#     cor <- stats::cor(
+#         base::log10(samp$gene_counts),
+#         base::log10(samp$TPM)
+#       )
+#     }
+#   )
+# 
+# GM12878.cor.df <- base::data.frame(
+#     samp = base::unique(GM12878.comb.expr$sample),
+#     correlation = base::unlist(corel)
+#   )
+```
+
+## [3.7.] Write output
+## To be discarded
+```{r}
+# base::save(
+#     gm12878.cor.df,gm12878.comb.expr,
+#     file = base::paste0(
+#       here::here("4.Promoters/"),
+#       "repSub.GM12878.GeneLevel.RData"
+#     )
+#   )
+```
+
+```{r}
+base::saveRDS(
+    object = corrs,
+    file = base::paste0(
+        here::here("4.Promoters/"),
+        base::format(base::Sys.time(), "%Y%m%d"),
+        "_repSub.TCs.GM12878",
+        "_correlations",
+        ".rds"
+      ),
+    compress = TRUE
+  )
+```
+
+```{r}
+corrs <- base::list.files(
+      path = here::here("4.Promoters/")
+    ) %>%
+  stringr::str_subset("correlations") %>% 
+  base::readRDS(
+      file = .
+    )
 ```
 
 

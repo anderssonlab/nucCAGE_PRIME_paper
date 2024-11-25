@@ -23,7 +23,7 @@ library(ggrepel)
 
 theme_set(theme_bw(base_size = 10))
 
-col.scheme <- c("#377eb8", "#d39200","#93aa00","#4daf4a","#984ea3","#ff7f01","#e41b1c","#256866","#f8bc24")
+col.scheme <- c("#377eb8", "#d39200","#93aa00","#4daf4a","#984ea3","#ff7f01","#e41b1c","#256866","#f8bc24","grey","black")
 
 
 ```
@@ -78,6 +78,8 @@ FANTOM5.id <- "CNhs12334"
 
 CRISPR.pos.file <- "../5.EPCrisprBenchmark/epc_pos_gr.rds"
 CRISPR.neg.file <- "../5.EPCrisprBenchmark/epc_neg_gr.rds"
+
+k27ac.file <- "../0.External_resources/ENCFF038DDS.bed"
 
 ```
 
@@ -227,6 +229,19 @@ point.data[["DHS"]] <- DHS
 point.data[["DHS distal"]] <- DHS.distal
 point.data[["DHS proximal"]] <- DHS.proximal
 
+
+k27ac <- read.table(k27ac.file)
+colnames(k27ac) <- c("chr","start","end","name","score","strand","signal_value","pvalue","qvalue","peak")
+k27ac <- GRanges(k27ac)
+k27ac.dhs <- subsetByOverlaps(DHS, k27ac)
+start(k27ac) <- start(k27ac)+k27ac$peak
+end(k27ac) <- start(k27ac)+1
+
+point.data[["K27ac DHS"]] <- k27ac.dhs
+point.data[["K27ac"]] <- k27ac
+
+
+
 header <- colnames(read_tsv(FANTOM5.file,n_max=1,show_col_types=FALSE))
 FANTOM5.data <- read_tsv(FANTOM5.file,skip=1,col_names=FALSE,show_col_types=FALSE)[,c(1,match(FANTOM5.id,header)+1)]
 FANTOM5.enhancers <- flank(swapRanges(import.bed(FANTOM5.enhancers.file)),200,both=TRUE)
@@ -319,7 +334,7 @@ point.ClinVar.non.genome.df <- subset(point.ClinVar.df, loc!="genome")
 
 col.scheme <- setNames(col.scheme, c("DHS","Divergent loci CAGE cells","Divergent loci CAGE nuclei",
                                      "dREG PRO-seq","dREG qPRO-seq","ENCODE cCRE",
-                                     "PINTS GRO/PRO-cap","PRIMEloci CAGE cells pooled","PRIMEloci CAGE nuclei pooled"))
+                                     "PINTS GRO/PRO-cap","PRIMEloci CAGE cells pooled","PRIMEloci CAGE nuclei pooled","K27ac", "K27ac DHS"))
 
 
 ggplot(point.ClinVar.genome.df, aes(recall, enrichment, color=assay, label=sample)) + 
