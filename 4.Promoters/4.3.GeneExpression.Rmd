@@ -16,6 +16,15 @@ base::library(org.Hs.eg.db)
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 ```
 
+## [0.2.] Add custom color palettes
+```{r}
+gm.pooled.pal <- base::c(
+    "#FF8D00","#00439B","#FF4425",
+    "#009072","#878784","#7D62D0",
+    "hotpink"
+  )
+```
+
 # [1.] K562 replicate subsetted  -------------------------
 
 ## [1.0.] Read in predefined TCs and quantify gene level expression
@@ -467,8 +476,6 @@ GM12878.comb.expr <- dplyr::left_join(
   )
 ```
 
-##<<bookmark>>
-
 ## [3.3.] Prepare correlation analysis
 ```{r}
 GM12878.cor.data <- GM12878.cageExpr %>%
@@ -521,80 +528,83 @@ corrs <- base::expand.grid(
     )
 ```
 
+#### Include also mutually exclusive signal
+## To be discarded
 ```{r}
-corrs <- base::expand.grid(
-      x = base::colnames(GM12878.cor.data),
-      y = base::colnames(GM12878.cor.data)
-    ) %>%
-  dplyr::mutate(
-    cor = purrr::pmap_dbl(
-      .l = base::list(x,y),
-      .f = function(x,y){
-        d <- GM12878.cor.data %>%
-          dplyr::select(x,y) %>% 
-          dplyr::filter(
-              dplyr::if_any(
-                .cols = tidyselect::everything(),
-                .fns = ~ . > 0
-              )
-            )
-        c <- stats::cor(
-            x = d[,x], y = d[,y]
-          )
-        return(
-            base::unlist(base::unname(c))
-          )
-        }
-      )
-    )
+# corrs <- base::expand.grid(
+#       x = base::colnames(GM12878.cor.data),
+#       y = base::colnames(GM12878.cor.data)
+#     ) %>%
+#   dplyr::mutate(
+#     cor = purrr::pmap_dbl(
+#       .l = base::list(x,y),
+#       .f = function(x,y){
+#         d <- GM12878.cor.data %>%
+#           dplyr::select(x,y) %>% 
+#           dplyr::filter(
+#               dplyr::if_any(
+#                 .cols = tidyselect::everything(),
+#                 .fns = ~ . > 0
+#               )
+#             )
+#         c <- stats::cor(
+#             x = d[,x], y = d[,y]
+#           )
+#         return(
+#             base::unlist(base::unname(c))
+#           )
+#         }
+#       )
+#     )
 ```
 
 #### Evaluation
+## To be discarded
 ```{r}
-GM12878.cor.data %>%
-  dplyr::select("GM12878_10M_N","TPM") %>% 
-  dplyr::filter(
-    dplyr::if_any(
-          .cols = tidyselect::everything(),
-          .fns = ~ base::is.nan(.)
-        ) &
-      dplyr::if_any(
-        .cols = tidyselect::everything(),
-        .fns = ~ base::is.na(.)
-      )
-    )
-
-GM12878.cor.data %>%
-  dplyr::select("GM12878_10M_N","TPM") %>% 
-  dplyr::filter(
-      dplyr::if_any(
-        .cols = tidyselect::everything(),
-        .fns = ~ . > 0
-      )
-    )
-
-GM12878.cor.data %>%
-  dplyr::select("GM12878_10M_N","TPM") %>% 
-  dplyr::filter(
-      dplyr::if_all(
-        .cols = tidyselect::everything(),
-        .fns = ~ . > 0
-      )
-    )
-
-
-d <- GM12878.cor.data %>%
-  dplyr::select("GM12878_10M_N","TPM") %>% 
-  dplyr::filter(
-          dplyr::if_any(
-        .cols = tidyselect::everything(),
-        .fns = ~ . > 0
-      )
-    )
-c <- stats::cor(
-    x = d[,1],
-    y = d[,2]
-  )
+# GM12878.cor.data %>%
+#   dplyr::select("GM12878_10M_N","TPM") %>% 
+#   dplyr::filter(
+#     dplyr::if_any(
+#           .cols = tidyselect::everything(),
+#           .fns = ~ base::is.nan(.)
+#         ) &
+#       dplyr::if_any(
+#         .cols = tidyselect::everything(),
+#         .fns = ~ base::is.na(.)
+#       )
+#     )
+# 
+# GM12878.cor.data %>%
+#   dplyr::select("GM12878_10M_N","TPM") %>% 
+#   dplyr::filter(
+#       dplyr::if_any(
+#         .cols = tidyselect::everything(),
+#         .fns = ~ . > 0
+#       )
+#     )
+# 
+# GM12878.cor.data %>%
+#   dplyr::select("GM12878_10M_N","TPM") %>% 
+#   dplyr::filter(
+#       dplyr::if_all(
+#         .cols = tidyselect::everything(),
+#         .fns = ~ . > 0
+#       )
+#     )
+# 
+# 
+# d <- GM12878.cor.data %>%
+#   dplyr::select("GM12878_10M_N","TPM") %>% 
+#   dplyr::filter(
+#           dplyr::if_any(
+#         .cols = tidyselect::everything(),
+#         .fns = ~ . > 0
+#       )
+#     )
+# c <- stats::cor(
+#     x = d[,1],
+#     y = d[,2]
+#   )
 ```
 
 
@@ -666,7 +676,8 @@ ggplot2::ggplot(
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(
+          here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.TCs.GM12878",
           "_correlationPlot",
@@ -678,7 +689,7 @@ for(ext in base::c("pdf", "png")){
       width = 10,
       height = 10
     )
-}
+  }
 ```
 
 ## [3.6.] Visualization of pearson correlation coefficients for main samples only
@@ -768,7 +779,8 @@ corrs %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(
+          here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.TCs.GM12878",
           "_correlationPlot",
@@ -785,6 +797,7 @@ for(ext in base::c("pdf", "png")){
 ```
 
 ## [3.7.] Calculate correlations
+## To be discarded
 ```{r}
 # corel <- base::lapply(
 #     X = base::unique(GM12878.comb.expr$sample),
@@ -835,12 +848,88 @@ base::saveRDS(
 
 ```{r}
 corrs <- base::list.files(
-      path = here::here("4.Promoters/")
+      path = here::here("4.Promoters"),
+      full.names = TRUE
     ) %>%
   stringr::str_subset("correlations") %>% 
   base::readRDS(
       file = .
     )
+```
+
+## [3.9.]
+```{r}
+coef = 0.1 # 0.3
+cols <- base::c(
+  grDevices::colorRampPalette(
+      base::c("#e7f0fa", "#c9e2f6", "#95cbee", "#0099dc", "#4ab04a", "#ffd73e")
+    )(coef*100),
+  grDevices::colorRampPalette(
+      c("#eec73a", "#e29421", "#e29421", "#f05336","#ce472e"),
+      bias=2
+    )((1-coef)*100)
+  )
+
+GM12878.comb.expr %>%
+    dplyr::filter(
+        sample %in% main_samples
+      ) %>%
+    dplyr::mutate(
+      sample = base::factor(
+          x = sample,
+          levels = main_samples,
+          ordered = TRUE
+        )
+      ) %>% 
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = gene_counts,
+        y = TPM
+      )
+    ) +
+  geom_hex(
+      bins = 30
+    ) +
+  scale_x_continuous(
+      trans = 'log10'
+    ) +
+  scale_y_continuous(
+      trans = 'log10'
+    ) +
+  scale_fill_gradientn(
+      colours = cols
+    ) +
+  facet_wrap(
+      facets = sample ~ .,
+      nrow = 1
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      legend.position = "none",
+      panel.spacing = grid::unit(0.1,"lines")
+    )
+```
+
+
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("4.Promoters/plots/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_repSub.TCs.GM12878",
+          "_scatterPlot",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 8,
+      height = 3
+    )
+  }
 ```
 
 # [4.] GM12878 pool subsetted  -------------------------
