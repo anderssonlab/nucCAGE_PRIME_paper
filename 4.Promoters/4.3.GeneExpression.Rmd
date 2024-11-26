@@ -613,9 +613,36 @@ corrs <- base::expand.grid(
 cols <- grDevices::colorRampPalette(
     base::rev(RColorBrewer::brewer.pal(11,"RdBu"))
   )(100)
-
-ggplot2::ggplot(
-      data = corrs,
+samp_use <- base::c(
+    "GM12878_500K_C", "GM12878_500K_C1","GM12878_500K_C2","GM12878_500K_C3",
+    "GM12878_1M_C", "GM12878_1M_C1","GM12878_1M_C2","GM12878_1M_C3",
+    "GM12878_500K_N", "GM12878_500K_N1","GM12878_500K_N2","GM12878_500K_N3",
+    "GM12878_1M_N", "GM12878_1M_N1","GM12878_1M_N2","GM12878_1M_N3",
+    "GM12878_5M_N", "GM12878_5M_N1","GM12878_5M_N2","GM12878_5M_N3",
+    "GM12878_10M_N", "GM12878_10M_N1","GM12878_10M_N2","GM12878_10M_N3",
+    "GM12878_1M_ctrl", "GM12878_ctrl_C1", "GM12878_ctrl_C2", "GM12878_ctrl_C3",
+    "GM12878_1M_trip", "GM12878_triptolide_C1", "GM12878_triptolide_C2", "GM12878_triptolide_C3", "GM12878_triptolide_C4",
+    "GM12878_groCap_1", "TPM"
+  )
+ 
+corrs %>%
+  dplyr::filter(
+      x %in% samp_use & y %in% samp_use
+    ) %>% 
+  dplyr::mutate(
+    x = base::factor(
+        x = x,
+        levels = samp_use,
+        ordered = TRUE
+      ),
+    y = base::factor(
+        x = y,
+        levels = samp_use,
+        ordered = TRUE
+      )
+    ) %>%
+  ggplot2::ggplot(
+      data = .,
       mapping = aes(
         x = x,
         y = y,
