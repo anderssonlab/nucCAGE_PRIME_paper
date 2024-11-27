@@ -219,21 +219,31 @@ divergentLociTCsSummit<- function(ctss, max_gap = 400, win_size = 200, inputAssa
         )
       )
     GenomeInfoDb::seqlevels(ctss, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(gr)
-    seqinfo(ctss) <- seqinfo(gr)
+    GenomeInfoDb::seqinfo(ctss) <- GenomeInfoDb::seqinfo(gr)
     
-    cat("\r")
-    message("Calculating directionality...")
+    base::cat("\r")
+    base::message("Calculating directionality...")
     
-    win_1 <- IRanges::flank(gr,width=win_size,start=TRUE,both=FALSE)
-    win_2 <- IRanges::flank(gr,width=win_size,start=FALSE,both=FALSE)
+    win_1 <- IRanges::flank(
+        x = gr,
+        width = win_size,
+        start = TRUE,
+        both = FALSE
+      )
+    win_2 <- IRanges::flank(
+        x = gr,
+        width = win_size,
+        start = FALSE,
+        both = FALSE
+      )
     
     covByStrand <- CAGEfightR:::splitPooled(methods::as(rowRanges(ctss),"GRanges"))
     
     ## Quantify strand-wise in flanking windows around midpoint
-    M1 <- unlist(viewSums(Views(covByStrand$`-`, win_1)))
-    P2 <- unlist(viewSums(Views(covByStrand$`+`, win_2)))
-    M2 <- unlist(viewSums(Views(covByStrand$`-`, win_2)))
-    P1 <- unlist(viewSums(Views(covByStrand$`+`, win_1)))
+    M1 <- base::unlist(IRanges::viewSums(IRanges::Views(covByStrand$`-`, win_1)))
+    P2 <- base::unlist(IRanges::viewSums(IRanges::Views(covByStrand$`+`, win_2)))
+    M2 <- base::unlist(IRanges::viewSums(IRanges::Views(covByStrand$`-`, win_2)))
+    P1 <- base::unlist(IRanges::viewSums(IRanges::Views(covByStrand$`+`, win_1)))
     
     ## Calculate directionality
     pooled_directionality <- (P2-M1) / (P2+M1)
@@ -241,36 +251,56 @@ divergentLociTCsSummit<- function(ctss, max_gap = 400, win_size = 200, inputAssa
     ## Test if divergent
     divergent <- (M1>P1) & (P2>M2)
     
-    message("Calculating coverage across samples...")
+    base::message("Calculating coverage across samples...")
     
     ## Quantify strand-wise in flanking windows around midpoint
-    strand(win_1) <- "-"
-    strand(win_2) <- "+"
-    mat_2_plus <- suppressMessages(assay(quantifyClusters(ctss, win_2, inputAssay = inputAssay),inputAssay) > 0)
-    mat_1_minus <- suppressMessages(assay(quantifyClusters(ctss, win_1, inputAssay = inputAssay),inputAssay) > 0)
+    BiocGenerics::strand(win_1) <- "-"
+    BiocGenerics::strand(win_2) <- "+"
+    mat_2_plus <- base::suppressMessages(
+      SummarizedExperiment::assay(
+          CAGEfightR::quantifyClusters(
+              object = ctss,
+              clusters = win_2,
+              inputAssay = inputAssay
+            ),
+          i = inputAssay
+        ) > 0
+      )
+    mat_1_minus <- base::suppressMessages(
+      SummarizedExperiment::assay(
+          CAGEfightR::quantifyClusters(
+              object = ctss,
+              clusters = win_1,
+              inputAssay = inputAssay
+            ),
+          i = inputAssay
+        ) > 0
+      )
     
     ## Quntify number of bidirectional cases (both strands expressed)
-    bidirectional <- rowSums(mat_1_minus & mat_2_plus)
+    bidirectional <- base::rowSums(mat_1_minus & mat_2_plus)
     
-    message("Preparing output...")
+    base::message("Preparing output...")
     
     ## Build GRanges object
-    start(gr) <- start(gr)-win_size
-    end(gr) <- end(gr)+win_size
-    gr$score <- M1+P2
-    gr$thick <- IRanges(start=mid,width=1)
+    IRanges::start(gr) <- IRanges::start(gr) - win_size
+    IRanges::end(gr) <- IRanges::end(gr) + win_size
+    gr$score <- M1 + P2
+    gr$thick <- IRanges::IRanges(start = mid, width = 1)
     
-    mcols(gr)[, "directionality"] <- pooled_directionality
-    mcols(gr)[, "bidirectionality"] <- bidirectional
-    mcols(gr)[, "divergent"] <- divergent
+    S4Vectors::mcols(gr)[, "directionality"] <- pooled_directionality
+    S4Vectors::mcols(gr)[, "bidirectionality"] <- bidirectional
+    S4Vectors::mcols(gr)[, "divergent"] <- divergent
     
-    ids <- paste0(seqnames(gr), ":", start(gr), "-", end(gr))
-    names(gr) <- ids
-    names(gr$thick) <- ids
+    ids <- base::paste0(
+        GenomeInfoDb::seqnames(gr), ":", IRanges::start(gr), "-", IRanges::end(gr)
+      )
+    base::names(gr) <- ids
+    base::names(gr$thick) <- ids
     
-    gr$sample <- colnames(ctss)
-    ## Remove non-divergent cases
-    gr
+    gr$sample <- base::colnames(ctss)
+    
+    return(gr)
   }
 ```
 
@@ -321,9 +351,12 @@ assertthat::are_equal(
     main_samples,
     base::colnames(GM12878.CTSSs)[base::colnames(GM12878.CTSSs) %in% main_samples]
   )
+```
 
-GM12878.DLs.rmS <- base::lapply(
-  X = main_samples,
+## Serial implementation
+```{r}
+GM12878.DLs.rmS <- BiocParallel::bplapply(
+  X = main_samples[1:2],
   FUN = function(s) {
     base::message("Currently processed sample:\t",s)
     ## Split sample into chromosomes
@@ -353,6 +386,8 @@ GM12878.DLs.rmS <- base::lapply(
     }
   )
 ```
+
+## Parallel implementation
 
 
 #### "saveRDS(GM12878.DLs, "poolSub.GM12878.summitDLs.rds")"
