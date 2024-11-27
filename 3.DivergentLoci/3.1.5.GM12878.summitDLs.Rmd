@@ -1,0 +1,367 @@
+---
+title: "3.1.5.GM12878.summitDLs.Rmd"
+output: html_document
+date: "2024-11-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Calling of divergent locis and annotation of txType and overlaps with atac-seq regions
+
+# [0.] Prerequisites -------------------------
+
+## [0.1.] Load necessary packages
+```{r message=FALSE, warning=FALSE}
+base::library("tidyverse")
+# base::library("AnnotationHub")
+
+base::library("BiocParallel")
+BiocParallel::register(
+  BPPARAM = BiocParallel::MulticoreParam(
+      workers = 30
+    )
+  )
+```
+
+## To be discarded
+```{r}
+# base::library("parallel")
+# base::library("foreach")
+# base::library("doParallel")
+# doParallel::registerDoParallel(
+#     cores = 15
+#   )
+```
+
+## [0.2.] Load CAGEfighR extensions
+```{r message=FALSE,results='hide'}
+sep <- .Platform$file.sep
+cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
+fs <- base::c(
+    "utils","support","cumulative",
+    "decompose","enhancers","noise",
+    "coverage","complexity","subsample",
+    "dispersion"
+  )
+
+purrr::map(
+  .x = fs,
+  .f = function(f){
+    base::source(
+      base::paste0(
+        cfr.extensions.dir, sep, f, ".R"
+        )
+      )
+    }
+  )
+```
+
+## [0.3.] Load annotations
+```{r message=FALSE}
+# base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+# txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+```
+
+## [0.4.] Add custom color palette
+```{r}
+custom.col <- base::c(
+    "#FFDB6D", "#C4961A", "#F4EDCA",
+    "#D16103", "#C3D7A4", "#52854C",
+    "#4E84C4", "#293352","grey"
+  )
+```
+
+## [0.5.] Helper function mergeLoci() & divergentLociTCsSummit()
+```{r}
+mergeLoci <- function(m, p) {
+    m.i <- 1
+    p.i <- 1
+    while ((p[p.i,start] < m[m.i,start]) || ((p[p.i,start] - m[m.i,start]) > max_gap)) {
+        if ((p[p.i,score] < m[m.i,score]) && (p.i < base::nrow(p)) && ((p[p.i+1,start] - m[m.i,start]) < max_gap)) {
+            p.i <- p.i + 1
+          } else {
+            m.i <- m.i + 1
+          }
+      }
+    base::floor(m[m.i,start] + ((p[p.i,start] - m[m.i,start]) / 2))
+  }
+```
+
+```{r}
+divergentLociTCsSummit<- function(ctss, max_gap = 400, win_size = 200, inputAssay = "counts", callingAssay = "counts") {
+    
+    base::message(base::paste("Running DL calling for",base::colnames(ctss)))
+    
+    ## Pool & subset
+    ctss.o <- ctss
+    ctss <- base::suppressWarnings(
+        CAGEfightR::calcPooled(ctss, inputAssay = callingAssay)
+      )
+    ctss <- base::subset(ctss, score > 0)
+    
+    #Call TCs for each sample
+    object <- CAGEfightR::clusterUnidirectionally(ctss)
+    object <- CAGEfightR::quantifyClusters(ctss,object)
+    object <- base::suppressWarnings(
+        CAGEfightR::calcPooled(object, inputAssay = inputAssay)
+      )
+    object <- SummarizedExperiment::rowRanges(object) 
+    
+    base::message("Removing overlapping TCs by strand...")
+    object <- CAGEfightR::swapRanges(object) #Summit focused
+    TCsByStrand <- CAGEfightR:::splitByStrand(object)
+    
+    ## Find overlapping and book-ended summits between strands
+    olaps <- IRanges::findOverlaps(
+        TCsByStrand$'-',
+        TCsByStrand$'+',
+        maxgap = 0,
+        type = "any",
+        select = "all",
+        ignore.strand = TRUE
+      )
+    m_score <-  S4Vectors::mcols(TCsByStrand$'-')$score
+    p_score <-  S4Vectors::mcols(TCsByStrand$'+')$score
+    
+    m_rem <- S4Vectors::queryHits(olaps)[
+        base::which(m_score[S4Vectors::queryHits(olaps)] <= p_score[S4Vectors::subjectHits(olaps)])
+      ]
+    p_rem <- S4Vectors::subjectHits(olaps)[
+        base::which(p_score[S4Vectors::subjectHits(olaps)] < m_score[S4Vectors::queryHits(olaps)])
+      ]
+    
+    ## remove overlapping TCs
+    if (base::length(m_rem) > 0) {
+        TCsByStrand$'-' <- TCsByStrand$'-'[-m_rem]
+      }
+    if (base::length(p_rem) > 0) {
+        TCsByStrand$'+' <- TCsByStrand$'+'[-p_rem]
+      }
+    
+    base::message("Finding divergent TC pairs...")
+    ## Find divergent TC pairs
+    m_pad <- IRanges::flank(
+        TCsByStrand$'-',
+        width = max_gap,
+        start = TRUE,
+        both = FALSE
+      )
+    pairs <- IRanges::findOverlaps(
+        m_pad,
+        TCsByStrand$'+',
+        maxgap = -1,
+        type = "any",
+        select = "all",
+        ignore.strand = TRUE
+      )
+    
+    ## Find connected components of TC pair graphs
+    edge_list <- base::cbind(
+        base::names(TCsByStrand$'-')[S4Vectors::queryHits(pairs)],
+        base::names(TCsByStrand$'+')[S4Vectors::subjectHits(pairs)]
+      )
+    g <- igraph::graph_from_edgelist(edge_list, directed = FALSE)
+    con <- igraph::components(g)
+    
+    ## Keep only relevant TCs
+    object <- object[base::names(con$membership)]
+    
+    base::message("Merging into divergent loci...")
+    covByStrand <- CAGEfightR:::splitPooled(
+        methods::as(SummarizedExperiment::rowRanges(ctss),"GRanges")
+      )
+    
+    dt <- data.table::data.table(
+        strand = base::as.character(BiocGenerics::strand(object)),
+        start = IRanges::start(object),
+        score = object$score,
+        locus = con$membership,
+        stringsAsFactors = FALSE
+      )
+    
+    dt <- base::split(dt, dt$strand)
+    data.table::setorder(dt$'-', -score, start) ## order by score, then by position (prioritize rightmost)
+    data.table::setorder(dt$'+', -score, -start) ## order by score, then by position (prioritize leftmost)
+    
+    loci.m <- base::split(dt$'-', dt$'-'$'locus')
+    loci.p <- base::split(dt$'+', dt$'+'$'locus')
+    
+    mid <- BiocParallel::bplapply(
+      X = 1:base::length(loci.m),
+      FUN = function(i) {
+          mergeLoci(loci.m[[i]], loci.p[[i]])
+        }
+      )
+    mid <- base::unlist(mid)
+    
+    ## Extract seqnames for loci
+    div_chr <- con$membership[S4Vectors::match(1:con$no, con$membership)]
+    div_chr <- base::as.character(
+      base::sapply(
+          X = base::names(div_chr),
+          FUN = function(n) {
+            base::strsplit(n,":")[[1]][1]
+          }
+        )
+      )
+    #Revert to counts
+    ctss <- ctss.o
+    ctss <- CAGEfightR::calcPooled(ctss, inputAssay = inputAssay)
+    ctss <- base::subset(ctss, score > 0)
+    
+    gr <- GenomicRanges::GRanges(
+      seqnames = div_chr,
+      IRanges::IRanges(
+          start = mid,
+          end = mid
+        )
+      )
+    GenomeInfoDb::seqlevels(ctss, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(gr)
+    seqinfo(ctss) <- seqinfo(gr)
+    
+    cat("\r")
+    message("Calculating directionality...")
+    
+    win_1 <- IRanges::flank(gr,width=win_size,start=TRUE,both=FALSE)
+    win_2 <- IRanges::flank(gr,width=win_size,start=FALSE,both=FALSE)
+    
+    covByStrand <- CAGEfightR:::splitPooled(methods::as(rowRanges(ctss),"GRanges"))
+    
+    ## Quantify strand-wise in flanking windows around midpoint
+    M1 <- unlist(viewSums(Views(covByStrand$`-`, win_1)))
+    P2 <- unlist(viewSums(Views(covByStrand$`+`, win_2)))
+    M2 <- unlist(viewSums(Views(covByStrand$`-`, win_2)))
+    P1 <- unlist(viewSums(Views(covByStrand$`+`, win_1)))
+    
+    ## Calculate directionality
+    pooled_directionality <- (P2-M1) / (P2+M1)
+    
+    ## Test if divergent
+    divergent <- (M1>P1) & (P2>M2)
+    
+    message("Calculating coverage across samples...")
+    
+    ## Quantify strand-wise in flanking windows around midpoint
+    strand(win_1) <- "-"
+    strand(win_2) <- "+"
+    mat_2_plus <- suppressMessages(assay(quantifyClusters(ctss, win_2, inputAssay = inputAssay),inputAssay) > 0)
+    mat_1_minus <- suppressMessages(assay(quantifyClusters(ctss, win_1, inputAssay = inputAssay),inputAssay) > 0)
+    
+    ## Quntify number of bidirectional cases (both strands expressed)
+    bidirectional <- rowSums(mat_1_minus & mat_2_plus)
+    
+    message("Preparing output...")
+    
+    ## Build GRanges object
+    start(gr) <- start(gr)-win_size
+    end(gr) <- end(gr)+win_size
+    gr$score <- M1+P2
+    gr$thick <- IRanges(start=mid,width=1)
+    
+    mcols(gr)[, "directionality"] <- pooled_directionality
+    mcols(gr)[, "bidirectionality"] <- bidirectional
+    mcols(gr)[, "divergent"] <- divergent
+    
+    ids <- paste0(seqnames(gr), ":", start(gr), "-", end(gr))
+    names(gr) <- ids
+    names(gr$thick) <- ids
+    
+    gr$sample <- colnames(ctss)
+    ## Remove non-divergent cases
+    gr
+  }
+```
+
+
+
+
+
+
+```{r}
+# GM12878.CTSSs <- readRDS("../1.CTSSs/repSub.combined.GM12878.CTSSs.rmSingletons.rds")
+
+# Select relevant samples for speedup
+# samp <- colnames(GM12878.CTSSs)[c(1:35)]
+
+# GM12878.DLs <- lapply(colnames(GM12878.CTSSs),function(x) divergentLociTCsSummit(GM12878.CTSSs[,x],callingAssay="counts")) #Maybe run later
+# GM12878.DLs.rmS <- lapply(samp,function(x) divergentLociTCsSummit(GM12878.CTSSs[,x],callingAssay="counts.noSingletons"))
+
+
+# saveRDS(GM12878.DLs, "repSub.GM12878.summitDLs.rds")
+# saveRDS(GM12878.DLs.rmS, "repSub.GM12878.summitDLs.rmSingletons.rds")
+
+
+# rm(GM12878.DLs.rmS,GM12878.CTSSs)
+```
+
+## [1.0.] Load CTSSs
+```{r}
+GM12878.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "poolSub.combined.GM12878.CTSSs.rmSingletons.rds"
+    )
+  )
+```
+
+## [1.1.] Run divergentLociTCsSummit() across chosen samples
+#### "GM12878.DLs <- lapply(colnames(GM12878.CTSSs),function(x) divergentLociTCsSummit(GM12878.CTSSs[,x],callingAssay="counts"))"
+#### Evaluate with 's = "GM12878_500K_C"', "ctss = CTSSs.by.chr[["chrX"]]"
+```{r}
+main_samples <- base::c(
+    "GM12878_500K_C", "GM12878_1M_C", "GM12878_500K_N",
+    "GM12878_1M_N", "GM12878_5M_N", "GM12878_10M_N",
+    "GM12878_1M_trip", "GM12878_1M_ctrl", "GM12878_groCap_1"
+  )
+
+## Check that all selected samples are present in GM12878.CTSSs
+assertthat::are_equal(
+    main_samples,
+    base::colnames(GM12878.CTSSs)[base::colnames(GM12878.CTSSs) %in% main_samples]
+  )
+
+GM12878.DLs.rmS <- base::lapply(
+  X = main_samples,
+  FUN = function(s) {
+    base::message("Currently processed sample:\t",s)
+    ## Split sample into chromosomes
+    CTSSs.by.chr <- base::split(
+        x = GM12878.CTSSs[,s],
+        f = GenomeInfoDb::seqnames(GM12878.CTSSs[,s])
+      )
+    ## Run divergentLociTCsSummit() across chromosomes
+    DLs.by.chr <- base::lapply(
+      X = base::names(CTSSs.by.chr),
+      FUN = function(chr) {
+        base::message("\tCurrently processed chromosome:\t",chr)
+        .GlobalEnv$divergentLociTCsSummit(
+            ctss = CTSSs.by.chr[[chr]],
+            callingAssay = "counts.noSingletons"
+          )
+        }
+      )
+    return(
+      ## Merge information for all chromosomes of one sample
+      base::suppressWarnings(
+        base::unlist(
+            methods::as(DLs.by.chr,"GRangesList")
+          )
+        )
+      )
+    }
+  )
+```
+
+
+#### "saveRDS(GM12878.DLs, "poolSub.GM12878.summitDLs.rds")"
+```{r}
+# base::saveRDS(
+#     object = GM12878.DLs.rmS,
+#     file = base::paste0(
+#       here::here("3.DivergentLoci/"),
+#       "poolSub.GM12878.summitDLs.rmSingletons.rds"
+#     )
+#   )
+```
