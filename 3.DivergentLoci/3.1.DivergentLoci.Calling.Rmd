@@ -4,8 +4,7 @@ output: html_document
 date: "2024-02-07"
 ---
 
-
-Calling of divergent locis and annotation of txType and overlaps with atac-seq regions
+## Calling of divergent locis and annotation of txType and overlaps with atac-seq regions
 
 ```{r}
 library(CAGEfightR)

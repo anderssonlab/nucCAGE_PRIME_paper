@@ -3,79 +3,94 @@ title: "3.1.2.DL.calling"
 output: html_document
 date: "2024-02-29"
 ---
----
-title: "3.1.GM12878_DL_calling.Rmd"
-output: html_document
-date: "2024-02-07"
----
 
+## To be discarded
+## [0.] New version of previous script
+## title: "3.1.GM12878_DL_calling.Rmd"
+## output: html_document
+## date: "2024-02-07"
 
-Calling of divergent locis and annotation of txType and overlaps with atac-seq regions
+# Calling of divergent locis and annotation of txType and overlaps with atac-seq regions
 
-```{r}
-library(CAGEfightR)
+# [0.] Prerequisites -------------------------
 
-#CAGEfighR extensions
-setwd("/home/mhf817")
+## [0.1.] Load necessary packages
+```{r message=FALSE, warning=FALSE}
+base::library("tidyverse")
+# base::library("AnnotationHub")
+
+# base::library("parallel")
+# base::library("foreach")
+# base::library("doParallel")
+# doParallel::registerDoParallel(
+#     cores = 15
+#   )
+```
+
+## [0.2.] Load CAGEfighR extensions
+```{r message=FALSE,results='hide'}
 sep <- .Platform$file.sep
-cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
-source(paste(cfr.extensions.dir, "utils.R", sep = sep))
-source(paste(cfr.extensions.dir, "support.R", sep = sep))
-source(paste(cfr.extensions.dir, "cumulative.R", sep = sep))
-source(paste(cfr.extensions.dir, "decompose.R", sep = sep))
-source(paste(cfr.extensions.dir, "enhancers.R", sep = sep))
-source(paste(cfr.extensions.dir, "noise.R", sep = sep))
-source(paste(cfr.extensions.dir, "coverage.R", sep = sep))
-source(paste(cfr.extensions.dir, "complexity.R", sep = sep))
-source(paste(cfr.extensions.dir, "subsample.R", sep = sep))
-source(paste(cfr.extensions.dir, "dispersion.R", sep = sep))
+cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
+fs <- base::c(
+    "utils","support","cumulative",
+    "decompose","enhancers","noise",
+    "coverage","complexity","subsample",
+    "dispersion"
+  )
 
-
-#Annotations
-library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-
-#Packages for plotting
-library(CAGEfightR)
-library(epistack)
-library(BiocParallel)
-library(dplyr)
-library(reshape2)
-library(limma)
-library(ggplot2)
-
-custom.col <- c("#FFDB6D", "#C4961A", "#F4EDCA", 
-                "#D16103", "#C3D7A4", "#52854C", "#4E84C4", "#293352","grey")
-
-
-#Set working directory
-setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/3.DivergentLoci/")
-
-
+purrr::map(
+  .x = fs,
+  .f = function(f){
+    base::source(
+      base::paste0(
+        cfr.extensions.dir, sep, f, ".R"
+        )
+      )
+    }
+  )
 ```
 
-
-
-
-
-
-#First for GM12878
-```{r}
-
-GM12878.s.CTSSs <- readRDS("../1.CTSSs/repSub.combined.GM12878.CTSSs.rds")
+## [0.3.] Load annotations
+```{r message=FALSE}
+# base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+# txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 ```
 
+## [0.4.] Add custom color palette
 ```{r}
-#Load in GM12878 DHSs and reformat them
+custom.col <- base::c(
+    "#FFDB6D", "#C4961A", "#F4EDCA",
+    "#D16103", "#C3D7A4", "#52854C",
+    "#4E84C4", "#293352","grey"
+  )
+```
+
+## [0.5.] Set working directory
+## To be discarded
+```{r}
+# setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/3.DivergentLoci/")
+```
+
+# [1.] GM12878 -------------------------
+
+## [1.0.] Load CTSSs
+```{r}
+GM12878.s.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "repSub.combined.GM12878.CTSSs.rds"
+    )
+  )
+```
+
+## [1.1.] Load GM12878 DHSs and reformat them
+```{r}
 GM12878.dhs <- read.table("../0.External_resources/E116-DNase.macs2.hg38.narrowPeak")
 colnames(GM12878.dhs) <- c("chr","start","end")
 GM12878.dhs <- GRanges(GM12878.dhs[,1:3])
 GM12878.dhs$thick <- IRanges(start=start(GM12878.dhs)+((end(GM12878.dhs)-start(GM12878.dhs))/2)) #Set center as thick
 GM12878.dhs <- GM12878.dhs %>% swapRanges() %>% promoters(upstream=200, downstream=200) #Resize for equal width
-
 ```
-
-
 
 ```{r}
 #Call bidirectional clusters per sample using CTSS as starting point

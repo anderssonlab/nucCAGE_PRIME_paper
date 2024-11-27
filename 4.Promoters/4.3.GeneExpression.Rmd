@@ -607,7 +607,6 @@ corrs <- base::expand.grid(
 #   )
 ```
 
-
 ## [3.5.] Visualization of pearson correlation coefficients
 ```{r}
 cols <- grDevices::colorRampPalette(
@@ -654,20 +653,20 @@ corrs %>%
       width = 0.9,
       height = 0.9
     ) +
-  # geom_text(
-  #   mapping = aes(
-  #         label = base::round(cor,2),
-  #         color = base::ifelse(cor>0.8,"on","off")
-  #       ),
-  #     size = 3
-  #   ) +
+  geom_text(
+    mapping = aes(
+          label = base::round(cor,2),
+          color = base::ifelse(cor>0.8,"on","off")
+        ),
+      size = 2
+    ) +
   scale_fill_gradientn(
       colors = .GlobalEnv$cols,
       limits = base::c(0L,1L)
     ) +
-  # scale_color_manual(
-  #     values = base::c(on="white",off="black")
-  #   ) +
+  scale_color_manual(
+      values = base::c(on="white",off="black")
+    ) +
   theme(
       axis.text.x = element_text(
         angle = 90,
@@ -973,8 +972,6 @@ gm12878.cageExpr <- GM12878.TCs %>%
   summarize(gene_counts=sum(score))
 ```
 
-
-
 ## [4.1.] Map IDs between CAGE and ENCODE gene expression
 ```{r}
 map <- mapIds(org.Hs.eg.db,
@@ -994,7 +991,6 @@ gm12878.cageExpr$ensembl <- as.character(found_genes)
 gm12878.comb.expr <- merge(gm12878.cageExpr,gm12878.geneExpr, by.y="ensembl",by.x="ensembl")
 ```
 
-
 ## [4.2.] Calculate correlations
 ```{r}
 corel <- lapply(unique(gm12878.comb.expr$sample),function(x) {
@@ -1004,7 +1000,6 @@ corel <- lapply(unique(gm12878.comb.expr$sample),function(x) {
 
 gm12878.cor.df <- data.frame(samp=unique(gm12878.comb.expr$sample), correlation=unlist(corel))
 ```
-
 
 ## [4.3.] Write output
 ```{r}
