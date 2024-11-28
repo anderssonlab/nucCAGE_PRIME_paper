@@ -4,67 +4,100 @@ output: html_document
 date: "2024-03-01"
 ---
 
----
-title: '3.2.DL cumulative fractions vs expression'
-output: html_document
-date: "2024-02-13"
----
+# [-1.] Markdown is an adaptation of the version from 2024-02-13
+# title: '3.2.DL cumulative fractions vs expression'
+# output: html_document
+# date: "2024-02-13"
+
+# [0.] Prerequisites -------------------------
+
+## [0.1.] Load necessary packages
+```{r message=FALSE, warning=FALSE}
+base::library("tidyverse")
+
+# base::library("BiocParallel")
+# BiocParallel::register(
+#   BPPARAM = BiocParallel::MulticoreParam(
+#       workers = 30
+#     )
+#   )
+```
 
 ```{r}
-library(CAGEfightR)
+# library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+# txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+# 
+# #Packages for plotting
+# library(CAGEfightR)
+# library(epistack)
+# library(BiocParallel)
+# library(dplyr)
+# library(reshape2)
+# library(limma)
+# library(ggplot2)
+# library(stringr)
+```
 
-#CAGEfighR extensions
-setwd("/home/mhf817")
+## [0.2.] Load CAGEfighR extensions
+```{r message=FALSE,results='hide'}
 sep <- .Platform$file.sep
-cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
-source(paste(cfr.extensions.dir, "utils.R", sep = sep))
-source(paste(cfr.extensions.dir, "support.R", sep = sep))
-source(paste(cfr.extensions.dir, "cumulative.R", sep = sep))
-source(paste(cfr.extensions.dir, "decompose.R", sep = sep))
-source(paste(cfr.extensions.dir, "enhancers.R", sep = sep))
-source(paste(cfr.extensions.dir, "noise.R", sep = sep))
-source(paste(cfr.extensions.dir, "coverage.R", sep = sep))
-source(paste(cfr.extensions.dir, "complexity.R", sep = sep))
-source(paste(cfr.extensions.dir, "subsample.R", sep = sep))
-source(paste(cfr.extensions.dir, "dispersion.R", sep = sep))
+cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
+fs <- base::c(
+    "utils","support","cumulative",
+    "decompose","enhancers","noise",
+    "coverage","complexity","subsample",
+    "dispersion"
+  )
 
+purrr::map(
+  .x = fs,
+  .f = function(f){
+    base::source(
+      base::paste0(
+        cfr.extensions.dir, sep, f, ".R"
+        )
+      )
+    }
+  )
+```
 
-#Annotations
-library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-
-#Packages for plotting
-library(CAGEfightR)
-library(epistack)
-library(BiocParallel)
-library(dplyr)
-library(reshape2)
-library(limma)
-library(ggplot2)
-library(stringr)
-
-custom.col <- c("#FFDB6D", "#C4961A", "#F4EDCA", 
-                "#D16103", "#C3D7A4", "#52854C", "#4E84C4", "#293352","grey")
-
-
-gm.pal <- c("#F5CE00", "#E2AA00", "#B68D00","#DF613F","#DF5643","#DD4425","#92B9C9","#76A5B6","#004352","#29A957","#008E37","#007A30","#4F5D5C","#444E4C","#3D4138",
-                     "#AC97C2","#977FB4","#7D62A3")
-                     
-gm.pooled.pal <- c("#FF8D00","#FF4425","#00439B","#009072","#878784","#7D62D0")
-
-gm.full.pal <- c("#F5CE00", "#E2AA00", "#B68D00","#FF8D00","#DF613F","#DF5643","#DD4425","#FF4425","#92B9C9","#76A5B6","#004352","#00439B","#29A957","#008E37","#007A30","#009072","#4F5D5C","#444E4C","#3D4138","#878784","#AC97C2","#977FB4","#7D62A3","#7D62D0")
-
-
-
-k.full.pal <- c("#F5CE00", "#E2AA00", "#B68D00","#FF8D00","#DF613F","#DF5643","#DD4425","#FF4425","#92B9C9","#76A5B6","#004352","#00439B","#29A957","#008E37","#007A30","#4F5D5C")
-
-
-
-
-#Set working directory
-setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/3.DivergentLoci/")
-
-
+## [0.3.] Add custom color palettes
+```{r}
+custom.col <- base::c(
+    "#FFDB6D","#C4961A","#F4EDCA", 
+    "#D16103","#C3D7A4","#52854C",
+    "#4E84C4","#293352","grey"
+  )
+gm.pal <- base::c(
+    "#F5CE00","#E2AA00","#B68D00",
+    "#DF613F","#DF5643","#DD4425",
+    "#92B9C9","#76A5B6","#004352",
+    "#29A957","#008E37","#007A30",
+    "#4F5D5C","#444E4C","#3D4138",
+    "#AC97C2","#977FB4","#7D62A3"
+  )
+gm.pooled.pal <- base::c(
+    "#FF8D00","#FF4425","#00439B",
+    "#009072","#878784","#7D62D0"
+  )
+gm.full.pal <- base::c(
+    "#F5CE00","#E2AA00","#B68D00",
+    "#FF8D00","#DF613F","#DF5643",
+    "#DD4425","#FF4425","#92B9C9",
+    "#76A5B6","#004352","#00439B",
+    "#29A957","#008E37","#007A30",
+    "#009072","#4F5D5C","#444E4C",
+    "#3D4138","#878784","#AC97C2",
+    "#977FB4","#7D62A3","#7D62D0"
+  )
+k.full.pal <- base::c(
+    "#F5CE00","#E2AA00","#B68D00",
+    "#FF8D00","#DF613F","#DF5643",
+    "#DD4425","#FF4425","#92B9C9",
+    "#76A5B6","#004352","#00439B",
+    "#29A957","#008E37","#007A30",
+    "#4F5D5C"
+  )
 ```
 
 
@@ -88,7 +121,7 @@ GM12878.DLs.TCs.p <- readRDS("poolSub.GM12878.DLs.TCs.rds")
 ```
 
 
-
+## [1.] K562 -------------------------
 
 ```{r}
 k562.DLs.df <- as.data.frame(k562.DLs.CTSS, row.names=NULL)
@@ -375,10 +408,7 @@ dev.off()
 
 
 
-
-
-
-#GM12878
+# [2.] GM12878 -------------------------
 
 ```{r}
 GM12878 <- readRDS("../1.CTSSs/poolSub.combined.GM12878.CTSSs.rds")
