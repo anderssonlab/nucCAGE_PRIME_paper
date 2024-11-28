@@ -8,14 +8,11 @@ date: "2024-11-27"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Calling of divergent locis and annotation of txType and overlaps with atac-seq regions
-
 # [0.] Prerequisites -------------------------
 
 ## [0.1.] Load necessary packages
 ```{r message=FALSE, warning=FALSE}
 base::library("tidyverse")
-# base::library("AnnotationHub")
 
 base::library("BiocParallel")
 BiocParallel::register(
@@ -23,16 +20,6 @@ BiocParallel::register(
       workers = 30
     )
   )
-```
-
-## To be discarded
-```{r}
-# base::library("parallel")
-# base::library("foreach")
-# base::library("doParallel")
-# doParallel::registerDoParallel(
-#     cores = 15
-#   )
 ```
 
 ## [0.2.] Load CAGEfighR extensions
@@ -58,13 +45,7 @@ purrr::map(
   )
 ```
 
-## [0.3.] Load annotations
-```{r message=FALSE}
-# base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-# txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-```
-
-## [0.4.] Add custom color palette
+## [0.3.] Add custom color palette
 ```{r}
 custom.col <- base::c(
     "#FFDB6D", "#C4961A", "#F4EDCA",
@@ -188,11 +169,22 @@ divergentLociTCsSummit<- function(ctss, max_gap = 400, win_size = 200, inputAssa
     loci.m <- base::split(dt$'-', dt$'-'$'locus')
     loci.p <- base::split(dt$'+', dt$'+'$'locus')
     
-    mid <- BiocParallel::bplapply(
-      X = 1:base::length(loci.m),
-      FUN = function(i) {
-          mergeLoci(loci.m[[i]], loci.p[[i]])
+   mergeLoci <- function(m, p) {
+      m.i <- 1
+      p.i <- 1
+      while ((p[p.i,start] < m[m.i,start]) || ((p[p.i,start] - m[m.i,start]) > max_gap)) {
+        if ((p[p.i,score] < m[m.i,score]) && (p.i < nrow(p)) && ((p[p.i+1,start] - m[m.i,start]) < max_gap)) {
+          p.i <- p.i + 1
+        } else {
+          m.i <- m.i + 1
         }
+      }
+      base::floor(m[m.i,start] + ((p[p.i,start] - m[m.i,start]) / 2))
+    }
+    
+    mid <- BiocParallel::bplapply(
+        X = 1:length(loci.m),
+        FUN = function(i) mergeLoci(loci.m[[i]], loci.p[[i]])
       )
     mid <- base::unlist(mid)
     
@@ -303,28 +295,9 @@ divergentLociTCsSummit<- function(ctss, max_gap = 400, win_size = 200, inputAssa
     return(gr)
   }
 ```
+# [1.] Calling of divergent locis -------------------------
 
-
-
-
-
-
-```{r}
-# GM12878.CTSSs <- readRDS("../1.CTSSs/repSub.combined.GM12878.CTSSs.rmSingletons.rds")
-
-# Select relevant samples for speedup
-# samp <- colnames(GM12878.CTSSs)[c(1:35)]
-
-# GM12878.DLs <- lapply(colnames(GM12878.CTSSs),function(x) divergentLociTCsSummit(GM12878.CTSSs[,x],callingAssay="counts")) #Maybe run later
-# GM12878.DLs.rmS <- lapply(samp,function(x) divergentLociTCsSummit(GM12878.CTSSs[,x],callingAssay="counts.noSingletons"))
-
-
-# saveRDS(GM12878.DLs, "repSub.GM12878.summitDLs.rds")
-# saveRDS(GM12878.DLs.rmS, "repSub.GM12878.summitDLs.rmSingletons.rds")
-
-
-# rm(GM12878.DLs.rmS,GM12878.CTSSs)
-```
+#### Annotation of txType and overlaps with atac-seq regions
 
 ## [1.0.] Load CTSSs
 ```{r}
@@ -353,10 +326,9 @@ assertthat::are_equal(
   )
 ```
 
-## Serial implementation
 ```{r}
-GM12878.DLs.rmS <- BiocParallel::bplapply(
-  X = main_samples[1:2],
+GM12878.DLs.rmS <- base::lapply(
+  X = main_samples[1],
   FUN = function(s) {
     base::message("Currently processed sample:\t",s)
     ## Split sample into chromosomes
@@ -387,9 +359,7 @@ GM12878.DLs.rmS <- BiocParallel::bplapply(
   )
 ```
 
-## Parallel implementation
-
-
+## [1.2.] Save output
 #### "saveRDS(GM12878.DLs, "poolSub.GM12878.summitDLs.rds")"
 ```{r}
 # base::saveRDS(
