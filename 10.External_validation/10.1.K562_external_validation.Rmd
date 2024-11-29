@@ -343,10 +343,10 @@ ggplot(point.ClinVar.genome.df, aes(recall, enrichment, color=assay, label=sampl
 ggsave(paste0("plots/K562_ClinVar_enrichment_vs_recall_point_estimates.pdf"),width=8,height=7)
 
 ## Supplementary Figure
-#ggplot(point.ClinVar.non.genome.df, aes(recall, enrichment, color=assay, label=sample)) + 
-#  geom_point(aes(shape=loc)) + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
-#  xlab(paste0("recall (n=",ClinVar.n,")"))
-#ggsave(paste0("plots/K562_ClinVar_enrichment_vs_recall_point_estimates_proximal_vs_distal.pdf"),width=8,height=7)
+ggplot(point.ClinVar.non.genome.df, aes(recall, enrichment, color=assay, label=sample)) + 
+  geom_point(aes(shape=loc)) + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
+  xlab(paste0("recall (n=",ClinVar.n,")"))+ scale_color_manual(values=col.scheme)
+ggsave(paste0("plots/K562_ClinVar_enrichment_vs_recall_point_estimates_proximal_vs_distal.pdf"),width=8,height=7)
 
 ## Figure 1 E bar plots
 point.ClinVar.genome.df$sample <- factor(point.ClinVar.genome.df$sample, levels=point.ClinVar.genome.df$sample[order(point.ClinVar.genome.df$recall, decreasing = TRUE)])
@@ -374,10 +374,10 @@ ggplot(point.eQTL.genome.df, aes(recall, enrichment, color=assay, label=sample))
 ggsave(paste0("plots/K562_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,"_point_estimates.pdf"),width=8,height=7)
 
 ## Supplementary Figure
-#ggplot(point.eQTL.non.genome.df, aes(recall, enrichment, color=assay, label=sample)) + 
-#  geom_point(aes(shape=loc)) + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
-#  xlab(paste0("recall (n=",eQTL.n,")"))
-#ggsave(paste0("plots/K562_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,"_point_estimates_proximal_vs_distal.pdf"),width=8,height=7)
+ggplot(point.eQTL.non.genome.df, aes(recall, enrichment, color=assay, label=sample)) + 
+  geom_point(aes(shape=loc)) + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
+  xlab(paste0("recall (n=",eQTL.n,")")) + scale_color_manual(values=col.scheme)
+ggsave(paste0("plots/K562_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,"_point_estimates_proximal_vs_distal.pdf"),width=8,height=7)
 
 #  Figure 1 F
 point.eQTL.genome.df$sample <- factor(point.eQTL.genome.df$sample, levels=point.eQTL.genome.df$sample[order(point.eQTL.genome.df$recall, decreasing = TRUE)])
@@ -404,10 +404,10 @@ ggplot(point.GWAS.genome.df, aes(recall, enrichment, color=assay, label=sample))
   xlab(paste0("recall (n=",GWAS.n,")")) + scale_color_manual(values=col.scheme)
 ggsave(paste0("plots/K562_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,"_point_estimates.pdf"),width=8,height=7)
 
-#ggplot(point.GWAS.non.genome.df, aes(recall, enrichment, color=assay, label=sample)) + 
-#  geom_point(aes(shape=loc)) + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
-#  xlab(paste0("recall (n=",GWAS.n,")"))
-#ggsave(paste0("plots/K562_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,"_point_estimates_proximal_vs_distal.pdf"),width=8,height=7)
+ggplot(point.GWAS.non.genome.df, aes(recall, enrichment, color=assay, label=sample)) + 
+  geom_point(aes(shape=loc)) + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
+  xlab(paste0("recall (n=",GWAS.n,")")) + scale_color_manual(values=col.scheme)
+ggsave(paste0("plots/K562_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,"_point_estimates_proximal_vs_distal.pdf"),width=8,height=7)
 
 point.GWAS.genome.df$sample <- factor(point.GWAS.genome.df$sample, levels=point.GWAS.genome.df$sample[order(point.GWAS.genome.df$recall, decreasing = TRUE)])
 ggplot(point.GWAS.genome.df, aes(sample, recall,fill=sample)) + geom_bar(stat="identity") + 
@@ -432,10 +432,10 @@ ggplot(point.CRISPR.genome.df, aes(recall, precision, color=assay, label=sample)
   xlab(paste0("recall (n=",CRISPR.n,")")) + scale_color_manual(values=col.scheme)
 ggsave(paste0("plots/K562_CRISPR_precision_vs_recall_point_estimates.pdf"),width=8,height=7)
 
-#ggplot(point.CRISPR.non.genome.df, aes(recall, precision, color=assay, label=sample)) + 
-#  geom_point(aes(shape=loc)) + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
-#  xlab(paste0("recall (n=",CRISPR.n,")"))
-#ggsave(paste0("plots/K562_CRISPR_precision_vs_recall_point_estimates_proximal_vs_distal.pdf"),width=8,height=7)
+ggplot(point.CRISPR.non.genome.df, aes(recall, precision, color=assay, label=sample)) + 
+  geom_point(aes(shape=loc)) + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
+  xlab(paste0("recall (n=",CRISPR.n,")")) + scale_color_manual(values=col.scheme)
+ggsave(paste0("plots/K562_CRISPR_precision_vs_recall_point_estimates_proximal_vs_distal.pdf"),width=8,height=7)
 
 point.CRISPR.genome.df$sample <- factor(point.CRISPR.genome.df$sample, levels=point.CRISPR.genome.df$sample[order(point.CRISPR.genome.df$recall, decreasing = TRUE)])
 ggplot(point.CRISPR.genome.df, aes(sample, recall,fill=sample)) + geom_bar(stat="identity") + 
@@ -561,3 +561,128 @@ ggplot(pooled.PRIMEloci.CRISPR.enrichment.recall.data, aes(score, recall, color=
 ggsave(paste0("plots/K562_pooled_PRIMEloci_CRISPR_recall_vs_score.pdf"),width=7,height=5)
 
 ```
+
+
+
+```{r}
+
+library(UpSetR) 
+gr_list <- GRangesList(point.data)
+
+gr_list[["GWAS.data"]] <- GWAS.data
+gr_list[["eQTL.data"]] <- eQTL.data
+gr_list[["ClinVar.data"]] <- ClinVar.data
+gr_list[["CRISPR.data"]] <- CRISPR.pos.data
+gr_list[["CRISPR.neg.data"]] <- CRISPR.neg.data
+
+
+
+
+create_upset_plot <- function(subset_name, gr_list, sets_to_include) {
+  # Get the specific subset's GRanges
+  subset_gr <- gr_list[[subset_name]]
+
+  # Create a binary matrix for overlaps, restricted to the subset
+  overlap_matrix <- sapply(gr_list, function(gr) {
+    overlaps <- findOverlaps(subset_gr, gr)
+    overlap_vector <- rep(0, length(subset_gr))
+    overlap_vector[unique(queryHits(overlaps))] <- 1
+    return(overlap_vector)
+  })
+  colnames(overlap_matrix) <- names(gr_list)
+  
+  # Convert to a data frame
+  overlap_df <- as.data.frame(overlap_matrix)
+  rownames(overlap_df) <- NULL
+  
+  # Filter to include only relevant sets
+  subset_overlap_df <- overlap_df[, sets_to_include]
+  
+  # Generate the UpSet plot
+  library(UpSetR)
+  p<- upset(
+    subset_overlap_df,
+    sets = names(gr_list)[sets_to_include],
+    order.by = "freq",
+    sets.bar.color=col.scheme[names(col.scheme) %in% names(gr_list)[sets_to_include]]
+  )
+  
+    p1 <-upset(
+    subset_overlap_df,
+    sets = names(gr_list)[sets_to_include],
+    order.by = "freq",
+    sets.bar.color=col.scheme[match(p$labels,names(col.scheme))],
+    line.size=0
+  )
+    p1
+}
+
+
+
+
+
+# Define sets to include for intersection analysis
+sets_to_include <-  names(gr_list) %in% c("PRIMEloci CAGE cells pooled", "PRIMEloci CAGE nuclei pooled","DHS")
+
+# Generate plots for PRIMEloci/DHS focus
+s <- create_upset_plot("GWAS.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIMEloci_GWAS_upset.pdf",height=6, width=8)
+s
+dev.off()
+
+s <- create_upset_plot("ClinVar.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIMEloci_ClinVar_upset.pdf",height=6, width=8)
+s
+dev.off()
+
+s <- create_upset_plot("eQTL.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIMEloci_eQTL_upset.pdf",height=6, width=8)
+s
+dev.off()
+
+s <- create_upset_plot("CRISPR.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIMEloci_CRISPR.pos_upset.pdf",height=6, width=8)
+s
+dev.off()
+
+s <- create_upset_plot("CRISPR.neg.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIMEloci_CRISPR.neg_upset.pdf",height=6, width=8)
+s
+dev.off()
+
+
+# Generate plots for full panel
+sets_to_include <-  names(gr_list) %in% names(col.scheme)
+
+s <- create_upset_plot("GWAS.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIMEloci_full_GWAS_upset.pdf",height=6, width=8)
+s
+dev.off()
+
+s <- create_upset_plot("ClinVar.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIMEloci_full_ClinVar_upset.pdf",height=6, width=8)
+s
+dev.off()
+
+s <- create_upset_plot("eQTL.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIMEloci_full_eQTL_upset.pdf",height=6, width=8)
+s
+dev.off()
+
+s <- create_upset_plot("CRISPR.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIMEloci_full_CRISPR.pos_upset.pdf",height=6, width=8)
+s
+dev.off()
+
+s <- create_upset_plot("CRISPR.neg.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIMEloci_full_CRISPR.neg_upset.pdf",height=6, width=8)
+s
+dev.off()
+
+
+
+
+
+```
+
+
