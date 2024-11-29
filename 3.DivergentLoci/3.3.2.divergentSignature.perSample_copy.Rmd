@@ -484,52 +484,24 @@ GM12878.DLs %>% # GM12878.DLs.CTSS
   dplyr::reframe(r = base::range(bidirectionality))
 ```
 
-#### Read out nDLs across bidirectionality scores for all samples
-```{r}
-all.nDLs <- tibble::tibble(
-      sample = base::sort(
-          base::rep(
-            main_samples[1:6],
-            base::length(base::seq(0,1,0.05))
-          )
-        ),
-      biDirScore = base::rep(
-        base::seq(0,1,0.05),
-        base::length(main_samples[1:6])
-      )
-    ) %>%
-  dplyr::mutate(
-    sample = base::factor(
-        x = sample,
-        levels = main_samples[1:6],
-        ordered = TRUE
-      )
-    ) %>%
-  dplyr::mutate(
-    nDLs = purrr::pmap_dbl(
-      .l = base::list(sample,biDirScore),
-      .f = function(s,bds){
-        return(
-          GM12878.DLs %>% # GM12878.DLs.CTSS
-            base::as.data.frame(row.names = NULL) %>%
-            dplyr::filter(
-                sample == s & base::abs(directionality) <= bds
-              ) %>%
-            base::nrow()
-        )
-      }
-    )
-  )
-```
-
 #### Plot nDLs across bidirectionality scores
 ```{r}
-ggplot2::ggplot(
-      data = all.nDLs,
-      mapping = aes(
-        x = biDirScore,
-        y = log10(nDLs),
-        color = sample
+GM12878.DLs %>%
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+      absDir = base::abs(directionality)
+    ) %>% 
+  dplyr::group_by(sample) %>%
+  dplyr::arrange(absDir) %>%
+  dplyr::mutate(
+      rank = dplyr::row_number()
+    ) %>%
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+      x = absDir,
+      y = rank,
+      color = sample
       )
     ) +
   geom_line() +
@@ -537,6 +509,7 @@ ggplot2::ggplot(
       xintercept = 0.8,
       linetype = "dashed"
     ) +
+  scale_y_log10() +
   scale_color_manual(
       values = gm.pooled.pal
     ) +
@@ -569,7 +542,7 @@ GM12878.DLs %>% # GM12878.DLs.CTSS
     ) +
   geom_bar() +
   theme_bw() +
-  scale_x_log10() +
+  # scale_x_log10() +
   scale_fill_manual(
     limits = main_samples[1:6],
     values = gm.pooled.pal
@@ -632,7 +605,15 @@ GM12878.DLs %>% # GM12878.DLs.CTSS
       base::abs(directionality) <= 0.8 &
       dhs.olap >= 1
     ) %>%
-  ggplot2::ggplot(
+  dplyr::mutate(
+      sample = base::factor(
+        x = sample,
+        levels = base::rev(main_samples),
+        ordered = TRUE
+      )
+    ) %>% 
+  ggplot(
+    data = .,
     mapping = aes(
         y = sample,
         fill = sample
@@ -640,16 +621,61 @@ GM12878.DLs %>% # GM12878.DLs.CTSS
     ) +
   geom_bar() +
   theme_bw() +
+  # scale_x_log10() +
   scale_fill_manual(
-      values = gm.pooled.pal
+    limits = main_samples[1:6],
+    values = gm.pooled.pal
     ) +
   labs(
       title = "DLs overlapping DHSs with directionality <= 0.8"
     ) +
   theme(
-      legend.position = "bottom"
+      aspect.ratio = 1,
+      legend.position = "none"
     )
 ```
+
+#### Upper limit: 1536846	from GM12878_10M_N
+```{r}
+GM12878.DLs %>%
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+      absDir = base::abs(directionality)
+    ) %>% 
+  dplyr::group_by(sample) %>%
+  dplyr::arrange(absDir) %>%
+  dplyr::mutate(
+      rank = dplyr::row_number()
+    ) %>% # dplyr::summarise(ylim = base::max(rank))
+  dplyr::filter(
+      dhs.olap >= 1L
+    ) %>% 
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = absDir,
+        y = rank,
+        color = sample
+      )
+    ) +
+  geom_line() +
+  geom_vline(
+      xintercept = 0.8,
+      linetype = "dashed"
+    ) +
+  scale_y_continuous(
+      limits = base::c(1L,1536846),
+      trans = 'log10'
+    ) +
+  scale_color_manual(
+      values = gm.pooled.pal
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
 
 
 ```{r}
