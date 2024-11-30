@@ -621,7 +621,10 @@ GM12878.DLs %>% # GM12878.DLs.CTSS
     ) +
   geom_bar() +
   theme_bw() +
-  # scale_x_log10() +
+  scale_x_continuous(
+      # trans = 'log10',
+      limits = base::c(0L,1536846)
+    ) +
   scale_fill_manual(
     limits = main_samples[1:6],
     values = gm.pooled.pal
@@ -639,17 +642,22 @@ GM12878.DLs %>% # GM12878.DLs.CTSS
 ```{r}
 GM12878.DLs %>%
   tibble::as_tibble() %>%
+  dplyr::filter(
+      dhs.olap >= 1L
+    ) %>% 
   dplyr::mutate(
       absDir = base::abs(directionality)
     ) %>% 
   dplyr::group_by(sample) %>%
   dplyr::arrange(absDir) %>%
   dplyr::mutate(
+      sample = base::factor(
+          x = sample,
+          levels = base::rev(main_samples[1:6]),
+          ordered = TRUE
+        ),
       rank = dplyr::row_number()
     ) %>% # dplyr::summarise(ylim = base::max(rank))
-  dplyr::filter(
-      dhs.olap >= 1L
-    ) %>% 
   ggplot2::ggplot(
     data = .,
     mapping = aes(
@@ -668,6 +676,7 @@ GM12878.DLs %>%
       trans = 'log10'
     ) +
   scale_color_manual(
+      limits = main_samples[1:6],
       values = gm.pooled.pal
     ) +
   theme_bw() +
