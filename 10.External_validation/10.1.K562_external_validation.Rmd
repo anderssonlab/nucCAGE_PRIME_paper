@@ -20,6 +20,8 @@ library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 library(SummarizedExperiment)
 library(tibble)
 library(ggrepel)
+library(tidyr)
+library(ggpattern)
 
 theme_set(theme_bw(base_size = 10))
 
@@ -360,6 +362,56 @@ ggplot(point.ClinVar.genome.df, aes(sample, enrichment,fill=sample)) + geom_bar(
   theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1)) + scale_fill_manual(values=col.scheme)
 ggsave(paste0("plots/K562_ClinVar_enrichment_point_estimates_bar.pdf"),width=3,height=3)
 
+
+#BarPlots for point estimates
+scaling_factor <- max(point.ClinVar.genome.df$recall) / max(point.ClinVar.genome.df$enrichment)
+
+# Create a new column for scaled enrichment
+point.ClinVar.genome.df$enrichment_scaled <- point.ClinVar.genome.df$enrichment * scaling_factor
+
+point.ClinVar.genome.df_long <- point.ClinVar.genome.df %>%
+  pivot_longer(cols = c(recall, enrichment_scaled), names_to = "metric", values_to = "value") %>%
+  mutate(metric = factor(metric, levels = c("recall","enrichment_scaled"))) 
+
+# Plot using ggplot with adjusted spacing
+ggplot(data = point.ClinVar.genome.df_long) +
+  geom_col(
+    aes(
+      x = sample,
+      y = value,
+      fill = sample,
+      group = metric,
+      alpha = metric  
+    ),
+    position = position_dodge(width = 0.6),  
+    color = "black",
+    width = 0.6  
+  ) +
+  # Primary Y-axis for recall and secondary Y-axis for scaled enrichment
+  scale_y_continuous(
+    name = "Recall",
+    limits = c(0, max(point.ClinVar.genome.df$recall) * 1.1),
+    sec.axis = sec_axis(
+      ~ . / scaling_factor,  
+      name = "Enrichment"
+    )
+  ) +
+  scale_fill_manual(values = col.scheme) +
+  scale_alpha_manual(values = c("recall" = 1, "enrichment_scaled" = 0.5)) +  # Set alpha levels for recall and enrichment
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+    axis.title.y.left = element_text(color = "black"),
+    axis.title.y.right = element_text(color = "black"),
+    legend.title = element_blank(),
+    legend.position = "bottom"
+  ) +
+  labs(x = "Sample", fill = "Sample") +
+  theme(legend.position = "none")
+
+ggsave(paste0("plots/K562_ClinVar_enrichment_recall_point_estimates_bar.pdf"),width=14,height=10)
+
+
 ```
 
 Plot eQTL point estimate results
@@ -391,6 +443,54 @@ ggplot(point.eQTL.genome.df, aes(sample, enrichment,fill=sample)) + geom_bar(sta
   theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1))+ scale_fill_manual(values=col.scheme)
 ggsave(paste0("plots/K562_eQTL_enrichment_PIP_",eQTL.pip.thres,"_point_estimates_bar.pdf"),width=3,height=3)
 
+
+#BarPlots for point estimates
+scaling_factor <- max(point.eQTL.genome.df$recall) / max(point.eQTL.genome.df$enrichment)
+
+# Create a new column for scaled enrichment
+point.eQTL.genome.df$enrichment_scaled <- point.eQTL.genome.df$enrichment * scaling_factor
+
+point.eQTL.genome.df_long <- point.eQTL.genome.df %>%
+  pivot_longer(cols = c(recall, enrichment_scaled), names_to = "metric", values_to = "value") %>%
+  mutate(metric = factor(metric, levels = c("recall","enrichment_scaled"))) 
+
+# Plot using ggplot with adjusted spacing
+ggplot(data = point.eQTL.genome.df_long) +
+  geom_col(
+    aes(
+      x = sample,
+      y = value,
+      fill = sample,
+      group = metric,
+      alpha = metric  
+    ),
+    position = position_dodge(width = 0.6),  
+    color = "black",
+    width = 0.6  
+  ) +
+  # Primary Y-axis for recall and secondary Y-axis for scaled enrichment
+  scale_y_continuous(
+    name = "Recall",
+    limits = c(0, max(point.eQTL.genome.df$recall) * 1.1),
+    sec.axis = sec_axis(
+      ~ . / scaling_factor,  
+      name = "Enrichment"
+    )
+  ) +
+  scale_fill_manual(values = col.scheme) +
+  scale_alpha_manual(values = c("recall" = 1, "enrichment_scaled" = 0.5)) +  # Set alpha levels for recall and enrichment
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+    axis.title.y.left = element_text(color = "black"),
+    axis.title.y.right = element_text(color = "black"),
+    legend.title = element_blank(),
+    legend.position = "bottom"
+  ) +
+  labs(x = "Sample", fill = "Sample") +
+  theme(legend.position = "none")
+
+ggsave(paste0("plots/K562_eQTL_enrichment_recall_point_estimates_bar.pdf"),width=14,height=10)
 ```
 
 Plot GWAS point estimate results
@@ -419,6 +519,57 @@ ggplot(point.GWAS.genome.df, aes(sample, enrichment, fill=sample)) + geom_bar(st
   theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1))+ scale_fill_manual(values=col.scheme)
 ggsave(paste0("plots/K562_GWAS_enrichment_PIP_",GWAS.pip.thres,"_point_estimates_bar.pdf"),width=3,height=3)
 
+
+
+
+#BarPlots for point estimates
+scaling_factor <- max(point.GWAS.genome.df$recall) / max(point.GWAS.genome.df$enrichment)
+
+# Create a new column for scaled enrichment
+point.GWAS.genome.df$enrichment_scaled <- point.GWAS.genome.df$enrichment * scaling_factor
+
+point.GWAS.genome.df_long <- point.GWAS.genome.df %>%
+  pivot_longer(cols = c(recall, enrichment_scaled), names_to = "metric", values_to = "value") %>%
+  mutate(metric = factor(metric, levels = c("recall","enrichment_scaled"))) 
+
+# Plot using ggplot with adjusted spacing
+ggplot(data = point.GWAS.genome.df_long) +
+  geom_col(
+    aes(
+      x = sample,
+      y = value,
+      fill = sample,
+      group = metric,
+      alpha = metric  
+    ),
+    position = position_dodge(width = 0.6),  
+    color = "black",
+    width = 0.6  
+  ) +
+  # Primary Y-axis for recall and secondary Y-axis for scaled enrichment
+  scale_y_continuous(
+    name = "Recall",
+    limits = c(0, max(point.GWAS.genome.df$recall) * 1.1),
+    sec.axis = sec_axis(
+      ~ . / scaling_factor,  
+      name = "Enrichment"
+    )
+  ) +
+  scale_fill_manual(values = col.scheme) +
+  scale_alpha_manual(values = c("recall" = 1, "enrichment_scaled" = 0.5)) +  # Set alpha levels for recall and enrichment
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+    axis.title.y.left = element_text(color = "black"),
+    axis.title.y.right = element_text(color = "black"),
+    legend.title = element_blank(),
+    legend.position = "bottom"
+  ) +
+  labs(x = "Sample", fill = "Sample") +
+  theme(legend.position = "none")
+
+ggsave(paste0("plots/K562_GWAS_enrichment_recall_point_estimates_bar.pdf"),width=14,height=10)
+
 ```
 
 Plot CRISPR point estimate results
@@ -433,8 +584,8 @@ ggplot(point.CRISPR.genome.df, aes(recall, precision, color=assay, label=sample)
 ggsave(paste0("plots/K562_CRISPR_precision_vs_recall_point_estimates.pdf"),width=8,height=7)
 
 ggplot(point.CRISPR.non.genome.df, aes(recall, precision, color=assay, label=sample)) + 
-  geom_point(aes(shape=loc)) + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
-  xlab(paste0("recall (n=",CRISPR.n,")")) + scale_color_manual(values=col.scheme)
+  geom_point() + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
+  xlab(paste0("recall (n=",CRISPR.n,")")) + scale_color_manual(values=col.scheme) + facet_wrap(~loc, scales="free")
 ggsave(paste0("plots/K562_CRISPR_precision_vs_recall_point_estimates_proximal_vs_distal.pdf"),width=8,height=7)
 
 point.CRISPR.genome.df$sample <- factor(point.CRISPR.genome.df$sample, levels=point.CRISPR.genome.df$sample[order(point.CRISPR.genome.df$recall, decreasing = TRUE)])
@@ -446,6 +597,59 @@ point.CRISPR.genome.df$sample <- factor(point.CRISPR.genome.df$sample, levels=po
 ggplot(point.CRISPR.genome.df, aes(sample, precision,fill=sample)) + geom_bar(stat="identity") + 
   theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1)) + scale_fill_manual(values=col.scheme)
 ggsave(paste0("plots/K562_CRISPR_precision_point_estimates_bar.pdf"),width=3,height=3)
+
+
+
+
+
+#BarPlots for point estimates
+scaling_factor <- max(point.CRISPR.genome.df$recall) / max(point.CRISPR.genome.df$precision)
+
+# Create a new column for scaled precision
+point.CRISPR.genome.df$precision_scaled <- point.CRISPR.genome.df$precision * scaling_factor
+
+point.CRISPR.genome.df_long <- point.CRISPR.genome.df %>%
+  pivot_longer(cols = c(recall, precision_scaled), names_to = "metric", values_to = "value") %>%
+  mutate(metric = factor(metric, levels = c("recall","precision_scaled"))) 
+
+# Plot using ggplot with adjusted spacing
+ggplot(data = point.CRISPR.genome.df_long) +
+  geom_col(
+    aes(
+      x = sample,
+      y = value,
+      fill = sample,
+      group = metric,
+      alpha = metric  
+    ),
+    position = position_dodge(width = 0.6),  
+    color = "black",
+    width = 0.6  
+  ) +
+  # Primary Y-axis for recall and secondary Y-axis for scaled precision
+  scale_y_continuous(
+    name = "Recall",
+    limits = c(0, max(point.CRISPR.genome.df$recall) * 1.1),
+    sec.axis = sec_axis(
+      ~ . / scaling_factor,  
+      name = "Precision"
+    )
+  ) +
+  scale_fill_manual(values = col.scheme) +
+  scale_alpha_manual(values = c("recall" = 1, "precision_scaled" = 0.5)) +  # Set alpha levels for recall and precision
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+    axis.title.y.left = element_text(color = "black"),
+    axis.title.y.right = element_text(color = "black"),
+    legend.title = element_blank(),
+    legend.position = "bottom"
+  ) +
+  labs(x = "Sample", fill = "Sample") +
+  theme(legend.position = "none")
+
+ggsave(paste0("plots/K562_CRISPR_precision_recall_point_estimates_bar.pdf"),width=14,height=10)
+
 
 ```
 
