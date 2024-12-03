@@ -788,6 +788,17 @@ GM12878.DLs %>% # GM12878.DLs.CTSS
     )
 ```
 
+```{r}
+ GM12878.DLs %>% # GM12878.DLs.CTSS
+  base::as.data.frame(row.names = NULL) %>%
+  ggplot2::ggplot(
+    data = .,
+    aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+  facet_wrap(~sample, scales="free_y") + theme_bw() + 
+  labs(title="bidir score over all DLs", fill="annotation") + scale_fill_manual(values=custom.col)
+```
+
+
 ## [2.8.] Directionality signature over all regions with score > 3
 #### Not useful as the minimum score across all DLs is 4
 ## To be discarded
@@ -812,8 +823,12 @@ GM12878.DLs %>% # GM12878.DLs.CTSS
   base::as.data.frame(row.names = NULL) %>%
   # dplyr::filter(
   #     dhs.olap >= 1
-  #   ) %>% 
+  #   ) %>%
   dplyr::mutate(
+      dhs = dplyr::case_when(
+          dhs.olap >= 1 ~ "pos",
+          TRUE ~ "neg"
+        ),
       sample = base::factor(
         x = sample,
         levels = main_samples[1:6],
@@ -823,24 +838,32 @@ GM12878.DLs %>% # GM12878.DLs.CTSS
   ggplot2::ggplot(
     data = .,
     mapping = aes(
-        directionality,
-        fill = dhs.olap >= 1
+        x = directionality,
+        fill = dhs
       )
     ) +
-  geom_histogram(bins = 25, position = "dodge") + 
-  facet_wrap(~sample, scales="free_y") +
-  theme_bw() + 
-  labs(title="bidir score over all DLs", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
+  geom_density(
+      alpha = 0.5
+    ) +
+  # geom_histogram(
+  #     bins = 25,
+  #     position = "dodge"
+  #   ) + 
+  facet_wrap(
+      scales = "free_y",
+      facets = . ~ sample
+    ) +
+  labs(title = "bidir score over all DLs", fill="DHS overlap") +
+  scale_fill_manual(
+      values = base::c("red","blue")
+    ) +
+  theme_bw()
 ```
 
 
+
+
 ```{r}
-GM12878.DLs.CTSS %>% as.data.frame(row.names=NULL) %>%
-  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
-  facet_wrap(~sample, scales="free_y") + theme_bw() + 
-  labs(title="bidir score over all DLs", fill="annotation") + scale_fill_manual(values=custom.col)
-
-
 GM12878.DLs.CTSS %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
   ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
   facet_wrap(~sample, scales="free_y") + theme_bw() +
