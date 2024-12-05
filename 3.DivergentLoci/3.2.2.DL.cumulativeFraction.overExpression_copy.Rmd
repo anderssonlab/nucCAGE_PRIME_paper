@@ -429,54 +429,56 @@ GM12878.DLs <- base::readRDS(
 ```
 
 ## [2.1.] Sum and accumulate 
+#### To be discarded
 ```{r}
-GM12878.DLs.df <- GM12878.DLs %>% # GM12878.DLs.CTSS
-  base::as.data.frame(row.names = NULL)
-# GM12878.DLs.df <- GM12878.DLs.df[GM12878.DLs.df$sample%in%main,] 
-
-GM12878.DLs.summed <- GM12878.DLs.df %>%
-  dplyr::group_by(sample,txType) %>%
-  dplyr::count(score) %>%
-  dplyr::mutate(
-      pct = n/base::sum(n),
-      cumsum = base::cumsum(pct),
-      cumsumCounts = base::cumsum(n)
-    )
-
-GM12878.DLs.summed.sub = GM12878.DLs.df %>%
-  dplyr::filter(score >= 2) %>%
-  dplyr::group_by(sample,txType) %>%
-  dplyr::count(score) %>%
-  dplyr::mutate(
-      pct = n/base::sum(n),
-      cumsum = base::cumsum(pct),
-      cumsumCounts = base::cumsum(n)
-    )
-
-GM12878.DLs.summed.sub.bidir = GM12878.DLs.df %>%
-  dplyr::filter(
-    score >= 2 & base::abs(directionality) <= 0.8) %>%
-  dplyr::group_by(sample,txType) %>%
-  dplyr::count(score) %>%
-  dplyr::mutate(
-      pct = n/base::sum(n),
-      cumsum = base::cumsum(pct),
-      cumsumCounts = base::cumsum(n)
-    )
-
-GM12878.DLs.summed.sub.bidir.olap = GM12878.DLs.df %>%
-  dplyr::filter(
-      score >= 2 & base::abs(directionality) <= 0.8 & dhs.olap >= 1
-    ) %>%
-  dplyr::group_by(sample,txType) %>%
-  dplyr::count(score) %>%
-   dplyr::mutate(
-      pct = n/base::sum(n),
-      cumsum = base::cumsum(pct),
-      cumsumCounts = base::cumsum(n)
-    )
+# GM12878.DLs.df <- GM12878.DLs %>% # GM12878.DLs.CTSS
+#   base::as.data.frame(row.names = NULL)
+# # GM12878.DLs.df <- GM12878.DLs.df[GM12878.DLs.df$sample%in%main,] 
+# 
+# GM12878.DLs.summed <- GM12878.DLs.df %>%
+#   dplyr::group_by(sample,txType) %>%
+#   dplyr::count(score) %>%
+#   dplyr::mutate(
+#       pct = n/base::sum(n),
+#       cumsum = base::cumsum(pct),
+#       cumsumCounts = base::cumsum(n)
+#     )
+# 
+# GM12878.DLs.summed.sub = GM12878.DLs.df %>%
+#   dplyr::filter(score >= 2) %>%
+#   dplyr::group_by(sample,txType) %>%
+#   dplyr::count(score) %>%
+#   dplyr::mutate(
+#       pct = n/base::sum(n),
+#       cumsum = base::cumsum(pct),
+#       cumsumCounts = base::cumsum(n)
+#     )
+# 
+# GM12878.DLs.summed.sub.bidir = GM12878.DLs.df %>%
+#   dplyr::filter(
+#     score >= 2 & base::abs(directionality) <= 0.8) %>%
+#   dplyr::group_by(sample,txType) %>%
+#   dplyr::count(score) %>%
+#   dplyr::mutate(
+#       pct = n/base::sum(n),
+#       cumsum = base::cumsum(pct),
+#       cumsumCounts = base::cumsum(n)
+#     )
+# 
+# GM12878.DLs.summed.sub.bidir.olap = GM12878.DLs.df %>%
+#   dplyr::filter(
+#       score >= 2 & base::abs(directionality) <= 0.8 & dhs.olap >= 1
+#     ) %>%
+#   dplyr::group_by(sample,txType) %>%
+#   dplyr::count(score) %>%
+#    dplyr::mutate(
+#       pct = n/base::sum(n),
+#       cumsum = base::cumsum(pct),
+#       cumsumCounts = base::cumsum(n)
+#     )
 ```
 
+## [2.2.] Divergent and non-divergent expressed DHSs
 ```{r}
 GM12878.DLs %>%
   tibble::as_tibble() %>%
@@ -489,15 +491,15 @@ GM12878.DLs %>%
         x = sample,
         levels = main_samples[1:6],
         ordered = TRUE
-      ),
-    comb = dplyr::case_when(
-        divergent == TRUE & dhs.olap >= 1 ~ "divergent DHS",
-        divergent == FALSE & dhs.olap >= 1 ~ "non-divergent DHS",
-        divergent == TRUE & dhs.olap == 0 ~ "divergent non-DHS",
-        divergent == FALSE & dhs.olap == 0 ~ "non-divergent non-DHS"
       )
+    # comb = dplyr::case_when(
+    #     divergent == TRUE & dhs.olap >= 1 ~ "divergent DHS",
+    #     divergent == FALSE & dhs.olap >= 1 ~ "non-divergent DHS",
+    #     divergent == TRUE & dhs.olap == 0 ~ "divergent non-DHS",
+    #     divergent == FALSE & dhs.olap == 0 ~ "non-divergent non-DHS"
+    #   )
     ) %>%
-  dplyr::group_by(sample, comb) %>% # dhs
+  dplyr::group_by(sample, dhs) %>% # comb
   dplyr::arrange(score) %>%
   dplyr::mutate(
       rank = dplyr::row_number()/dplyr::n()
@@ -507,7 +509,7 @@ GM12878.DLs %>%
       mapping = aes(
         x = rank,
         y = base::log10(score),
-        color = comb # dhs
+        color = dhs # comb
       )
     ) +
   geom_line() +
@@ -516,7 +518,7 @@ GM12878.DLs %>%
       values = base::c("#500711", "#ED9BBD", "#B0041A", "#FFC95F")
     ) +
   facet_wrap(
-      facets = . ~ sample, # . ~ sample
+      facets = . ~ sample, # divergent ~ sample
       nrow = 1
     ) +
   guides(
@@ -537,6 +539,27 @@ GM12878.DLs %>%
       legend.text = element_text(size = 7),
       panel.spacing = grid::unit(0.1,"lines")
     )
+```
+
+## [2.3.] Print plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("3.DivergentLoci/plots.2/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
+          "_divergentDHS_expression",
+          "_part2",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 8,
+      height = 4
+    )
+  }
 ```
 
 ```{r}
