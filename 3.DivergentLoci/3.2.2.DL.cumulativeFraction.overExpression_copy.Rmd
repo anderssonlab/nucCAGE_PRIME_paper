@@ -110,14 +110,6 @@ k562.DLs.TCs <- readRDS("repSub.k562.DLs.TCs.rds")
 k562.DLs.CTSS.p <- readRDS("poolSub.k562.DLs.CTSS.rds")
 k562.DLs.TCs.p <- readRDS("poolSub.k562.DLs.TCs.rds")
 
-
-
-GM12878.DLs.CTSS <- readRDS("repSub.GM12878.DLs.CTSS.rds")
-GM12878.DLs.TCs <- readRDS("repSub.GM12878.DLs.TCs.rds")
-
-GM12878.DLs.CTSS.p <- readRDS("poolSub.GM12878.DLs.CTSS.rds")
-GM12878.DLs.TCs.p <- readRDS("poolSub.GM12878.DLs.TCs.rds")
-
 ```
 
 
@@ -406,35 +398,134 @@ ggplot(k562.DLs.summed.sub.bidir.olap, aes(score,cumsumCounts,color=sample)) +
 dev.off()
 ```
 
-
-
 # [2.] GM12878 -------------------------
 
+## [2.0.] Read in divergent loci from GM12878 CTSSs
+#### see [1.2.] in '3.DivergentLoci/3.1.5.GM12878.summitDLs.R(md)' for "poolSub.GM12878.summitDLs.rmSingletons.rds"
 ```{r}
-GM12878 <- readRDS("../1.CTSSs/poolSub.combined.GM12878.CTSSs.rds")
-main <- row.names(colData(GM12878))[colData(GM12878)$main=="yes"]
+main_samples <- base::c(
+    "GM12878_500K_C", "GM12878_1M_C", "GM12878_500K_N",
+    "GM12878_1M_N", "GM12878_5M_N", "GM12878_10M_N",
+    "GM12878_1M_trip", "GM12878_1M_ctrl", "GM12878_groCap_1"
+  )
+GM12878.DLs <- base::readRDS(
+  file = base::paste0(
+      here::here("3.DivergentLoci/"),
+      "poolSub.GM12878.summitDLs.rmSingletons.rds"
+    )
+  )
 ```
 
+## To be discarded
+```{r}
+# GM12878.DLs.CTSS <- base::readRDS("repSub.GM12878.DLs.CTSS.rds")
+# GM12878.DLs.TCs <- base::readRDS("repSub.GM12878.DLs.TCs.rds")
+# 
+# GM12878.DLs.CTSS.p <- base::readRDS("poolSub.GM12878.DLs.CTSS.rds")
+# GM12878.DLs.TCs.p <- base::readRDS("poolSub.GM12878.DLs.TCs.rds")
+
+# GM12878 <- readRDS("../1.CTSSs/poolSub.combined.GM12878.CTSSs.rds")
+# main <- row.names(colData(GM12878))[colData(GM12878)$main=="yes"]
+```
+
+## [2.1.] Sum and accumulate 
+```{r}
+GM12878.DLs.df <- GM12878.DLs %>% # GM12878.DLs.CTSS
+  base::as.data.frame(row.names = NULL)
+# GM12878.DLs.df <- GM12878.DLs.df[GM12878.DLs.df$sample%in%main,] 
+
+GM12878.DLs.summed <- GM12878.DLs.df %>%
+  dplyr::group_by(sample,txType) %>%
+  dplyr::count(score) %>%
+  dplyr::mutate(
+      pct = n/base::sum(n),
+      cumsum = base::cumsum(pct),
+      cumsumCounts = base::cumsum(n)
+    )
+
+GM12878.DLs.summed.sub = GM12878.DLs.df %>%
+  dplyr::filter(score >= 2) %>%
+  dplyr::group_by(sample,txType) %>%
+  dplyr::count(score) %>%
+  dplyr::mutate(
+      pct = n/base::sum(n),
+      cumsum = base::cumsum(pct),
+      cumsumCounts = base::cumsum(n)
+    )
+
+GM12878.DLs.summed.sub.bidir = GM12878.DLs.df %>%
+  dplyr::filter(
+    score >= 2 & base::abs(directionality) <= 0.8) %>%
+  dplyr::group_by(sample,txType) %>%
+  dplyr::count(score) %>%
+  dplyr::mutate(
+      pct = n/base::sum(n),
+      cumsum = base::cumsum(pct),
+      cumsumCounts = base::cumsum(n)
+    )
+
+GM12878.DLs.summed.sub.bidir.olap = GM12878.DLs.df %>%
+  dplyr::filter(
+      score >= 2 & base::abs(directionality) <= 0.8 & dhs.olap >= 1
+    ) %>%
+  dplyr::group_by(sample,txType) %>%
+  dplyr::count(score) %>%
+   dplyr::mutate(
+      pct = n/base::sum(n),
+      cumsum = base::cumsum(pct),
+      cumsumCounts = base::cumsum(n)
+    )
+```
 
 ```{r}
-GM12878.DLs.df <- as.data.frame(GM12878.DLs.CTSS, row.names=NULL)
-GM12878.DLs.df <- GM12878.DLs.df[GM12878.DLs.df$sample%in%main,] 
-GM12878.DLs.summed = GM12878.DLs.df %>% group_by(sample,txType) %>% count(score) %>%
-         mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
+GM12878.DLs %>%
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+    dhs = dplyr::case_when(
+        dhs.olap >= 1 ~ "pos",
+        TRUE ~ "neg"
+      ),
+    sample = base::factor(
+        x = sample,
+        levels = main_samples[1:6],
+        ordered = TRUE
+      ),
+    comb = dplyr::case_when(
+        divergent == TRUE & dhs.olap >= 1 ~ "divergent DHS",
+        divergent == FALSE & dhs.olap >= 1 ~ "non-divergent DHS",
+        divergent == TRUE & dhs.olap == 0 ~ "divergent non-DHS",
+        divergent == FALSE & dhs.olap == 0 ~ "non-divergent non-DHS"
+      )
+    ) %>%
+  dplyr::group_by(sample, comb) %>% # dhs
+  dplyr::arrange(score) %>%
+  dplyr::mutate(
+      rank = dplyr::row_number()/dplyr::n()
+    ) %>% 
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = rank,
+        y = base::log10(score),
+        color = comb # dhs
+      )
+    ) +
+  geom_line() +
+  # scale_x_continuous(
+  #     limits = base::c(0.9,1)
+  #   ) +
+  facet_wrap(
+      facets = . ~ sample, # . ~ sample
+      nrow = 1
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      panel.spacing = grid::unit(0.1,"lines")
+    )
+```
 
-GM12878.DLs.summed.sub = GM12878.DLs.df[GM12878.DLs.df$score>=2,] %>% group_by(sample,txType) %>% count(score) %>%
-         mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
-
-
-
-GM12878.DLs.summed.sub.bidir = GM12878.DLs.df[GM12878.DLs.df$score>=2 & abs(GM12878.DLs.df$directionality)<=0.8,] %>% group_by(sample,txType) %>% count(score) %>%
-         mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
-
-
-GM12878.DLs.summed.sub.bidir.olap = GM12878.DLs.df[GM12878.DLs.df$score>=2 & abs(GM12878.DLs.df$directionality)<=0.8& GM12878.DLs.df$dhs.olap>=1,] %>% group_by(sample,txType) %>% count(score) %>%
-         mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
-
-
+```{r}
 pdf("./plots.2/repSub.GM12878.DLs.CTSS.cumulativeSums.pdf")
 ggplot(GM12878.DLs.summed, aes(score,cumsum,color=sample)) +
   geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() + theme(legend.position="bottom") + 

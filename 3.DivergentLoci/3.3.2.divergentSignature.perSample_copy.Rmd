@@ -1130,155 +1130,126 @@ for(ext in base::c("pdf", "png")){
 #   labs(title="bidir score over DLs with DHS overlap & score>=3", fill="annotation") + scale_fill_manual(values=custom.col)
 ```
 
+#### plots.2/repSub.GM12878.bidirScore.TCs
 ```{r}
-pdf("./plots.2/repSub.GM12878.bidirScore.TCs.pdf")
-GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>%
-  ggplot(aes(directionality,fill=sample)) + geom_histogram(bins=25) + facet_wrap(~sample, scales="free_y") + theme_bw() + labs(title="bidir score over all DLs")+ scale_fill_manual(values=gm.full.pal)+theme(legend.position="bottom") 
-
-GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
-  ggplot(aes(directionality,fill=sample)) + geom_histogram(bins=25) + facet_wrap(~sample, scales="free_y") + theme_bw() +
-  labs(title="bidir score over DLs with score >=3") + scale_fill_manual(values=gm.full.pal)+theme(legend.position="bottom") 
-
-
-GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>%
-  ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
-  facet_wrap(~sample, scales="free_y") + theme_bw() + 
-  labs(title="bidir score over all DLs", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
-
-
-GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
-  ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
-  facet_wrap(~sample, scales="free_y") + theme_bw() +
-  labs(title="bidir score over DLs with score >=3", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
-
-
-GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>%
-  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
-  facet_wrap(~sample, scales="free_y") + theme_bw() + 
-  labs(title="bidir score over all DLs", fill="annotation") + scale_fill_manual(values=custom.col)
-
-
-GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
-  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
-  facet_wrap(~sample, scales="free_y") + theme_bw() +
-  labs(title="bidir score over DLs with score >=3", fill="annotation") + scale_fill_manual(values=custom.col)
-
-
-
-GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1) %>%
-  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
-  facet_wrap(~sample, scales="free_y") + theme_bw() +
-  labs(title="bidir score over DLs with DHS overlap", fill="annotation") + scale_fill_manual(values=custom.col)
-
-GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1 & score>=3) %>%
-  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
-  facet_wrap(~sample, scales="free_y") + theme_bw() +
-  labs(title="bidir score over DLs with DHS overlap & score>=3", fill="annotation") + scale_fill_manual(values=custom.col)
-
-dev.off()
-
+# GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>%
+#   ggplot(aes(directionality,fill=sample)) + geom_histogram(bins=25) + facet_wrap(~sample, scales="free_y") + theme_bw() +
+#   labs(title="bidir score over all DLs")+ scale_fill_manual(values=gm.full.pal)+theme(legend.position="bottom") 
+# 
+# GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+#   ggplot(aes(directionality,fill=sample)) + geom_histogram(bins=25) + facet_wrap(~sample, scales="free_y") + theme_bw() +
+#   labs(title="bidir score over DLs with score >=3") + scale_fill_manual(values=gm.full.pal)+theme(legend.position="bottom") 
+# 
+# GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>%
+#   ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
+#   facet_wrap(~sample, scales="free_y") + theme_bw() + 
+#   labs(title="bidir score over all DLs", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
+# 
+# GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+#   ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
+#   facet_wrap(~sample, scales="free_y") + theme_bw() +
+#   labs(title="bidir score over DLs with score >=3", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
+# 
+# GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>%
+#   ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+#   facet_wrap(~sample, scales="free_y") + theme_bw() + 
+#   labs(title="bidir score over all DLs", fill="annotation") + scale_fill_manual(values=custom.col)
+# 
+# GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+#   ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+#   facet_wrap(~sample, scales="free_y") + theme_bw() +
+#   labs(title="bidir score over DLs with score >=3", fill="annotation") + scale_fill_manual(values=custom.col)
+# 
+# GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1) %>%
+#   ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+#   facet_wrap(~sample, scales="free_y") + theme_bw() +
+#   labs(title="bidir score over DLs with DHS overlap", fill="annotation") + scale_fill_manual(values=custom.col)
+# 
+# GM12878.DLs.TCs %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1 & score>=3) %>%
+#   ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+#   facet_wrap(~sample, scales="free_y") + theme_bw() +
+#   labs(title="bidir score over DLs with DHS overlap & score>=3", fill="annotation") + scale_fill_manual(values=custom.col)
 ```
 
-
-
+## Directionality signature over different regions
+#### plots.2/poolSub.GM12878.bidirScore.CTSS.pdf
 ```{r}
-#Directionality signature over different regions
-
-pdf("./plots.2/poolSub.GM12878.bidirScore.CTSS.pdf")
-GM12878.DLs.CTSS.p %>% as.data.frame(row.names=NULL) %>%
-  ggplot(aes(directionality,fill=sample)) + geom_histogram(bins=25) + facet_wrap(~sample, scales="free_y") + theme_bw() + labs(title="bidir score over all DLs")+ scale_fill_manual(values=gm.full.pal)+theme(legend.position="bottom") 
-
-GM12878.DLs.CTSS.p %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
-  ggplot(aes(directionality,fill=sample)) + geom_histogram(bins=25) + facet_wrap(~sample, scales="free_y") + theme_bw() +
-  labs(title="bidir score over DLs with score >=3") + scale_fill_manual(values=gm.full.pal)+theme(legend.position="bottom") 
-
-
-GM12878.DLs.CTSS.p %>% as.data.frame(row.names=NULL) %>%
-  ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
-  facet_wrap(~sample, scales="free_y") + theme_bw() + 
-  labs(title="bidir score over all DLs", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
-
-
-GM12878.DLs.CTSS.p %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
-  ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
-  facet_wrap(~sample, scales="free_y") + theme_bw() +
-  labs(title="bidir score over DLs with score >=3", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
-
-
-
-GM12878.DLs.CTSS.p %>% as.data.frame(row.names=NULL) %>%
-  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
-  facet_wrap(~sample, scales="free_y") + theme_bw() + 
-  labs(title="bidir score over all DLs", fill="annotation") + scale_fill_manual(values=custom.col)
-
-
-GM12878.DLs.CTSS.p %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
-  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
-  facet_wrap(~sample, scales="free_y") + theme_bw() +
-  labs(title="bidir score over DLs with score >=3", fill="annotation") + scale_fill_manual(values=custom.col)
-
-
-
-GM12878.DLs.CTSS.p %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1) %>%
-  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
-  facet_wrap(~sample, scales="free_y") + theme_bw() +
-  labs(title="bidir score over DLs with DHS overlap", fill="annotation") + scale_fill_manual(values=custom.col)
-
-GM12878.DLs.CTSS.p %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1 & score>=3) %>%
-  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
-  facet_wrap(~sample, scales="free_y") + theme_bw() +
-  labs(title="bidir score over DLs with DHS overlap & score>=3", fill="annotation") + scale_fill_manual(values=custom.col)
-
-dev.off()
+# GM12878.DLs.CTSS.p %>% as.data.frame(row.names=NULL) %>%
+#   ggplot(aes(directionality,fill=sample)) + geom_histogram(bins=25) + facet_wrap(~sample, scales="free_y") + theme_bw() + 
+#   labs(title="bidir score over all DLs")+ scale_fill_manual(values=gm.full.pal)+theme(legend.position="bottom") 
+# 
+# GM12878.DLs.CTSS.p %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+#   ggplot(aes(directionality,fill=sample)) + geom_histogram(bins=25) + facet_wrap(~sample, scales="free_y") + theme_bw() +
+#   labs(title="bidir score over DLs with score >=3") + scale_fill_manual(values=gm.full.pal)+theme(legend.position="bottom") 
+# 
+# GM12878.DLs.CTSS.p %>% as.data.frame(row.names=NULL) %>%
+#   ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
+#   facet_wrap(~sample, scales="free_y") + theme_bw() + 
+#   labs(title="bidir score over all DLs", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
+# 
+# GM12878.DLs.CTSS.p %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+#   ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
+#   facet_wrap(~sample, scales="free_y") + theme_bw() +
+#   labs(title="bidir score over DLs with score >=3", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
+# 
+# GM12878.DLs.CTSS.p %>% as.data.frame(row.names=NULL) %>%
+#   ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+#   facet_wrap(~sample, scales="free_y") + theme_bw() + 
+#   labs(title="bidir score over all DLs", fill="annotation") + scale_fill_manual(values=custom.col)
+# 
+# GM12878.DLs.CTSS.p %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+#   ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+#   facet_wrap(~sample, scales="free_y") + theme_bw() +
+#   labs(title="bidir score over DLs with score >=3", fill="annotation") + scale_fill_manual(values=custom.col)
+# 
+# GM12878.DLs.CTSS.p %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1) %>%
+#   ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+#   facet_wrap(~sample, scales="free_y") + theme_bw() +
+#   labs(title="bidir score over DLs with DHS overlap", fill="annotation") + scale_fill_manual(values=custom.col)
+# 
+# GM12878.DLs.CTSS.p %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1 & score>=3) %>%
+#   ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+#   facet_wrap(~sample, scales="free_y") + theme_bw() +
+#   labs(title="bidir score over DLs with DHS overlap & score>=3", fill="annotation") + scale_fill_manual(values=custom.col)
 ```
 
-
+#### plots.2/poolSub.GM12878.bidirScore.TCs.pdf
 ```{r}
-pdf("./plots.2/poolSub.GM12878.bidirScore.TCs.pdf")
-GM12878.DLs.TCs.p %>% as.data.frame(row.names=NULL) %>%
-  ggplot(aes(directionality,fill=sample)) + geom_histogram(bins=25) + facet_wrap(~sample, scales="free_y") + theme_bw() + labs(title="bidir score over all DLs")+ scale_fill_manual(values=gm.full.pal)+theme(legend.position="bottom") 
-
-GM12878.DLs.TCs.p %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
-  ggplot(aes(directionality,fill=sample)) + geom_histogram(bins=25) + facet_wrap(~sample, scales="free_y") + theme_bw() +
-  labs(title="bidir score over DLs with score >=3") + scale_fill_manual(values=gm.full.pal)+theme(legend.position="bottom") 
-
-
-GM12878.DLs.TCs.p %>% as.data.frame(row.names=NULL) %>%
-  ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
-  facet_wrap(~sample, scales="free_y") + theme_bw() + 
-  labs(title="bidir score over all DLs", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
-
-
-GM12878.DLs.TCs.p %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
-  ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
-  facet_wrap(~sample, scales="free_y") + theme_bw() +
-  labs(title="bidir score over DLs with score >=3", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
-
-
-
-GM12878.DLs.TCs.p %>% as.data.frame(row.names=NULL) %>%
-  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
-  facet_wrap(~sample, scales="free_y") + theme_bw() + 
-  labs(title="bidir score over all DLs", fill="annotation") + scale_fill_manual(values=custom.col)
-
-
-GM12878.DLs.TCs.p %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
-  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
-  facet_wrap(~sample, scales="free_y") + theme_bw() +
-  labs(title="bidir score over DLs with score >=3", fill="annotation") + scale_fill_manual(values=custom.col)
-
-
-
-GM12878.DLs.TCs.p %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1) %>%
-  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
-  facet_wrap(~sample, scales="free_y") + theme_bw() +
-  labs(title="bidir score over DLs with DHS overlap", fill="annotation") + scale_fill_manual(values=custom.col)
-
-GM12878.DLs.TCs.p %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1 & score>=3) %>%
-  ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
-  facet_wrap(~sample, scales="free_y") + theme_bw() +
-  labs(title="bidir score over DLs with DHS overlap & score>=3", fill="annotation") + scale_fill_manual(values=custom.col)
-
-dev.off()
+# GM12878.DLs.TCs.p %>% as.data.frame(row.names=NULL) %>%
+#   ggplot(aes(directionality,fill=sample)) + geom_histogram(bins=25) + facet_wrap(~sample, scales="free_y") + theme_bw() +
+#   labs(title="bidir score over all DLs")+ scale_fill_manual(values=gm.full.pal)+theme(legend.position="bottom") 
+# 
+# GM12878.DLs.TCs.p %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+#   ggplot(aes(directionality,fill=sample)) + geom_histogram(bins=25) + facet_wrap(~sample, scales="free_y") + theme_bw() +
+#   labs(title="bidir score over DLs with score >=3") + scale_fill_manual(values=gm.full.pal)+theme(legend.position="bottom") 
+# 
+# GM12878.DLs.TCs.p %>% as.data.frame(row.names=NULL) %>%
+#   ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
+#   facet_wrap(~sample, scales="free_y") + theme_bw() + 
+#   labs(title="bidir score over all DLs", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
+# 
+# GM12878.DLs.TCs.p %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+#   ggplot(aes(directionality,fill=dhs.olap>=1)) + geom_histogram(bins=25, position="dodge") + 
+#   facet_wrap(~sample, scales="free_y") + theme_bw() +
+#   labs(title="bidir score over DLs with score >=3", fill="DHS overlap") + scale_fill_manual(values=custom.col[c(4,6)])
+# 
+# GM12878.DLs.TCs.p %>% as.data.frame(row.names=NULL) %>%
+#   ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+#   facet_wrap(~sample, scales="free_y") + theme_bw() + 
+#   labs(title="bidir score over all DLs", fill="annotation") + scale_fill_manual(values=custom.col)
+# 
+# GM12878.DLs.TCs.p %>% as.data.frame(row.names=NULL) %>% subset(score>=3) %>%
+#   ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+#   facet_wrap(~sample, scales="free_y") + theme_bw() +
+#   labs(title="bidir score over DLs with score >=3", fill="annotation") + scale_fill_manual(values=custom.col)
+# 
+# GM12878.DLs.TCs.p %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1) %>%
+#   ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+#   facet_wrap(~sample, scales="free_y") + theme_bw() +
+#   labs(title="bidir score over DLs with DHS overlap", fill="annotation") + scale_fill_manual(values=custom.col)
+# 
+# GM12878.DLs.TCs.p %>% as.data.frame(row.names=NULL) %>% subset(dhs.olap>=1 & score>=3) %>%
+#   ggplot(aes(directionality,fill=txType)) + geom_histogram(bins=25, position="dodge") + 
+#   facet_wrap(~sample, scales="free_y") + theme_bw() +
+#   labs(title="bidir score over DLs with DHS overlap & score>=3", fill="annotation") + scale_fill_manual(values=custom.col)
 ```
-
