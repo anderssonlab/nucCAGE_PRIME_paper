@@ -478,7 +478,7 @@ GM12878.DLs <- base::readRDS(
 #     )
 ```
 
-## [2.2.] Divergent and non-divergent expressed DHSs
+## [2.2.] CAGE-dependent expression differences of DHSs and non-DHSs
 ```{r}
 GM12878.DLs %>%
   tibble::as_tibble() %>%
@@ -561,6 +561,147 @@ for(ext in base::c("pdf", "png")){
     )
   }
 ```
+
+## [2.4.] Divergency of DHSs and non-DHSs
+```{r}
+GM12878.DLs %>%
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+    dhs = dplyr::case_when(
+        dhs.olap >= 1 ~ "pos",
+        TRUE ~ "neg"
+      ),
+    sample = base::factor(
+        x = sample,
+        levels = main_samples[1:6],
+        ordered = TRUE
+      )
+    ) %>%
+  dplyr::group_by(sample, dhs) %>% # comb
+  dplyr::arrange(directionality) %>%
+  dplyr::mutate(
+      rank = dplyr::row_number()/dplyr::n()
+    ) %>% 
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = rank,
+        y = directionality,
+        color = dhs # comb
+      )
+    ) +
+  geom_line() +
+  scale_colour_manual(
+      # values = base::c("#226764","#71266E","#A7383E","#579757"),
+      values = base::c("#500711", "#ED9BBD", "#B0041A", "#FFC95F")
+    ) +
+  facet_wrap(
+      facets = . ~ sample, # divergent ~ sample
+      nrow = 1
+    ) +
+  guides(
+      color = guide_legend(position = "inside")
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      legend.position.inside = base::c(0.05,0.95),
+      legend.justification = base::c(0,1),
+      legend.title = element_blank(),
+      legend.background = element_rect(
+          fill = "grey75"
+        ),
+      legend.key.size = grid::unit(0.4, 'cm'),
+      legend.key.height = grid::unit(0.4, 'cm'),
+      legend.key.width = grid::unit(0.4, 'cm'),
+      legend.text = element_text(size = 7),
+      panel.spacing = grid::unit(0.1,"lines")
+    )
+```
+
+## [2.5.] Divergent regulatory elements across genomic features
+```{r}
+GM12878.DLs %>%
+  tibble::as_tibble() %>% 
+  dplyr::mutate(
+      sample = base::factor(
+        x = sample,
+        levels = main_samples,
+        ordered = TRUE
+      )
+    ) %>%
+  dplyr::group_by(sample, divergent, txType) %>%
+  dplyr::summarise(
+      num = dplyr::n(),
+      .groups = "drop"
+    ) %>%
+  dplyr::arrange(sample, txType, desc(divergent)) %>% 
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = sample,
+        y = base::log10(num),
+        fill = divergent
+      )
+    ) +
+  geom_bar(
+      stat = "identity",
+      position = position_identity() # "stack"
+    ) +
+  facet_wrap(
+      facets = . ~ txType,
+      nrow = 1
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      panel.spacing = grid::unit(0.1, "lines"),
+      axis.title.x = element_blank(),
+      axis.text.x = element_text(
+        angle = 90,
+        hjust = 1,
+        vjust = 0.5
+      )
+    )
+```
+
+## [2.6.]
+```{r}
+GM12878.DLs %>%
+  tibble::as_tibble() %>% 
+  dplyr::mutate(
+      dhs = dplyr::case_when(
+          dhs.olap >= 1 ~ TRUE,
+          TRUE ~ FALSE
+        ),
+      sample = base::factor(
+        x = sample,
+        levels = main_samples,
+        ordered = TRUE
+      )
+    ) %>%
+  dplyr::group_by(sample, divergent, dhs) %>%
+  dplyr::summarise(
+      num = dplyr::n(),
+      .groups = "drop"
+    ) %>%
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = divergent,
+        y = dhs,
+        fill = num
+      )
+    ) +
+  geom_tile() +
+  facet_wrap(
+      facets = . ~ sample,
+      nrow = 1
+    ) +
+  theme_bw()
+```
+
+
 
 ```{r}
 pdf("./plots.2/repSub.GM12878.DLs.CTSS.cumulativeSums.pdf")
