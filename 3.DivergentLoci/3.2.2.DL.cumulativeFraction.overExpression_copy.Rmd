@@ -1011,7 +1011,7 @@ snas_count_data <- Seurat::Read10X(
 snas_count_data$Peaks[1:5,1:5]
 ```
 
-### [3.2.] Import metadata
+## [3.2.] Import metadata
 ```{r}
 pbmc_metadata <- utils::read.csv(
     file = metadata_path,
@@ -1021,7 +1021,7 @@ pbmc_metadata <- utils::read.csv(
 pbmc_metadata[1:5,]
 ```
 
-### [3.3.] Create seurat/signac object
+## [3.3.] Create seurat/signac object
 ```{r warning=FALSE}
 # # Create chromatinAssay object
 # chrom_assay <- CreateChromatinAssay(
@@ -1049,9 +1049,26 @@ pbmc_metadata[1:5,]
 # Annotation(pbmc_atac) <- annotation
 ```
 
+## [3.4.] Transform data
+#### Count all fragments across all cells: Matrix::rowSums(snas_count_data$Peaks)
 ```{r}
-Matrix::rowSums(snas_count_data$Peaks >= 1)[1:20]
+intm <- Matrix::rowSums(snas_count_data$Peaks >= 1) %>%
+  tibble::as_tibble(rownames = "atac_site")
 
-Matrix::rowSums(snas_count_data$Peaks)[1:20]
+snas <- intm %>%
+  dplyr::mutate(
+      chr = stringr::str_replace(atac_site,"^(.*?):.*$","\\1"),
+      start = stringr::str_replace(atac_site,"^.*?:(.*?)-.*$","\\1"),
+      end = stringr::str_replace(atac_site,"^.*?:.*?-(.*?)$","\\1")
+    ) %>%
+  dplyr::relocate(chr,start,end) %>%
+  dplyr::select(-atac_site) %>%
+  GenomicRanges::GRanges()
+```
+
+```{r}
+olaps <- base::lapply(
+  k562.TCs, function(x) 
+    GenomicRanges::countOverlaps(x,k562.dhs)) 
 ```
 
