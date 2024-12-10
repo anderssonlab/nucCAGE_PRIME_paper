@@ -1067,8 +1067,40 @@ snas <- intm %>%
 ```
 
 ```{r}
-olaps <- base::lapply(
-  k562.TCs, function(x) 
-    GenomicRanges::countOverlaps(x,k562.dhs)) 
+hits <- GenomicRanges::countOverlaps(GM12878.DLs,snas)
+GM12878.DLs$snas.olap <- hits
+base::table(GM12878.DLs$snas.olap)
+
+olaps <- GenomicRanges::findOverlaps(
+    query = GM12878.DLs, subject = snas
+  )
+
+snas_olap <- snas[S4Vectors::subjectHits(olaps),] %>%
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+    snas_sites = base::paste0(
+        seqnames,":",start,"-",end
+      )
+    ) %>% 
+  dplyr::select(
+      snas_sites, nr_cells = "value"
+    )
+
+dls_olap <- GM12878.DLs[S4Vectors::queryHits(olaps),] %>%
+  tibble::as_tibble() %>%
+   dplyr::mutate(
+    DL_sites = base::paste0(
+        seqnames,":",start,"-",end
+      )
+    ) %>%
+  dplyr::select(
+      DL_sites, score, directionality,
+      bidirectionality, divergent, sample,
+      dhs.olap, txType, snas.olap
+    )
+
+comb <- dplyr::bind_cols(
+    snas_olap, dls_olap
+  )
 ```
 
