@@ -981,6 +981,9 @@ for(ext in base::c("pdf", "png")){
 # [3.] Single nuclei ATACseq data integration -------------------------
 
 ## [3.0.] Define paths for single nuclei ATACseq files
+#### Data mapped to "GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta" genome version
+#### Source of that fasta file: 'https://cf.10xgenomics.com/supp/cell-arc/refdata-cellranger-arc-GRCh38-2020-A-2.0.0.tar.gz', 'https://www.encodeproject.org/files/GRCh38_no_alt_analysis_set_GCA_000001405.15/@@download/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz'
+#### STAR index build with the same hg38 genome fasta file: "GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
 ```{r}
 count_matrix_dir <- base::paste0(
     "/maps/projects/ralab_nnfc-AUDIT/people/lpm537/project/",
@@ -1006,10 +1009,6 @@ snas_count_data <- Seurat::Read10X(
     data.dir = count_matrix_dir
   )
 snas_count_data$Peaks[1:5,1:5]
-
-Matrix::rowSums(snas_count_data$Peaks >= 1)[1:20]
-
-Matrix::rowSums(snas_count_data$Peaks)[1:20]
 ```
 
 ### [3.2.] Import metadata
@@ -1022,30 +1021,37 @@ pbmc_metadata <- utils::read.csv(
 pbmc_metadata[1:5,]
 ```
 
-### [1.4.] Create seurat/signac object
+### [3.3.] Create seurat/signac object
 ```{r warning=FALSE}
-# Create chromatinAssay object
-chrom_assay <- CreateChromatinAssay(
-  counts = pbmc_count_data$Peaks, ## Specify scATAC-seq
-  sep = c(":", "-"),
-  fragments = fragments_path,
-  min.cells = 10, # include peaks detected in at least 10 cells
-  min.features = 200 # include cells detecting more than 200 peaks
-)
-
-# Create seurat object from chromatinAssay object and integrate metadata
-pbmc_atac <- CreateSeuratObject(
-  counts = chrom_assay,
-  assay = "peaks", # assay name
-  meta.data = pbmc_metadata
-)
-
-# Remove peaks in non-standard chromosomes
-peaks.keep <- seqnames(granges(pbmc_atac)) %in% standardChromosomes(granges(pbmc_atac))
-pbmc_atac <- pbmc_atac[as.vector(peaks.keep), ]
-
-# Add gene annotation information
-annotation <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
-seqlevels(annotation) <- paste0('chr', seqlevels(annotation))
-Annotation(pbmc_atac) <- annotation
+# # Create chromatinAssay object
+# chrom_assay <- CreateChromatinAssay(
+#   counts = pbmc_count_data$Peaks, ## Specify scATAC-seq
+#   sep = c(":", "-"),
+#   fragments = fragments_path,
+#   min.cells = 10, # include peaks detected in at least 10 cells
+#   min.features = 200 # include cells detecting more than 200 peaks
+# )
+# 
+# # Create seurat object from chromatinAssay object and integrate metadata
+# pbmc_atac <- CreateSeuratObject(
+#   counts = chrom_assay,
+#   assay = "peaks", # assay name
+#   meta.data = pbmc_metadata
+# )
+# 
+# # Remove peaks in non-standard chromosomes
+# peaks.keep <- seqnames(granges(pbmc_atac)) %in% standardChromosomes(granges(pbmc_atac))
+# pbmc_atac <- pbmc_atac[as.vector(peaks.keep), ]
+# 
+# # Add gene annotation information
+# annotation <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
+# seqlevels(annotation) <- paste0('chr', seqlevels(annotation))
+# Annotation(pbmc_atac) <- annotation
 ```
+
+```{r}
+Matrix::rowSums(snas_count_data$Peaks >= 1)[1:20]
+
+Matrix::rowSums(snas_count_data$Peaks)[1:20]
+```
+
