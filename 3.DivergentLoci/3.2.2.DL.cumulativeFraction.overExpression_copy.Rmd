@@ -14,6 +14,7 @@ date: "2024-03-01"
 ## [0.1.] Load necessary packages
 ```{r message=FALSE, warning=FALSE}
 base::library("tidyverse")
+base::library("Seurat")
 
 # base::library("BiocParallel")
 # BiocParallel::register(
@@ -665,13 +666,13 @@ GM12878.DLs %>%
     )
 ```
 
-## [2.6.]
+## [2.6.] Plot numbers of overlaps between divergent and open sites (i.e., DHSs)
 ```{r}
 # cols <- grDevices::colorRampPalette(
 #     base::rev(RColorBrewer::brewer.pal(11,"RdBu"))
 #   )(100)
 
-coef = 0.5 # 0.3
+coef = 0.01 # 0.3
 cols <- base::c(
   grDevices::colorRampPalette(
       base::c("#0099dc", "#95cbee", "#c9e2f6", "#e7f0fa")
@@ -686,8 +687,12 @@ GM12878.DLs %>%
   tibble::as_tibble() %>% 
   dplyr::mutate(
       dhs = dplyr::case_when(
-          dhs.olap >= 1 ~ TRUE,
-          TRUE ~ FALSE
+          dhs.olap >= 1 ~ "+",
+          TRUE ~ "-"
+        ),
+      divergent = dplyr::case_when(
+          divergent == TRUE ~ "+",
+          TRUE ~ "-"
         ),
       sample = base::factor(
         x = sample,
@@ -705,14 +710,15 @@ GM12878.DLs %>%
       mapping = aes(
         x = divergent,
         y = dhs,
-        fill = base::log10(num)
+        fill = num # base::log10(num)
       )
     ) +
   geom_tile() +
   geom_text(
     mapping = aes(
-          color = base::ifelse(base::log10(num) > 5,"on","off"),
-          label = num
+          # color = base::ifelse(base::log10(num) > 5,"on","off"),
+          color = base::ifelse(num > 400000,"on","off"),
+          label = base::format(num, big.mark = ".")
         ),
       size = 3
     ) +
@@ -721,7 +727,7 @@ GM12878.DLs %>%
       nrow = 1
     ) +
   scale_fill_gradientn(
-      limits = base::c(0L,6L), # base::log10(907592)
+      limits = base::c(0L,907592), # base::log10(907592) # 6L
       colors = .GlobalEnv$cols
     ) +
   scale_color_manual(
@@ -729,268 +735,317 @@ GM12878.DLs %>%
     ) +
   theme_bw() +
   theme(
-      axis.text.x = element_text(
-        angle = 90,
-        hjust = 1,
-        vjust = 0.5,
-        size = 8
-      ),
-      axis.text.y = element_text(
-        size = 8
-      ),
+      axis.text = element_text(
+          size = 15
+        ),
       aspect.ratio = 1,
       # axis.title = element_blank(),
       panel.spacing = grid::unit(0.1,"lines")
     ) +
   guides(
       fill = guide_colorbar(
-        label.position = "right",
-        title = NULL,
-        title.position = "left",
-        title.theme = element_text(
-          angle = 90,
-          hjust = 0.5
+          label.position = "right",
+          title = NULL,
+          title.position = "left",
+          title.theme = element_text(
+              angle = 90,
+              hjust = 0.5
+            ),
+          ticks = TRUE,
+          nbin = 100,
+          barheight = 5,
+          label = TRUE,
+          barwidth = 0.5
         ),
-        ticks=T,
-        nbin=100,
-        barheight=5,
-        label=T,
-        barwidth=0.5
-      ),
       color = "none"
     )
 ```
 
-
-
+## [2.7.] Print plot
 ```{r}
-pdf("./plots.2/repSub.GM12878.DLs.CTSS.cumulativeSums.pdf")
-ggplot(GM12878.DLs.summed, aes(score,cumsum,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() + theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of all DLs")
-
-ggplot(GM12878.DLs.summed, aes(score,cumsumCounts,color=sample)) +theme(legend.position="bottom") + 
-  geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of all DLs")
-
-
-ggplot(GM12878.DLs.summed.sub, aes(score,cumsum,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of >=3 counts DLs")
-
-ggplot(GM12878.DLs.summed.sub, aes(score,cumsumCounts,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts DLs")
-
-
-ggplot(GM12878.DLs.summed.sub.bidir, aes(score,cumsum,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative percentage of >=3 counts & bidirScore<0.8  DLs")
-
-ggplot(GM12878.DLs.summed.sub.bidir, aes(score,cumsumCounts,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts & bidirScore<0.8  DLs")
-
-
-
-ggplot(GM12878.DLs.summed.sub.bidir.olap, aes(score,cumsum,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of >=3 counts & bidirScore<0.8 & DHS overlap  DLs")
-
-ggplot(GM12878.DLs.summed.sub.bidir.olap, aes(score,cumsumCounts,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts & bidirScore<0.8 & DHS overlap  DLs")
-
-dev.off()
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("3.DivergentLoci/plots.2/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
+          "_divergentDHS_numbers",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 8,
+      height = 3
+    )
+  }
 ```
 
-
-
-
+## plots.2/repSub.GM12878.DLs.CTSS.cumulativeSums.pdf
 ```{r}
-GM12878.DLs.df <- as.data.frame(GM12878.DLs.TCs, row.names=NULL)
-GM12878.DLs.df <- GM12878.DLs.df[GM12878.DLs.df$sample%in%main,] 
-GM12878.DLs.summed = GM12878.DLs.df %>% group_by(sample,txType) %>% count(score) %>%
-         mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
-
-GM12878.DLs.summed.sub = GM12878.DLs.df[GM12878.DLs.df$score>=2,] %>% group_by(sample,txType) %>% count(score) %>%
-         mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
-
-
-
-GM12878.DLs.summed.sub.bidir = GM12878.DLs.df[GM12878.DLs.df$score>=2 & abs(GM12878.DLs.df$directionality)<=0.8,] %>% group_by(sample,txType) %>% count(score) %>%
-         mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
-
-
-GM12878.DLs.summed.sub.bidir.olap = GM12878.DLs.df[GM12878.DLs.df$score>=2 & abs(GM12878.DLs.df$directionality)<=0.8& GM12878.DLs.df$dhs.olap>=1,] %>% group_by(sample,txType) %>% count(score) %>%
-         mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
-
-
-pdf("./plots.2/repSub.GM12878.DLs.TCs.cumulativeSums.pdf")
-ggplot(GM12878.DLs.summed, aes(score,cumsum,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of all DLs")
-
-ggplot(GM12878.DLs.summed, aes(score,cumsumCounts,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of all DLs")
-
-
-ggplot(GM12878.DLs.summed.sub, aes(score,cumsum,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of >=3 counts DLs")
-
-ggplot(GM12878.DLs.summed.sub, aes(score,cumsumCounts,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts DLs")
-
-
-ggplot(GM12878.DLs.summed.sub.bidir, aes(score,cumsum,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative percentage of >=3 counts & bidirScore<0.8  DLs")
-
-ggplot(GM12878.DLs.summed.sub.bidir, aes(score,cumsumCounts,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts & bidirScore<0.8  DLs")
-
-
-
-ggplot(GM12878.DLs.summed.sub.bidir.olap, aes(score,cumsum,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of >=3 counts & bidirScore<0.8 & DHS overlap  DLs")
-
-ggplot(GM12878.DLs.summed.sub.bidir.olap, aes(score,cumsumCounts,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts & bidirScore<0.8 & DHS overlap  DLs")
-
-dev.off()
+# ggplot(GM12878.DLs.summed, aes(score,cumsum,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() + theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of all DLs")
+# 
+# ggplot(GM12878.DLs.summed, aes(score,cumsumCounts,color=sample)) +theme(legend.position="bottom") + 
+#   geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of all DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub, aes(score,cumsum,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of >=3 counts DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub, aes(score,cumsumCounts,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub.bidir, aes(score,cumsum,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative percentage of >=3 counts & bidirScore<0.8  DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub.bidir, aes(score,cumsumCounts,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts & bidirScore<0.8  DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub.bidir.olap, aes(score,cumsum,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of >=3 counts & bidirScore<0.8 & DHS overlap  DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub.bidir.olap, aes(score,cumsumCounts,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts & bidirScore<0.8 & DHS overlap  DLs")
 ```
 
-
-
-
-
 ```{r}
-
-
-GM12878.DLs.df <- as.data.frame(GM12878.DLs.CTSS.p, row.names=NULL)
-GM12878.DLs.df <- GM12878.DLs.df[GM12878.DLs.df$sample%in%main,] 
-GM12878.DLs.summed = GM12878.DLs.df %>% group_by(sample,txType) %>% count(score) %>%
-         mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
-
-GM12878.DLs.summed.sub = GM12878.DLs.df[GM12878.DLs.df$score>=2,] %>% group_by(sample,txType) %>% count(score) %>%
-         mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
-
-
-
-GM12878.DLs.summed.sub.bidir = GM12878.DLs.df[GM12878.DLs.df$score>=2 & abs(GM12878.DLs.df$directionality)<=0.8,] %>% group_by(sample,txType) %>% count(score) %>%
-         mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
-
-
-GM12878.DLs.summed.sub.bidir.olap = GM12878.DLs.df[GM12878.DLs.df$score>=2 & abs(GM12878.DLs.df$directionality)<=0.8& GM12878.DLs.df$dhs.olap>=1,] %>% group_by(sample,txType) %>% count(score) %>%
-         mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
-
-
-pdf("./plots.2/poolSub.GM12878.DLs.CTSS.cumulativeSums.pdf")
-ggplot(GM12878.DLs.summed, aes(score,cumsum,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of all DLs")
-
-ggplot(GM12878.DLs.summed, aes(score,cumsumCounts,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of all DLs")
-
-
-ggplot(GM12878.DLs.summed.sub, aes(score,cumsum,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of >=3 counts DLs")
-
-ggplot(GM12878.DLs.summed.sub, aes(score,cumsumCounts,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts DLs")
-
-
-ggplot(GM12878.DLs.summed.sub.bidir, aes(score,cumsum,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative percentage of >=3 counts & bidirScore<0.8  DLs")
-
-ggplot(GM12878.DLs.summed.sub.bidir, aes(score,cumsumCounts,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts & bidirScore<0.8  DLs")
-
-
-
-ggplot(GM12878.DLs.summed.sub.bidir.olap, aes(score,cumsum,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of >=3 counts & bidirScore<0.8 & DHS overlap  DLs")
-
-ggplot(GM12878.DLs.summed.sub.bidir.olap, aes(score,cumsumCounts,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts & bidirScore<0.8 & DHS overlap  DLs")
-
-dev.off()
+# GM12878.DLs.df <- as.data.frame(GM12878.DLs.TCs, row.names=NULL)
+# GM12878.DLs.df <- GM12878.DLs.df[GM12878.DLs.df$sample%in%main,] 
+# GM12878.DLs.summed = GM12878.DLs.df %>% group_by(sample,txType) %>% count(score) %>%
+#          mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
+# 
+# GM12878.DLs.summed.sub = GM12878.DLs.df[GM12878.DLs.df$score>=2,] %>% group_by(sample,txType) %>% count(score) %>%
+#          mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
+# 
+# 
+# 
+# GM12878.DLs.summed.sub.bidir = GM12878.DLs.df[GM12878.DLs.df$score>=2 & abs(GM12878.DLs.df$directionality)<=0.8,] %>% group_by(sample,txType) %>% count(score) %>%
+#          mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
+# 
+# 
+# GM12878.DLs.summed.sub.bidir.olap = GM12878.DLs.df[GM12878.DLs.df$score>=2 & abs(GM12878.DLs.df$directionality)<=0.8& GM12878.DLs.df$dhs.olap>=1,] %>% group_by(sample,txType) %>% count(score) %>%
+#          mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
 ```
 
-
-
-
+## plots.2/repSub.GM12878.DLs.TCs.cumulativeSums.pdf
 ```{r}
-GM12878.DLs.df <- as.data.frame(GM12878.DLs.TCs.p, row.names=NULL)
-GM12878.DLs.df <- GM12878.DLs.df[GM12878.DLs.df$sample%in%main,] 
-GM12878.DLs.summed = GM12878.DLs.df %>% group_by(sample,txType) %>% count(score) %>%
-         mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
-
-GM12878.DLs.summed.sub = GM12878.DLs.df[GM12878.DLs.df$score>=2,] %>% group_by(sample,txType) %>% count(score) %>%
-         mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
-
-
-
-GM12878.DLs.summed.sub.bidir = GM12878.DLs.df[GM12878.DLs.df$score>=2 & abs(GM12878.DLs.df$directionality)<=0.8,] %>% group_by(sample,txType) %>% count(score) %>%
-         mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
-
-
-GM12878.DLs.summed.sub.bidir.olap = GM12878.DLs.df[GM12878.DLs.df$score>=2 & abs(GM12878.DLs.df$directionality)<=0.8& GM12878.DLs.df$dhs.olap>=1,] %>% group_by(sample,txType) %>% count(score) %>%
-         mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
-
-
-pdf("./plots.2/poolSub.GM12878.DLs.TCs.cumulativeSums.pdf")
-ggplot(GM12878.DLs.summed, aes(score,cumsum,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of all DLs")
-
-ggplot(GM12878.DLs.summed, aes(score,cumsumCounts,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of all DLs")
-
-
-ggplot(GM12878.DLs.summed.sub, aes(score,cumsum,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of >=3 counts DLs")
-
-ggplot(GM12878.DLs.summed.sub, aes(score,cumsumCounts,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts DLs")
-
-
-ggplot(GM12878.DLs.summed.sub.bidir, aes(score,cumsum,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative percentage of >=3 counts & bidirScore<0.8  DLs")
-
-ggplot(GM12878.DLs.summed.sub.bidir, aes(score,cumsumCounts,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts & bidirScore<0.8  DLs")
-
-
-
-ggplot(GM12878.DLs.summed.sub.bidir.olap, aes(score,cumsum,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of >=3 counts & bidirScore<0.8 & DHS overlap  DLs")
-
-ggplot(GM12878.DLs.summed.sub.bidir.olap, aes(score,cumsumCounts,color=sample)) +
-  geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
-  scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts & bidirScore<0.8 & DHS overlap  DLs")
-
-dev.off()
+# ggplot(GM12878.DLs.summed, aes(score,cumsum,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of all DLs")
+# 
+# ggplot(GM12878.DLs.summed, aes(score,cumsumCounts,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of all DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub, aes(score,cumsum,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of >=3 counts DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub, aes(score,cumsumCounts,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub.bidir, aes(score,cumsum,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative percentage of >=3 counts & bidirScore<0.8  DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub.bidir, aes(score,cumsumCounts,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts & bidirScore<0.8  DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub.bidir.olap, aes(score,cumsum,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of >=3 counts & bidirScore<0.8 & DHS overlap  DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub.bidir.olap, aes(score,cumsumCounts,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts & bidirScore<0.8 & DHS overlap  DLs")
 ```
 
+```{r}
+# GM12878.DLs.df <- as.data.frame(GM12878.DLs.CTSS.p, row.names=NULL)
+# GM12878.DLs.df <- GM12878.DLs.df[GM12878.DLs.df$sample%in%main,] 
+# GM12878.DLs.summed = GM12878.DLs.df %>% group_by(sample,txType) %>% count(score) %>%
+#          mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
+# 
+# GM12878.DLs.summed.sub = GM12878.DLs.df[GM12878.DLs.df$score>=2,] %>% group_by(sample,txType) %>% count(score) %>%
+#          mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
+# 
+# 
+# 
+# GM12878.DLs.summed.sub.bidir = GM12878.DLs.df[GM12878.DLs.df$score>=2 & abs(GM12878.DLs.df$directionality)<=0.8,] %>% group_by(sample,txType) %>% count(score) %>%
+#          mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
+# 
+# 
+# GM12878.DLs.summed.sub.bidir.olap = GM12878.DLs.df[GM12878.DLs.df$score>=2 & abs(GM12878.DLs.df$directionality)<=0.8& GM12878.DLs.df$dhs.olap>=1,] %>% group_by(sample,txType) %>% count(score) %>%
+#          mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
+```
 
+## plots.2/poolSub.GM12878.DLs.CTSS.cumulativeSums.pdf
+```{r}
+# ggplot(GM12878.DLs.summed, aes(score,cumsum,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of all DLs")
+# 
+# ggplot(GM12878.DLs.summed, aes(score,cumsumCounts,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of all DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub, aes(score,cumsum,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of >=3 counts DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub, aes(score,cumsumCounts,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub.bidir, aes(score,cumsum,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative percentage of >=3 counts & bidirScore<0.8  DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub.bidir, aes(score,cumsumCounts,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts & bidirScore<0.8  DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub.bidir.olap, aes(score,cumsum,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of >=3 counts & bidirScore<0.8 & DHS overlap  DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub.bidir.olap, aes(score,cumsumCounts,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts & bidirScore<0.8 & DHS overlap  DLs")
+```
+
+```{r}
+# GM12878.DLs.df <- as.data.frame(GM12878.DLs.TCs.p, row.names=NULL)
+# GM12878.DLs.df <- GM12878.DLs.df[GM12878.DLs.df$sample%in%main,] 
+# GM12878.DLs.summed = GM12878.DLs.df %>% group_by(sample,txType) %>% count(score) %>%
+#          mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
+# 
+# GM12878.DLs.summed.sub = GM12878.DLs.df[GM12878.DLs.df$score>=2,] %>% group_by(sample,txType) %>% count(score) %>%
+#          mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
+# 
+# 
+# 
+# GM12878.DLs.summed.sub.bidir = GM12878.DLs.df[GM12878.DLs.df$score>=2 & abs(GM12878.DLs.df$directionality)<=0.8,] %>% group_by(sample,txType) %>% count(score) %>%
+#          mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
+# 
+# 
+# GM12878.DLs.summed.sub.bidir.olap = GM12878.DLs.df[GM12878.DLs.df$score>=2 & abs(GM12878.DLs.df$directionality)<=0.8& GM12878.DLs.df$dhs.olap>=1,] %>% group_by(sample,txType) %>% count(score) %>%
+#          mutate(pct = n/sum(n)) %>% mutate(cumsum=cumsum(pct), cumsumCounts=cumsum(n))
+```
+
+## plots.2/poolSub.GM12878.DLs.TCs.cumulativeSums.pdf
+```{r}
+# ggplot(GM12878.DLs.summed, aes(score,cumsum,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of all DLs")
+# 
+# ggplot(GM12878.DLs.summed, aes(score,cumsumCounts,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of all DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub, aes(score,cumsum,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of >=3 counts DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub, aes(score,cumsumCounts,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub.bidir, aes(score,cumsum,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative percentage of >=3 counts & bidirScore<0.8  DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub.bidir, aes(score,cumsumCounts,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts & bidirScore<0.8  DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub.bidir.olap, aes(score,cumsum,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType) + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500))+ labs(title="cumulative percentage of >=3 counts & bidirScore<0.8 & DHS overlap  DLs")
+# 
+# ggplot(GM12878.DLs.summed.sub.bidir.olap, aes(score,cumsumCounts,color=sample)) +
+#   geom_line(aes(group=sample)) + facet_wrap(~txType, scales = "free_y") + theme_bw() +theme(legend.position="bottom") + 
+#   scale_color_manual(values=gm.full.pal) + xlim(c(0,500)) + labs(title="cumulative counts of >=3 counts & bidirScore<0.8 & DHS overlap  DLs")
+```
+
+# [3.] Single nuclei ATACseq data integration -------------------------
+
+## [3.0.] Define paths for single nuclei ATACseq files
+```{r}
+count_matrix_dir <- base::paste0(
+    "/maps/projects/ralab_nnfc-AUDIT/people/lpm537/project/",
+    "E2G/processed/10x_multiome_240614/GM12878/cellranger_res/GM12878/outs",
+    "/filtered_feature_bc_matrix/"
+  )
+
+fragments_path <- base::paste0(
+    "/maps/projects/ralab_nnfc-AUDIT/people/lpm537/project/",
+    "E2G/processed/10x_multiome_240614/GM12878/cellranger_res/GM12878/outs/",
+    "atac_fragments.tsv.gz"
+  )
+metadata_path <- base::paste0(
+    "/maps/projects/ralab_nnfc-AUDIT/people/lpm537/project/",
+    "E2G/processed/10x_multiome_240614/GM12878/cellranger_res/GM12878/outs/",
+    "per_barcode_metrics.csv"
+  )
+```
+
+## [3.1.] Import count matrix as 'single nuclei atac seq' (snas) count data object
+```{r}
+snas_count_data <- Seurat::Read10X(
+    data.dir = count_matrix_dir
+  )
+snas_count_data$Peaks[1:5,1:5]
+
+Matrix::rowSums(snas_count_data$Peaks >= 1)[1:20]
+
+Matrix::rowSums(snas_count_data$Peaks)[1:20]
+```
+
+### [3.2.] Import metadata
+```{r}
+pbmc_metadata <- utils::read.csv(
+    file = metadata_path,
+    header = TRUE,
+    row.names = 1
+  )
+pbmc_metadata[1:5,]
+```
+
+### [1.4.] Create seurat/signac object
+```{r warning=FALSE}
+# Create chromatinAssay object
+chrom_assay <- CreateChromatinAssay(
+  counts = pbmc_count_data$Peaks, ## Specify scATAC-seq
+  sep = c(":", "-"),
+  fragments = fragments_path,
+  min.cells = 10, # include peaks detected in at least 10 cells
+  min.features = 200 # include cells detecting more than 200 peaks
+)
+
+# Create seurat object from chromatinAssay object and integrate metadata
+pbmc_atac <- CreateSeuratObject(
+  counts = chrom_assay,
+  assay = "peaks", # assay name
+  meta.data = pbmc_metadata
+)
+
+# Remove peaks in non-standard chromosomes
+peaks.keep <- seqnames(granges(pbmc_atac)) %in% standardChromosomes(granges(pbmc_atac))
+pbmc_atac <- pbmc_atac[as.vector(peaks.keep), ]
+
+# Add gene annotation information
+annotation <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
+seqlevels(annotation) <- paste0('chr', seqlevels(annotation))
+Annotation(pbmc_atac) <- annotation
+```
