@@ -1145,13 +1145,18 @@ DL_snas <- GM12878.DLs %>%
         divergent == FALSE & dhs.olap >= 1 ~ "non-divergent DHS",
         divergent == TRUE & dhs.olap == 0 ~ "divergent non-DHS",
         divergent == FALSE & dhs.olap == 0 ~ "non-divergent non-DHS"
+      ),
+    sample = base::factor(
+        x = sample,
+        levels = main_samples,
+        ordered = TRUE
       )
     )
 ```
 
 
 ```{r}
-coef = 0.01 # 0.3
+coef = 0.25 # 0.3
 cols <- base::c(
   grDevices::colorRampPalette(
       base::c("#e7f0fa", "#c9e2f6", "#95cbee", "#0099dc", "#4ab04a", "#ffd73e")
@@ -1170,24 +1175,71 @@ ggplot2::ggplot(
         # color = class
       )
     ) +
-  geom_point(
-      alpha = 0.1
-    ) +
-  # geom_density2d() +
-  # geom_hex(
-  #     bins = 30
+  # geom_point(
+  #     alpha = 0.1
   #   ) +
+  # geom_density2d(
+  #     bins = 1000,
+  #     contour_var = "density" # "count" # "ndensity"
+  #   ) +
+  geom_hex(
+      mapping = aes(
+        fill = stat(
+            base::log10(count)
+          )
+        ),
+      bins = 30
+    ) +
   facet_grid(
-      facets = class ~ sample
+      cols = vars(sample),
+      rows = vars(class)
       # ncol = 6
     ) +
-  # scale_fill_gradientn(
-  #     colours = cols
-  #   ) +
+  scale_fill_gradientn(
+      colours = cols
+    ) +
   theme_bw() +
   theme(
       # legend.position = "none",
       aspect.ratio = 1,
       panel.spacing = grid::unit(0.1,"lines")
+    ) +
+  guides(
+      fill = guide_colorbar(
+          label.position = "right",
+          # title = NULL,
+          title.position = "left",
+          title.theme = element_text(
+              angle = 90,
+              hjust = 0.5,
+              size = 10
+            ),
+          ticks = T,
+          nbin = 100,
+          barheight = 5,
+          label = TRUE,
+          barwidth = 0.5
+        ),
+      color = "none"
     )
+```
+
+## [2.7.] Print plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("3.DivergentLoci/plots.2/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
+          "_divergentDHS_snATACseq_numbers",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 12,
+      height = 7
+    )
+  }
 ```
