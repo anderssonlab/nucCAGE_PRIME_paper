@@ -1117,7 +1117,7 @@ intgr <- comb %>% # 249.989
       DL_sites, snas_sites, nr_cells, sample
     ) # %>% distinct(DL_sites, snas_sites, nr_cells,sample)
 
-GM12878.DLs %>%
+DL_snas <- GM12878.DLs %>%
   tibble::as_tibble() %>%
   dplyr::mutate(
     DL_sites = base::paste0(
@@ -1132,24 +1132,60 @@ GM12878.DLs %>%
   dplyr::left_join(
       intgr,
       by = base::c("DL_sites","sample")
+    ) %>%
+  tidyr::replace_na(
+      replace = base::list(
+        snas_sites = "-",
+        nr_cells = 0L
+      )
+    ) %>%
+  dplyr::mutate(
+    class = dplyr::case_when(
+        divergent == TRUE & snas.olap >= 1 ~ "divergent DHS",
+        divergent == FALSE & snas.olap >= 1 ~ "non-divergent DHS",
+        divergent == TRUE & snas.olap == 0 ~ "divergent non-DHS",
+        divergent == FALSE & snas.olap == 0 ~ "non-divergent non-DHS"
+      )
     )
 ```
 
 
 ```{r}
-comb %>%
-  dplyr::group_by(DL_sites) %>%
-  tidyr::nest() %>%
-  dplyr::mutate(
-    newData = purrr::map_tbl(
-      .x = data,
-      .f = function(df){
-        df %>%
-          dplyr::filter(
-            nr_cells == base::max(nr_cells)
-          ) %>%
-        
-      }
+# coef = 0.01 # 0.3
+# cols <- base::c(
+#   grDevices::colorRampPalette(
+#       base::c("#e7f0fa", "#c9e2f6", "#95cbee", "#0099dc", "#4ab04a", "#ffd73e")
+#     )(coef*100),
+#   grDevices::colorRampPalette(
+#       c("#eec73a", "#e29421", "#e29421", "#f05336","#ce472e"),
+#       bias=2
+#     )((1-coef)*100)
+#   )
+
+ggplot2::ggplot(
+      data = DL_snas,
+      mapping = aes(
+        x = nr_cells,
+        y = base::log10(score),
+        color = class
+      )
+    ) +
+  geom_point() +
+  geom_density2d() +
+  # geom_hex(
+  #     bins = 30
+  #   ) +
+  facet_wrap(
+      facets = class ~ sample,
+      ncol = 6
+    ) +
+  scale_fill_gradientn(
+      colours = cols
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      panel.spacing = grid::unit(0.1,"lines"),
+      legend.position = "none"
     )
-  )
 ```
