@@ -1067,9 +1067,9 @@ snas <- intm %>%
 ```
 
 ```{r}
-# hits <- GenomicRanges::countOverlaps(GM12878.DLs,snas)
-# GM12878.DLs$snas.olap <- hits
-# base::table(GM12878.DLs$snas.olap)
+hits <- GenomicRanges::countOverlaps(GM12878.DLs,snas)
+GM12878.DLs$snas.olap <- hits
+base::table(GM12878.DLs$snas.olap)
 
 olaps <- GenomicRanges::findOverlaps( # 251.644
     query = GM12878.DLs, subject = snas
@@ -1099,39 +1099,24 @@ dls_olap <- GM12878.DLs[S4Vectors::queryHits(olaps),] %>%
       dhs.olap, txType, snas.olap
     )
 
-comb <- dplyr::bind_cols(
+comb <- dplyr::bind_cols( # 251.644 
     snas_olap, dls_olap
   )
 ```
 
-#### 'dplyr::filter(comb, snas.olap > 1)'
+#### Evaluate with 'dplyr::filter(comb, snas.olap > 1)'
+#### Example for a DL overlapping 2 ATAC sites & occuring in >1 sample
 ```{r}
-comb %>%
-  dplyr::group_by(DL_sites) %>%
+intgr <- comb %>% # 249.989
+  dplyr::group_by(DL_sites,sample) %>%
   dplyr::filter(
       nr_cells == base::max(nr_cells)
     ) %>%
   dplyr::ungroup() %>%
-  dplyr::filter(snas.olap == 2)
-  
-comb %>%
-  dplyr::group_by(DL_sites) %>%
-  tidyr::nest() %>%
-  dplyr::mutate(
-    newData = purrr::map_tbl(
-      .x = data,
-      .f = function(df){
-        df %>%
-          dplyr::filter(
-            nrbase::max(nr_cells)
-          )
-      }
-    )
-  )
-```
+  dplyr::select(
+      DL_sites, snas_sites, nr_cells, sample
+    ) # %>% distinct(DL_sites, snas_sites, nr_cells,sample)
 
-
-```{r}
 GM12878.DLs %>%
   tibble::as_tibble() %>%
   dplyr::mutate(
@@ -1143,6 +1128,28 @@ GM12878.DLs %>%
       DL_sites, score, directionality,
       bidirectionality, divergent, sample,
       dhs.olap, txType, snas.olap
-    ) %>% dplyr::group_by(snas.olap) %>% dplyr::summarise(N = n())
+    ) %>%
+  dplyr::left_join(
+      intgr,
+      by = base::c("DL_sites","sample")
+    )
 ```
 
+
+```{r}
+comb %>%
+  dplyr::group_by(DL_sites) %>%
+  tidyr::nest() %>%
+  dplyr::mutate(
+    newData = purrr::map_tbl(
+      .x = data,
+      .f = function(df){
+        df %>%
+          dplyr::filter(
+            nr_cells == base::max(nr_cells)
+          ) %>%
+        
+      }
+    )
+  )
+```
