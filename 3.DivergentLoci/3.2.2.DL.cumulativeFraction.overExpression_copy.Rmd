@@ -1260,10 +1260,10 @@ for(ext in base::c("pdf", "png")){
 ```{r}
 upper_fill_value <- base::max(ggplot2::ggplot_build(plot)$data[[1]]$count)
 
-plot_1M <- DL_snas %>%
+plot_1MN <- DL_snas %>%
   dplyr::filter(sample == "GM12878_1M_N") %>% 
   ggplot2::ggplot(
-        data = DL_snas_sub,
+        data = .,
         mapping = aes(
           x = nr_cells,
           y = base::log10(score)
@@ -1324,13 +1324,14 @@ classes <- DL_snas %>%
   dplyr::pull(class)
 
 plots <- tibble::tibble(
-      sample = base::rep(main_samples,base::length(classes)),
-      class = base::sort(base::rep(classes,base::length(main_samples)))
+      sample = base::rep(main_samples[1:6],base::length(classes)),
+      class = base::sort(base::rep(classes,base::length(main_samples[1:6])))
     ) %>%
   dplyr::mutate(
     plot = purrr::pmap(
       .l = base::list(sample,class),
       .f = function(s,c){
+        base::cat(s, "\t", c, "\n")
         plot <- DL_snas %>%
           dplyr::filter(
               sample == s & class == c
@@ -1340,26 +1341,66 @@ plots <- tibble::tibble(
             mapping = aes(
               x = nr_cells,
               y = base::log10(score),
-              colour = sample
+              fill = sample
             )
           ) +
         geom_point(
             alpha = 0.01
           ) +
         geom_text(
-          
-        ) +
+            x = upper_x*0.95,
+            y = upper_y*0.95,
+            hjust = 1,
+            vjust = 1,
+            label = base::paste0(s," ", c)
+          ) +
+        scale_x_continuous(
+            limits = base::c(0,upper_x)
+          ) +
+        scale_y_continuous(
+            limits = base::c(0,upper_y)
+          ) +
         theme_bw() +
         theme(
             aspect.ratio = 1,
             legend.position = "none"
           )
-        return(
-          ggExtra::ggMarginal(
-              p = plot,
-              groupFill = TRUE
-            )
+      return(
+        ggExtra::ggMarginal(
+            p = plot,
+            groupFill = TRUE
+          )
         )
+      }
+    )
+  )
+```
+```{r}
+plots %>%
+  dplyr::mutate(
+    path = purrr::pmap_chr(
+      .l = base::list(sample, class, plot),
+      .f = function(s, c, p){
+        base::print(p)
+        fn <- base::paste0(
+            here::here("3.DivergentLoci/plots.2/"),
+            base::format(base::Sys.time(), "%Y%m%d"),
+            "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
+            "_divergentDHS_snATACseq",
+            "_", s,
+            "_", stringr::str_replace_all(c, " |-", "")
+          )
+        for(ext in base::c("pdf", "png")){
+          ggplot2::ggsave(
+            filename = base::paste0(fn,".", ext),
+            plot = p,
+            device = ext,
+            dpi = 300,
+            width = 5,
+            height = 5
+          )
+        }
+        return(fn)
       }
     )
   )
