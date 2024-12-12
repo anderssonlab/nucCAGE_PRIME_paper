@@ -1168,6 +1168,9 @@ cols <- base::c(
     )((1-coef)*100)
   )
 
+upper_y <- base::log10(base::max(DL_snas$score))
+upper_x <- base::max(DL_snas$nr_cells)
+
 plot <- ggplot2::ggplot(
       data = DL_snas,
       mapping = aes(
@@ -1198,6 +1201,12 @@ plot <- ggplot2::ggplot(
     ) +
   scale_fill_gradientn(
       colours = cols
+    ) +
+  scale_x_continuous(
+        limits = base::c(0,upper_x)
+      ) +
+  scale_y_continuous(
+      limits = base::c(0,upper_y)
     ) +
   theme_bw() +
   theme(
@@ -1250,15 +1259,14 @@ for(ext in base::c("pdf", "png")){
 
 ```{r}
 upper_fill_value <- base::max(ggplot2::ggplot_build(plot)$data[[1]]$count)
-DL_snas_sub <- DL_snas %>%
-  dplyr::filter(sample == "GM12878_1M_N") %>%
-  dplyr::mutate(logScore = base::log10(score))
-  
-plot_1MN <- ggplot2::ggplot(
+
+plot_1M <- DL_snas %>%
+  dplyr::filter(sample == "GM12878_1M_N") %>% 
+  ggplot2::ggplot(
         data = DL_snas_sub,
         mapping = aes(
           x = nr_cells,
-          y = logScore
+          y = base::log10(score)
         )
       ) +
     geom_hex(
@@ -1276,6 +1284,12 @@ plot_1MN <- ggplot2::ggplot(
     scale_fill_gradientn(
         limits = base::c(0,base::log10(upper_fill_value)),
         colours = cols
+      ) +
+    scale_x_continuous(
+        limits = base::c(0,upper_x)
+      ) +
+    scale_y_continuous(
+        limits = base::c(0,upper_y)
       ) +
     theme_bw() +
     theme(
@@ -1303,9 +1317,51 @@ plot_1MN <- ggplot2::ggplot(
 base::print(plot_1MN)
 ```
 
-
+#### Evaluate with c = "non-divergent DHS" and s = "GM12878_1M_N"
 ```{r}
-DL_snas %>% 
-  dplyr::distinct(class)
+classes <- DL_snas %>% 
+  dplyr::distinct(class) %>%
+  dplyr::pull(class)
+
+plots <- tibble::tibble(
+      sample = base::rep(main_samples,base::length(classes)),
+      class = base::sort(base::rep(classes,base::length(main_samples)))
+    ) %>%
+  dplyr::mutate(
+    plot = purrr::pmap(
+      .l = base::list(sample,class),
+      .f = function(s,c){
+        plot <- DL_snas %>%
+          dplyr::filter(
+              sample == s & class == c
+            ) %>%
+          ggplot2::ggplot(
+            data = .,
+            mapping = aes(
+              x = nr_cells,
+              y = base::log10(score),
+              colour = sample
+            )
+          ) +
+        geom_point(
+            alpha = 0.01
+          ) +
+        geom_text(
+          
+        ) +
+        theme_bw() +
+        theme(
+            aspect.ratio = 1,
+            legend.position = "none"
+          )
+        return(
+          ggExtra::ggMarginal(
+              p = plot,
+              groupFill = TRUE
+            )
+        )
+      }
+    )
+  )
 ```
 
