@@ -1051,9 +1051,10 @@ pbmc_metadata[1:5,]
 
 ## [3.4.] Transform data
 #### Count all fragments across all cells: Matrix::rowSums(snas_count_data$Peaks)
+#### Absolute number of cells & fraction of cells as two alternatives
 ```{r}
-intm <- Matrix::rowSums(snas_count_data$Peaks >= 1) %>%
-  tibble::as_tibble(rownames = "atac_site")
+intm_ <- Matrix::rowSums(snas_count_data$Peaks >= 1) / base::ncol(snas_count_data$Peaks)
+intm <- tibble::as_tibble(intm_, rownames = "atac_site")
 
 snas <- intm %>%
   dplyr::mutate(
@@ -1067,15 +1068,15 @@ snas <- intm %>%
 ```
 
 ```{r}
-hits <- GenomicRanges::countOverlaps(GM12878.DLs,snas)
-GM12878.DLs$snas.olap <- hits
-base::table(GM12878.DLs$snas.olap)
+# hits <- GenomicRanges::countOverlaps(GM12878.DLs,snas)
+# GM12878.DLs$snas.olap <- hits
+# base::table(GM12878.DLs$snas.olap)
 
 olaps <- GenomicRanges::findOverlaps( # 251.644
     query = GM12878.DLs, subject = snas
   )
 
-snas_olap <- snas[S4Vectors::subjectHits(olaps),] %>%
+snas_olap <- snas[S4Vectors::subjectHits(olaps),] %>% # 251.644
   tibble::as_tibble() %>%
   dplyr::mutate(
     snas_sites = base::paste0(
@@ -1086,7 +1087,7 @@ snas_olap <- snas[S4Vectors::subjectHits(olaps),] %>%
       snas_sites, nr_cells = "value"
     )
 
-dls_olap <- GM12878.DLs[S4Vectors::queryHits(olaps),] %>%
+dls_olap <- GM12878.DLs[S4Vectors::queryHits(olaps),] %>% # 251.644
   tibble::as_tibble() %>%
    dplyr::mutate(
     DL_sites = base::paste0(
@@ -1243,3 +1244,76 @@ for(ext in base::c("pdf", "png")){
     )
   }
 ```
+
+```{r}
+coef = 0.25 # 0.3
+cols <- base::c(
+  grDevices::colorRampPalette(
+      base::c("#e7f0fa", "#c9e2f6", "#95cbee", "#0099dc", "#4ab04a", "#ffd73e")
+    )(coef*100),
+  grDevices::colorRampPalette(
+      c("#eec73a", "#e29421", "#e29421", "#f05336","#ce472e"),
+      bias=2
+    )((1-coef)*100)
+  )
+
+
+DL_snas %>%
+  dplyr::filter(
+      sample == "GM12878_1M_N"
+    ) %>% 
+ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = nr_cells,
+        y = base::log10(score)
+        # color = class
+      )
+    ) +
+  # geom_point(
+  #     alpha = 0.1
+  #   ) +
+  # geom_density2d(
+  #     bins = 1000,
+  #     contour_var = "density" # "count" # "ndensity"
+  #   ) +
+  geom_hex(
+      mapping = aes(
+        fill = stat(
+            base::log10(count)
+          )
+        ),
+      bins = 30
+    ) +
+  facet_wrap(
+      facets = . ~ class
+    ) +
+  scale_fill_gradientn(
+      colours = cols
+    ) +
+  theme_bw() +
+  theme(
+      # legend.position = "none",
+      aspect.ratio = 1,
+      panel.spacing = grid::unit(0.1,"lines")
+    ) +
+  guides(
+      fill = guide_colorbar(
+          label.position = "right",
+          # title = NULL,
+          title.position = "left",
+          title.theme = element_text(
+              angle = 90,
+              hjust = 0.5,
+              size = 10
+            ),
+          ticks = T,
+          nbin = 100,
+          barheight = 5,
+          label = TRUE,
+          barwidth = 0.5
+        ),
+      color = "none"
+    )
+```
+
