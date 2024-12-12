@@ -1168,7 +1168,7 @@ cols <- base::c(
     )((1-coef)*100)
   )
 
-ggplot2::ggplot(
+plot <- ggplot2::ggplot(
       data = DL_snas,
       mapping = aes(
         x = nr_cells,
@@ -1223,7 +1223,10 @@ ggplot2::ggplot(
         ),
       color = "none"
     )
+base::print(plot)
 ```
+
+
 
 ## [2.7.] Print plot
 ```{r}
@@ -1246,74 +1249,63 @@ for(ext in base::c("pdf", "png")){
 ```
 
 ```{r}
-coef = 0.25 # 0.3
-cols <- base::c(
-  grDevices::colorRampPalette(
-      base::c("#e7f0fa", "#c9e2f6", "#95cbee", "#0099dc", "#4ab04a", "#ffd73e")
-    )(coef*100),
-  grDevices::colorRampPalette(
-      c("#eec73a", "#e29421", "#e29421", "#f05336","#ce472e"),
-      bias=2
-    )((1-coef)*100)
-  )
-
-
-DL_snas %>%
-  dplyr::filter(
-      sample == "GM12878_1M_N"
-    ) %>% 
-ggplot2::ggplot(
-      data = .,
-      mapping = aes(
-        x = nr_cells,
-        y = base::log10(score)
-        # color = class
+upper_fill_value <- base::max(ggplot2::ggplot_build(plot)$data[[1]]$count)
+DL_snas_sub <- DL_snas %>%
+  dplyr::filter(sample == "GM12878_1M_N") %>%
+  dplyr::mutate(logScore = base::log10(score))
+  
+plot_1MN <- ggplot2::ggplot(
+        data = DL_snas_sub,
+        mapping = aes(
+          x = nr_cells,
+          y = logScore
+        )
+      ) +
+    geom_hex(
+        mapping = aes(
+          fill = stat(
+              base::log10(count)
+            )
+          ),
+        bins = 30
+      ) +
+    facet_wrap(
+        facets = . ~ class,
+        nrow = 1
+      ) +
+    scale_fill_gradientn(
+        limits = base::c(0,base::log10(upper_fill_value)),
+        colours = cols
+      ) +
+    theme_bw() +
+    theme(
+        aspect.ratio = 1,
+        panel.spacing = grid::unit(0.1,"lines")
+      ) +
+    guides(
+        fill = guide_colorbar(
+            label.position = "right",
+            # title = NULL,
+            title.position = "left",
+            title.theme = element_text(
+                angle = 90,
+                hjust = 0.5,
+                size = 10
+              ),
+            ticks = T,
+            nbin = 100,
+            barheight = 5,
+            label = TRUE,
+            barwidth = 0.5
+          ),
+        color = "none"
       )
-    ) +
-  # geom_point(
-  #     alpha = 0.1
-  #   ) +
-  # geom_density2d(
-  #     bins = 1000,
-  #     contour_var = "density" # "count" # "ndensity"
-  #   ) +
-  geom_hex(
-      mapping = aes(
-        fill = stat(
-            base::log10(count)
-          )
-        ),
-      bins = 30
-    ) +
-  facet_wrap(
-      facets = . ~ class
-    ) +
-  scale_fill_gradientn(
-      colours = cols
-    ) +
-  theme_bw() +
-  theme(
-      # legend.position = "none",
-      aspect.ratio = 1,
-      panel.spacing = grid::unit(0.1,"lines")
-    ) +
-  guides(
-      fill = guide_colorbar(
-          label.position = "right",
-          # title = NULL,
-          title.position = "left",
-          title.theme = element_text(
-              angle = 90,
-              hjust = 0.5,
-              size = 10
-            ),
-          ticks = T,
-          nbin = 100,
-          barheight = 5,
-          label = TRUE,
-          barwidth = 0.5
-        ),
-      color = "none"
-    )
+base::print(plot_1MN)
+```
+
+
+```{r}
+DL_snas %>% 
+  dplyr::distinct(class)
 ```
 
