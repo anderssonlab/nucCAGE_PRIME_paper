@@ -1067,6 +1067,7 @@ snas <- intm %>%
   GenomicRanges::GRanges()
 ```
 
+## [3.5.] Read out overlap between CAGE TCs & single nuclei ATAC seq
 ```{r}
 # hits <- GenomicRanges::countOverlaps(GM12878.DLs,snas)
 # GM12878.DLs$snas.olap <- hits
@@ -1105,6 +1106,7 @@ comb <- dplyr::bind_cols( # 251.644
   )
 ```
 
+## [3.6.] Reintegrate overlaps into the 'GM12878.DLs' object
 #### Evaluate with 'dplyr::filter(comb, snas.olap > 1)'
 #### Example for a DL overlapping 2 ATAC sites & occuring in >1 sample
 ```{r}
@@ -1155,7 +1157,7 @@ DL_snas <- GM12878.DLs %>%
     )
 ```
 
-
+## [3.7.] Plot overlaps
 ```{r}
 coef = 0.25 # 0.3
 cols <- base::c(
@@ -1235,9 +1237,7 @@ plot <- ggplot2::ggplot(
 base::print(plot)
 ```
 
-
-
-## [2.7.] Print plot
+## [3.8.] Print plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -1257,6 +1257,7 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
+## [3.9.] Plot only overlaps for 'GM12878_1M_N' sample
 ```{r}
 upper_fill_value <- base::max(ggplot2::ggplot_build(plot)$data[[1]]$count)
 
@@ -1317,6 +1318,27 @@ plot_1MN <- DL_snas %>%
 base::print(plot_1MN)
 ```
 
+## [3.10.] Print plot only overlaps for 'GM12878_1M_N' sample
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("3.DivergentLoci/plots.2/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
+          "_divergentDHS_snATACseq_1Mnuclei",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 8,
+      height = 4
+    )
+  }
+```
+
+## [3.11.] Plot all panels separateley 
 #### Evaluate with c = "non-divergent DHS" and s = "GM12878_1M_N"
 ```{r}
 classes <- DL_snas %>% 
@@ -1375,6 +1397,8 @@ plots <- tibble::tibble(
     )
   )
 ```
+
+## [3.12.] Print all panel plots separately
 ```{r}
 plots %>%
   dplyr::mutate(
