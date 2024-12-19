@@ -93,7 +93,6 @@ K562.TCs %>%
   labs(x="Sample")
 ```
 
-
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -110,7 +109,6 @@ for(ext in base::c("pdf", "png")){
     )
 }
 ```
-
 
 ```{r}
 K562.TCs %>% 
@@ -136,7 +134,6 @@ K562.TCs %>%
   labs(x="Sample")
 ```
 
-
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -153,7 +150,6 @@ for(ext in base::c("pdf", "png")){
     )
 }
 ```
-
 
 ```{r}
 K562.TCs %>% 
@@ -179,7 +175,6 @@ K562.TCs %>%
   labs(x="Sample")
 ```
 
-
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -196,7 +191,6 @@ for(ext in base::c("pdf", "png")){
     )
 }
 ```
-
 
 ```{r}
 K562.TCs %>% 
@@ -222,7 +216,6 @@ K562.TCs %>%
   labs(x="Sample")
 ```
 
-
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -239,7 +232,6 @@ for(ext in base::c("pdf", "png")){
     )
   }
 ```
-
 
 ## [1.2.] Plot shape metrics of TCs
 ```{r}
@@ -265,7 +257,6 @@ K562.TCs %>%
   )
 ```
 
-
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -282,7 +273,6 @@ for(ext in base::c("pdf", "png")){
     )
 }
 ```
-
 
 ```{r}
 K562.TCs %>% 
@@ -306,7 +296,6 @@ K562.TCs %>%
     legend.key.size = grid::unit(0.9, "lines")
   )
 ```
-
 
 ```{r}
 for(ext in base::c("pdf", "png")){
@@ -349,7 +338,6 @@ K562.TCs %>%
   )
 ```
 
-
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -366,7 +354,6 @@ for(ext in base::c("pdf", "png")){
     )
 }
 ```
-
 
 ```{r}
 K562.TCs %>% 
@@ -393,7 +380,6 @@ K562.TCs %>%
   )
 ```
 
-
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -417,7 +403,6 @@ K562.cor.df$sample <- K562.cor.df$samp
 K562.comb.expr <- K562.comb.expr[K562.comb.expr$sample %in% use,]
 K562.cor.df <- K562.cor.df[K562.cor.df$sample %in% use,]
 ```
-
 
 ```{r}
 K562.comb.expr %>%
@@ -443,7 +428,6 @@ K562.comb.expr %>%
     legend.key.size = grid::unit(0.9, "lines")
   )
 ```
-
 
 ```{r}
 for(ext in base::c("pdf", "png")){
@@ -505,7 +489,6 @@ K562.TCs %>%
   labs(x="Sample")
 ```
 
-
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -522,7 +505,6 @@ for(ext in base::c("pdf", "png")){
     )
   }
 ```
-
 
 ```{r}
 K562.TCs %>% 
@@ -548,7 +530,6 @@ K562.TCs %>%
   labs(x="Sample")
 ```
 
-
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -565,7 +546,6 @@ for(ext in base::c("pdf", "png")){
     )
   }
 ```
-
 
 ```{r}
 K562.TCs %>% 
@@ -591,7 +571,6 @@ K562.TCs %>%
   labs(x="Sample")
 ```
 
-
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -608,7 +587,6 @@ for(ext in base::c("pdf", "png")){
     )
   }
 ```
-
 
 ```{r}
 K562.TCs %>% 
@@ -633,7 +611,6 @@ K562.TCs %>%
     ) +
   labs(x="Sample")
 ```
-
 
 ```{r}
 for(ext in base::c("pdf", "png")){
@@ -677,7 +654,6 @@ K562.TCs %>%
   )
 ```
 
-
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -694,7 +670,6 @@ for(ext in base::c("pdf", "png")){
     )
   }
 ```
-
 
 ```{r}
 K562.TCs %>% 
@@ -718,7 +693,6 @@ K562.TCs %>%
     legend.key.size = grid::unit(0.9, "lines")
   )
 ```
-
 
 ```{r}
 for(ext in base::c("pdf", "png")){
@@ -761,7 +735,6 @@ K562.TCs %>%
   )
 ```
 
-
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -778,7 +751,6 @@ for(ext in base::c("pdf", "png")){
     )
   }
 ```
-
 
 ```{r}
 K562.TCs %>% 
@@ -804,7 +776,6 @@ K562.TCs %>%
     legend.key.size = grid::unit(0.9, "lines")
   )
 ```
-
 
 ```{r}
 for(ext in base::c("pdf", "png")){
@@ -832,7 +803,6 @@ K562.p.comb.expr$sample <- factor(K562.p.comb.expr$sample, levels=use)
 K562.p.cor.df$sample <- factor(K562.p.cor.df$sample, levels=use)
 ```
 
-
 ```{r}
 K562.p.comb.expr %>%
   base::subset(TPM>0 & gene_counts>0) %>%
@@ -857,7 +827,6 @@ K562.p.comb.expr %>%
     legend.key.size = grid::unit(0.9, "lines")
   )
 ```
-
 
 ```{r}
 for(ext in base::c("pdf", "png")){

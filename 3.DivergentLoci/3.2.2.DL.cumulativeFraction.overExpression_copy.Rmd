@@ -1366,7 +1366,7 @@ plots <- tibble::tibble(
               fill = sample
             )
           ) +
-        geom_point(
+        ggrastr::geom_point_rast(
             alpha = 0.01
           ) +
         geom_text(
@@ -1412,7 +1412,8 @@ plots %>%
             "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
             "_divergentDHS_snATACseq",
             "_", s,
-            "_", stringr::str_replace_all(c, " |-", "")
+            "_", stringr::str_replace_all(c, " |-", ""),
+            "_rastr"
           )
         for(ext in base::c("pdf", "png")){
           ggplot2::ggsave(
@@ -1428,5 +1429,17 @@ plots %>%
       }
     )
   )
+```
+
+```{r}
+DL_snas %>%
+  dplyr::group_by(sample, class) %>%
+  dplyr::summarise(
+      frac = base::sum(nr_cells > 0)/dplyr::n(),
+      abso = base::sum(nr_cells > 0)
+    ) %>%
+  dplyr::filter(
+      sample == "GM12878_1M_N"
+    )
 ```
 
