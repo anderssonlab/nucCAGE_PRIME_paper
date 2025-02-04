@@ -585,6 +585,59 @@ GM12878.DLs %>%
     )
 ```
 
+```{r}
+GM12878.DLs %>%
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+    # dhs = dplyr::case_when(
+    #     dhs.olap >= 1 ~ "pos",
+    #     TRUE ~ "neg"
+    #   ),
+    sample = base::factor(
+        x = sample,
+        levels = main_samples[1:6],
+        ordered = TRUE
+      ),
+    comb = dplyr::case_when(
+        divergent == TRUE & dhs.olap >= 1 ~ "divergent DHS",
+        divergent == FALSE & dhs.olap >= 1 ~ "non-divergent DHS",
+        divergent == TRUE & dhs.olap == 0 ~ "divergent non-DHS",
+        divergent == FALSE & dhs.olap == 0 ~ "non-divergent non-DHS"
+      )
+    ) %>%
+  dplyr::group_by(sample, comb) %>% # dhs
+  dplyr::arrange(score) %>%
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = comb,
+        y = base::log10(score),
+        color = comb # dhs
+      )
+    ) +
+  geom_violin() +
+  # geom_jitter(
+  #     height = 0,
+  #     width = 0.3
+  #   ) +
+  facet_wrap(
+      facets = . ~ sample,
+      nrow = 1
+    ) +
+  theme_bw() +
+  theme(
+      panel.spacing = grid::unit(0.1, "lines"),
+      aspect.ratio = 2,
+      axis.text.x = element_text(
+        angle = 90,
+        hjust = 0,
+        vjust = 1
+      ),
+      legend.position = "none"
+    )
+```
+
+
 ## [2.3.] Print plot
 ```{r}
 for(ext in base::c("pdf", "png")){
