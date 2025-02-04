@@ -25,26 +25,24 @@ library(ggpattern)
 
 theme_set(theme_bw(base_size = 10))
 
-col.scheme <- c("#377eb8", "#d39200","#93aa00","#4daf4a","#984ea3","#ff7f01","#e41b1c","#256866","#f8bc24","grey","black")
+col.scheme <- c("#377eb8", "#d39200","#93aa00","#4daf4a","#984ea3","#ff7f01","#e41b1c","#256866","#f8bc24","grey","black","hotpink")
 
 
 ```
 
 Parameters
 ```{r}
-
-pooled.focus.samples <- c("K562_sld_C","K562_sld_N")
-#focus.samples <- c("K562_C1","K562_C2","K562_C3","K562_N4","K562_N5","K562_N6")
-
 PRIMEloci.thres <- 0.75
 
 
 
 pooled.PRIMEloci.files <- c("K562_sld_C" = "../8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_C.bed",
-                            "K562_sld_N" = "../8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N.bed")
+                            "K562_sld_N" = "../8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N.bed",
+                            "K562_sld_10M_N" = "../8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N_10M.bed")
 
 pooled.PRIMEloci.names <- c("K562_sld_C" = "PRIMEloci CAGE cells pooled",
-                            "K562_sld_N" = "PRIMEloci CAGE nuclei pooled")
+                            "K562_sld_N" = "PRIMEloci CAGE nuclei pooled",
+                            "K562_sld_10M_N" = "PRIMEloci CAGE nuclei 10M pooled")
 
 pooled.DL.file <- "../3.DivergentLoci/poolSub.k562.summitDLs.rmSingletons.rds"
 pooled.noise.file <- "../9.Noise/K562.poolSub.divnoise.csv"
@@ -64,7 +62,8 @@ eQTL.pip.thres <- 0.5
 GWAS.pip.thres <- 0.2
 traits <- c("HbA1c","Hb","RBC","MCV","MCH","MCHC")
 
-cCRE.file <- "../0.External_resources/ENCFF464BRU.bed"
+#cCRE.file <- "../0.External_resources/ENCFF464BRU.bed"
+cCRE.file <- "../0.External_resources/ENCFF414OGC_ENCFF806YEZ_ENCFF849TDM_ENCFF736UDR.bed"
 
 DHS.file <- "../0.External_resources/E123-DNase.macs2.hg38.narrowPeak"
 
@@ -219,9 +218,14 @@ cCRE.data$class <- cCRE[,10,drop=TRUE]
 for (n in c("dELS","PLS")) {
  x <- subset(cCRE.data,class==n)
  x$class <- NULL
- point.data[[paste0("ENCODE cCRE ",n)]] <- x
+ seqlevels(x,pruning.mode="coarse") <- seqlevels(SNP.data)
+ olap <- findOverlaps(x, promoters, minoverlap = 1)
+ x.proximal <- x[unique(queryHits(olap))]
+ x.distal <- x[setdiff(1:length(x), queryHits(olap))]
+ point.data[[paste0("ENCODE cCRE ",n," distal")]] <- x.distal
+ point.data[[paste0("ENCODE cCRE ",n," proximal")]] <- x.proximal
 }
-point.data[["ENCODE cCRE"]] <- c(point.data[["ENCODE cCRE dELS"]],point.data[["ENCODE cCRE PLS"]])
+point.data[["ENCODE cCRE"]] <- c(point.data[["ENCODE cCRE dELS distal"]],point.data[["ENCODE cCRE dELS proximal"]],point.data[["ENCODE cCRE PLS distal"]],point.data[["ENCODE cCRE PLS proximal"]])
 
 DHS <- import.bed(DHS.file)
 olap <- findOverlaps(DHS, promoters, minoverlap = 1)
@@ -336,7 +340,7 @@ point.ClinVar.non.genome.df <- subset(point.ClinVar.df, loc!="genome")
 
 col.scheme <- setNames(col.scheme, c("DHS","Divergent loci CAGE cells","Divergent loci CAGE nuclei",
                                      "dREG PRO-seq","dREG qPRO-seq","ENCODE cCRE",
-                                     "PINTS GRO/PRO-cap","PRIMEloci CAGE cells pooled","PRIMEloci CAGE nuclei pooled","K27ac", "K27ac DHS"))
+                                     "PINTS GRO/PRO-cap","PRIMEloci CAGE cells pooled","PRIMEloci CAGE nuclei pooled","K27ac", "K27ac DHS","PRIMEloci CAGE nuclei 10M pooled"))
 
 
 ggplot(point.ClinVar.genome.df, aes(recall, enrichment, color=assay, label=sample)) + 
@@ -516,8 +520,6 @@ point.GWAS.genome.df$sample <- factor(point.GWAS.genome.df$sample, levels=point.
 ggplot(point.GWAS.genome.df, aes(sample, enrichment, fill=sample)) + geom_bar(stat="identity") + 
   theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1))+ scale_fill_manual(values=col.scheme)
 ggsave(paste0("plots/K562_GWAS_enrichment_PIP_",GWAS.pip.thres,"_point_estimates_bar.pdf"),width=3,height=3)
-
-ö
 
 ```
 

@@ -62,7 +62,13 @@ purrr::map(
   )
 ```
 
-## [0.3.] Add custom color palettes
+## [0.3.] Load annotations
+```{r}
+base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+```
+
+## [0.4.] Add custom color palettes
 ```{r}
 custom.col <- base::c(
     "#FFDB6D","#C4961A","#F4EDCA", 
@@ -101,8 +107,6 @@ k.full.pal <- base::c(
   )
 ```
 
-
-
 ```{r}
 #Load in previously called DLs 
 k562.DLs.CTSS <- readRDS("repSub.k562.DLs.CTSS.rds")
@@ -112,7 +116,6 @@ k562.DLs.CTSS.p <- readRDS("poolSub.k562.DLs.CTSS.rds")
 k562.DLs.TCs.p <- readRDS("poolSub.k562.DLs.TCs.rds")
 
 ```
-
 
 ## [1.] K562 -------------------------
 
@@ -175,9 +178,6 @@ ggplot(k562.DLs.summed.sub.bidir.olap, aes(score,cumsumCounts,color=sample)) +
 
 dev.off()
 ```
-
-
-
 
 ```{r}
 k562.DLs.df <- as.data.frame(k562.DLs.TCs, row.names=NULL)
@@ -256,10 +256,6 @@ ggplot(k562.DLs.summed.sub.bidir.olap, aes(score,cumsumCounts,color=sample)) +
 dev.off()
 ```
 
-
-
-
-
 ```{r}
 
 
@@ -321,9 +317,6 @@ ggplot(k562.DLs.summed.sub.bidir.olap, aes(score,cumsumCounts,color=sample)) +
 
 dev.off()
 ```
-
-
-
 
 ```{r}
 k562.DLs.df <- as.data.frame(k562.DLs.TCs.p, row.names=NULL)
@@ -404,16 +397,66 @@ dev.off()
 ## [2.0.] Read in divergent loci from GM12878 CTSSs
 #### see [1.2.] in '3.DivergentLoci/3.1.5.GM12878.summitDLs.R(md)' for "poolSub.GM12878.summitDLs.rmSingletons.rds"
 ```{r}
-main_samples <- base::c(
-    "GM12878_500K_C", "GM12878_1M_C", "GM12878_500K_N",
-    "GM12878_1M_N", "GM12878_5M_N", "GM12878_10M_N",
-    "GM12878_1M_trip", "GM12878_1M_ctrl", "GM12878_groCap_1"
-  )
 GM12878.DLs <- base::readRDS(
   file = base::paste0(
       here::here("3.DivergentLoci/"),
       "poolSub.GM12878.summitDLs.rmSingletons.rds"
     )
+  )
+```
+
+## [2.1.] Combine & subset data
+```{r}
+main_samples <- base::c(
+    "GM12878_500K_C", "GM12878_1M_C", "GM12878_500K_N",
+    "GM12878_1M_N", "GM12878_5M_N", "GM12878_10M_N",
+    "GM12878_1M_trip", "GM12878_1M_ctrl", "GM12878_groCap_1"
+  )
+
+GM12878.DLs <- base::unlist(methods::as(GM12878.DLs,"GRangesList"))
+# base::unique(GM12878.DLs$sample)
+GM12878.DLs <- GM12878.DLs[GM12878.DLs$sample %in% main_samples,] #1.875.808 vs 2.004.109
+# base::unique(GM12878.DLs$sample)
+```
+
+## [2.2.] Load GM12878 DHSs and reformat them
+```{r}
+GM12878.dhs <- readr::read_delim(
+    file = base::paste0(
+        here::here("0.External_resources/"),
+        "E116-DNase.macs2.hg38.narrowPeak"
+      ),
+    delim = "\t",
+    col_names = base::c("chr","start","end","rank"),
+    col_types = readr::cols(
+        .default = readr::col_integer(),
+        chr = readr::col_character(),
+        rank = readr::col_skip()
+      )
+    ) %>%
+  GenomicRanges::GRanges()
+
+GM12878.dhs$thick <- IRanges::IRanges(
+    start = IRanges::start(GM12878.dhs) + ((IRanges::end(GM12878.dhs) - IRanges::start(GM12878.dhs))/2)
+  )
+GM12878.dhs <- GM12878.dhs %>%
+  CAGEfightR::swapRanges() %>%
+  IRanges::promoters(
+      upstream = 200,
+      downstream = 200
+    )
+```
+
+## [2.3.] Identify DLs overlapping with DHSs and assign annotations
+#### see [0.2.] for laoding of annotations
+```{r}
+GM12878.DLs$dhs.olap <- IRanges::countOverlaps(
+    query = GM12878.DLs,
+    subject = GM12878.dhs
+  )
+GM12878.DLs <- CAGEfightR::assignTxType(
+    object = GM12878.DLs,
+    txModels = txdb
   )
 ```
 

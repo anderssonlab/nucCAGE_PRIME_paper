@@ -250,11 +250,10 @@ gm12878.dhs <- readr::read_delim(
   GenomicRanges::GRanges()
 
 gm12878.dhs$thick <- IRanges::IRanges(
-    start = BiocGenerics::start(gm12878.dhs) + (
-        (BiocGenerics::end(gm12878.dhs) - BiocGenerics::start(gm12878.dhs))/2
-      )
+  start = BiocGenerics::start(gm12878.dhs) + (
+      (BiocGenerics::end(gm12878.dhs) - BiocGenerics::start(gm12878.dhs))/2
+    )
   )
-
 
 gm12878.dhs <- gm12878.dhs %>% 
   CAGEfightR::swapRanges() %>% 
@@ -263,19 +262,23 @@ gm12878.dhs <- gm12878.dhs %>%
 
 ## [3.1.] Read in gm12878 replicate subsetted CTSSs
 ```{r}
-gm12878.CTSSs<- base::readRDS(
-    file = base::paste0("../1.CTSSs/repSub.combined.GM12878.CTSSs.rmSingletons.rds")
+gm12878.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "repSub.combined.GM12878.CTSSs.rmSingletons.rds"
+    )
   )
 ```
-
-
 
 ##[3.2.] Per sample TC calling
 ```{r}
 gm12878.TCs <- BiocParallel::bplapply(
-  base::colnames(gm12878.CTSSs),function(x)
-    .GlobalEnv$perSampleTCs(gm12878.CTSSs[,x]), 
-  BPPARAM = bpparam)
+    X = base::colnames(gm12878.CTSSs),
+    FUN = function(x){
+        .GlobalEnv$perSampleTCs(gm12878.CTSSs[,x])
+      }, 
+    BPPARAM = bpparam
+  )
 ```
 
 
