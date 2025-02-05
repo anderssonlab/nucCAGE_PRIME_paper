@@ -472,7 +472,7 @@ GM12878.DLs <- CAGEfightR::assignTxType(
 # main <- row.names(colData(GM12878))[colData(GM12878)$main=="yes"]
 ```
 
-## [2.1.] Sum and accumulate 
+## [2.4.] Sum and accumulate 
 #### To be discarded
 ```{r}
 # GM12878.DLs.df <- GM12878.DLs %>% # GM12878.DLs.CTSS
@@ -522,7 +522,7 @@ GM12878.DLs <- CAGEfightR::assignTxType(
 #     )
 ```
 
-## [2.2.] CAGE-dependent expression differences of DHSs and non-DHSs
+## [2.4.] CAGE-dependent expression differences of DHSs and non-DHSs
 ```{r}
 GM12878.DLs %>%
   tibble::as_tibble() %>%
@@ -585,6 +585,7 @@ GM12878.DLs %>%
     )
 ```
 
+## [2.5.] CAGE-dependent expression differences of DHSs and non-DHSs
 ```{r}
 GM12878.DLs %>%
   tibble::as_tibble() %>%
@@ -656,7 +657,7 @@ GM12878.DLs %>%
 ```
 
 
-## [2.3.] Print plot
+## [2.6.] Print plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -665,7 +666,8 @@ for(ext in base::c("pdf", "png")){
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
           "_divergentDHS_expression",
-          "_part2",
+          "_violin",
+          # "_part2",
           ".",ext
         ),
       plot = ggplot2::last_plot(),
@@ -677,7 +679,7 @@ for(ext in base::c("pdf", "png")){
   }
 ```
 
-## [2.4.] Divergency of DHSs and non-DHSs
+## [2.7.] Divergency of DHSs and non-DHSs
 ```{r}
 GM12878.DLs %>%
   tibble::as_tibble() %>%
@@ -734,7 +736,7 @@ GM12878.DLs %>%
     )
 ```
 
-## [2.5.] Divergent regulatory elements across genomic features
+## [2.8.] Divergent regulatory elements across genomic features
 ```{r}
 GM12878.DLs %>%
   tibble::as_tibble() %>% 
@@ -780,7 +782,7 @@ GM12878.DLs %>%
     )
 ```
 
-## [2.6.] Plot numbers of overlaps between divergent and open sites (i.e., DHSs)
+## [2.9.] Plot numbers of overlaps between divergent and open sites (i.e., DHSs)
 ```{r}
 # cols <- grDevices::colorRampPalette(
 #     base::rev(RColorBrewer::brewer.pal(11,"RdBu"))
@@ -875,7 +877,7 @@ GM12878.DLs %>%
     )
 ```
 
-## [2.7.] Print plot
+## [2.10.] Print plot
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
@@ -1212,7 +1214,7 @@ dls_olap <- GM12878.DLs[S4Vectors::queryHits(olaps),] %>% # 251.644
   dplyr::select(
       DL_sites, score, directionality,
       bidirectionality, divergent, sample,
-      dhs.olap, txType, snas.olap
+      dhs.olap, txType #snas.olap
     )
 
 comb <- dplyr::bind_cols( # 251.644 
@@ -1244,7 +1246,7 @@ DL_snas <- GM12878.DLs %>%
   dplyr::select(
       DL_sites, score, directionality,
       bidirectionality, divergent, sample,
-      dhs.olap, txType, snas.olap
+      dhs.olap, txType #snas.olap
     ) %>%
   dplyr::left_join(
       intgr,
@@ -1375,8 +1377,8 @@ for(ext in base::c("pdf", "png")){
 ```{r}
 upper_fill_value <- base::max(ggplot2::ggplot_build(plot)$data[[1]]$count)
 
-plot_1MN <- DL_snas %>%
-  dplyr::filter(sample == "GM12878_1M_N") %>% 
+plot_5MN <- DL_snas %>%
+  dplyr::filter(sample == "GM12878_5M_N") %>% # "GM12878_1M_N"
   ggplot2::ggplot(
         data = .,
         mapping = aes(
@@ -1429,7 +1431,7 @@ plot_1MN <- DL_snas %>%
           ),
         color = "none"
       )
-base::print(plot_1MN)
+base::print(plot_5MN)
 ```
 
 ## [3.10.] Print plot only overlaps for 'GM12878_1M_N' sample
