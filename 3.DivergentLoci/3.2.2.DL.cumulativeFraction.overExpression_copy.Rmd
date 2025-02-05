@@ -603,6 +603,11 @@ GM12878.DLs %>%
         divergent == FALSE & dhs.olap >= 1 ~ "non-divergent DHS",
         divergent == TRUE & dhs.olap == 0 ~ "divergent non-DHS",
         divergent == FALSE & dhs.olap == 0 ~ "non-divergent non-DHS"
+      ),
+    comb = base::factor(
+        x = comb,
+        levels = base::c("divergent DHS","non-divergent DHS","divergent non-DHS","non-divergent non-DHS"),
+        ordered = TRUE
       )
     ) %>%
   dplyr::group_by(sample, comb) %>% # dhs
@@ -615,7 +620,13 @@ GM12878.DLs %>%
         color = comb # dhs
       )
     ) +
-  geom_violin() +
+  geom_hline(
+      yintercept = 2,
+      linetype = "dashed"
+    ) +
+  geom_violin(
+      draw_quantiles = base::c(0.25,0.5,0.75)
+    ) +
   # geom_jitter(
   #     height = 0,
   #     width = 0.3
@@ -624,16 +635,23 @@ GM12878.DLs %>%
       facets = . ~ sample,
       nrow = 1
     ) +
+  scale_colour_manual(
+      # values = base::c("#226764","#71266E","#A7383E","#579757"),
+      values = base::c("#500711", "#ED9BBD", "#B0041A", "#FFC95F")
+    ) +
   theme_bw() +
   theme(
       panel.spacing = grid::unit(0.1, "lines"),
-      aspect.ratio = 2,
-      axis.text.x = element_text(
-        angle = 90,
-        hjust = 0,
-        vjust = 1
-      ),
-      legend.position = "none"
+      aspect.ratio = 1,
+      # axis.text.x = element_text(
+      #     angle = 90,
+      #     hjust = 1,
+      #     vjust = 0.5
+      #   ),
+      axis.text.x = element_blank(),
+      # legend.position = "none",
+      legend.position = "bottom",
+      axis.title.x = element_blank()
     )
 ```
 
