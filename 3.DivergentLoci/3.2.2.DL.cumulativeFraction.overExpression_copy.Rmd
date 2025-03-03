@@ -1555,7 +1555,7 @@ DL_snas %>%
       abso = base::sum(nr_cells > 0)
     ) %>%
   dplyr::filter(
-      sample == "GM12878_1M_N"
+      sample == "GM12878_5M_N"
     )
 ```
 

@@ -298,16 +298,58 @@ lapply(seq_along(per.trait.results), function(i) {
 
 
 ```{r}
-#Over pooled traits
-blood.traits <- c("HbA1c","Hb","RBC","MCV","MCH","MCHC")
-hep.traits <- c("ApoB", "TC", "TBil", "SHBG", "LDLC", "TG","Alb")
+# Over pooled traits
+#blood.traits <- c("HbA1c","Hb","RBC","MCV","MCH","MCHC")
+#hep.traits <- c("ApoB", "TC", "TBil", "SHBG", "LDLC", "TG","Alb")
+
+# Blood-related traits (erythrocytes, platelets, hematology)
+blood.traits <- c("HbA1c",  # Glycated hemoglobin, diabetes marker
+                  "Hb",      # Hemoglobin, oxygen transport
+                  "RBC",     # Red Blood Cell count
+                  "MCV",     # Mean Corpuscular Volume, RBC size
+                  "MCH",     # Mean Corpuscular Hemoglobin, RBC hemoglobin content
+                  "MCHC",    # Mean Corpuscular Hemoglobin Concentration
+                  "Plt")     # Platelet count, clotting function
+
+# Immune-related traits (white blood cells, inflammation, autoimmunity)
+immune.traits <- c("WBC",    # Total White Blood Cell count
+                   "Neutro", # Neutrophils, first-line immune defense
+                   "Lym",    # Lymphocytes, adaptive immunity
+                   "Mono",   # Monocytes, innate immune response
+                   "Eosino", # Eosinophils, allergy and parasite defense
+                   "Baso",   # Basophils, involved in histamine response
+                   "CRP",    # C-reactive protein, systemic inflammation marker
+                   "IBD",    # Inflammatory Bowel Disease, chronic immune disorder
+                   "AID_Combined", # Autoimmune diseases combined category
+                   "Asthma", # Chronic inflammatory airway disease
+                   "Hypothyroidism", # Can be autoimmune (e.g., Hashimoto's)
+                   "Fibroblastic_Disorders") # Potential immune involvement
+
+# Liver/metabolic traits (hepatic function, lipids, glucose metabolism)
+hep.traits <- c("ApoB",     # Apolipoprotein B, LDL-associated
+                "TC",       # Total Cholesterol
+                "LDLC",     # Low-Density Lipoprotein Cholesterol (bad cholesterol)
+                "TG",       # Triglycerides, fat storage
+                "Alb",      # Albumin, major liver protein
+                "SHBG",     # Sex Hormone Binding Globulin, linked to liver metabolism
+                "TBil",     # Total Bilirubin, liver function indicator
+                "ALT",      # Alanine Aminotransferase, liver enzyme
+                "AST",      # Aspartate Aminotransferase, liver enzyme
+                "GGT",      # Gamma-Glutamyl Transferase, liver and bile function
+                "Urea",     # Metabolic waste, partly liver-related
+                "Glucose",  # Blood glucose levels, diabetes-related
+                "IGF1")     # Insulin-like Growth Factor 1, growth hormone-related
 
 blood.GWAS.data <- subset(GWAS.data, trait %in% blood.traits)
 hep.GWAS.data <- subset(GWAS.data, trait %in% hep.traits)
+immune.GWAS.data <- subset(GWAS.data, trait %in% immune.traits)
 
 
 cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data <- enrichment.precision.recall(unfiltered.PRIMEloci, blood.GWAS.data, SNP.data, names(unfiltered.PRIMEloci))
+
 cellLines.PRIMEloci.hep.GWAS.enrichment.recall.data <- enrichment.precision.recall(unfiltered.PRIMEloci, hep.GWAS.data, SNP.data, names(unfiltered.PRIMEloci))
+
+cellLines.PRIMEloci.immune.GWAS.enrichment.recall.data <- enrichment.precision.recall(unfiltered.PRIMEloci, immune.GWAS.data, SNP.data, names(unfiltered.PRIMEloci))
 
 
 ggplot(cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data, aes(recall, enrichment, color=sample)) + geom_line(aes(group=sample)) +
@@ -323,6 +365,14 @@ ggplot(cellLines.PRIMEloci.hep.GWAS.enrichment.recall.data, aes(recall, enrichme
 
 
 ggsave(filename = paste0("plots/cellLinePlots/", "hepTraits", "_enrichment_recall_plot.pdf"), device = "pdf")
+
+
+ggplot(cellLines.PRIMEloci.immune.GWAS.enrichment.recall.data, aes(recall, enrichment, color=sample)) + geom_line(aes(group=sample)) +
+  theme(aspect.ratio=1)  + xlab(paste0("recall (n=",length(immune.GWAS.data$name),")")) + scale_color_manual(values=col.scheme) + 
+  geom_point(data=cellLines.PRIMEloci.immune.GWAS.enrichment.recall.data[cellLines.PRIMEloci.immune.GWAS.enrichment.recall.data$score==0.75,])
+
+ggsave(filename = paste0("plots/cellLinePlots/", "immuneTraits", "_enrichment_recall_plot.pdf"), device = "pdf")
+
 ```
 
 
@@ -352,10 +402,32 @@ ggplot(point.GWAS.df[point.GWAS.df$trait%in%hep.traits,],aes(sample,trait,fill=r
   xlab("") + ylab("")
 
 ggsave(filename = paste0("plots/cellLinePlots/", "hepTraits", "_recall_hm.pdf"), device = "pdf",width=7,height=5)
+
+
+ggplot(point.GWAS.df[point.GWAS.df$trait%in%immune.traits,],aes(sample,trait,fill=enrichment)) + geom_tile() +
+  theme(axis.text.x = element_text(angle=90,hjust=1)) + scale_fill_distiller(direction=1,palette=7) +
+  xlab("") + ylab("")
+
+ggsave(filename = paste0("plots/cellLinePlots/", "immuneTraits", "_enrichment_hm.pdf"), device = "pdf",width=7,height=5)
+
+ggplot(point.GWAS.df[point.GWAS.df$trait%in%immune.traits,],aes(sample,trait,fill=recall)) + geom_tile() +
+  theme(axis.text.x = element_text(angle=90,hjust=1)) + scale_fill_distiller(direction=1,palette=2) +
+  xlab("") + ylab("")
+
+ggsave(filename = paste0("plots/cellLinePlots/", "immuneTraits", "_recall_hm.pdf"), device = "pdf",width=7,height=5)
+
 ```
 
 
 ```{r}
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+promoters <- promoters(txdb,upstream=500,downstream=500)
+GWAS.data$type <- rep("distal",length(GWAS.data))
+olap <- findOverlaps(GWAS.data,promoters,minoverlap = 1)
+GWAS.data$type[queryHits(olap)] <- "proximal"
+GWAS.df <- as.data.frame(GWAS.data)
+GWAS.df$name <- paste0(seqnames(GWAS.data),":",start(GWAS.data)+1,":",end(GWAS.data),":",GWAS.data$RS_id)
 
 trait.loci.olap <- sapply(traits, function(t) {
   ids <- which(GWAS.data$trait==t)
@@ -366,9 +438,8 @@ trait.loci.olap <- sapply(traits, function(t) {
 })))
 })
 
-trait.matrices <- lapply(c(blood.traits,hep.traits), function(t) {
+trait.matrices <- lapply(c(blood.traits,hep.traits,immune.traits), function(t) {
   
-  #g <- unique(GWAS.data[trait.loci.olap[[t]],])
   g <- GWAS.data[trait.loci.olap[[t]],]
   name <- paste0(seqnames(g),":",start(g)+1,":",end(g),":",g$RS_id)
   m <- matrix(0,ncol=length(unfiltered.PRIMEloci),nrow=length(g),dimnames=list(name, names(unfiltered.PRIMEloci)))
@@ -380,9 +451,9 @@ trait.matrices <- lapply(c(blood.traits,hep.traits), function(t) {
   }
   m
 })
-names(trait.matrices) <- c(blood.traits,hep.traits)
+names(trait.matrices) <- c(blood.traits,hep.traits,immune.traits)
 
-for (trait in c(blood.traits,hep.traits)) {
+for (trait in c(blood.traits,hep.traits,immune.traits)) {
   
   m <- trait.matrices[[trait]]
   
@@ -396,15 +467,33 @@ for (trait in c(blood.traits,hep.traits)) {
                    variant=rownames(m))
   df$variant <- factor(df$variant,levels=rownames(m)[ro])
   #df$cell.line <- factor(df$cell.line, levels=colnames(m)[co])
+  m <- mean(df$score[df$score>0])
+  df$score[df$score==0] <- NA
   
-  ggplot(df, aes(cell.line, variant, fill=score)) + geom_tile() + xlab("") + ylab("") + 
-    theme(axis.text.x = element_text(angle=90,hjust=1)) + 
-    #theme(axis.text.y = element_blank()) + 
-    scale_fill_distiller(direction=1) +
-    ggtitle(trait)
-  ggsave(paste0("plots/",trait,"_variant_PRIMEloci_score_vs_cell_line.pdf"),width=5,height=5)
+  df <- merge(df, GWAS.df[,c("name","type")], by.x="variant",by.y="name")
+  
+  ggplot(df, aes(cell.line, variant)) + 
+      geom_tile(aes(fill=score), color="grey90", size=0.1) +  # Heatmap
+      scale_fill_gradient2(low = "#256866", mid = "#FFFFCC", high = "orange", na.value=NA, midpoint=m) +  
+      ggnewscale::new_scale_fill() +  # Allows a second independent fill scale
+      geom_tile(aes(x=length(unique(df$cell.line))+0.5, fill=type), width=0.2) +  # Annotation strip
+      scale_fill_manual(values=c("proximal"="#4daf4a", "distal"="#984ea3")) +  # Discrete for annotation
+      xlab("") + 
+      ylab("") + 
+      theme_bw() +
+      theme(axis.text.x = element_text(angle=90, hjust=1),
+            axis.text.y = element_text(size=3),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            panel.border = element_rect(color="black", fill=NA, linewidth=1)) +
+      scale_x_discrete(expand = c(0, 0)) +
+      scale_y_discrete(expand = c(0, 0)) +  
+      ggtitle(trait)
+
+  ggsave(paste0("plots/cellLinePlots/",trait,"_variant_PRIMEloci_score_vs_cell_line.pdf"),width=5,height=5)
   
 }
+
 ```
 
 

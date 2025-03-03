@@ -4,83 +4,100 @@ output: html_document
 date: "2024-07-01"
 ---
 
-## Evaluation of predicted regulatory elements using ClinVar non-benign and non-coding variants, fine-mapped GWAS variants, 
-fine-mapped eQTLs, and CRISPRi data.
+## Evaluation of predicted regulatory elements using ClinVar non-benign and non-coding variants, fine-mapped GWAS variants, fine-mapped eQTLs, and CRISPRi data.
 
+
+## [0.0.] Load necessary packages
 ```{r}
+base::library(CAGEfightR)
+base::library(GenomicRanges)
+base::library(readr)
+base::library(rtracklayer)
+base::library(parallel)
+base::library(ggplot2)
+base::library(GenomicFeatures)
+base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+base::library(SummarizedExperiment)
+base::library(tibble)
+base::library(ggrepel)
+base::library(tidyr)
+base::library(ggpattern)
 
-library(CAGEfightR)
-library(GenomicRanges)
-library(readr)
-library(rtracklayer)
-library(parallel)
-library(ggplot2)
-library(GenomicFeatures)
-library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-library(SummarizedExperiment)
-library(tibble)
-library(ggrepel)
-library(tidyr)
-library(ggpattern)
-
-theme_set(theme_bw(base_size = 10))
-
-col.scheme <- c("#377eb8", "#d39200","#93aa00","#4daf4a","#984ea3","#ff7f01","#e41b1c","#256866","#f8bc24","grey","black","hotpink")
-
-
+# theme_set(theme_bw(base_size = 10))
 ```
 
-Parameters
+## [0.1.] Add custom color palettes
 ```{r}
-PRIMEloci.thres <- 0.75
+col.scheme <- base::c(
+    "#377eb8","#d39200","#93aa00",
+    "#4daf4a","#984ea3","#ff7f01",
+    "#e41b1c","#256866","#f8bc24",
+    "grey","black","hotpink"
+  )
+```
 
+## [0.2.] Define all necessary parameters
+```{r}
+PRIMEloci.thres = 0.75
 
+pooled.PRIMEloci.files <- base::c(
+    "K562_sld_C" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_C.bed"),
+    "K562_sld_N" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N.bed"),
+    "K562_sld_10M_N" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N_10M.bed")
+  )
 
-pooled.PRIMEloci.files <- c("K562_sld_C" = "../8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_C.bed",
-                            "K562_sld_N" = "../8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N.bed",
-                            "K562_sld_10M_N" = "../8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N_10M.bed")
+pooled.PRIMEloci.names <- base::c(
+    "K562_sld_C" = "PRIMEloci CAGE cells pooled",
+    "K562_sld_N" = "PRIMEloci CAGE nuclei pooled",
+    "K562_sld_10M_N" = "PRIMEloci CAGE nuclei 10M pooled"
+  )
 
-pooled.PRIMEloci.names <- c("K562_sld_C" = "PRIMEloci CAGE cells pooled",
-                            "K562_sld_N" = "PRIMEloci CAGE nuclei pooled",
-                            "K562_sld_10M_N" = "PRIMEloci CAGE nuclei 10M pooled")
+pooled.DL.file <- here::here("3.DivergentLoci/poolSub.k562.summitDLs.rmSingletons.rds")
+pooled.noise.file <- here::here("9.Noise/K562.poolSub.divnoise.csv")
 
-pooled.DL.file <- "../3.DivergentLoci/poolSub.k562.summitDLs.rmSingletons.rds"
-pooled.noise.file <- "../9.Noise/K562.poolSub.divnoise.csv"
+pooled.DL.names <- base::c(
+    "K562_C" = "Divergent loci CAGE cells",
+    "K562_N" = "Divergent loci CAGE nuclei"
+  )
 
-pooled.DL.names <- c("K562_C" = "Divergent loci CAGE cells",
-                     "K562_N" = "Divergent loci CAGE nuclei")
+resize.width = 200
 
-resize.width <- 200
+SNP.file <- here::here("0.External_resources/all.bg.SNPs.hg38.baseline.v1.1.bed.sorted")
+eQTL.file <- here::here("0.External_resources/GTEx_30tissues_release1_pip_01_Whole_Blood.tsv")
+GWAS.file <- here::here("0.External_resources/UKBB_94traits_release1_pip01_clean_uniq_hg38.bed")
+ClinVar.file <- here::here("0.External_resources/ClinVar_GRCh38_nonbenign_noncoding_SNV.tsv")
 
-SNP.file <- "../0.External_resources/all.bg.SNPs.hg38.baseline.v1.1.bed.sorted"
-eQTL.file <- "../0.External_resources/GTEx_30tissues_release1_pip_01_Whole_Blood.tsv"
-GWAS.file <- "../0.External_resources/UKBB_94traits_release1_pip01_clean_uniq_hg38.bed"
-ClinVar.file <- "../0.External_resources/ClinVar_GRCh38_nonbenign_noncoding_SNV.tsv"
+eQTL.pip.thres = 0.5
 
-eQTL.pip.thres <- 0.5
-
-GWAS.pip.thres <- 0.2
-traits <- c("HbA1c","Hb","RBC","MCV","MCH","MCHC")
+GWAS.pip.thres = 0.2
+traits <- base::c(
+    "HbA1c","Hb","RBC",
+    "MCV","MCH","MCHC"
+  )
 
 #cCRE.file <- "../0.External_resources/ENCFF464BRU.bed"
-cCRE.file <- "../0.External_resources/ENCFF414OGC_ENCFF806YEZ_ENCFF849TDM_ENCFF736UDR.bed"
+cCRE.file <- here::here("0.External_resources/ENCFF414OGC_ENCFF806YEZ_ENCFF849TDM_ENCFF736UDR.bed")
 
-DHS.file <- "../0.External_resources/E123-DNase.macs2.hg38.narrowPeak"
+DHS.file <- here::here("0.External_resources/E123-DNase.macs2.hg38.narrowPeak")
 
-PINTS.files <- c("PINTS GRO/PRO-cap distal" = "../0.External_resources/K562_Distal_PINTS_GRO_PRO_cap.bed",
-                 "PINTS GRO/PRO-cap proximal" = "../0.External_resources/K562_Proximal_PINTS_GRO_PRO_cap.bed")
+PINTS.files <- base::c(
+    "PINTS GRO/PRO-cap distal" = here::here("0.External_resources/K562_Distal_PINTS_GRO_PRO_cap.bed"),
+    "PINTS GRO/PRO-cap proximal" = here::here("0.External_resources/K562_Proximal_PINTS_GRO_PRO_cap.bed")
+  )
 
-dREG.files <- c("dREG PRO-seq" = "../0.External_resources/GSE150625_PROseq_1M_K562_dREGpeaks_clean.bed",
-                "dREG qPRO-seq" = "../0.External_resources/GSE150625_qPROseq_1M_K562_dREGpeaks_clean.bed")
+dREG.files <- base::c(
+    "dREG PRO-seq" = here::here("0.External_resources/GSE150625_PROseq_1M_K562_dREGpeaks_clean.bed"),
+    "dREG qPRO-seq" = here::here("0.External_resources/GSE150625_qPROseq_1M_K562_dREGpeaks_clean.bed")
+  )
 
-FANTOM5.file <- "../0.External_resources/F5.hg38.enhancers.expression.matrix.gz"
-FANTOM5.enhancers.file <- "../0.External_resources/F5.hg38.enhancers.bed.gz"
-FANTOM5.id <- "CNhs12334"
+FANTOM5.file <- here::here("0.External_resources/F5.hg38.enhancers.expression.matrix.gz")
+FANTOM5.enhancers.file <- here::here("0.External_resources/F5.hg38.enhancers.bed.gz")
+FANTOM5.id = "CNhs12334"
 
-CRISPR.pos.file <- "../5.EPCrisprBenchmark/epc_pos_gr.rds"
-CRISPR.neg.file <- "../5.EPCrisprBenchmark/epc_neg_gr.rds"
+CRISPR.pos.file <- here::here("5.EPCrisprBenchmark/epc_pos_gr.rds")
+CRISPR.neg.file <- here::here("5.EPCrisprBenchmark/epc_neg_gr.rds")
 
-k27ac.file <- "../0.External_resources/ENCFF038DDS.bed"
+k27ac.file <- here::here("0.External_resources/ENCFF038DDS.bed")
 
 ```
 
@@ -749,7 +766,7 @@ ggsave(paste0("plots/K562_pooled_PRIMEloci_CRISPR_recall_vs_score.pdf"),width=7,
 
 ```{r}
 
-library(UpSetR) 
+base::library(UpSetR) 
 gr_list <- GRangesList(point.data)
 
 gr_list[["GWAS.data"]] <- GWAS.data
@@ -782,7 +799,7 @@ create_upset_plot <- function(subset_name, gr_list, sets_to_include) {
   subset_overlap_df <- overlap_df[, sets_to_include]
   
   # Generate the UpSet plot
-  library(UpSetR)
+  base::library(UpSetR)
   p<- upset(
     subset_overlap_df,
     sets = names(gr_list)[sets_to_include],
