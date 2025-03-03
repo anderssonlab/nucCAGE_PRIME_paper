@@ -8,20 +8,22 @@ date: "2024-07-01"
 
 
 ## [0.0.] Load necessary packages
-```{r}
-base::library(CAGEfightR)
-base::library(GenomicRanges)
-base::library(readr)
-base::library(rtracklayer)
-base::library(parallel)
-base::library(ggplot2)
-base::library(GenomicFeatures)
+```{r warning=TRUE, message=TRUE}
+base::library(tidyverse)
 base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-base::library(SummarizedExperiment)
-base::library(tibble)
-base::library(ggrepel)
-base::library(tidyr)
-base::library(ggpattern)
+
+# base::library(CAGEfightR)
+# base::library(GenomicRanges)
+# base::library(readr)
+# base::library(rtracklayer)
+# base::library(parallel)
+# base::library(ggplot2)
+# base::library(GenomicFeatures)
+# base::library(SummarizedExperiment)
+# base::library(tibble)
+# base::library(ggrepel)
+# base::library(tidyr)
+# base::library(ggpattern)
 
 # theme_set(theme_bw(base_size = 10))
 ```
@@ -36,7 +38,7 @@ col.scheme <- base::c(
   )
 ```
 
-## [0.2.] Define all necessary parameters
+## [0.2.] Define all necessary parameters and file paths
 ```{r}
 PRIMEloci.thres = 0.75
 
@@ -52,7 +54,6 @@ pooled.PRIMEloci.names <- base::c(
     "K562_sld_10M_N" = "PRIMEloci CAGE nuclei 10M pooled"
   )
 
-pooled.DL.file <- here::here("3.DivergentLoci/poolSub.k562.summitDLs.rmSingletons.rds")
 pooled.noise.file <- here::here("9.Noise/K562.poolSub.divnoise.csv")
 
 pooled.DL.names <- base::c(
@@ -62,7 +63,6 @@ pooled.DL.names <- base::c(
 
 resize.width = 200
 
-SNP.file <- here::here("0.External_resources/all.bg.SNPs.hg38.baseline.v1.1.bed.sorted")
 eQTL.file <- here::here("0.External_resources/GTEx_30tissues_release1_pip_01_Whole_Blood.tsv")
 GWAS.file <- here::here("0.External_resources/UKBB_94traits_release1_pip01_clean_uniq_hg38.bed")
 ClinVar.file <- here::here("0.External_resources/ClinVar_GRCh38_nonbenign_noncoding_SNV.tsv")
@@ -101,50 +101,100 @@ k27ac.file <- here::here("0.External_resources/ENCFF038DDS.bed")
 
 ```
 
+## [1.] Read in data -------------------------
 
-Read in data
+## [1.0.] Read in CDSs from txdb
 ```{r}
-
 ## Annotated CDS
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-cds <- unlist(cdsBy(txdb,"gene"))
+cds <- base::unlist(GenomicFeatures::cdsBy(txdb,"gene"))
+cds <- BiocGenerics::sort(cds)
+```
 
-## Background SNPs (9,913,974 unique autosomal SNP locations)
-SNP.data <- import.bed(SNP.file)
-SNP.data <- sort(SNP.data)
-olap <- findOverlaps(SNP.data,cds,minoverlap=1)
+## [1.1.] Overlap CDSs with background SNPs (9,913,974 unique autosomal SNP locations)
+Remove SNPs overlapping with CDSs
+```{r}
+SNP.data <- rtracklayer::import.bed( # 9.991.229
+   con = base::paste0(
+       here::here("0.External_resources/"),
+       "all.bg.SNPs.hg38.baseline.v1.1.bed.sorted"
+     ) ## SNP.file
+  )
+SNP.data <- BiocGenerics::sort(SNP.data)
+olap <- GenomicRanges::findOverlaps( ## 93.742
+    query = SNP.data,
+    subject = cds,
+    minoverlap = 1L
+  )
 SNP.data$name <- NULL
-SNP.data <- unique(SNP.data[-queryHits(olap)])
+SNP.data <- base::unique( # 9.914.129
+    SNP.data[-S4Vectors::queryHits(olap)]
+  )
+GenomeInfoDb::seqlevels(txdb, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+```
 
-## Annotated promoters
-seqlevels(txdb,pruning.mode="coarse") <- seqlevels(SNP.data)
-promoters <- promoters(txdb,upstream=500,downstream=500)
+## [1.2.] Read in promoters from txdb
+```{r}
+promoters <- IRanges::promoters(
+    x = txdb,
+    upstream = 500,
+    downstream = 500
+  )
+```
 
+## [1.3.] Annotate identified PRIMElocis by txdb annotated promoters into proximal (overlapping with promoter) and distal
+## PRIMEloci, pooled replicates; evaluate with n = "K562_sld_C" # 4.049.578
+```{r}
+pooled.PRIMEloci <- base::lapply(
+  X = base::names(pooled.PRIMEloci.files),
+  FUN = function(n) {
+      gr <- readr::read_tsv( # # 4.049.578
+          file = pooled.PRIMEloci.files[n],
+          show_col_types = FALSE
+        )
+      score <- gr$score # # 4.049.578
+      gr <- GenomicRanges::makeGRangesFromDataFrame(gr[,1:3]) # 4.049.578
+      gr$score <- score
+      GenomeInfoDb::seqlevels(gr, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data) # 3.915.085
+      gr <- IRanges::resize(
+          x = gr,
+          width = resize.width,
+          fix = "center"
+        )
+      pc <- base::rep("distal", base::length(gr))
+      olap <- GenomicRanges::findOverlaps(
+          query = gr,
+          subject = promoters,
+          minoverlap = 1
+        )
+      pc[S4Vectors::queryHits(olap)] <- "proximal"
+      gr$class <- pc
+      return(gr)
+    }
+  )
+base::names(pooled.PRIMEloci) <- base::names(pooled.PRIMEloci.files)
+```
 
-## PRIMEloci, pooled replicates
-pooled.PRIMEloci <- lapply(names(pooled.PRIMEloci.files), function(n) {
-  gr <- read_tsv(pooled.PRIMEloci.files[n],show_col_types = FALSE)
-  score <- gr$score
-  gr <- makeGRangesFromDataFrame(gr[,1:3])
-  gr$score <- score
-  seqlevels(gr,pruning.mode="coarse") <- seqlevels(SNP.data)
-  gr <- resize(gr, width=resize.width, fix="center")
-  pc <- rep("distal",length(gr))
-  olap <- findOverlaps(gr,promoters,minoverlap = 1)
-  pc[queryHits(olap)] <- "proximal"
-  gr$class <- pc
-  gr
-})
-names(pooled.PRIMEloci) <- names(pooled.PRIMEloci.files)
+## [1.4.] Divergent loci from pooled samples
+```{r}
+pooled.DLs <- base::readRDS(
+    file = base::paste0(
+      here::here("3.DivergentLoci/"),
+      "poolSub.k562.summitDLs.rmSingletons.rds"
+    )
+  )
+if (base::is.list(pooled.DLs)) {
+    pooled.DLs <- base::do.call(what = "c", args = pooled.DLs)
+  }
+GenomeInfoDb::seqlevels(pooled.DLs, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+pooled.DLs <- pooled.DLs[pooled.DLs$sample %in% base::c("K562_C","K562_N")] # 104.105
 
-## Divergent loci from pooled samples
-pooled.DLs <- readRDS(pooled.DL.file)
-if (is.list(pooled.DLs))
-  pooled.DLs <- do.call("c",pooled.DLs)
-seqlevels(pooled.DLs, pruning.mode="coarse") <- seqlevels(SNP.data)
-pooled.DLs <- pooled.DLs[pooled.DLs$sample %in% c("K562_C","K562_N")]
-pooled.DLs <- resize(pooled.DLs, width=resize.width, fix="center")
-dlc <- rep("distal",length(pooled.DLs))
+pooled.DLs <- IRanges::resize(
+    x = pooled.DLs,
+    width = resize.width,
+    fix = "center"
+  )
+dlc <- base::rep("distal",base::length(pooled.DLs))
 olap <- findOverlaps(pooled.DLs,promoters,minoverlap = 1)
 dlc[queryHits(olap)] <- "proximal"
 pooled.DLs$class <- dlc
@@ -152,8 +202,10 @@ pooled.DLs$class <- dlc
 ## noise estimates
 pooled.noise.thresholds <- read_csv(pooled.noise.file,col_names=TRUE,show_col_types=FALSE)
 pooled.noise.thresholds <- pooled.noise.thresholds[pooled.noise.thresholds[,1]=="95%",c("K562_C","K562_N","K562_C","K562_N")]
+```
 
 
+```{r}
 ## eQTL data
 eQTL.data <- read_tsv(eQTL.file,col_names=FALSE,show_col_types=FALSE)[,c(1,3)]
 colnames(eQTL.data) <- c("variant","pip")
@@ -168,7 +220,10 @@ eQTL.data$score <- NULL
 olap <- findOverlaps(eQTL.data,cds,minoverlap=1)
 eQTL.data <- unique(eQTL.data[-queryHits(olap)])
 eQTL.n <- length(eQTL.data)
+```
 
+
+```{r}
 ## GWAS data
 GWAS.data <- read_tsv(GWAS.file,col_names=FALSE,show_col_types=FALSE)
 colnames(GWAS.data) <- c("chr","start","end","name","score","strand","RS_id","trait","pip")
@@ -187,7 +242,10 @@ GWAS.data$pip <- NULL
 GWAS.data$trait <- NULL
 GWAS.data <- unique(GWAS.data)
 GWAS.n <- length(GWAS.data)
+```
 
+
+```{r}
 ## ClinVar data
 ClinVar.data <- read_tsv(ClinVar.file,show_col_types=FALSE)
 ClinVar.data <- makeGRangesFromDataFrame(ClinVar.data)
