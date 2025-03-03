@@ -355,7 +355,7 @@ base::names(point.data) <- base::names(PINTS.files)
 point.data[["PINTS GRO/PRO-cap"]] <- base::c(point.data[[1]],point.data[[2]])
 ```
 
-## [1.11.] Read in all dREG points data files
+
 ```{r}
 dREG.files <- base::c(
     "dREG PRO-seq" = here::here("0.External_resources/GSE150625_PROseq_1M_K562_dREGpeaks_clean.bed"),
@@ -378,7 +378,7 @@ for (n in base::names(dREG.files)) {
   }
 ```
 
-
+## [1.11.] Read in all pooled PRIMEloci files
 ```{r}
 for (n in names(pooled.PRIMEloci.files)) {
   gr <- read_tsv(pooled.PRIMEloci.files[n],show_col_types = FALSE)
