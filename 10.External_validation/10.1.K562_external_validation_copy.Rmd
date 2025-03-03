@@ -59,29 +59,10 @@ pooled.DL.names <- base::c(
     "K562_N" = "Divergent loci CAGE nuclei"
   )
 
-GWAS.file <- here::here("0.External_resources/UKBB_94traits_release1_pip01_clean_uniq_hg38.bed")
-ClinVar.file <- here::here("0.External_resources/ClinVar_GRCh38_nonbenign_noncoding_SNV.tsv")
-
-GWAS.pip.thres = 0.2
-traits <- base::c(
-    "HbA1c","Hb","RBC",
-    "MCV","MCH","MCHC"
-  )
-
 #cCRE.file <- "../0.External_resources/ENCFF464BRU.bed"
 cCRE.file <- here::here("0.External_resources/ENCFF414OGC_ENCFF806YEZ_ENCFF849TDM_ENCFF736UDR.bed")
 
 DHS.file <- here::here("0.External_resources/E123-DNase.macs2.hg38.narrowPeak")
-
-PINTS.files <- base::c(
-    "PINTS GRO/PRO-cap distal" = here::here("0.External_resources/K562_Distal_PINTS_GRO_PRO_cap.bed"),
-    "PINTS GRO/PRO-cap proximal" = here::here("0.External_resources/K562_Proximal_PINTS_GRO_PRO_cap.bed")
-  )
-
-dREG.files <- base::c(
-    "dREG PRO-seq" = here::here("0.External_resources/GSE150625_PROseq_1M_K562_dREGpeaks_clean.bed"),
-    "dREG qPRO-seq" = here::here("0.External_resources/GSE150625_qPROseq_1M_K562_dREGpeaks_clean.bed")
-  )
 
 FANTOM5.file <- here::here("0.External_resources/F5.hg38.enhancers.expression.matrix.gz")
 FANTOM5.enhancers.file <- here::here("0.External_resources/F5.hg38.enhancers.bed.gz")
@@ -270,57 +251,135 @@ eQTL.data <- base::unique(
 eQTL.n <- base::length(eQTL.data)
 ```
 
-
+## [1.7.] Read in, prepare and subset GWAS data
 ```{r}
-## GWAS data
-GWAS.data <- read_tsv(GWAS.file,col_names=FALSE,show_col_types=FALSE)
-colnames(GWAS.data) <- c("chr","start","end","name","score","strand","RS_id","trait","pip")
-GWAS.data <- makeGRangesFromDataFrame(GWAS.data,keep.extra.columns = TRUE, starts.in.df.are.0based=TRUE)
-GWAS.data <- subset(GWAS.data, pip >= GWAS.pip.thres)
-seqlevels(GWAS.data,pruning.mode="coarse") <- seqlevels(SNP.data)
-olap <- findOverlaps(GWAS.data,cds,minoverlap=1)
-GWAS.data <- GWAS.data[-queryHits(olap)]
-GWAS.data <- subset(GWAS.data, trait %in% traits)
-trait.count.df <- do.call("rbind", lapply(traits, function(t) {
-  dat <- subset(GWAS.data, trait==t)
-  as.data.frame(table(dat$trait))
-}))
-trait.count.df
+GWAS.pip.thres = 0.2
+
+GWAS.data <- readr::read_tsv( # 66.638
+    file = base::paste0(
+        here::here("0.External_resources/"),
+        "UKBB_94traits_release1_pip01_clean_uniq_hg38.bed"
+      ),
+    col_names = FALSE,
+    show_col_types = FALSE
+  )
+base::colnames(GWAS.data) <- base::c(
+    "chr","start","end",
+    "name","score","strand",
+    "RS_id","trait","pip"
+  )
+GWAS.data <- GenomicRanges::makeGRangesFromDataFrame( # 66.638
+    df = GWAS.data,
+    keep.extra.columns = TRUE,
+    starts.in.df.are.0based = TRUE
+  )
+GWAS.data <- base::subset( # 30.743
+    GWAS.data, pip >= GWAS.pip.thres
+  )
+GenomeInfoDb::seqlevels(GWAS.data, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+```
+
+## [1.8.] Remove GWAS hits overlapping with CDSs & unwanted traits
+```{r}
+traits <- base::c(
+    "HbA1c","Hb","RBC",
+    "MCV","MCH","MCHC"
+  )
+
+olap <- GenomicRanges::findOverlaps(
+    query = GWAS.data,
+    subject = cds,
+    minoverlap = 1
+  )
+GWAS.data <- GWAS.data[-S4Vectors::queryHits(olap)]
+GWAS.data <- base::subset(GWAS.data, trait %in% traits)
+trait.count.df <- base::do.call(
+  what = "rbind",
+  args = base::lapply(
+    X = traits,
+    FUN = function(t) {
+      dat <- base::subset(GWAS.data, trait == t)
+      return(
+          base::as.data.frame(
+            base::table(dat$trait)
+          )
+        )
+      }
+    )
+  )
+
 GWAS.data$pip <- NULL
 GWAS.data$trait <- NULL
-GWAS.data <- unique(GWAS.data)
-GWAS.n <- length(GWAS.data)
+GWAS.data <- base::unique(GWAS.data) # 2.877
+GWAS.n <- base::length(GWAS.data)
+```
+
+## [1.9.] Read in and subset ClinVar data for sites not overlapping with CDSs
+```{r}
+ClinVar.data <- readr::read_tsv(
+    file = base::paste0(
+        here::here("0.External_resources/"),
+        "ClinVar_GRCh38_nonbenign_noncoding_SNV.tsv"
+      ),
+    show_col_types = FALSE
+  )
+ClinVar.data <- GenomicRanges::makeGRangesFromDataFrame(
+    df = ClinVar.data
+  )
+GenomeInfoDb::seqlevels(ClinVar.data, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+olap <- GenomicRanges::findOverlaps(
+    query = ClinVar.data,
+    subject = cds,
+    minoverlap = 1
+  )
+ClinVar.data <- ClinVar.data[-S4Vectors::queryHits(olap)]
+ClinVar.data <- base::sort(ClinVar.data)
+ClinVar.data <- base::unique(ClinVar.data)
+ClinVar.n <- base::length(ClinVar.data)
+```
+
+## [1.10.] Read in all PINTS point estimate data
+```{r}
+PINTS.files <- base::c(
+    "PINTS GRO/PRO-cap distal" = here::here("0.External_resources/K562_Distal_PINTS_GRO_PRO_cap.bed"),
+    "PINTS GRO/PRO-cap proximal" = here::here("0.External_resources/K562_Proximal_PINTS_GRO_PRO_cap.bed")
+  )
+
+point.data <- base::lapply(
+  X = base::names(PINTS.files),
+  FUN = function(n){
+      rtracklayer::import.bed(PINTS.files[[n]])
+    }
+  )
+base::names(point.data) <- base::names(PINTS.files)
+point.data[["PINTS GRO/PRO-cap"]] <- base::c(point.data[[1]],point.data[[2]])
+```
+
+## [1.11.] Read in all dREG points data files
+```{r}
+dREG.files <- base::c(
+    "dREG PRO-seq" = here::here("0.External_resources/GSE150625_PROseq_1M_K562_dREGpeaks_clean.bed"),
+    "dREG qPRO-seq" = here::here("0.External_resources/GSE150625_qPROseq_1M_K562_dREGpeaks_clean.bed")
+  )
+
+for (n in base::names(dREG.files)) {
+    gr <- rtracklayer::import.bed(con = dREG.files[n])
+    GenomeInfoDb::seqlevels(gr, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+    olap <- GenomicRanges::findOverlaps(
+        query = gr,
+        subject = promoters,
+        minoverlap = 1
+      )
+    gr.proximal <- gr[base::unique(S4Vectors::queryHits(olap))]
+    gr.distal <- gr[base::setdiff(1:base::length(gr), S4Vectors::queryHits(olap))]
+    point.data[[n]] <- gr
+    point.data[[base::paste0(n," distal")]] <- gr.distal
+    point.data[[base::paste0(n," proximal")]] <- gr.proximal
+  }
 ```
 
 
 ```{r}
-## ClinVar data
-ClinVar.data <- read_tsv(ClinVar.file,show_col_types=FALSE)
-ClinVar.data <- makeGRangesFromDataFrame(ClinVar.data)
-seqlevels(ClinVar.data,pruning.mode="coarse") <- seqlevels(SNP.data)
-olap <- findOverlaps(ClinVar.data,cds,minoverlap=1)
-ClinVar.data <- ClinVar.data[-queryHits(olap)]
-ClinVar.data <- sort(ClinVar.data)
-ClinVar.data <- unique(ClinVar.data)
-ClinVar.n <- length(ClinVar.data)
-
-## Point estimate data
-point.data <- lapply(names(PINTS.files), function(n) import.bed(PINTS.files[[n]]))
-names(point.data) <- names(PINTS.files)
-point.data[["PINTS GRO/PRO-cap"]] <- c(point.data[[1]],point.data[[2]])
-
-
-for (n in names(dREG.files)) {
-  gr <- import.bed(dREG.files[n])
-  seqlevels(gr,pruning.mode="coarse") <- seqlevels(SNP.data)
-  olap <- findOverlaps(gr, promoters, minoverlap = 1)
-  gr.proximal <- gr[unique(queryHits(olap))]
-  gr.distal <- gr[setdiff(1:length(gr), queryHits(olap))]
-  point.data[[n]] <- gr
-  point.data[[paste0(n," distal")]] <- gr.distal
-  point.data[[paste0(n," proximal")]] <- gr.proximal
-}
-
 for (n in names(pooled.PRIMEloci.files)) {
   gr <- read_tsv(pooled.PRIMEloci.files[n],show_col_types = FALSE)
   gr <- subset(gr,score>=PRIMEloci.thres)
@@ -333,7 +392,10 @@ for (n in names(pooled.PRIMEloci.files)) {
   point.data[[paste0(pooled.PRIMEloci.names[n]," distal")]] <- gr.distal
   point.data[[paste0(pooled.PRIMEloci.names[n]," proximal")]] <- gr.proximal
 }
+```
 
+
+```{r}
 cCRE <- read_tsv(cCRE.file,col_names=FALSE,show_col_types=FALSE)
 df <- cCRE[,1:3]
 colnames(df) <- c("chrom","start","end")
@@ -350,7 +412,10 @@ for (n in c("dELS","PLS")) {
  point.data[[paste0("ENCODE cCRE ",n," proximal")]] <- x.proximal
 }
 point.data[["ENCODE cCRE"]] <- c(point.data[["ENCODE cCRE dELS distal"]],point.data[["ENCODE cCRE dELS proximal"]],point.data[["ENCODE cCRE PLS distal"]],point.data[["ENCODE cCRE PLS proximal"]])
+```
 
+
+```{r}
 DHS <- import.bed(DHS.file)
 olap <- findOverlaps(DHS, promoters, minoverlap = 1)
 DHS.proximal <- DHS[unique(queryHits(olap))]
@@ -358,8 +423,10 @@ DHS.distal <- DHS[setdiff(1:length(DHS), queryHits(olap))]
 point.data[["DHS"]] <- DHS
 point.data[["DHS distal"]] <- DHS.distal
 point.data[["DHS proximal"]] <- DHS.proximal
+```
 
 
+```{r}
 k27ac <- read.table(k27ac.file)
 colnames(k27ac) <- c("chr","start","end","name","score","strand","signal_value","pvalue","qvalue","peak")
 k27ac <- GRanges(k27ac)
