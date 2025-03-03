@@ -54,20 +54,13 @@ pooled.PRIMEloci.names <- base::c(
     "K562_sld_10M_N" = "PRIMEloci CAGE nuclei 10M pooled"
   )
 
-pooled.noise.file <- here::here("9.Noise/K562.poolSub.divnoise.csv")
-
 pooled.DL.names <- base::c(
     "K562_C" = "Divergent loci CAGE cells",
     "K562_N" = "Divergent loci CAGE nuclei"
   )
 
-resize.width = 200
-
-eQTL.file <- here::here("0.External_resources/GTEx_30tissues_release1_pip_01_Whole_Blood.tsv")
 GWAS.file <- here::here("0.External_resources/UKBB_94traits_release1_pip01_clean_uniq_hg38.bed")
 ClinVar.file <- here::here("0.External_resources/ClinVar_GRCh38_nonbenign_noncoding_SNV.tsv")
-
-eQTL.pip.thres = 0.5
 
 GWAS.pip.thres = 0.2
 traits <- base::c(
@@ -145,6 +138,7 @@ promoters <- IRanges::promoters(
 ## [1.3.] Annotate identified PRIMElocis by txdb annotated promoters into proximal (overlapping with promoter) and distal
 ## PRIMEloci, pooled replicates; evaluate with n = "K562_sld_C" # 4.049.578
 ```{r}
+resize.width = 200
 pooled.PRIMEloci <- base::lapply(
   X = base::names(pooled.PRIMEloci.files),
   FUN = function(n) {
@@ -175,7 +169,7 @@ pooled.PRIMEloci <- base::lapply(
 base::names(pooled.PRIMEloci) <- base::names(pooled.PRIMEloci.files)
 ```
 
-## [1.4.] Divergent loci from pooled samples
+## [1.4.] Annotate identified Divergent loci by txdb annotated promoters into proximal (overlapping with promoter) and distal
 ```{r}
 pooled.DLs <- base::readRDS(
     file = base::paste0(
@@ -184,42 +178,96 @@ pooled.DLs <- base::readRDS(
     )
   )
 if (base::is.list(pooled.DLs)) {
-    pooled.DLs <- base::do.call(what = "c", args = pooled.DLs)
+  pooled.DLs <- base::do.call(
+      what = "c",
+      args = pooled.DLs
+    )
   }
 GenomeInfoDb::seqlevels(pooled.DLs, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
 pooled.DLs <- pooled.DLs[pooled.DLs$sample %in% base::c("K562_C","K562_N")] # 104.105
 
+resize.width = 200
 pooled.DLs <- IRanges::resize(
     x = pooled.DLs,
     width = resize.width,
     fix = "center"
   )
 dlc <- base::rep("distal",base::length(pooled.DLs))
-olap <- findOverlaps(pooled.DLs,promoters,minoverlap = 1)
-dlc[queryHits(olap)] <- "proximal"
-pooled.DLs$class <- dlc
-
-## noise estimates
-pooled.noise.thresholds <- read_csv(pooled.noise.file,col_names=TRUE,show_col_types=FALSE)
-pooled.noise.thresholds <- pooled.noise.thresholds[pooled.noise.thresholds[,1]=="95%",c("K562_C","K562_N","K562_C","K562_N")]
+olap <- GenomicRanges::findOverlaps(
+    query = pooled.DLs,
+    subject = promoters,
+    minoverlap = 1
+  )
+dlc[S4Vectors::queryHits(olap)] <- "proximal"
+pooled.DLs$class <- dlc # 104.105
 ```
 
-
+## [1.5.] Read in noise estimates
 ```{r}
-## eQTL data
-eQTL.data <- read_tsv(eQTL.file,col_names=FALSE,show_col_types=FALSE)[,c(1,3)]
-colnames(eQTL.data) <- c("variant","pip")
-pos <- as.numeric(sapply(eQTL.data$variant, function(n) strsplit(n,"_")[[1]][2]))+1
-eQTL.data <- GRanges(seqnames=as.character(sapply(eQTL.data$variant, function(n) strsplit(n,"_")[[1]][1])),
-                     score=eQTL.data$pip,
-                     ranges=IRanges(pos, pos))
-eQTL.data <- sort(eQTL.data)
-seqlevels(eQTL.data,pruning.mode="coarse") <- seqlevels(SNP.data)
-eQTL.data <- subset(eQTL.data, score >= eQTL.pip.thres)
+pooled.noise.thresholds <- readr::read_csv(
+    file = base::paste0(
+        here::here("9.Noise/"),
+        "K562.poolSub.divnoise.csv"
+      ),
+    col_names = TRUE,
+    show_col_types = FALSE
+  )
+pooled.noise.thresholds <- pooled.noise.thresholds[
+    pooled.noise.thresholds[,1]=="95%",
+    base::c("K562_C","K562_N","K562_C","K562_N")
+  ]
+```
+
+## [1.5.] Read in, prepare and subset eQTL data
+```{r}
+eQTL.pip.thres = 0.5
+eQTL.data <- readr::read_tsv(
+      file = base::paste0(
+        here::here("0.External_resources/"),
+        "GTEx_30tissues_release1_pip_01_Whole_Blood.tsv"
+      ),
+    col_names = FALSE,
+    show_col_types = FALSE
+  )
+eQTL.data <- eQTL.data[,base::c(1,3)]
+base::colnames(eQTL.data) <- base::c("variant","pip")
+pos <- base::as.numeric(
+  base::sapply(
+      X = eQTL.data$variant,
+      FUN = function(n){
+          base::strsplit(n,"_")[[1]][2]
+      }
+    )
+  ) + 1
+eQTL.data <- GenomicRanges::GRanges(
+    seqnames = base::as.character(
+      base::sapply(
+        X = eQTL.data$variant,
+        FUN = function(n){
+            base::strsplit(n,"_")[[1]][1]
+          }
+        )
+      ),
+    score = eQTL.data$pip,
+    ranges = IRanges::IRanges(pos, pos)
+  )
+eQTL.data <- base::sort(eQTL.data)
+GenomeInfoDb::seqlevels(eQTL.data, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+eQTL.data <- base::subset(eQTL.data, score >= eQTL.pip.thres)
 eQTL.data$score <- NULL
-olap <- findOverlaps(eQTL.data,cds,minoverlap=1)
-eQTL.data <- unique(eQTL.data[-queryHits(olap)])
-eQTL.n <- length(eQTL.data)
+```
+
+## [1.6.] Subset eQTLs for sites outside of CDSs
+```{r}
+olap <- GenomicRanges::findOverlaps(
+    query = eQTL.data,
+    subject = cds,
+    minoverlap = 1
+  )
+eQTL.data <- base::unique(
+    eQTL.data[-S4Vectors::queryHits(olap)]
+  )
+eQTL.n <- base::length(eQTL.data)
 ```
 
 
