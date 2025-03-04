@@ -594,13 +594,15 @@ CRISPR.n <- base::length(CRISPR.pos.data)
 
 # [2.] Calculate precision, enrichment and recall -------------------------
 
+## [2.0.] Helper function for preparing enrichment-recall curves
 ```{r}
 point.enrichment.precision.recall <- function(data, fg.data, bg.data, assay, location) {
   
     base::do.call(
       what = "rbind",
       args = base::lapply(
-        base::names(data), function(n) {
+        X = base::names(data),
+        FUN = function(n) {
     
           fg.olap <- GenomicRanges::findOverlaps(
               query = fg.data,
@@ -646,21 +648,40 @@ point.enrichment.precision.recall <- function(data, fg.data, bg.data, assay, loc
   }
 ```
 
-
+## [2.1.] Run helper function across all data modality combinations
+#### evaluate with n = "DHS proximal"
 ```{r}
-point.ClinVar.df <- point.enrichment.precision.recall(point.data, ClinVar.data, SNP.data, point.data.assay, point.data.loc)
-point.ClinVar.df
+point.ClinVar.df <- .GlobalEnv$point.enrichment.precision.recall(
+    data = point.data,
+    fg.data = ClinVar.data,
+    bg.data = SNP.data,
+    assay = point.data.assay,
+    location = point.data.loc
+  )
 
-point.eQTL.df <- point.enrichment.precision.recall(point.data, eQTL.data, SNP.data, point.data.assay, point.data.loc)
-point.eQTL.df
+point.eQTL.df <- .GlobalEnv$point.enrichment.precision.recall(
+    data = point.data,
+    fg.data = eQTL.data,
+    bg.data = SNP.data,
+    assay = point.data.assay,
+    location = point.data.loc
+  )
 
-point.GWAS.df <- point.enrichment.precision.recall(point.data, GWAS.data, SNP.data, point.data.assay, point.data.loc)
-point.GWAS.df
+point.GWAS.df <- .GlobalEnv$point.enrichment.precision.recall(
+    data = point.data,
+    fg.data = GWAS.data,
+    bg.data = SNP.data,
+    assay = point.data.assay,
+    location = point.data.loc
+  )
 
-point.CRISPR.df <- point.enrichment.precision.recall(point.data, CRISPR.pos.data, CRISPR.neg.data, point.data.assay, point.data.loc)
-point.CRISPR.df
-
-
+point.CRISPR.df <- .GlobalEnv$point.enrichment.precision.recall(
+    data = point.data,
+    fg.data = CRISPR.pos.data,
+    bg.data = CRISPR.neg.data,
+    assay = point.data.assay,
+    location = point.data.loc
+  )
 ```
 
 Plot ClinVar point estimate results
