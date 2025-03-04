@@ -38,39 +38,17 @@ col.scheme <- base::c(
   )
 ```
 
-## [0.2.] Define all necessary parameters and file paths
-```{r}
-pooled.PRIMEloci.names <- base::c(
-    "K562_sld_C" = "PRIMEloci CAGE cells pooled",
-    "K562_sld_N" = "PRIMEloci CAGE nuclei pooled",
-    "K562_sld_10M_N" = "PRIMEloci CAGE nuclei 10M pooled"
-  )
-
-pooled.DL.names <- base::c(
-    "K562_C" = "Divergent loci CAGE cells",
-    "K562_N" = "Divergent loci CAGE nuclei"
-  )
-
-FANTOM5.file <- here::here("0.External_resources/F5.hg38.enhancers.expression.matrix.gz")
-FANTOM5.enhancers.file <- here::here("0.External_resources/F5.hg38.enhancers.bed.gz")
-FANTOM5.id = "CNhs12334"
-
-CRISPR.pos.file <- here::here("5.EPCrisprBenchmark/epc_pos_gr.rds")
-CRISPR.neg.file <- here::here("5.EPCrisprBenchmark/epc_neg_gr.rds")
-```
-
-## [1.] Read in data -------------------------
+## [1.] Read in & prepare data -------------------------
 
 ## [1.0.] Read in CDSs from txdb
 ```{r}
-## Annotated CDS
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 cds <- base::unlist(GenomicFeatures::cdsBy(txdb,"gene"))
 cds <- BiocGenerics::sort(cds)
 ```
 
 ## [1.1.] Overlap CDSs with background SNPs (9,913,974 unique autosomal SNP locations)
-Remove SNPs overlapping with CDSs
+#### Remove SNPs overlapping with CDSs
 ```{r}
 SNP.data <- rtracklayer::import.bed( # 9.991.229
    con = base::paste0(
@@ -165,22 +143,6 @@ olap <- GenomicRanges::findOverlaps(
   )
 dlc[S4Vectors::queryHits(olap)] <- "proximal"
 pooled.DLs$class <- dlc # 104.105
-```
-
-## [1.5.] Read in noise estimates
-```{r}
-pooled.noise.thresholds <- readr::read_csv(
-    file = base::paste0(
-        here::here("9.Noise/"),
-        "K562.poolSub.divnoise.csv"
-      ),
-    col_names = TRUE,
-    show_col_types = FALSE
-  )
-pooled.noise.thresholds <- pooled.noise.thresholds[
-    pooled.noise.thresholds[,1]=="95%",
-    base::c("K562_C","K562_N","K562_C","K562_N")
-  ]
 ```
 
 ## [1.5.] Read in, prepare and subset eQTL data
@@ -371,6 +333,11 @@ pooled.PRIMEloci.files <- base::c(
     "K562_sld_N" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N.bed"),
     "K562_sld_10M_N" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N_10M.bed")
   )
+pooled.PRIMEloci.names <- base::c(
+    "K562_sld_C" = "PRIMEloci CAGE cells pooled",
+    "K562_sld_N" = "PRIMEloci CAGE nuclei pooled",
+    "K562_sld_10M_N" = "PRIMEloci CAGE nuclei 10M pooled"
+  )
 
 for (n in base::names(pooled.PRIMEloci.files)) {
     gr <- readr::read_tsv(
@@ -432,7 +399,8 @@ point.data[["ENCODE cCRE"]] <- base::c(
   )
 ```
 
-## [1.12.] Read in DHS data for point estimates
+## [1.12.] Read in DHS data for point estimates for point estimates
+#### seqlevel adjustment step is missing, creating a warning in IRanges::subsetByOverlaps of [1.13.]
 ```{r}
 DHS <- rtracklayer::import.bed(
   con = base::paste0(
@@ -453,7 +421,8 @@ point.data[["DHS distal"]] <- DHS.distal
 point.data[["DHS proximal"]] <- DHS.proximal
 ```
 
-## [1.13.] Read in all H3K27ac data
+## [1.13.] Read in all H3K27ac data and combine with DHSs for point estimates
+#### seqlevel adjustment step is missing, creating a warning in IRanges::subsetByOverlaps
 ```{r}
 k27ac <- utils::read.table(
   file = base::paste0(
@@ -468,86 +437,217 @@ base::colnames(k27ac) <- base::c(
     "qvalue","peak"
   )
 k27ac <- GenomicRanges::GRanges(k27ac)
-k27ac.dhs <- subsetByOverlaps(DHS, k27ac)
-start(k27ac) <- start(k27ac)+k27ac$peak
-end(k27ac) <- start(k27ac)+1
+k27ac.dhs <- IRanges::subsetByOverlaps(
+    x = DHS,
+    ranges = k27ac
+  )
+GenomicRanges::start(k27ac) <- GenomicRanges::start(k27ac) + k27ac$peak
+GenomicRanges::end(k27ac) <- GenomicRanges::start(k27ac) + 1
 
 point.data[["K27ac DHS"]] <- k27ac.dhs
 point.data[["K27ac"]] <- k27ac
 ```
 
-
+## [1.13.] Read in FANTOM5 data for point estimates
+#### Possible mistake in reading in the right FANTOM5 column
 ```{r}
-header <- colnames(read_tsv(FANTOM5.file,n_max=1,show_col_types=FALSE))
-FANTOM5.data <- read_tsv(FANTOM5.file,skip=1,col_names=FALSE,show_col_types=FALSE)[,c(1,match(FANTOM5.id,header)+1)]
-FANTOM5.enhancers <- flank(swapRanges(import.bed(FANTOM5.enhancers.file)),200,both=TRUE)
-FANTOM5.enhancers <- FANTOM5.enhancers[FANTOM5.enhancers$name %in% deframe(FANTOM5.data[FANTOM5.data[2]>0,1])]
+FANTOM5.id = "CNhs12334"
+
+header <- base::colnames(
+  readr::read_tsv(
+      file = base::paste0(
+          here::here("0.External_resources/"),
+          "F5.hg38.enhancers.expression.matrix.gz"
+        ),
+      n_max = 1,
+      show_col_types = FALSE
+    )
+  )
+FANTOM5.data <- readr::read_tsv(
+    file = base::paste0(
+        here::here("0.External_resources/"),
+        "F5.hg38.enhancers.expression.matrix.gz"
+      ),
+    skip = 0,
+    col_names = TRUE,
+    show_col_types = FALSE
+  )
+FANTOM5.data <- FANTOM5.data[,base::c(1,base::match(FANTOM5.id,header)+1)]
+
+FANTOM5.enhancers <- IRanges::flank(
+  x = CAGEfightR::swapRanges(
+      rtracklayer::import.bed(
+          con = base::paste0(
+            here::here("0.External_resources/"),
+            "F5.hg38.enhancers.bed.gz"
+          )
+        )
+      ),
+    width = 200,
+    both = TRUE
+  )
+FANTOM5.enhancers <- FANTOM5.enhancers[
+    FANTOM5.enhancers$name %in% tibble::deframe(FANTOM5.data[FANTOM5.data[2]>0,1])
+  ]
 point.data[["FANTOM5 enhancers"]] <- FANTOM5.enhancers
-
-for (sample in c("K562_C","K562_N")) {
-  gr <- pooled.DLs[pooled.DLs$sample==sample]
-  gr <- gr[which(gr$score > deframe(pooled.noise.thresholds[,sample]))]
-  point.data[[pooled.DL.names[sample]]] <- gr
-
-  gr <- pooled.DLs[pooled.DLs$sample==sample & pooled.DLs$class=="distal"]
-  gr <- gr[which(gr$score > deframe(pooled.noise.thresholds[,sample]))]
-  point.data[[paste0(pooled.DL.names[sample]," distal")]] <- gr
-
-  gr <- pooled.DLs[pooled.DLs$sample==sample & pooled.DLs$class=="proximal"]
-  gr <- gr[which(gr$score > deframe(pooled.noise.thresholds[,sample]))]
-  point.data[[paste0(pooled.DL.names[sample]," proximal")]] <- gr
-}
-
-for (n in names(point.data)) {
-  point.data[[n]] <- sort(point.data[[n]])
-  seqlevels(point.data[[n]],pruning.mode="coarse") <- seqlevels(SNP.data)
-  point.data[[n]] <- resize(point.data[[n]], width=resize.width, fix="center")
-  point.data[[n]] <- reduce(point.data[[n]],min.gapwidth=0)
-}
-
-point.data.assay <- names(point.data)
-point.data.loc <- rep("genome",length(point.data.assay))
-point.data.loc[grep("distal",point.data.assay)] <- "distal"
-point.data.loc[grep("proximal",point.data.assay)] <- "proximal"
-point.data.loc[which(point.data.assay == "FANTOM5 enhancers")] <- "distal"
-point.data.loc[which(point.data.assay == "ENCODE cCRE dELS")] <- "distal"
-point.data.loc[which(point.data.assay == "ENCODE cCRE PLS")] <- "proximal"
-point.data.assay <- gsub(" distal", "", gsub(" proximal", "", gsub(" PLS", "", gsub(" dELS","",point.data.assay))))
-point.data.assay <- gsub(" distal", "", gsub(" proximal", "", point.data.assay))
-names(point.data.assay) <- names(point.data.loc) <- names(point.data)
-
-## CRISPR data
-CRISPR.pos.data <- readRDS(CRISPR.pos.file)
-CRISPR.neg.data <- readRDS(CRISPR.neg.file)
-CRISPR.n <- length(CRISPR.pos.data)
-
 ```
 
-Point estimates
+## [1.14.] Read in noise estimates
 ```{r}
+pooled.noise.thresholds <- readr::read_csv(
+    file = base::paste0(
+        here::here("9.Noise/"),
+        "K562.poolSub.divnoise.csv"
+      ),
+    col_names = TRUE,
+    show_col_types = FALSE
+  )
+pooled.noise.thresholds <- pooled.noise.thresholds[
+    pooled.noise.thresholds[,1]=="95%",
+    base::c("K562_C","K562_N","K562_C","K562_N")
+  ]
+```
 
+## [1.15.] Subset DLs by library-specific noise estimates 
+#### see [1.4.] for pooled.DLs object
+```{r}
+pooled.DL.names <- base::c(
+    "K562_C" = "Divergent loci CAGE cells",
+    "K562_N" = "Divergent loci CAGE nuclei"
+  )
+
+for (sample in base::c("K562_C","K562_N")) {
+    gr <- pooled.DLs[pooled.DLs$sample == sample]
+    gr <- gr[base::which(gr$score > tibble::deframe(pooled.noise.thresholds[,sample]))]
+    point.data[[pooled.DL.names[sample]]] <- gr
+  
+    gr <- pooled.DLs[pooled.DLs$sample == sample & pooled.DLs$class == "distal"]
+    gr <- gr[base::which(gr$score > tibble::deframe(pooled.noise.thresholds[,sample]))]
+    point.data[[base::paste0(pooled.DL.names[sample]," distal")]] <- gr
+  
+    gr <- pooled.DLs[pooled.DLs$sample==sample & pooled.DLs$class == "proximal"]
+    gr <- gr[base::which(gr$score > tibble::deframe(pooled.noise.thresholds[,sample]))]
+    point.data[[base::paste0(pooled.DL.names[sample]," proximal")]] <- gr
+  }
+```
+
+## [1.16.] Resize all sites across all datasets
+```{r}
+resize.width = 200
+for (n in base::names(point.data)) {
+    point.data[[n]] <- base::sort(point.data[[n]])
+    GenomeInfoDb::seqlevels(point.data[[n]],pruning.mode="coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+    point.data[[n]] <- IRanges::resize(
+        x = point.data[[n]],
+        width = resize.width,
+        fix = "center"
+      )
+    point.data[[n]] <- IRanges::reduce(
+        x = point.data[[n]],
+        min.gapwidth = 0
+      )
+  }
+```
+
+## [1.17.] Rename datasets
+```{r}
+point.data.assay <- base::names(point.data)
+point.data.loc <- base::rep("genome", base::length(point.data.assay))
+point.data.loc[base::grep("distal", point.data.assay)] <- "distal"
+point.data.loc[base::grep("proximal", point.data.assay)] <- "proximal"
+point.data.loc[base::which(point.data.assay == "FANTOM5 enhancers")] <- "distal"
+point.data.loc[base::which(point.data.assay == "ENCODE cCRE dELS")] <- "distal"
+point.data.loc[base::which(point.data.assay == "ENCODE cCRE PLS")] <- "proximal"
+point.data.assay <- base::gsub(
+  " distal", "", base::gsub(
+    " proximal", "", base::gsub(
+      " PLS", "", base::gsub(
+        " dELS", "", point.data.assay
+        )
+      )
+    )
+  )
+point.data.assay <- base::gsub(
+  " distal", "", base::gsub(
+    " proximal", "", point.data.assay
+    )
+  )
+base::names(point.data.assay) <- base::names(point.data.loc) <- base::names(point.data)
+```
+
+## [1.18.] Read in CRISPR data
+```{r}
+CRISPR.pos.data <- base::readRDS(
+  file = base::paste0(
+      here::here("5.EPCrisprBenchmark/"),
+      "epc_pos_gr.rds"
+    )
+  )
+CRISPR.neg.data <- base::readRDS(
+  file = base::paste0(
+      here::here("5.EPCrisprBenchmark/"),
+      "epc_neg_gr.rds"
+    )
+  )
+CRISPR.n <- base::length(CRISPR.pos.data)
+```
+
+# [2.] Calculate precision, enrichment and recall -------------------------
+
+```{r}
 point.enrichment.precision.recall <- function(data, fg.data, bg.data, assay, location) {
   
-  do.call("rbind", lapply(names(data), function(n) {
+    base::do.call(
+      what = "rbind",
+      args = base::lapply(
+        base::names(data), function(n) {
     
-    fg.olap <- findOverlaps(fg.data, data[[n]], minoverlap=1)
-    fg.count <- length(unique(queryHits(fg.olap)))
-    region.count <- length(unique(subjectHits(fg.olap)))
-    bg.olap <- findOverlaps(bg.data, data[[n]], minoverlap=1)
-    bg.count <- length(unique(queryHits(bg.olap)))
-    
-    data.frame(enrichment=(fg.count/length(fg.data)) / (bg.count/length(bg.data)),
-               precision=fg.count/(fg.count+bg.count),
-               recall=fg.count/length(fg.data),
-               fg.count=fg.count,
-               bg.count=bg.count,
-               region.count=region.count,
-               sample=n,
-               assay=assay[n],
-               loc=location[n])
-  }))
-}
+          fg.olap <- GenomicRanges::findOverlaps(
+              query = fg.data,
+              subject = data[[n]],
+              minoverlap = 1
+            )
+          fg.count <- base::length(
+            base::unique(
+                S4Vectors::queryHits(fg.olap)
+              )
+            )
+          region.count <- base::length(
+            base::unique(
+                S4Vectors::subjectHits(fg.olap)
+              )
+            )
+          bg.olap <- GenomicRanges::findOverlaps(
+              query = bg.data,
+              subject = data[[n]],
+              minoverlap = 1
+            )
+          bg.count <- base::length(
+            base::unique(
+                S4Vectors::queryHits(bg.olap)
+              )
+            )
+          return(
+            base::data.frame(
+              enrichment = (fg.count/base::length(fg.data)) / (bg.count/base::length(bg.data)),
+              precision = fg.count/(fg.count + bg.count),
+              recall = fg.count/base::length(fg.data),
+              fg.count = fg.count,
+              bg.count = bg.count,
+              region.count = region.count,
+              sample = n,
+              assay = assay[n],
+              loc = location[n]
+            )
+          )
+        }
+      )
+    )
+  }
+```
 
+
+```{r}
 point.ClinVar.df <- point.enrichment.precision.recall(point.data, ClinVar.data, SNP.data, point.data.assay, point.data.loc)
 point.ClinVar.df
 
