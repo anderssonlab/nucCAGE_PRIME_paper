@@ -40,8 +40,6 @@ col.scheme <- base::c(
 
 ## [0.2.] Define all necessary parameters and file paths
 ```{r}
-PRIMEloci.thres = 0.75
-
 pooled.PRIMEloci.names <- base::c(
     "K562_sld_C" = "PRIMEloci CAGE cells pooled",
     "K562_sld_N" = "PRIMEloci CAGE nuclei pooled",
@@ -53,20 +51,12 @@ pooled.DL.names <- base::c(
     "K562_N" = "Divergent loci CAGE nuclei"
   )
 
-#cCRE.file <- "../0.External_resources/ENCFF464BRU.bed"
-cCRE.file <- here::here("0.External_resources/ENCFF414OGC_ENCFF806YEZ_ENCFF849TDM_ENCFF736UDR.bed")
-
-DHS.file <- here::here("0.External_resources/E123-DNase.macs2.hg38.narrowPeak")
-
 FANTOM5.file <- here::here("0.External_resources/F5.hg38.enhancers.expression.matrix.gz")
 FANTOM5.enhancers.file <- here::here("0.External_resources/F5.hg38.enhancers.bed.gz")
 FANTOM5.id = "CNhs12334"
 
 CRISPR.pos.file <- here::here("5.EPCrisprBenchmark/epc_pos_gr.rds")
 CRISPR.neg.file <- here::here("5.EPCrisprBenchmark/epc_neg_gr.rds")
-
-k27ac.file <- here::here("0.External_resources/ENCFF038DDS.bed")
-
 ```
 
 ## [1.] Read in data -------------------------
@@ -346,6 +336,7 @@ point.data <- base::lapply(
     }
   )
 base::names(point.data) <- base::names(PINTS.files)
+
 point.data[["PINTS GRO/PRO-cap"]] <- base::c(point.data[[1]],point.data[[2]])
 ```
 
@@ -374,6 +365,7 @@ for (n in base::names(dREG.files)) {
 
 ## [1.11.] Read in all pooled PRIMEloci files
 ```{r}
+PRIMEloci.thres = 0.75
 pooled.PRIMEloci.files <- base::c(
     "K562_sld_C" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_C.bed"),
     "K562_sld_N" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N.bed"),
@@ -381,67 +373,111 @@ pooled.PRIMEloci.files <- base::c(
   )
 
 for (n in base::names(pooled.PRIMEloci.files)) {
-  gr <- readr::read_tsv(
-      file = pooled.PRIMEloci.files[n],
-      show_col_types = FALSE
-    )
-  gr <- subset(gr,score>=PRIMEloci.thres)
-  gr <- makeGRangesFromDataFrame(gr[,1:3])
-  seqlevels(gr,pruning.mode="coarse") <- seqlevels(SNP.data)
-  olap <- findOverlaps(gr, promoters, minoverlap = 1)
-  gr.proximal <- gr[unique(queryHits(olap))]
-  gr.distal <- gr[setdiff(1:length(gr), queryHits(olap))]
-  point.data[[pooled.PRIMEloci.names[n]]] <- gr
-  point.data[[paste0(pooled.PRIMEloci.names[n]," distal")]] <- gr.distal
-  point.data[[paste0(pooled.PRIMEloci.names[n]," proximal")]] <- gr.proximal
-}
+    gr <- readr::read_tsv(
+        file = pooled.PRIMEloci.files[n],
+        show_col_types = FALSE
+      )
+    gr <- base::subset(gr, score >= PRIMEloci.thres)
+    gr <- GenomicRanges::makeGRangesFromDataFrame(gr[,1:3])
+    GenomeInfoDb::seqlevels(gr, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+    olap <- IRanges::findOverlaps(
+        query = gr,
+        subject = promoters,
+        minoverlap = 1
+      )
+    gr.proximal <- gr[base::unique(S4Vectors::queryHits(olap))]
+    gr.distal <- gr[base::setdiff(1:base::length(gr), S4Vectors::queryHits(olap))]
+    point.data[[pooled.PRIMEloci.names[n]]] <- gr
+    point.data[[base::paste0(pooled.PRIMEloci.names[n]," distal")]] <- gr.distal
+    point.data[[base::paste0(pooled.PRIMEloci.names[n]," proximal")]] <- gr.proximal
+  }
 ```
 
-
+## [1.11.] Read in cCRE data for point estimates
+#### cCRE.file <- "../0.External_resources/ENCFF464BRU.bed"
 ```{r}
-cCRE <- read_tsv(cCRE.file,col_names=FALSE,show_col_types=FALSE)
+cCRE <- readr::read_tsv(
+    file = base::paste0(
+        here::here("0.External_resources/"),
+        "ENCFF414OGC_ENCFF806YEZ_ENCFF849TDM_ENCFF736UDR.bed"
+      ),
+    col_names = FALSE,
+    show_col_types = FALSE
+  )
 df <- cCRE[,1:3]
-colnames(df) <- c("chrom","start","end")
-cCRE.data <- makeGRangesFromDataFrame(df)
-cCRE.data$class <- cCRE[,10,drop=TRUE]
-for (n in c("dELS","PLS")) {
- x <- subset(cCRE.data,class==n)
- x$class <- NULL
- seqlevels(x,pruning.mode="coarse") <- seqlevels(SNP.data)
- olap <- findOverlaps(x, promoters, minoverlap = 1)
- x.proximal <- x[unique(queryHits(olap))]
- x.distal <- x[setdiff(1:length(x), queryHits(olap))]
- point.data[[paste0("ENCODE cCRE ",n," distal")]] <- x.distal
- point.data[[paste0("ENCODE cCRE ",n," proximal")]] <- x.proximal
-}
-point.data[["ENCODE cCRE"]] <- c(point.data[["ENCODE cCRE dELS distal"]],point.data[["ENCODE cCRE dELS proximal"]],point.data[["ENCODE cCRE PLS distal"]],point.data[["ENCODE cCRE PLS proximal"]])
+base::colnames(df) <- base::c("chrom","start","end")
+cCRE.data <- GenomicRanges::makeGRangesFromDataFrame(df)
+cCRE.data$class <- cCRE[,10, drop = TRUE]
+
+for (n in base::c("dELS","PLS")) {
+   x <- base::subset(cCRE.data, class == n)
+   x$class <- NULL
+   GenomeInfoDb::seqlevels(x,pruning.mode="coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+   olap <- GenomicRanges::findOverlaps(
+       query = x,
+       subject = promoters,
+       minoverlap = 1
+     )
+   x.proximal <- x[base::unique(S4Vectors::queryHits(olap))]
+   x.distal <- x[base::setdiff(1:length(x), S4Vectors::queryHits(olap))]
+   point.data[[paste0("ENCODE cCRE ",n," distal")]] <- x.distal
+   point.data[[paste0("ENCODE cCRE ",n," proximal")]] <- x.proximal
+  }
+
+point.data[["ENCODE cCRE"]] <- base::c(
+    point.data[["ENCODE cCRE dELS distal"]],
+    point.data[["ENCODE cCRE dELS proximal"]],
+    point.data[["ENCODE cCRE PLS distal"]],
+    point.data[["ENCODE cCRE PLS proximal"]]
+  )
 ```
 
-
+## [1.12.] Read in DHS data for point estimates
 ```{r}
-DHS <- import.bed(DHS.file)
-olap <- findOverlaps(DHS, promoters, minoverlap = 1)
-DHS.proximal <- DHS[unique(queryHits(olap))]
-DHS.distal <- DHS[setdiff(1:length(DHS), queryHits(olap))]
+DHS <- rtracklayer::import.bed(
+  con = base::paste0(
+      here::here("0.External_resources/"),
+      "E123-DNase.macs2.hg38.narrowPeak"
+    )
+  )
+olap <- GenomicRanges::findOverlaps(
+    query = DHS,
+    subject = promoters,
+    minoverlap = 1
+  )
+DHS.proximal <- DHS[base::unique(S4Vectors::queryHits(olap))]
+DHS.distal <- DHS[base::setdiff(1:length(DHS), S4Vectors::queryHits(olap))]
+
 point.data[["DHS"]] <- DHS
 point.data[["DHS distal"]] <- DHS.distal
 point.data[["DHS proximal"]] <- DHS.proximal
 ```
 
-
+## [1.13.] Read in all H3K27ac data
 ```{r}
-k27ac <- read.table(k27ac.file)
-colnames(k27ac) <- c("chr","start","end","name","score","strand","signal_value","pvalue","qvalue","peak")
-k27ac <- GRanges(k27ac)
+k27ac <- utils::read.table(
+  file = base::paste0(
+      here::here("0.External_resources/"),
+      "ENCFF038DDS.bed"
+    )
+  )
+base::colnames(k27ac) <- base::c(
+    "chr","start","end",
+    "name","score","strand",
+    "signal_value","pvalue",
+    "qvalue","peak"
+  )
+k27ac <- GenomicRanges::GRanges(k27ac)
 k27ac.dhs <- subsetByOverlaps(DHS, k27ac)
 start(k27ac) <- start(k27ac)+k27ac$peak
 end(k27ac) <- start(k27ac)+1
 
 point.data[["K27ac DHS"]] <- k27ac.dhs
 point.data[["K27ac"]] <- k27ac
+```
 
 
-
+```{r}
 header <- colnames(read_tsv(FANTOM5.file,n_max=1,show_col_types=FALSE))
 FANTOM5.data <- read_tsv(FANTOM5.file,skip=1,col_names=FALSE,show_col_types=FALSE)[,c(1,match(FANTOM5.id,header)+1)]
 FANTOM5.enhancers <- flank(swapRanges(import.bed(FANTOM5.enhancers.file)),200,both=TRUE)
