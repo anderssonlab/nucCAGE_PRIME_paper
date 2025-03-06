@@ -973,8 +973,8 @@ ggplot2::ggplot(
 ```{r}
 ggplot2::ggsave(
     filename = base::paste0(
-        "plots/","
-        K562_ClinVar_enrichment_recall_point_estimates_bar.pdf"
+        here::here("10.External_validation/plots/"),
+        "K562_ClinVar_enrichment_recall_point_estimates_bar.pdf"
       ),
     width = 5,
     height = 3,
@@ -1023,8 +1023,8 @@ ggplot2::ggplot(
 ```{r}
 ggplot2::ggsave(
     filename = base::paste0(
-        "plots/","
-        K562_eQTL_enrichment_vs_recall_PIP_",
+        here::here("10.External_validation/plots/"),
+        "K562_eQTL_enrichment_vs_recall_PIP_",
         eQTL.pip.thres,
         "_point_estimates.pdf"
       ),
@@ -1072,87 +1072,211 @@ ggplot2::ggplot(
 ```{r}
 ggplot2::ggsave(
     filename = base::paste0(
-        "plots/","
-        K562_eQTL_enrichment_vs_recall_PIP_",
+        here::here("10.External_validation/plots/"),
+        "K562_eQTL_enrichment_vs_recall_PIP_",
         eQTL.pip.thres,
-        "_point_estimates.pdf"
+        "_point_estimates_proximal_vs_distal.pdf"
       ),
     width = 5,
     height = 3,
     device = "pdf"
   )
-ggsave(paste0("plots/K562_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,"_point_estimates_proximal_vs_distal.pdf"),width=8,height=7)
 ```
 
-
+## [4.6.] Prepare Figure 1 F
 ```{r}
-#  Figure 1 F
-point.eQTL.genome.df$sample <- factor(point.eQTL.genome.df$sample, levels=point.eQTL.genome.df$sample[order(point.eQTL.genome.df$recall, decreasing = TRUE)])
-ggplot(point.eQTL.genome.df, aes(sample, recall,fill=sample)) + geom_bar(stat="identity") + 
-  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1)) + ylab(paste0("recall (n=",eQTL.n,")")) + scale_fill_manual(values=col.scheme)
-ggsave(paste0("plots/K562_eQTL_recall_PIP_",eQTL.pip.thres,"_point_estimates_bar.pdf"),width=3,height=3)
+point.eQTL.genome.df$sample <- base::factor(
+  x = point.eQTL.genome.df$sample,
+  levels = point.eQTL.genome.df$sample[
+      base::order(point.eQTL.genome.df$recall, decreasing = FALSE)
+    ]
+  )
 ```
 
-
+## [4.7.] Plot Figure 1 F
 ```{r}
-#  Figure 1 F
-point.eQTL.genome.df$sample <- factor(point.eQTL.genome.df$sample, levels=point.eQTL.genome.df$sample[order(point.eQTL.genome.df$enrichment, decreasing = TRUE)])
-ggplot(point.eQTL.genome.df, aes(sample, enrichment,fill=sample)) + geom_bar(stat="identity") + 
-  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1))+ scale_fill_manual(values=col.scheme)
-ggsave(paste0("plots/K562_eQTL_enrichment_PIP_",eQTL.pip.thres,"_point_estimates_bar.pdf"),width=3,height=3)
+ggplot2::ggplot(
+  data = point.eQTL.genome.df,
+  mapping = aes(
+      y = sample,
+      x = recall,
+      fill = sample
+    )
+  ) +
+  geom_bar(
+      stat = "identity"
+    ) + 
+  ylab(
+      base::paste0("recall (n=",eQTL.n,")")
+    ) +
+  scale_fill_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+    axis.text.y = element_blank()
+    # axis.text.x = element_text(
+    #     angle = 45,
+    #     vjust = 1,
+    #     hjust = 1
+    #   )
+    )
 ```
 
-
+## [4.8.] Print plot
 ```{r}
-#BarPlots for point estimates
-scaling_factor <- max(point.eQTL.genome.df$recall) / max(point.eQTL.genome.df$enrichment)
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_eQTL_recall_PIP_",
+        eQTL.pip.thres,
+        "_point_estimates_bar.pdf"
+      ),
+    width = 5,
+    height = 3,
+    device = "pdf"
+  )
+```
 
-# Create a new column for scaled enrichment
+## [4.9.] Prepae Figure 1 F
+```{r}
+point.eQTL.genome.df$sample <- base::factor(
+  x = point.eQTL.genome.df$sample,
+  levels = point.eQTL.genome.df$sample[
+      base::order(point.eQTL.genome.df$enrichment, decreasing = FALSE)
+    ]
+  )
+```
+
+## [4.10.] Plot Figure 1F
+```{r}
+ggplot2::ggplot(
+    data = point.eQTL.genome.df,
+    mapping = aes(
+        x = enrichment,
+        y = sample,
+        fill = sample
+      )
+    ) +
+  geom_bar(
+      stat = "identity"
+    ) + 
+  theme_bw() +
+  theme(
+      # axis.text.x = element_text(
+      #     angle = 90,
+      #     vjust = 1,
+      #     hjust = 1
+      #   )
+      axis.text.y = element_blank(),
+      axis.title.y = element_blank()
+    ) +
+  scale_fill_manual(
+      values = col.scheme
+    )
+```
+
+## [4.11.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_eQTL_enrichment_PIP_",
+        eQTL.pip.thres,
+        "_point_estimates_bar.pdf"
+      ),
+    width = 5,
+    height = 3,
+    device = "pdf"
+  )
+```
+
+## [4.12.] Prepare bar plots for point estimates
+#### Create a new column for scaled enrichment
+```{r}
+scaling_factor <- base::max(point.eQTL.genome.df$recall) / base::max(point.eQTL.genome.df$enrichment)
+
 point.eQTL.genome.df$enrichment_scaled <- point.eQTL.genome.df$enrichment * scaling_factor
 
 point.eQTL.genome.df_long <- point.eQTL.genome.df %>%
-  pivot_longer(cols = c(recall, enrichment_scaled), names_to = "metric", values_to = "value") %>%
-  mutate(metric = factor(metric, levels = c("recall","enrichment_scaled")))
+  tidyr::pivot_longer(
+      cols = base::c("recall", "enrichment_scaled"),
+      names_to = "metric",
+      values_to = "value"
+    ) %>%
+  dplyr::mutate(
+    metric = base::factor(
+        x = metric,
+        levels = base::c("recall","enrichment_scaled")
+      )
+    )
 ```
 
-
+## [4.13.] Plot using ggplot with adjusted spacing
 ```{r}
-# Plot using ggplot with adjusted spacing
-ggplot(data = point.eQTL.genome.df_long) +
+ggplot2::ggplot(
+      data = point.eQTL.genome.df_long
+    ) +
   geom_col(
-    aes(
-      x = sample,
-      y = value,
-      fill = sample,
-      group = metric,
-      alpha = metric  
-    ),
-    position = position_dodge(width = 0.6),  
-    color = "black",
-    width = 0.6  
-  ) +
+      mapping = aes(
+          x = sample,
+          y = value,
+          fill = sample,
+          group = metric,
+          alpha = metric  
+        ),
+      position = position_dodge(width = 0.6),  
+      color = "black",
+      width = 0.6  
+    ) +
   # Primary Y-axis for recall and secondary Y-axis for scaled enrichment
   scale_y_continuous(
-    name = "Recall",
-    limits = c(0, max(point.eQTL.genome.df$recall) * 1.1),
-    sec.axis = sec_axis(
-      ~ . / scaling_factor,  
-      name = "Enrichment"
-    )
-  ) +
-  scale_fill_manual(values = col.scheme) +
-  scale_alpha_manual(values = c("recall" = 1, "enrichment_scaled" = 0.5)) +  # Set alpha levels for recall and enrichment
-  theme(
-    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
-    axis.title.y.left = element_text(color = "black"),
-    axis.title.y.right = element_text(color = "black"),
-    legend.title = element_blank(),
-    legend.position = "bottom"
-  ) +
+      name = "Recall",
+      limits = base::c(0, base::max(point.eQTL.genome.df$recall) * 1.1),
+      sec.axis = ggplot2::sec_axis(
+        transform = ~ . / scaling_factor,
+        name = "Enrichment"
+      )
+    ) +
+  scale_fill_manual(
+      values = col.scheme
+    ) +
+  scale_alpha_manual(
+      values = base::c("recall" = 1, "enrichment_scaled" = 0.5)
+    ) + 
   labs(x = "Sample", fill = "Sample") +
-  theme(legend.position = "none")
+  # Set alpha levels for recall and enrichment
+  theme_bw() +
+  theme(
+      aspect.ratio = 1/2,
+      axis.text.x = element_text(
+          angle = 90,
+          vjust = 0.5,
+          hjust = 1
+        ),
+      axis.title.x = element_blank(),
+      axis.title.y.left = element_text(
+          color = "black"
+        ),
+      axis.title.y.right = element_text(
+          color = "black"
+        ),
+      legend.title = element_blank(),
+      legend.position = "none"
+    )
+```
 
-ggsave(paste0("plots/K562_eQTL_enrichment_recall_point_estimates_bar.pdf"),width=7,height=5)
+## [4.14.] Plot using ggplot with adjusted spacing
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_eQTL_enrichment_recall_point_estimates_bar.pdf"
+      ),
+    width = 5,
+    height = 3,
+    device = "pdf"
+  )
 ```
 
 Plot GWAS point estimate results
