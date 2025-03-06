@@ -11,21 +11,7 @@ date: "2024-07-01"
 ```{r warning=TRUE, message=TRUE}
 base::library(tidyverse)
 base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-
-# base::library(CAGEfightR)
-# base::library(GenomicRanges)
-# base::library(readr)
-# base::library(rtracklayer)
-# base::library(parallel)
-# base::library(ggplot2)
-# base::library(GenomicFeatures)
-# base::library(SummarizedExperiment)
-# base::library(tibble)
-# base::library(ggrepel)
-# base::library(tidyr)
-# base::library(ggpattern)
-
-# theme_set(theme_bw(base_size = 10))
+base::library(UpSetR)
 ```
 
 ## [0.1.] Add custom color palettes
@@ -2398,7 +2384,7 @@ ggplot2::ggplot(
     aspect.ratio=1)
 ```
 
-
+## [9.11.] Print plot
 ```{r}
 ggplot2::ggsave(
     filename = base::paste0(
@@ -2413,13 +2399,28 @@ ggplot2::ggsave(
   )
 ```
 
-
+## [9.12.] Plot data 
 ```{r}
-ggplot(pooled.PRIMEloci.CRISPR.enrichment.recall.data, aes(score, precision, color=assay)) + geom_line(aes(group=sample)) +
-  theme(aspect.ratio=1)
+ggplot2::ggplot(
+    data = pooled.PRIMEloci.CRISPR.enrichment.recall.data,
+    mapping = aes(
+        x = score,
+        y = precision,
+        color = assay
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
 ```
 
-
+## [9.13.] Print plot
 ```{r}
 ggplot2::ggsave(
     filename = base::paste0(
@@ -2432,13 +2433,28 @@ ggplot2::ggsave(
   )
 ```
 
-
+## [9.14.] Plot data 
 ```{r}
-ggplot(pooled.PRIMEloci.CRISPR.enrichment.recall.data, aes(score, recall, color=assay)) + geom_line(aes(group=sample)) +
-  theme(aspect.ratio=1)
+ggplot2::ggplot(
+    data = pooled.PRIMEloci.CRISPR.enrichment.recall.data,
+    mapping = aes(
+        x = score,
+        y = recall,
+        color = assay
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
 ```
 
-
+## [9.15.] Print data
 ```{r}
 ggplot2::ggsave(
     filename = base::paste0(
@@ -2451,11 +2467,9 @@ ggplot2::ggsave(
   )
 ```
 
-
+## [10.] Upset plots -------------------------
 
 ```{r}
-
-base::library(UpSetR) 
 gr_list <- GRangesList(point.data)
 
 gr_list[["GWAS.data"]] <- GWAS.data
@@ -2463,115 +2477,126 @@ gr_list[["eQTL.data"]] <- eQTL.data
 gr_list[["ClinVar.data"]] <- ClinVar.data
 gr_list[["CRISPR.data"]] <- CRISPR.pos.data
 gr_list[["CRISPR.neg.data"]] <- CRISPR.neg.data
+```
 
-
-
-
+```{r}
 create_upset_plot <- function(subset_name, gr_list, sets_to_include) {
-  # Get the specific subset's GRanges
-  subset_gr <- gr_list[[subset_name]]
-
-  # Create a binary matrix for overlaps, restricted to the subset
-  overlap_matrix <- sapply(gr_list, function(gr) {
-    overlaps <- findOverlaps(subset_gr, gr)
-    overlap_vector <- rep(0, length(subset_gr))
-    overlap_vector[unique(queryHits(overlaps))] <- 1
-    return(overlap_vector)
-  })
-  colnames(overlap_matrix) <- names(gr_list)
+    # Get the specific subset's GRanges
+    subset_gr <- gr_list[[subset_name]]
   
-  # Convert to a data frame
-  overlap_df <- as.data.frame(overlap_matrix)
-  rownames(overlap_df) <- NULL
-  
-  # Filter to include only relevant sets
-  subset_overlap_df <- overlap_df[, sets_to_include]
-  
-  # Generate the UpSet plot
-  base::library(UpSetR)
-  p<- upset(
-    subset_overlap_df,
-    sets = names(gr_list)[sets_to_include],
-    order.by = "freq",
-    sets.bar.color=col.scheme[names(col.scheme) %in% names(gr_list)[sets_to_include]]
-  )
-  
-    p1 <-upset(
-    subset_overlap_df,
-    sets = names(gr_list)[sets_to_include],
-    order.by = "freq",
-    sets.bar.color=col.scheme[match(p$labels,names(col.scheme))],
-    line.size=0
-  )
-    p1
-}
+    # Create a binary matrix for overlaps, restricted to the subset
+    overlap_matrix <- sapply(gr_list, function(gr) {
+      overlaps <- findOverlaps(subset_gr, gr)
+      overlap_vector <- rep(0, length(subset_gr))
+      overlap_vector[unique(queryHits(overlaps))] <- 1
+      return(overlap_vector)
+    })
+    colnames(overlap_matrix) <- names(gr_list)
+    
+    # Convert to a data frame
+    overlap_df <- as.data.frame(overlap_matrix)
+    rownames(overlap_df) <- NULL
+    
+    # Filter to include only relevant sets
+    subset_overlap_df <- overlap_df[, sets_to_include]
+    
+    # Generate the UpSet plot
+    base::library(UpSetR)
+    p<- upset(
+      subset_overlap_df,
+      sets = names(gr_list)[sets_to_include],
+      order.by = "freq",
+      sets.bar.color=col.scheme[names(col.scheme) %in% names(gr_list)[sets_to_include]]
+    )
+    
+      p1 <-upset(
+      subset_overlap_df,
+      sets = names(gr_list)[sets_to_include],
+      order.by = "freq",
+      sets.bar.color=col.scheme[match(p$labels,names(col.scheme))],
+      line.size=0
+    )
+      p1
+  }
+```
 
+## Define sets to include for intersection analysis
+```{r}
+sets_to_include <-  names(gr_list) %in% base::c("PRIMEloci CAGE cells pooled", "PRIMEloci CAGE nuclei pooled","DHS")
+```
 
-
-
-
-# Define sets to include for intersection analysis
-sets_to_include <-  names(gr_list) %in% c("PRIMEloci CAGE cells pooled", "PRIMEloci CAGE nuclei pooled","DHS")
-
-# Generate plots for PRIMEloci/DHS focus
+## Generate plots for PRIMEloci/DHS focus
+```{r}
 s <- create_upset_plot("GWAS.data", gr_list, sets_to_include)
 pdf("plots/K562_PRIMEloci_GWAS_upset.pdf",height=6, width=8)
 s
 dev.off()
+```
 
+```{r}
 s <- create_upset_plot("ClinVar.data", gr_list, sets_to_include)
 pdf("plots/K562_PRIMEloci_ClinVar_upset.pdf",height=6, width=8)
 s
 dev.off()
+```
 
+```{r}
 s <- create_upset_plot("eQTL.data", gr_list, sets_to_include)
 pdf("plots/K562_PRIMEloci_eQTL_upset.pdf",height=6, width=8)
 s
 dev.off()
+```
 
+```{r}
 s <- create_upset_plot("CRISPR.data", gr_list, sets_to_include)
 pdf("plots/K562_PRIMEloci_CRISPR.pos_upset.pdf",height=6, width=8)
 s
 dev.off()
+```
 
+```{r}
 s <- create_upset_plot("CRISPR.neg.data", gr_list, sets_to_include)
 pdf("plots/K562_PRIMEloci_CRISPR.neg_upset.pdf",height=6, width=8)
 s
 dev.off()
-
+```
 
 # Generate plots for full panel
+```{r}
 sets_to_include <-  names(gr_list) %in% names(col.scheme)
+```
 
+```{r}
 s <- create_upset_plot("GWAS.data", gr_list, sets_to_include)
 pdf("plots/K562_PRIMEloci_full_GWAS_upset.pdf",height=6, width=8)
 s
 dev.off()
+```
 
+```{r}
 s <- create_upset_plot("ClinVar.data", gr_list, sets_to_include)
 pdf("plots/K562_PRIMEloci_full_ClinVar_upset.pdf",height=6, width=8)
 s
 dev.off()
+```
 
+```{r}
 s <- create_upset_plot("eQTL.data", gr_list, sets_to_include)
 pdf("plots/K562_PRIMEloci_full_eQTL_upset.pdf",height=6, width=8)
 s
 dev.off()
+```
 
+```{r}
 s <- create_upset_plot("CRISPR.data", gr_list, sets_to_include)
 pdf("plots/K562_PRIMEloci_full_CRISPR.pos_upset.pdf",height=6, width=8)
 s
 dev.off()
+```
 
+```{r}
 s <- create_upset_plot("CRISPR.neg.data", gr_list, sets_to_include)
 pdf("plots/K562_PRIMEloci_full_CRISPR.neg_upset.pdf",height=6, width=8)
 s
 dev.off()
-
-
-
-
-
 ```
-
-
