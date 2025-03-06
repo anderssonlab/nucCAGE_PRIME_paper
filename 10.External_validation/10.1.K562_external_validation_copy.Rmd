@@ -2152,55 +2152,303 @@ ggplot2::ggsave(
 
 ## [8.13.] Subset data for plotting
 ```{r}
-point.GWAS.genome.proximal <- subset(point.GWAS.df, loc=="proximal")
+point.GWAS.genome.proximal <- base::subset(point.GWAS.df, loc == "proximal")
+```
+
+## [8.14.] Plot data
+```{r}
+ggplot2::ggplot(
+    data = pooled.PRIMEloci.GWAS.enrichment.recall.data.proximal[
+        pooled.PRIMEloci.GWAS.enrichment.recall.data.proximal$recall > 0.001,
+      ],
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  geom_point(
+      data = point.GWAS.genome.proximal
+    ) +
+  xlab(
+      base::paste0("recall (n=",GWAS.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [8.15.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIMEloci_GWAS_enrichment_vs_recall_and_point_estimates_proximal.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+
+## [9.] Enrichment, precision, recall vs score -------------------------
+
+## [9.0.] Plot data
+```{r}
+ggplot2::ggplot(
+  data = pooled.PRIMEloci.ClinVar.enrichment.recall.data,
+  mapping = aes(
+      x = score,
+      y = enrichment,
+      color = assay
+    )
+  ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [9.1.] Print data
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIMEloci_ClinVar_enrichment_vs_score.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [9.2.] Plot data
+```{r}
+ggplot2::ggplot(
+  data = pooled.PRIMEloci.ClinVar.enrichment.recall.data,
+  mapping = aes(
+      x = score,
+      y = recall,
+      color = assay
+    )
+  ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [9.3.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIMEloci_ClinVar_recall_vs_score.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [9.4.] Plot data
+```{r}
+ggplot2::ggplot(
+    data = pooled.PRIMEloci.eQTL.enrichment.recall.data,
+    mapping = aes(
+        x = score,
+        y = enrichment,
+        color = assay
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [9.5.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIMEloci_eQTL_enrichment_vs_score_PIP_",
+        eQTL.pip.thres,
+        ".pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [9.6.] Plot data
+```{r}
+ggplot2::ggplot(
+  data = pooled.PRIMEloci.eQTL.enrichment.recall.data,
+  mapping = aes(
+      x = score,
+      y = recall,
+      color = assay
+    )
+  ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  theme_bw() + 
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [9.7.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIMEloci_eQTL_recall_vs_score_PIP_",
+        eQTL.pip.thres,
+        ".pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [9.8.] Plot data
+```{r}
+ggplot2::ggplot(
+  data = pooled.PRIMEloci.GWAS.enrichment.recall.data,
+  mapping = aes(
+      x = score,
+      y = enrichment,
+      color = assay
+    )
+  ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [9.9.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIMEloci_GWAS_enrichment_vs_score_PIP_",
+        GWAS.pip.thres,
+        ".pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [9.10.] Plot data
+```{r}
+ggplot2::ggplot(
+  data = pooled.PRIMEloci.GWAS.enrichment.recall.data,
+  mapping = aes(
+      x = score,
+      y = recall,
+      color = assay
+    )
+  ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  theme(
+    aspect.ratio=1)
 ```
 
 
 ```{r}
-ggplot(pooled.PRIMEloci.GWAS.enrichment.recall.data.proximal[pooled.PRIMEloci.GWAS.enrichment.recall.data.proximal$recall>0.001,], aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
-  theme(aspect.ratio=1) +
-  geom_point(data=point.GWAS.genome.proximal) + xlab(paste0("recall (n=",GWAS.n,")")) + scale_color_manual(values=col.scheme)
-ggsave(paste0("plots/K562_pooled_PRIMEloci_GWAS_enrichment_vs_recall_and_point_estimates_proximal.pdf"),width=7,height=5)
-
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIMEloci_GWAS_recall_vs_score_PIP_",
+        GWAS.pip.thres,
+        ".pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
 ```
 
 
-Enrichment, precision, recall vs score
-
 ```{r}
-
-ggplot(pooled.PRIMEloci.ClinVar.enrichment.recall.data, aes(score, enrichment, color=assay)) + geom_line(aes(group=sample)) +
-  theme(aspect.ratio=1)
-ggsave("plots/K562_pooled_PRIMEloci_ClinVar_enrichment_vs_score.pdf",width=7,height=5)
-
-ggplot(pooled.PRIMEloci.ClinVar.enrichment.recall.data, aes(score, recall, color=assay)) + geom_line(aes(group=sample)) +
-  theme(aspect.ratio=1)
-ggsave("plots/K562_pooled_PRIMEloci_ClinVar_recall_vs_score.pdf",width=7,height=5)
-
-ggplot(pooled.PRIMEloci.eQTL.enrichment.recall.data, aes(score, enrichment, color=assay)) + geom_line(aes(group=sample)) +
-  theme(aspect.ratio=1)
-ggsave(paste0("plots/K562_pooled_PRIMEloci_eQTL_enrichment_vs_score_PIP_",eQTL.pip.thres,".pdf"),width=7,height=5)
-
-ggplot(pooled.PRIMEloci.eQTL.enrichment.recall.data, aes(score, recall, color=assay)) + geom_line(aes(group=sample)) +
-  theme(aspect.ratio=1)
-ggsave(paste0("plots/K562_pooled_PRIMEloci_eQTL_recall_vs_score_PIP_",eQTL.pip.thres,".pdf"),width=7,height=5)
-
-ggplot(pooled.PRIMEloci.GWAS.enrichment.recall.data, aes(score, enrichment, color=assay)) + geom_line(aes(group=sample)) +
-  theme(aspect.ratio=1)
-ggsave(paste0("plots/K562_pooled_PRIMEloci_GWAS_enrichment_vs_score_PIP_",GWAS.pip.thres,".pdf"),width=7,height=5)
-
-ggplot(pooled.PRIMEloci.GWAS.enrichment.recall.data, aes(score, recall, color=assay)) + geom_line(aes(group=sample)) +
-  theme(aspect.ratio=1)
-ggsave(paste0("plots/K562_pooled_PRIMEloci_GWAS_recall_vs_score_PIP_",GWAS.pip.thres,".pdf"),width=7,height=5)
-
 ggplot(pooled.PRIMEloci.CRISPR.enrichment.recall.data, aes(score, precision, color=assay)) + geom_line(aes(group=sample)) +
   theme(aspect.ratio=1)
-ggsave(paste0("plots/K562_pooled_PRIMEloci_CRISPR_precision_vs_score.pdf"),width=7,height=5)
+```
 
+
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIMEloci_CRISPR_precision_vs_score.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+
+```{r}
 ggplot(pooled.PRIMEloci.CRISPR.enrichment.recall.data, aes(score, recall, color=assay)) + geom_line(aes(group=sample)) +
   theme(aspect.ratio=1)
-ggsave(paste0("plots/K562_pooled_PRIMEloci_CRISPR_recall_vs_score.pdf"),width=7,height=5)
+```
 
+
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIMEloci_CRISPR_recall_vs_score.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
 ```
 
 
