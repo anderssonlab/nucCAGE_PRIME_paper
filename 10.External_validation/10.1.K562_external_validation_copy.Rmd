@@ -1710,7 +1710,7 @@ ggplot2::ggplot(
       data = point.CRISPR.genome.df_long
     ) +
   geom_col(
-      maaping = aes(
+      mapping = aes(
           x = sample,
           y = value,
           fill = sample,
@@ -1737,10 +1737,12 @@ ggplot2::ggplot(
   scale_alpha_manual(
       values = base::c("recall" = 1, "precision_scaled" = 0.5)
     ) + 
+  theme_bw() +
   theme(
+      aspect.ratio = 1/2,
       axis.text.x = element_text(
-          angle = 45,
-          vjust = 1,
+          angle = 90,
+          vjust = 0.5,
           hjust = 1
         ),
       axis.title.y.left = element_text(
@@ -1760,108 +1762,401 @@ ggplot2::ggplot(
     )
 ```
 
-
+## [6.13.] Plot data
 ```{r}
-ggsave(paste0("plots/K562_CRISPR_precision_recall_point_estimates_bar.pdf"),width=7,height=5)
-
-
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_CRISPR_precision_recall_point_estimates_bar.pdf"
+      ),
+    width = 5,
+    height = 3,
+    device = "pdf"
+  )
 ```
 
+## [7.] Calculate enrichment, precision, and recall versus score threshold -------------------------
 
-Enrichment, precision, and recall versus score threshold
+## [7.0.] Helper function for preparing enrichment-recall curves
 ```{r}
-
 enrichment.precision.recall <- function(data, fg.data, bg.data, assay) {
   
-  do.call("rbind", lapply(names(data), function(n) {
+  base::do.call(
+    what = "rbind",
+    args = base::lapply(
+      X = base::names(data),
+      FUN = function(n) {
     
-    gr <- data[[n]]
-    scores <- seq(0,1,by=0.01)
-    cnt <- sapply(scores, function(sco) sum(gr$score>=sco))
-    scores <- scores[cnt>=10]
+        gr <- data[[n]]
+        scores <- base::seq(0, 1, by = 0.01)
+        cnt <- base::sapply(
+          X = scores,
+          FUN = function(sco){
+              base::sum(gr$score>=sco)
+            }
+          )
+        scores <- scores[cnt>=10]
+        
+        gr.fg.olap <- GenomicRanges::findOverlaps(
+            query = fg.data,
+            subject = gr,
+            minoverlap = 1
+          )
+        gr.bg.olap <- GenomicRanges::findOverlaps(
+            query = bg.data,
+            subject = gr,
+            minoverlap = 1
+          )
     
-    gr.fg.olap <- findOverlaps(fg.data, gr, minoverlap=1)
-    gr.bg.olap <- findOverlaps(bg.data, gr, minoverlap=1)
-    
-    do.call("rbind", lapply(scores, function(sco) {
+        base::do.call(
+          what = "rbind",
+          args = base::lapply(
+            X = scores,
+            FUN = function(sco){
       
-      selection <- which(gr$score>=sco)
-      fg.count <- length(unique(queryHits(gr.fg.olap)[which(subjectHits(gr.fg.olap) %in% selection)]))
-      bg.count <- length(unique(queryHits(gr.bg.olap)[which(subjectHits(gr.bg.olap) %in% selection)]))
-      
-      data.frame(enrichment=(fg.count/length(fg.data))/(bg.count/length(bg.data)),
-                 precision=fg.count/(fg.count+bg.count),
-                 recall=fg.count/length(fg.data),
-                 fg.count=fg.count,
-                 bg.count=bg.count,
-                 score=sco,
-                 sample=n,
-                 assay=assay[n])
-    }))
-    
-  }))
-}
-
-pooled.PRIMEloci.ClinVar.enrichment.recall.data <- enrichment.precision.recall(pooled.PRIMEloci, ClinVar.data, SNP.data, pooled.PRIMEloci.names)
-#PRIMEloci.ClinVar.enrichment.recall.data <- enrichment.precision.recall(PRIMEloci, ClinVar.data, SNP.data, PRIMEloci.names)
-
-pooled.PRIMEloci.eQTL.enrichment.recall.data <- enrichment.precision.recall(pooled.PRIMEloci, eQTL.data, SNP.data, pooled.PRIMEloci.names)
-#PRIMEloci.eQTL.enrichment.recall.data <- enrichment.precision.recall(PRIMEloci, eQTL.data, SNP.data, PRIMEloci.names)
-
-pooled.PRIMEloci.GWAS.enrichment.recall.data <- enrichment.precision.recall(pooled.PRIMEloci, GWAS.data, SNP.data, pooled.PRIMEloci.names)
-#PRIMEloci.GWAS.enrichment.recall.data <- enrichment.precision.recall(PRIMEloci, GWAS.data, SNP.data, PRIMEloci.names)
-
-pooled.PRIMEloci.CRISPR.enrichment.recall.data <- enrichment.precision.recall(pooled.PRIMEloci, CRISPR.pos.data, CRISPR.neg.data, pooled.PRIMEloci.names)
-#PRIMEloci.CRISPR.enrichment.recall.data <- enrichment.precision.recall(PRIMEloci, CRISPR.pos.data, CRISPR.neg.data, PRIMEloci.names)
-
+              selection <- base::which(gr$score>=sco)
+              fg.count <- base::length(
+                base::unique(
+                  S4Vectors::queryHits(gr.fg.olap)[
+                      base::which(S4Vectors::subjectHits(gr.fg.olap) %in% selection)
+                    ]
+                  )
+                )
+              bg.count <- base::length(
+                base::unique(
+                  S4Vectors::queryHits(gr.bg.olap)[
+                      base::which(S4Vectors::subjectHits(gr.bg.olap) %in% selection)
+                    ]
+                  )
+                )
+              
+              base::data.frame(
+                    enrichment = (fg.count/length(fg.data))/(bg.count/length(bg.data)),
+                    precision = fg.count/(fg.count+bg.count),
+                    recall = fg.count/length(fg.data),
+                    fg.count = fg.count,
+                    bg.count = bg.count,
+                    score = sco,
+                    sample = n,
+                    assay = assay[n]
+                )
+              }
+            )
+          )
+        }
+      )
+    )
+  }
 ```
 
-
-Plot results
+## [7.1.] Apply helper function
 ```{r}
+pooled.PRIMEloci.ClinVar.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIMEloci, # PRIMEloci
+    fg.data = ClinVar.data,
+    bg.data = SNP.data,
+    assay =  pooled.PRIMEloci.names # PRIMEloci.names
+  )
 
-ggplot(pooled.PRIMEloci.ClinVar.enrichment.recall.data[pooled.PRIMEloci.CRISPR.enrichment.recall.data$recall>0.01,], aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
-  theme(aspect.ratio=1) +
-  geom_point(data=subset(point.ClinVar.df,loc=="genome")) + xlab(paste0("recall (n=",ClinVar.n,")")) + scale_color_manual(values=col.scheme)
-ggsave("plots/K562_pooled_PRIMEloci_ClinVar_enrichment_vs_recall_and_point_estimates_genome.pdf",width=7,height=5)
+pooled.PRIMEloci.eQTL.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIMEloci, # PRIMEloci
+    fg.data = eQTL.data,
+    bg.data = SNP.data,
+    assay = pooled.PRIMEloci.names # PRIMEloci.names
+  )
 
-ggplot(pooled.PRIMEloci.eQTL.enrichment.recall.data[pooled.PRIMEloci.CRISPR.enrichment.recall.data$recall>0.01,], aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
-  theme(aspect.ratio=1) +
-  geom_point(data=point.eQTL.genome.df) + xlab(paste0("recall (n=",eQTL.n,")")) + scale_color_manual(values=col.scheme)
-ggsave(paste0("plots/K562_pooled_PRIMEloci_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,"_and_point_estimates_genome.pdf"),width=7,height=5)
+pooled.PRIMEloci.GWAS.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIMEloci, # PRIMEloci
+    fg.data = GWAS.data,
+    bg.data = SNP.data,
+    assay = pooled.PRIMEloci.names # PRIMEloci.names
+  )
 
-ggplot(pooled.PRIMEloci.GWAS.enrichment.recall.data[pooled.PRIMEloci.CRISPR.enrichment.recall.data$recall>0.01,], aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
-  theme(aspect.ratio=1) +
-  geom_point(data=point.GWAS.genome.df) + xlab(paste0("recall (n=",GWAS.n,")")) + scale_color_manual(values=col.scheme)
-ggsave(paste0("plots/K562_pooled_PRIMEloci_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,"_and_point_estimates_genome.pdf"),width=7,height=5)
-
-ggplot(pooled.PRIMEloci.CRISPR.enrichment.recall.data[pooled.PRIMEloci.CRISPR.enrichment.recall.data$recall>0.01,], aes(recall, precision, color=assay)) + geom_line(aes(group=sample)) +
-  theme(aspect.ratio=1) +
-  geom_point(data=point.CRISPR.genome.df) + xlab(paste0("recall (n=",CRISPR.n,")")) + scale_color_manual(values=col.scheme)
-ggsave(paste0("plots/K562_pooled_PRIMEloci_CRISPR_precision_vs_recall_and_point_estimates_genome.pdf"),width=7,height=5)
-
+pooled.PRIMEloci.CRISPR.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIMEloci, # PRIMEloci
+    fg.data = CRISPR.pos.data,
+    bg.data = CRISPR.neg.data,
+    assay = pooled.PRIMEloci.names #PRIMEloci.names
+  )
 ```
 
+## [8.] Visualize CLinVar, eQTL & CRISPR results -------------------------
 
+## [8.0.] Plot results
 ```{r}
+ggplot2::ggplot(
+    data = pooled.PRIMEloci.ClinVar.enrichment.recall.data[
+        pooled.PRIMEloci.CRISPR.enrichment.recall.data$recall > 0.01,
+      ],
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  geom_point(
+      data = base::subset(point.ClinVar.df, loc == "genome")
+    ) +
+  xlab(
+      base::paste0("recall (n=",ClinVar.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
 
-#Specifically for distal
-pooled.PRIMEloci.distal <- lapply(pooled.PRIMEloci, function(gr) gr[gr$class == "distal"])
-pooled.PRIMEloci.proximal <- lapply(pooled.PRIMEloci, function(gr) gr[gr$class == "proximal"])
+## [8.1.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIMEloci_ClinVar_enrichment_vs_recall_and_point_estimates_genome.pdf",
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
 
-pooled.PRIMEloci.GWAS.enrichment.recall.data.distal <- enrichment.precision.recall(pooled.PRIMEloci.distal, GWAS.data, SNP.data, pooled.PRIMEloci.names)
+## [8.2.] Print plot
+```{r}
+ggplot2::ggplot(
+    data = pooled.PRIMEloci.eQTL.enrichment.recall.data[
+        pooled.PRIMEloci.CRISPR.enrichment.recall.data$recall > 0.01,
+      ],
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  geom_point(
+      data = point.eQTL.genome.df
+    ) +
+  xlab(
+      base::paste0("recall (n=",eQTL.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
 
-pooled.PRIMEloci.GWAS.enrichment.recall.data.proximal <- enrichment.precision.recall(pooled.PRIMEloci.proximal, GWAS.data, SNP.data, pooled.PRIMEloci.names)
+## [8.3.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIMEloci_eQTL_enrichment_vs_recall_PIP_",
+        eQTL.pip.thres,
+        "_and_point_estimates_genome.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
 
-point.GWAS.genome.distal <- subset(point.GWAS.df, loc=="distal")
+## [8.4.] Plot data
+```{r}
+ggplot2::ggplot(
+    data = pooled.PRIMEloci.GWAS.enrichment.recall.data[
+        pooled.PRIMEloci.CRISPR.enrichment.recall.data$recall > 0.01,
+      ],
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  geom_point(
+      data = point.GWAS.genome.df
+    ) +
+  xlab(
+      base::paste0("recall (n=",GWAS.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
 
-ggplot(pooled.PRIMEloci.GWAS.enrichment.recall.data.distal[pooled.PRIMEloci.GWAS.enrichment.recall.data.distal$recall>0.001,], aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
-  theme(aspect.ratio=1) +
-  geom_point(data=point.GWAS.genome.distal) + xlab(paste0("recall (n=",GWAS.n,")")) + scale_color_manual(values=col.scheme)
-ggsave(paste0("plots/K562_pooled_PRIMEloci_GWAS_enrichment_vs_recall_and_point_estimates_distal.pdf"),width=7,height=5)
+## [8.5.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIMEloci_GWAS_enrichment_vs_recall_PIP_",
+        GWAS.pip.thres,
+        "_and_point_estimates_genome.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
 
+## [8.6.] Plot data
+```{r}
+ggplot2::ggplot(
+    data = pooled.PRIMEloci.CRISPR.enrichment.recall.data[
+        pooled.PRIMEloci.CRISPR.enrichment.recall.data$recall > 0.01,
+      ],
+    mapping = aes(
+        x = recall,
+        y = precision,
+        color = assay
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  geom_point(
+      data = point.CRISPR.genome.df
+    ) +
+  xlab(
+      base::paste0("recall (n=",CRISPR.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [8.7.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIMEloci_CRISPR_precision_vs_recall_and_point_estimates_genome.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [8.8.] Prepare data for running distal-proximal analysis again
+#### Specifically for distal
+```{r}
+pooled.PRIMEloci.distal <- base::lapply(
+  X = pooled.PRIMEloci,
+  FUN = function(gr){
+      gr[gr$class == "distal"]
+    }
+  )
+pooled.PRIMEloci.proximal <- base::lapply(
+  X = pooled.PRIMEloci,
+  FUN = function(gr){
+      gr[gr$class == "proximal"]
+    }
+  )
+```
+
+## [8.9.] Run separate analysis for distal and proximal
+```{r}
+pooled.PRIMEloci.GWAS.enrichment.recall.data.distal <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIMEloci.distal,
+    fg.data = GWAS.data,
+    bg.data = SNP.data,
+    assay = pooled.PRIMEloci.names
+  )
+
+pooled.PRIMEloci.GWAS.enrichment.recall.data.proximal <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIMEloci.proximal,
+    fg.data = GWAS.data,
+    bg.data = SNP.data,
+    assay = pooled.PRIMEloci.names
+  )
+```
+
+## [8.10.] Subset data for plotting
+```{r}
+point.GWAS.genome.distal <- base::subset(point.GWAS.df, loc == "distal")
+```
+
+## [8.11.] Plot data
+```{r}
+ggplot2::ggplot(
+    data = pooled.PRIMEloci.GWAS.enrichment.recall.data.distal[
+        pooled.PRIMEloci.GWAS.enrichment.recall.data.distal$recall > 0.001,
+      ],
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  geom_point(
+      data = point.GWAS.genome.distal
+    ) + 
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    ) +
+  xlab(
+      base::paste0("recall (n=",GWAS.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    )
+```
+
+## [8.12.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIMEloci_GWAS_enrichment_vs_recall_and_point_estimates_distal.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [8.13.] Subset data for plotting
+```{r}
 point.GWAS.genome.proximal <- subset(point.GWAS.df, loc=="proximal")
+```
 
+
+```{r}
 ggplot(pooled.PRIMEloci.GWAS.enrichment.recall.data.proximal[pooled.PRIMEloci.GWAS.enrichment.recall.data.proximal$recall>0.001,], aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
   theme(aspect.ratio=1) +
   geom_point(data=point.GWAS.genome.proximal) + xlab(paste0("recall (n=",GWAS.n,")")) + scale_color_manual(values=col.scheme)
