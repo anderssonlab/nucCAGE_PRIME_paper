@@ -684,120 +684,426 @@ point.CRISPR.df <- .GlobalEnv$point.enrichment.precision.recall(
   )
 ```
 
-Plot ClinVar point estimate results
+## [3.] Visualize ClinVar results -------------------------
+
+## [3.0.] Prepare ClinVar plotting
 ```{r}
-point.ClinVar.genome.df <- subset(point.ClinVar.df, loc=="genome")
-point.ClinVar.non.genome.df <- subset(point.ClinVar.df, loc!="genome")
+point.ClinVar.genome.df <- base::subset(point.ClinVar.df, loc == "genome")
+point.ClinVar.non.genome.df <- base::subset(point.ClinVar.df, loc != "genome")
 
-col.scheme <- setNames(col.scheme, c("DHS","Divergent loci CAGE cells","Divergent loci CAGE nuclei",
-                                     "dREG PRO-seq","dREG qPRO-seq","ENCODE cCRE",
-                                     "PINTS GRO/PRO-cap","PRIMEloci CAGE cells pooled","PRIMEloci CAGE nuclei pooled","K27ac", "K27ac DHS","PRIMEloci CAGE nuclei 10M pooled"))
+col.scheme <- stats::setNames(
+  object = col.scheme,
+  nm = base::c(
+      "DHS","Divergent loci CAGE cells","Divergent loci CAGE nuclei",
+      "dREG PRO-seq","dREG qPRO-seq","ENCODE cCRE",
+      "PINTS GRO/PRO-cap","PRIMEloci CAGE cells pooled","PRIMEloci CAGE nuclei pooled",
+      "K27ac", "K27ac DHS","PRIMEloci CAGE nuclei 10M pooled"
+    )
+  )
+```
 
+## [3.1.] Visualization
+```{r}
+ggplot2::ggplot(
+    data = point.ClinVar.genome.df,
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay,
+        label = sample
+      )
+    ) + 
+  geom_point() +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    ) +
+  ggrepel::geom_text_repel(
+      size = 2,
+      min.segment.length = 0,
+      color = "black"
+    ) + 
+  xlab(
+    base::paste0("recall (n=",ClinVar.n,")")) +
+  scale_color_manual(
+      values = col.scheme
+    )
+```
 
-ggplot(point.ClinVar.genome.df, aes(recall, enrichment, color=assay, label=sample)) + 
-  geom_point() + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
-  xlab(paste0("recall (n=",ClinVar.n,")")) + scale_color_manual(values=col.scheme)
-ggsave(paste0("plots/K562_ClinVar_enrichment_vs_recall_point_estimates.pdf"),width=8,height=7)
+## [3.2.] Printint plots
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_ClinVar_enrichment_vs_recall_point_estimates.pdf"
+      ),
+    width = 8,
+    height = 7,
+    device = "pdf"
+  )
+```
 
-## Supplementary Figure
-ggplot(point.ClinVar.non.genome.df, aes(recall, enrichment, color=assay, label=sample)) + 
-  geom_point(aes(shape=loc)) + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
-  xlab(paste0("recall (n=",ClinVar.n,")"))+ scale_color_manual(values=col.scheme)
-ggsave(paste0("plots/K562_ClinVar_enrichment_vs_recall_point_estimates_proximal_vs_distal.pdf"),width=8,height=7)
+## [3.3.] Supplementary Figure
+```{r}
+ggplot2::ggplot(
+    data = point.ClinVar.non.genome.df,
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay,
+        label = sample
+      )
+    ) + 
+  geom_point(
+    mapping = aes(
+        shape = loc
+      )
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    ) +
+  ggrepel::geom_text_repel(
+      size = 2,
+      min.segment.length = 0,
+      color = "black"
+    ) + 
+  xlab(
+    base::paste0("recall (n=",ClinVar.n,")")) +
+  scale_color_manual(
+      values = col.scheme
+    )
+```
 
-## Figure 1 E bar plots
-point.ClinVar.genome.df$sample <- factor(point.ClinVar.genome.df$sample, levels=point.ClinVar.genome.df$sample[order(point.ClinVar.genome.df$recall, decreasing = TRUE)])
-ggplot(point.ClinVar.genome.df, aes(sample, recall,fill=sample)) + geom_bar(stat="identity") + 
-  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1)) + ylab(paste0("recall (n=",ClinVar.n,")"))+ scale_fill_manual(values=col.scheme)
-ggsave(paste0("plots/K562_ClinVar_recall_point_estimates_bar.pdf"),width=3,height=3)
+## [3.4.] Printint plots
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_ClinVar_enrichment_vs_recall_point_estimates_proximal_vs_distal.pdf"
+      ),
+    width = 8,
+    height = 7,
+    device = "pdf"
+  )
+```
 
-##  Figure 1 E
-point.ClinVar.genome.df$sample <- factor(point.ClinVar.genome.df$sample, levels=point.ClinVar.genome.df$sample[order(point.ClinVar.genome.df$enrichment, decreasing = TRUE)])
-ggplot(point.ClinVar.genome.df, aes(sample, enrichment,fill=sample)) + geom_bar(stat="identity") + 
-  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1)) + scale_fill_manual(values=col.scheme)
-ggsave(paste0("plots/K562_ClinVar_enrichment_point_estimates_bar.pdf"),width=3,height=3)
+## [3.5.] Prepare Figure 1 E bar plots
+```{r}
+point.ClinVar.genome.df$sample <- base::factor(
+  x = point.ClinVar.genome.df$sample,
+  levels = point.ClinVar.genome.df$sample[
+      base::order(point.ClinVar.genome.df$recall, decreasing = FALSE)
+    ]
+  )
+```
 
+## [3.6.] Visualize Figure 1 E bar plots
+```{r}
+ggplot2::ggplot(
+    data = point.ClinVar.genome.df,
+    mapping = aes(
+        x = recall,
+        y = sample,
+        fill = sample
+      )
+    ) +
+  geom_bar(
+      stat = "identity"
+    ) + 
+  theme_bw() +
+  theme(
+    aspect.ratio = 1,
+    # axis.text.x = element_text(
+    #     angle = 45,
+    #     vjust = 1,
+    #     hjust = 1
+    #   )
+    axis.text.y = element_blank()
+    ) +
+  ylab(
+    base::paste0("recall (n=",ClinVar.n,")")) +
+  scale_fill_manual(
+      values = col.scheme
+    )
+```
 
-#BarPlots for point estimates
-scaling_factor <- max(point.ClinVar.genome.df$recall) / max(point.ClinVar.genome.df$enrichment)
+## [3.7.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_ClinVar_recall_point_estimates_bar.pdf"
+      ),
+    width = 4,
+    height = 3,
+    device = "pdf"
+  )
+```
 
-# Create a new column for scaled enrichment
+## [3.8.] Prepare Figure 1 E
+```{r}
+point.ClinVar.genome.df$sample <- base::factor(
+  x = point.ClinVar.genome.df$sample,
+  levels = point.ClinVar.genome.df$sample[
+      order(point.ClinVar.genome.df$enrichment, decreasing = FALSE)
+    ]
+  )
+```
+
+## [3.9.] Plot Figure 1 E
+```{r}
+ggplot2::ggplot(
+    data = point.ClinVar.genome.df,
+    mapping = aes(
+        x = enrichment,
+        y = sample,
+        fill = sample
+      )
+    ) +
+  geom_bar(
+      stat = "identity"
+    ) + 
+  theme_bw() +
+  theme(
+    aspect.ratio = 1,
+    # axis.text.x = element_text(
+    #     angle = 45,
+    #     vjust = 1,
+    #     hjust = 1
+    #   )
+    axis.text.y = element_blank()
+    ) +
+  ylab(
+    base::paste0("recall (n=",ClinVar.n,")")) +
+  scale_fill_manual(
+      values = col.scheme
+    )
+```
+
+## [3.10.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_ClinVar_enrichment_point_estimates_bar.pdf"
+      ),
+    width = 4,
+    height = 3,
+    device = "pdf"
+  )
+```
+
+## [3.11] Prepare bar plots for point estimates
+#### Create a new column for scaled enrichment
+```{r}
+scaling_factor <- base::max(point.ClinVar.genome.df$recall) / base::max(point.ClinVar.genome.df$enrichment)
+
 point.ClinVar.genome.df$enrichment_scaled <- point.ClinVar.genome.df$enrichment * scaling_factor
 
 point.ClinVar.genome.df_long <- point.ClinVar.genome.df %>%
-  pivot_longer(cols = c(recall, enrichment_scaled), names_to = "metric", values_to = "value") %>%
-  mutate(metric = factor(metric, levels = c("recall","enrichment_scaled"))) 
+  tidyr::pivot_longer(
+      cols = base::c("recall", "enrichment_scaled"),
+      names_to = "metric",
+      values_to = "value"
+    ) %>%
+  mutate(
+    metric = base::factor(
+        x = metric,
+        levels = base::c("recall","enrichment_scaled")
+      )
+    )
+```
 
-# Plot using ggplot with adjusted spacing
-ggplot(data = point.ClinVar.genome.df_long) +
+## [3.12.] Plot using ggplot with adjusted spacing
+```{r}
+ggplot2::ggplot(
+      data = point.ClinVar.genome.df_long
+    ) +
   geom_col(
-    aes(
-      x = sample,
-      y = value,
-      fill = sample,
-      group = metric,
-      alpha = metric  
-    ),
-    position = position_dodge(width = 0.6),  
-    color = "black",
-    width = 0.6  
-  ) +
+      mapping = aes(
+          x = sample,
+          y = value,
+          fill = sample,
+          group = metric,
+          alpha = metric  
+        ),
+      position = position_dodge(width = 0.6),  
+      color = "black",
+      width = 0.6  
+    ) +
   # Primary Y-axis for recall and secondary Y-axis for scaled enrichment
   scale_y_continuous(
     name = "Recall",
-    limits = c(0, max(point.ClinVar.genome.df$recall) * 1.1),
-    sec.axis = sec_axis(
-      ~ . / scaling_factor,  
-      name = "Enrichment"
-    )
-  ) +
-  scale_fill_manual(values = col.scheme) +
-  scale_alpha_manual(values = c("recall" = 1, "enrichment_scaled" = 0.5)) +  # Set alpha levels for recall and enrichment
+    limits = base::c(0, base::max(point.ClinVar.genome.df$recall) * 1.1),
+    sec.axis = ggplot2::sec_axis(
+        ~ . / scaling_factor,  
+        name = "Enrichment"
+      )
+    ) +
+  scale_fill_manual(
+      values = col.scheme
+    ) +
+  scale_alpha_manual(
+      values = base::c("recall" = 1, "enrichment_scaled" = 0.5)
+    ) +  # Set alpha levels for recall and enrichment
+  theme_bw() +
   theme(
-    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
-    axis.title.y.left = element_text(color = "black"),
-    axis.title.y.right = element_text(color = "black"),
-    legend.title = element_blank(),
-    legend.position = "bottom"
-  ) +
+      aspect.ratio = 1/2,
+      axis.text.x = element_text(
+          angle = 90,
+          vjust = 0.5,
+          hjust = 1
+        ),
+      axis.title.x = element_blank(),
+      axis.title.y.left = element_text(
+          color = "black"
+        ),
+      axis.title.y.right = element_text(
+          color = "black"
+        ),
+      legend.title = element_blank(),
+      legend.position = "bottom"
+    ) +
   labs(x = "Sample", fill = "Sample") +
   theme(legend.position = "none")
-
-ggsave(paste0("plots/K562_ClinVar_enrichment_recall_point_estimates_bar.pdf"),width=14,height=6)
-
-
 ```
 
-Plot eQTL point estimate results
+## [3.13.] Print plot
 ```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        "plots/","
+        K562_ClinVar_enrichment_recall_point_estimates_bar.pdf"
+      ),
+    width = 5,
+    height = 3,
+    device = "pdf"
+  )
+```
 
+## [4.] Visualize ClinVar results -------------------------
+
+## [4.1.] Plot eQTL point estimate results
+```{r}
 point.eQTL.genome.df <- subset(point.eQTL.df, loc=="genome")
 point.eQTL.non.genome.df <- subset(point.eQTL.df, loc!="genome")
+```
 
-ggplot(point.eQTL.genome.df, aes(recall, enrichment, color=assay, label=sample)) + 
-  geom_point() + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
-  xlab(paste0("recall (n=",eQTL.n,")")) + scale_color_manual(values=col.scheme)
-ggsave(paste0("plots/K562_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,"_point_estimates.pdf"),width=8,height=7)
+## [4.2.] Visualization
+```{r}
+ggplot2::ggplot(
+    data = point.eQTL.genome.df,
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay,
+        label = sample
+      )
+    ) + 
+  geom_point() +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    ) +
+  ggrepel::geom_text_repel(
+      size = 2,
+      min.segment.length = 0,
+      color = "black"
+    ) + 
+  xlab(
+      base::paste0("recall (n=",eQTL.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    )
+```
 
-## Supplementary Figure
-ggplot(point.eQTL.non.genome.df, aes(recall, enrichment, color=assay, label=sample)) + 
-  geom_point(aes(shape=loc)) + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
-  xlab(paste0("recall (n=",eQTL.n,")")) + scale_color_manual(values=col.scheme)
+## [4.3.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        "plots/","
+        K562_eQTL_enrichment_vs_recall_PIP_",
+        eQTL.pip.thres,
+        "_point_estimates.pdf"
+      ),
+    width = 5,
+    height = 3,
+    device = "pdf"
+  )
+```
+
+## [4.4.] Supplementary Figure
+#### <<important>>
+```{r}
+ggplot2::ggplot(
+    data = point.eQTL.non.genome.df,
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay,
+        label = sample
+      )
+    ) + 
+  geom_point(
+    mapping = aes(
+        shape = loc
+      )
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    ) +
+  ggrepel::geom_text_repel(
+      size = 2,
+      min.segment.length = 0,
+      color = "black"
+    ) +
+  xlab(
+      base::paste0("recall (n=",eQTL.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    )
+```
+
+## [4.5.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        "plots/","
+        K562_eQTL_enrichment_vs_recall_PIP_",
+        eQTL.pip.thres,
+        "_point_estimates.pdf"
+      ),
+    width = 5,
+    height = 3,
+    device = "pdf"
+  )
 ggsave(paste0("plots/K562_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,"_point_estimates_proximal_vs_distal.pdf"),width=8,height=7)
+```
 
+
+```{r}
 #  Figure 1 F
 point.eQTL.genome.df$sample <- factor(point.eQTL.genome.df$sample, levels=point.eQTL.genome.df$sample[order(point.eQTL.genome.df$recall, decreasing = TRUE)])
 ggplot(point.eQTL.genome.df, aes(sample, recall,fill=sample)) + geom_bar(stat="identity") + 
   theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1)) + ylab(paste0("recall (n=",eQTL.n,")")) + scale_fill_manual(values=col.scheme)
 ggsave(paste0("plots/K562_eQTL_recall_PIP_",eQTL.pip.thres,"_point_estimates_bar.pdf"),width=3,height=3)
+```
 
+
+```{r}
 #  Figure 1 F
 point.eQTL.genome.df$sample <- factor(point.eQTL.genome.df$sample, levels=point.eQTL.genome.df$sample[order(point.eQTL.genome.df$enrichment, decreasing = TRUE)])
 ggplot(point.eQTL.genome.df, aes(sample, enrichment,fill=sample)) + geom_bar(stat="identity") + 
   theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1))+ scale_fill_manual(values=col.scheme)
 ggsave(paste0("plots/K562_eQTL_enrichment_PIP_",eQTL.pip.thres,"_point_estimates_bar.pdf"),width=3,height=3)
+```
 
 
+```{r}
 #BarPlots for point estimates
 scaling_factor <- max(point.eQTL.genome.df$recall) / max(point.eQTL.genome.df$enrichment)
 
@@ -806,8 +1112,11 @@ point.eQTL.genome.df$enrichment_scaled <- point.eQTL.genome.df$enrichment * scal
 
 point.eQTL.genome.df_long <- point.eQTL.genome.df %>%
   pivot_longer(cols = c(recall, enrichment_scaled), names_to = "metric", values_to = "value") %>%
-  mutate(metric = factor(metric, levels = c("recall","enrichment_scaled"))) 
+  mutate(metric = factor(metric, levels = c("recall","enrichment_scaled")))
+```
 
+
+```{r}
 # Plot using ggplot with adjusted spacing
 ggplot(data = point.eQTL.genome.df_long) +
   geom_col(
