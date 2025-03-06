@@ -1279,109 +1279,489 @@ ggplot2::ggsave(
   )
 ```
 
-Plot GWAS point estimate results
+## [5.] Visualize GWAS results -------------------------
+
+## [5.0.] Plot GWAS point estimate results
 ```{r}
-
-point.GWAS.genome.df <- subset(point.GWAS.df, loc=="genome")
-point.GWAS.non.genome.df <- subset(point.GWAS.df, loc!="genome")
-
-ggplot(point.GWAS.genome.df, aes(recall, enrichment, color=assay, label=sample)) + 
-  geom_point() + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
-  xlab(paste0("recall (n=",GWAS.n,")")) + scale_color_manual(values=col.scheme)
-ggsave(paste0("plots/K562_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,"_point_estimates.pdf"),width=8,height=7)
-
-ggplot(point.GWAS.non.genome.df, aes(recall, enrichment, color=assay, label=sample)) + 
-  geom_point(aes(shape=loc)) + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
-  xlab(paste0("recall (n=",GWAS.n,")")) + scale_color_manual(values=col.scheme)
-ggsave(paste0("plots/K562_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,"_point_estimates_proximal_vs_distal.pdf"),width=8,height=7)
-
-point.GWAS.genome.df$sample <- factor(point.GWAS.genome.df$sample, levels=point.GWAS.genome.df$sample[order(point.GWAS.genome.df$recall, decreasing = TRUE)])
-ggplot(point.GWAS.genome.df, aes(sample, recall,fill=sample)) + geom_bar(stat="identity") + 
-  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1)) + ylab(paste0("recall (n=",GWAS.n,")")) + scale_fill_manual(values=col.scheme)
-ggsave(paste0("plots/K562_GWAS_recall_PIP_",GWAS.pip.thres,"_point_estimates_bar.pdf"),width=3,height=3)
-
-point.GWAS.genome.df$sample <- factor(point.GWAS.genome.df$sample, levels=point.GWAS.genome.df$sample[order(point.GWAS.genome.df$enrichment, decreasing = TRUE)])
-ggplot(point.GWAS.genome.df, aes(sample, enrichment, fill=sample)) + geom_bar(stat="identity") + 
-  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1))+ scale_fill_manual(values=col.scheme)
-ggsave(paste0("plots/K562_GWAS_enrichment_PIP_",GWAS.pip.thres,"_point_estimates_bar.pdf"),width=3,height=3)
-
+point.GWAS.genome.df <- base::subset(point.GWAS.df, loc == "genome")
+point.GWAS.non.genome.df <- base::subset(point.GWAS.df, loc != "genome")
 ```
 
-Plot CRISPR point estimate results
+## [5.1.] Plot data
 ```{r}
+ggplot2::ggplot(
+    data = point.GWAS.genome.df,
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay,
+        label = sample
+      )
+    ) + 
+  geom_point() +
+  ggrepel::geom_text_repel(
+      size = 2,
+      min.segment.length = 0,
+      color = "black"
+    ) + 
+  xlab(
+      base::paste0("recall (n=",GWAS.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
 
-point.CRISPR.genome.df <- subset(point.CRISPR.df, loc=="genome")
-point.CRISPR.non.genome.df <- subset(point.CRISPR.df, loc!="genome")
+## [5.2.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+      here::here("10.External_validation/plots/"),
+        "K562_GWAS_enrichment_vs_recall_PIP_",
+        GWAS.pip.thres,
+        "_point_estimates.pdf"
+      ),
+    width = 6,
+    height = 5,
+    device = "pdf"
+  )
+```
 
-ggplot(point.CRISPR.genome.df, aes(recall, precision, color=assay, label=sample)) + 
-  geom_point() + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
-  xlab(paste0("recall (n=",CRISPR.n,")")) + scale_color_manual(values=col.scheme)
-ggsave(paste0("plots/K562_CRISPR_precision_vs_recall_point_estimates.pdf"),width=8,height=7)
+## [5.3.] Print plot
+```{r}
+ggplot2::ggplot(
+    data = point.GWAS.non.genome.df,
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay,
+        label = sample
+      )
+    ) + 
+  geom_point(
+    mapping = aes(
+        shape = loc
+      )
+    ) +
+  ggrepel::geom_text_repel(
+      size = 2,
+      min.segment.length = 0,
+      color = "black"
+    ) + 
+  xlab(
+      base::paste0("recall (n=",GWAS.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
 
-ggplot(point.CRISPR.non.genome.df, aes(recall, precision, color=assay, label=sample)) + 
-  geom_point() + theme(aspect.ratio=1) + geom_text_repel(size=2,min.segment.length = 0,color="black") + 
-  xlab(paste0("recall (n=",CRISPR.n,")")) + scale_color_manual(values=col.scheme) + facet_wrap(~loc, scales="free")
-ggsave(paste0("plots/K562_CRISPR_precision_vs_recall_point_estimates_proximal_vs_distal.pdf"),width=8,height=7)
+## [5.4.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_GWAS_enrichment_vs_recall_PIP_",
+        GWAS.pip.thres,
+        "_point_estimates_proximal_vs_distal.pdf"
+      ),
+    width = 6,
+    height = 5,
+    device = "pdf"
+  )
+```
 
-point.CRISPR.genome.df$sample <- factor(point.CRISPR.genome.df$sample, levels=point.CRISPR.genome.df$sample[order(point.CRISPR.genome.df$recall, decreasing = TRUE)])
-ggplot(point.CRISPR.genome.df, aes(sample, recall,fill=sample)) + geom_bar(stat="identity") + 
-  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1)) + ylab(paste0("recall (n=",CRISPR.n,")")) + scale_fill_manual(values=col.scheme)
-ggsave(paste0("plots/K562_CRISPR_recall_point_estimates_bar.pdf"),width=3,height=3)
+## [5.5.] Prepare data for plotting
+```{r}
+point.GWAS.genome.df$sample <- base::factor(
+  x = point.GWAS.genome.df$sample,
+  levels = point.GWAS.genome.df$sample[
+      base::order(point.GWAS.genome.df$recall, decreasing = FALSE)
+    ]
+  )
+```
 
-point.CRISPR.genome.df$sample <- factor(point.CRISPR.genome.df$sample, levels=point.CRISPR.genome.df$sample[order(point.CRISPR.genome.df$precision, decreasing = TRUE)])
-ggplot(point.CRISPR.genome.df, aes(sample, precision,fill=sample)) + geom_bar(stat="identity") + 
-  theme(axis.text.x = element_text(angle=45,vjust=1,hjust=1)) + scale_fill_manual(values=col.scheme)
-ggsave(paste0("plots/K562_CRISPR_precision_point_estimates_bar.pdf"),width=3,height=3)
+## [5.6.] Plot data
+```{r}
+ggplot2::ggplot(
+    data = point.GWAS.genome.df,
+    mapping = aes(
+        x = recall,
+        y = sample,
+        fill = sample
+      )
+    ) +
+  geom_bar(
+      stat = "identity"
+    ) + 
+  theme_bw() +
+  theme(
+      # axis.text.x = element_text(
+      #     angle = 90,
+      #     vjust = 1,
+      #     hjust = 1
+      #   )
+      axis.text.y = element_blank()
+    ) +
+  ylab(
+      base::paste0("recall (n=",GWAS.n,")")
+    ) +
+  scale_fill_manual(
+      values = col.scheme
+    )
+```
 
+## [5.7.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_GWAS_recall_PIP_",
+        GWAS.pip.thres,
+        "_point_estimates_bar.pdf"
+      ),
+    width = 4,
+    height = 3,
+    device = "pdf"
+  )
+```
 
+## [5.8.] Prepare plotting
+```{r}
+point.GWAS.genome.df$sample <- base::factor(
+  x = point.GWAS.genome.df$sample,
+  levels = point.GWAS.genome.df$sample[
+      base::order(point.GWAS.genome.df$enrichment, decreasing = FALSE)
+    ]
+  )
+```
 
+## [5.9.] Plot data
+```{r}
+ggplot2::ggplot(
+    data = point.GWAS.genome.df,
+    mapping = aes(
+        x = enrichment,
+        y = sample,
+        fill = sample
+      )
+    ) +
+  geom_bar(
+      stat = "identity"
+    ) + 
+  theme_bw() +
+  theme(
+      # axis.text.x = element_text(
+      #     angle = 90,
+      #     vjust = 1,
+      #     hjust = 1
+      #   )
+      axis.text.y = element_blank()
+    ) +
+  scale_fill_manual(
+      values = col.scheme
+    )
+```
 
+## [5.10.] Plot data
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_GWAS_enrichment_PIP_",
+        GWAS.pip.thres,
+        "_point_estimates_bar.pdf"
+      ),
+    width = 5,
+    height = 4,
+    device = "pdf"
+  )
+```
 
-#BarPlots for point estimates
-scaling_factor <- max(point.CRISPR.genome.df$recall) / max(point.CRISPR.genome.df$precision)
+## [6.] Visualize CRISPR results -------------------------
 
-# Create a new column for scaled precision
+## [6.0.] Prepare data for plotting
+```{r}
+point.CRISPR.genome.df <- base::subset(point.CRISPR.df, loc == "genome")
+point.CRISPR.non.genome.df <- base::subset(point.CRISPR.df, loc != "genome")
+```
+
+## [6.1.] Plot CRISPR point estimate results
+```{r}
+ggplot2::ggplot(
+    data = point.CRISPR.genome.df,
+    mapping = aes(
+        x = recall,
+        y = precision,
+        color = assay,
+        label = sample
+      )
+    ) + 
+  geom_point() +
+  ggrepel::geom_text_repel(
+      size = 2,
+      min.segment.length = 0,
+      color = "black"
+    ) + 
+  xlab(
+      base::paste0("recall (n=",CRISPR.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  theme_bw() + 
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [6.2.] Print plot
+```{r}
+ggplot2::ggsave(
+    base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_CRISPR_precision_vs_recall_point_estimates.pdf"
+      ),
+    width = 8,
+    height = 7,
+    device = "pdf"
+  )
+```
+
+## [6.3.] Plot data
+```{r}
+ggplot2::ggplot(
+    data = point.CRISPR.non.genome.df,
+    mapping = aes(
+        x = recall,
+        y = precision,
+        color = assay,
+        label = sample
+      )
+    ) + 
+  geom_point() +
+  ggrepel::geom_text_repel(
+      size = 2,
+      min.segment.length = 0,
+      color = "black"
+    ) +
+  facet_wrap(
+      facets = ~loc,
+      scales = "free"
+    ) +
+  xlab(
+      base::paste0("recall (n=",CRISPR.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) + 
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [6.4.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_CRISPR_precision_vs_recall_point_estimates_proximal_vs_distal.pdf"
+      ),
+    width = 6,
+    height = 3,
+    device = "pdf"
+  )
+```
+
+## [6.5.] Prepare plotting
+```{r}
+point.CRISPR.genome.df$sample <- base::factor(
+  x = point.CRISPR.genome.df$sample,
+  levels = point.CRISPR.genome.df$sample[
+      base::order(point.CRISPR.genome.df$recall, decreasing = TRUE)
+    ]
+  )
+```
+
+## [6.6.] Plot data
+```{r}
+ggplot2::ggplot(
+    data = point.CRISPR.genome.df,
+    mapping = aes(
+        x = sample,
+        y = recall,
+        fill = sample
+      )
+    ) +
+  geom_bar(
+      stat = "identity"
+    ) + 
+  ylab(
+      base::paste0("recall (n=",CRISPR.n,")")
+    ) +
+  scale_fill_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(
+      angle = 45,
+      vjust = 1,
+      hjust = 1
+      )
+    )
+```
+
+## [6.7.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_CRISPR_recall_point_estimates_bar.pdf"
+      ),
+    width = 3,
+    height = 3,
+    device = "pdf"
+  )
+```
+
+## [6.8.] Prepare plotting
+```{r}
+point.CRISPR.genome.df$sample <- base::factor(
+  x = point.CRISPR.genome.df$sample,
+  levels = point.CRISPR.genome.df$sample[
+      base::order(point.CRISPR.genome.df$precision, decreasing = TRUE)
+    ]
+  )
+```
+
+## [6.9.] Plot data
+```{r}
+ggplot2::ggplot(
+  data = point.CRISPR.genome.df,
+  mapping = aes(
+      x = sample,
+      y = precision,
+      fill = sample
+    )
+  ) +
+  geom_bar(
+      stat = "identity"
+    ) +
+  scale_fill_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(
+        angle = 45,
+        vjust = 1,
+        hjust = 1
+      )
+    )
+```
+
+## [6.10.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_CRISPR_precision_point_estimates_bar.pdf"
+      ),
+    width = 5,
+    height = 3,
+    device = "pdf"
+  )
+```
+
+## [6.11.] Prepare bar plots for point estimates
+#### Create a new column for scaled precision
+```{r}
+scaling_factor <- base::max(point.CRISPR.genome.df$recall) / base::max(point.CRISPR.genome.df$precision)
+
 point.CRISPR.genome.df$precision_scaled <- point.CRISPR.genome.df$precision * scaling_factor
 
 point.CRISPR.genome.df_long <- point.CRISPR.genome.df %>%
-  pivot_longer(cols = c(recall, precision_scaled), names_to = "metric", values_to = "value") %>%
-  mutate(metric = factor(metric, levels = c("recall","precision_scaled"))) 
+  tidyr::pivot_longer(
+      cols = base::c("recall", "precision_scaled"),
+      names_to = "metric",
+      values_to = "value"
+    ) %>%
+  dplyr::mutate(
+    metric = base::factor(
+        x = metric,
+        levels = base::c("recall","precision_scaled")
+      )
+    )
+```
 
-# Plot using ggplot with adjusted spacing
-ggplot(data = point.CRISPR.genome.df_long) +
+## [6.12.] Plot data
+```{r}
+ggplot2::ggplot(
+      data = point.CRISPR.genome.df_long
+    ) +
   geom_col(
-    aes(
-      x = sample,
-      y = value,
-      fill = sample,
-      group = metric,
-      alpha = metric  
-    ),
-    position = position_dodge(width = 0.6),  
-    color = "black",
-    width = 0.6  
-  ) +
+      maaping = aes(
+          x = sample,
+          y = value,
+          fill = sample,
+          group = metric,
+          alpha = metric  
+        ),
+      position = position_dodge(width = 0.6),  
+      color = "black",
+      width = 0.6  
+    ) +
   # Primary Y-axis for recall and secondary Y-axis for scaled precision
   scale_y_continuous(
-    name = "Recall",
-    limits = c(0, max(point.CRISPR.genome.df$recall) * 1.1),
-    sec.axis = sec_axis(
-      ~ . / scaling_factor,  
-      name = "Precision"
-    )
-  ) +
-  scale_fill_manual(values = col.scheme) +
-  scale_alpha_manual(values = c("recall" = 1, "precision_scaled" = 0.5)) +  # Set alpha levels for recall and precision
+      name = "Recall",
+      limits = base::c(0, base::max(point.CRISPR.genome.df$recall) * 1.1),
+      sec.axis = ggplot2::sec_axis(
+        transform = ~ . / scaling_factor,  
+        name = "Precision"
+      )
+    ) +
+  scale_fill_manual(
+      values = col.scheme
+    ) +
+  # Set alpha levels for recall and precision
+  scale_alpha_manual(
+      values = base::c("recall" = 1, "precision_scaled" = 0.5)
+    ) + 
   theme(
-    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
-    axis.title.y.left = element_text(color = "black"),
-    axis.title.y.right = element_text(color = "black"),
-    legend.title = element_blank(),
-    legend.position = "bottom"
-  ) +
-  labs(x = "Sample", fill = "Sample") +
-  theme(legend.position = "none")
+      axis.text.x = element_text(
+          angle = 45,
+          vjust = 1,
+          hjust = 1
+        ),
+      axis.title.y.left = element_text(
+          color = "black"
+        ),
+      axis.title.y.right = element_text(
+          color = "black"
+        ),
+      legend.title = element_blank(),
+      legend.position = "bottom"
+    ) +
+  labs(
+      x = "Sample", fill = "Sample"
+    ) +
+  theme(
+      legend.position = "none"
+    )
+```
 
+
+```{r}
 ggsave(paste0("plots/K562_CRISPR_precision_recall_point_estimates_bar.pdf"),width=7,height=5)
 
 
