@@ -26,108 +26,198 @@ col.scheme <- base::c(
 ## [0.2.] Parameters
 ```{r}
 
-PRIMEloci.thres <- 0.75
-
-pooled.PRIMEloci.files <- c("A549_C" = "../8.Genomewide_prediction/A549_sld_on_PRIMEloci1.0_C.bed",
-                            "A549_N" = "../8.Genomewide_prediction/A549_sld_on_PRIMEloci1.0_N.bed",
-                            "GM12878_C" = "../8.Genomewide_prediction/GM12878_sld_on_PRIMEloci1.0_C_1M.bed",
-                            "GM12878_N" = "../8.Genomewide_prediction/GM12878_sld_on_PRIMEloci1.0_N_1M.bed",
-                            "HCT116_C" = "../8.Genomewide_prediction/HCT116_sld_on_PRIMEloci1.0_C.bed",
-                            "HepG2_C" = "../8.Genomewide_prediction/HepG2_sld_on_PRIMEloci1.0_C.bed",
-                            "HepG2_N" = "../8.Genomewide_prediction/HepG2_sld_on_PRIMEloci1.0_N.bed",
-                            "K562_C" = "../8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_C.bed",
-                            "K562_N" = "../8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N.bed")
-  
-resize.width <- 200
-
-SNP.file <- "../0.External_resources/all.bg.SNPs.hg38.baseline.v1.1.bed.sorted"
-GWAS.file <- "../0.External_resources/UKBB_94traits_release1_pip01_clean_uniq_hg38.bed"
-
-GWAS.pip.thres <- 0.2
-
 ```
 
+## [1.] Read in & prepare data -------------------------
 
-Read in data
-
+## [1.0.] Read in CDSs from txdb
 ```{r}
-
-## Annotated CDS
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-cds <- unlist(cdsBy(txdb,"gene"))
-
-## Background SNPs (9,913,974 unique autosomal SNP locations)
-SNP.data <- import.bed(SNP.file)
-SNP.data <- sort(SNP.data)
-olap <- findOverlaps(SNP.data,cds,minoverlap=1)
-SNP.data$name <- NULL
-SNP.data <- unique(SNP.data[-queryHits(olap)])
-
-## PRIMEloci, pooled replicates
-pooled.PRIMEloci <- lapply(names(pooled.PRIMEloci.files), function(n) {
-  gr <- read_tsv(pooled.PRIMEloci.files[n],show_col_types = FALSE)
-  keep <- which(gr$score>=PRIMEloci.thres)
-  gr <- gr[keep,]
-  gr <- makeGRangesFromDataFrame(gr[,1:3])
-  seqlevels(gr,pruning.mode="coarse") <- seqlevels(SNP.data)
-  gr <- resize(gr, width=resize.width, fix="center")
-  reduce(gr)
-})
-names(pooled.PRIMEloci) <- names(pooled.PRIMEloci.files)
-
-unfiltered.PRIMEloci <- lapply(names(pooled.PRIMEloci.files), function(n) {
-  gr <- read_tsv(pooled.PRIMEloci.files[n],show_col_types = FALSE)
-  score <- gr$score
-  gr <- makeGRangesFromDataFrame(gr[,1:3])
-  gr$score <- score
-  seqlevels(gr,pruning.mode="coarse") <- seqlevels(SNP.data)
-  #gr <- resize(gr, width=resize.width, fix="center")
-  gr
-})
-names(unfiltered.PRIMEloci) <- names(pooled.PRIMEloci.files)
-
-## GWAS data
-GWAS.data <- read_tsv(GWAS.file,col_names=FALSE,show_col_types=FALSE)
-colnames(GWAS.data) <- c("chr","start","end","name","score","strand","RS_id","trait","pip")
-GWAS.data <- makeGRangesFromDataFrame(GWAS.data,keep.extra.columns = TRUE, starts.in.df.are.0based=TRUE)
-GWAS.data <- subset(GWAS.data, pip >= GWAS.pip.thres)
-seqlevels(GWAS.data,pruning.mode="coarse") <- seqlevels(SNP.data)
-olap <- findOverlaps(GWAS.data,cds,minoverlap=1)
-GWAS.data <- GWAS.data[-queryHits(olap)]
-traits <- unique(GWAS.data$trait)
-
+cds <- base::unlist(GenomicFeatures::cdsBy(txdb,"gene"))
+cds <- BiocGenerics::sort(cds)
 ```
 
-GWAS PRIMEloci overlap matrix
+## [1.1.] Overlap CDSs with background SNPs (9,913,974 unique autosomal SNP locations)
+#### Remove SNPs overlapping with CDSs
+```{r}
+SNP.data <- rtracklayer::import.bed( # 9.991.229
+   con = base::paste0(
+       here::here("0.External_resources/"),
+       "all.bg.SNPs.hg38.baseline.v1.1.bed.sorted"
+     ) ## SNP.file
+  )
+SNP.data <- BiocGenerics::sort(SNP.data)
+olap <- GenomicRanges::findOverlaps( ## 93.742
+    query = SNP.data,
+    subject = cds,
+    minoverlap = 1L
+  )
+SNP.data$name <- NULL
+SNP.data <- base::unique( # 9.914.129
+    SNP.data[-S4Vectors::queryHits(olap)]
+  )
+# GenomeInfoDb::seqlevels(txdb, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+```
+
+## [1.2.] Subset PRIMEloci from pooled replicates by threshold
+#### evaluate with  n = "K562_C" # 4,049,568
+```{r}
+PRIMEloci.thres = 0.75
+resize.width = 200
+pooled.PRIMEloci.files <- base::c(
+    "A549_C" = here::here("8.Genomewide_prediction/A549_sld_on_PRIMEloci1.0_C.bed"),
+    "A549_N" = here::here("8.Genomewide_prediction/A549_sld_on_PRIMEloci1.0_N.bed"),
+    "GM12878_C" = here::here("8.Genomewide_prediction/GM12878_sld_on_PRIMEloci1.0_C_1M.bed"),
+    "GM12878_N" = here::here("8.Genomewide_prediction/GM12878_sld_on_PRIMEloci1.0_N_1M.bed"),
+    "HCT116_C" = here::here("8.Genomewide_prediction/HCT116_sld_on_PRIMEloci1.0_C.bed"),
+    "HepG2_C" = here::here("8.Genomewide_prediction/HepG2_sld_on_PRIMEloci1.0_C.bed"),
+    "HepG2_N" = here::here("8.Genomewide_prediction/HepG2_sld_on_PRIMEloci1.0_N.bed"),
+    "K562_C" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_C.bed"),
+    "K562_N" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N.bed")
+  )
+
+pooled.PRIMEloci <- base::lapply(
+  X = base::names(pooled.PRIMEloci.files),
+  FUN = function(n) {
+      gr <- readr::read_tsv( # # 4.049.578
+          file = pooled.PRIMEloci.files[n],
+          show_col_types = FALSE
+        )
+      
+      gr <- gr[base::which(gr$score >= PRIMEloci.thres),] # 245.709
+      gr <- GenomicRanges::makeGRangesFromDataFrame(gr[,1:3])
+      
+      GenomeInfoDb::seqlevels(gr, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data) # 237.454
+      
+      gr <- IRanges::resize(
+          x = gr,
+          width = resize.width,
+          fix = "center"
+        )
+      
+      return(IRanges::reduce(x = gr))
+    }
+  )
+base::names(pooled.PRIMEloci) <- base::names(pooled.PRIMEloci.files)
+```
+
+## [1.3.] Prepare non-subset PRIMEloci set
+```{r}
+unfiltered.PRIMEloci <- base::lapply(
+    X = base::names(pooled.PRIMEloci.files),
+    FUN = function(n) {
+      gr <- readr::read_tsv( # # 4.049.578
+          file = pooled.PRIMEloci.files[n],
+          show_col_types = FALSE
+        )
+      score <- gr$score
+      gr <- GenomicRanges::makeGRangesFromDataFrame(gr[,1:3])
+      gr$score <- score
+      
+      GenomeInfoDb::seqlevels(gr, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data) # 237.454
+      #gr <- resize(gr, width=resize.width, fix="center")
+      return(gr)
+    }
+  )
+base::names(pooled.PRIMEloci) <- base::names(pooled.PRIMEloci.files)
+```
+
+## [1.4.] Read in, prepare and subset GWAS data to contain only intergenic GWAS
+#### Read out traits associated with these intergenic GWAS
+```{r}
+GWAS.pip.thres = 0.2
+GWAS.data <- readr::read_tsv( # 66.638
+    file = base::paste0(
+        here::here("0.External_resources/"),
+        "UKBB_94traits_release1_pip01_clean_uniq_hg38.bed"
+      ),
+    col_names = FALSE,
+    show_col_types = FALSE
+  )
+base::colnames(GWAS.data) <- base::c(
+    "chr","start","end",
+    "name","score","strand",
+    "RS_id","trait","pip"
+  )
+GWAS.data <- GenomicRanges::makeGRangesFromDataFrame( # 66.638
+    df = GWAS.data,
+    keep.extra.columns = TRUE,
+    starts.in.df.are.0based = TRUE
+  )
+GWAS.data <- base::subset( # 30.743
+    GWAS.data, pip >= GWAS.pip.thres
+  )
+GenomeInfoDb::seqlevels(GWAS.data, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+
+olap <- GenomicRanges::findOverlaps(
+    query = GWAS.data,
+    subject = cds,
+    minoverlap = 1
+  )
+GWAS.data <- GWAS.data[-S4Vectors::queryHits(olap)] ## 28.182
+traits <- base::unique(GWAS.data$trait) # 94
+```
+
+## [1.5.] Overlap PRIMElocis with GWAS in a trait-specific manner & aggregate overlaps into a matrix
+#### evaluate with t = "MCV", n = "K562_C", x = trait.loci.olap[[1]]
+##  'trait.loci.olap' includes all GWAS hits for a particular trait that overlaps with any of the PRIMElocis from any PRIMEloci dataset
+## 'trait.olap.count' summarises the overall overlaps of traits across all PRIMEloci datasets
+```{r}
+trait.loci.olap <- base::sapply(
+    X = traits,
+    FUN = function(t) {
+      ids <- base::which(GWAS.data$trait == t)
+      
+      base::unique(
+        base::unlist(
+          base::lapply(
+            X = base::names(pooled.PRIMEloci),
+            FUN = function(n) {
+              pd <- pooled.PRIMEloci[[n]] # 32.407
+              GWAS.olap <- GenomicRanges::findOverlaps(
+                  query = GWAS.data[ids,],
+                  subject = pd,
+                  minoverlap = 1
+                )
+              return(ids[S4Vectors::queryHits(GWAS.olap)])
+            }
+          )
+        )
+      )
+    }
+  )
+
+trait.olap.count <- base::sapply(
+  X = trait.loci.olap,
+  FUN = function(x){
+    base::length(
+        base::unique(GWAS.data[x,])
+      )
+    }
+  )
+filtered.traits <- base::names(
+    base::which(trait.olap.count >= 10)
+  )
+```
+
 
 ```{r}
-
-trait.loci.olap <- sapply(traits, function(t) {
-  ids <- which(GWAS.data$trait==t)
-  unique(unlist(lapply(names(pooled.PRIMEloci), function(n) {
-    pd <- pooled.PRIMEloci[[n]]
-    GWAS.olap <- findOverlaps(GWAS.data[ids,], pd, minoverlap=1)
-    ids[queryHits(GWAS.olap)]
-})))
-})
-
-trait.olap.count <- sapply(trait.loci.olap, function(x) length(unique(GWAS.data[x,])))
-filtered.traits <- names(which(trait.olap.count >= 10))
-
-trait.matrices <- lapply(filtered.traits, function(t) {
+trait.matrices <- base::lapply(
+  X = filtered.traits,
+  FUN = function(t) {
   
-  #g <- unique(GWAS.data[trait.loci.olap[[t]],])
-  g <- GWAS.data[trait.loci.olap[[t]],]
-  name <- paste0(seqnames(g),":",start(g)+1,":",end(g),":",g$RS_id)
-  m <- matrix(0,ncol=length(pooled.PRIMEloci),nrow=length(g),dimnames=list(name, names(pooled.PRIMEloci)))
-  
-  for (n in names(pooled.PRIMEloci)) {
-    pd <- unfiltered.PRIMEloci[[n]]
-    GWAS.olap <- findOverlaps(g, pd, minoverlap=1)
-    m[unique(queryHits(GWAS.olap)),n] <- as.numeric(by(pd$score[subjectHits(GWAS.olap)], queryHits(GWAS.olap), max))
-  }
-  m
-})
+    #g <- unique(GWAS.data[trait.loci.olap[[t]],])
+    g <- GWAS.data[trait.loci.olap[[t]],]
+    name <- paste0(seqnames(g),":",start(g)+1,":",end(g),":",g$RS_id)
+    m <- matrix(0,ncol=length(pooled.PRIMEloci),nrow=length(g),dimnames=list(name, names(pooled.PRIMEloci)))
+    
+    for (n in names(pooled.PRIMEloci)) {
+      pd <- unfiltered.PRIMEloci[[n]]
+      GWAS.olap <- findOverlaps(g, pd, minoverlap=1)
+      m[unique(queryHits(GWAS.olap)),n] <- as.numeric(by(pd$score[subjectHits(GWAS.olap)], queryHits(GWAS.olap), max))
+    }
+    m
+  })
 names(trait.matrices) <- filtered.traits
 
 ```
