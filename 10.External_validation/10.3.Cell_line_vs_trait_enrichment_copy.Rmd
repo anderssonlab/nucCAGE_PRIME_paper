@@ -243,84 +243,191 @@ trait.matrices <- base::lapply(
 base::names(trait.matrices) <- filtered.traits
 ```
 
-## Calculate GWAS enrichment and recall
-
+## [1.7.] Calculate GWAS enrichment and recall for every trait separately
 ```{r}
-
-point.GWAS.df <- do.call("rbind", lapply(names(pooled.PRIMEloci), function(n) {
-  pd <- pooled.PRIMEloci[[n]]
-  bg.olap <- findOverlaps(SNP.data, pd, minoverlap=1)
-  bg.count <- length(unique(queryHits(bg.olap)))
-  GWAS.olap <- findOverlaps(GWAS.data, pd, minoverlap=1)
-  
-  do.call("rbind", lapply(filtered.traits, function(t) {
-    
-    fg <- which(GWAS.data$trait==t)
-    fg.olap <- GWAS.olap[queryHits(GWAS.olap) %in% fg,]
-    fg.count <- length(unique(queryHits(fg.olap)))
-    
-    data.frame(enrichment=(fg.count/length(fg)) / (bg.count/length(SNP.data)),
-               recall=fg.count/length(fg),
-               fg.count=fg.count,
-               bg.count=bg.count,
-               fg.n=length(fg),
-               bg.n=length(SNP.data),
-               sample=n,
-               trait=t)
-    }))
-}))
-
-point.GWAS.df
-
-
+point.GWAS.df <- base::do.call(
+          what = "rbind",
+          args = base::lapply(
+            X = base::names(pooled.PRIMEloci),
+            FUN = function(n) {
+              pd <- pooled.PRIMEloci[[n]]
+              bg.olap <- IRanges::findOverlaps(
+                  query = SNP.data,
+                  subject = pd,
+                  minoverlap = 1
+                )
+              bg.count <- base::length(
+                base::unique(
+                    S4Vectors::queryHits(bg.olap)
+                  )
+                )
+              GWAS.olap <- IRanges::findOverlaps(
+                  query = GWAS.data,
+                  subject = pd,
+                  minoverlap = 1
+                )
+          return(
+            base::do.call(
+              what = "rbind",
+              args = base::lapply(
+                X = filtered.traits,
+                FUN = function(t){
+            
+                  fg <- base::which(GWAS.data$trait == t)
+                  fg.olap <- GWAS.olap[S4Vectors::queryHits(GWAS.olap) %in% fg,]
+                  fg.count <- base::length(
+                    base::unique(
+                        S4Vectors::queryHits(fg.olap)
+                      )
+                    )
+            
+              base::data.frame(
+                  enrichment = (fg.count/base::length(fg)) / (bg.count/base::length(SNP.data)),
+                  recall = fg.count/length(fg),
+                  fg.count = fg.count,
+                  bg.count = bg.count,
+                  fg.n = base::length(fg),
+                  bg.n = base::length(SNP.data),
+                  sample = n,
+                  trait = t
+                )
+              }
+            )
+          )
+        )
+      }
+    )
+  )
 ```
 
+# [2.] Visualize GWAS results -------------------------
 
-Plot GWAS results
-
+## [2.0.] Prepare plotting of trait enrichment*recall across all samples
 ```{r}
 point.GWAS.df <- point.GWAS.df %>%
-  group_by(trait) %>%
-  mutate(scaled_enrichment = rescale(enrichment)) %>%
-  ungroup()
+  dplyr::group_by(trait) %>%
+  dplyr::mutate(
+      scaled_enrichment = scales::rescale(enrichment)
+    ) %>%
+  dplyr::ungroup()
+point.GWAS.df <- base::as.data.frame(point.GWAS.df)
 
-point.GWAS.df <- as.data.frame(point.GWAS.df)
-enr.mat <- matrix(0,nrow=length(filtered.traits),ncol=length(unique(point.GWAS.df$sample)), dimnames=list(filtered.traits,unique(point.GWAS.df$sample)))
-for (i in 1:nrow(point.GWAS.df)) 
-  enr.mat[point.GWAS.df[i,"trait"],point.GWAS.df[i,"sample"]] <- point.GWAS.df[i,"scaled_enrichment"]*point.GWAS.df[i,"recall"]
+enr.mat <- base::matrix(
+  data = 0,
+  nrow = base::length(filtered.traits),
+  ncol = base::length(base::unique(point.GWAS.df$sample)),
+  dimnames = base::list(
+      filtered.traits,
+      base::unique(point.GWAS.df$sample)
+    )
+  )
+for (i in 1:base::nrow(point.GWAS.df)){ 
+    enr.mat[point.GWAS.df[i,"trait"],point.GWAS.df[i,"sample"]] <- point.GWAS.df[i,"scaled_enrichment"]*point.GWAS.df[i,"recall"]
+  }
 
-ro <- hclust(dist(log2(enr.mat+1)))$order
+ro <- stats::hclust(
+    d = stats::dist(base::log2(enr.mat + 1))
+  )$order
 
-point.GWAS.df$sample <- factor(point.GWAS.df$sample, levels=c("K562_C","K562_N","GM12878_C","GM12878_N","HepG2_C","HepG2_N","A549_C","A549_N","HCT116_C"))
-point.GWAS.df$trait <- factor(point.GWAS.df$trait, levels=rownames(enr.mat)[ro])
-
-ggplot(point.GWAS.df,aes(sample,trait,fill=scaled_enrichment)) + geom_tile() +
-  theme(axis.text.x = element_text(angle=90,hjust=1)) + scale_fill_distiller(direction=1) +
-  xlab("") + ylab("")
-ggsave("plots/GWAS_trait_enrichment_vs_cell_line.pdf",width=3,height=5)
-
+point.GWAS.df$sample <- base::factor(
+  x = point.GWAS.df$sample,
+  levels = base::c(
+      "K562_C","K562_N","GM12878_C",
+      "GM12878_N","HepG2_C","HepG2_N",
+      "A549_C","A549_N","HCT116_C"
+    )
+  )
+point.GWAS.df$trait <- base::factor(
+    x = point.GWAS.df$trait,
+    levels = base::rownames(enr.mat)[ro]
+  )
 ```
 
+## [2.1.] Plot enrichment*recall matrix across samples & traits
 ```{r}
+cols <- grDevices::colorRampPalette(
+    base::rev(RColorBrewer::brewer.pal(11,"RdBu"))
+  )(100)
 
-focus.traits <- as.character(unique(subset(point.GWAS.df, enrichment>=10)$trait))
+ggplot2::ggplot(
+    data = point.GWAS.df,
+    mapping = aes(
+        x = sample,
+        y = trait,
+        fill = scaled_enrichment
+      )
+    ) +
+  geom_tile(
+      height = 0.9,
+      width = 0.9
+    ) +
+  coord_equal() +
+  # scale_fill_distiller(
+  #     direction = 1
+  #   ) +
+  scale_fill_gradientn(
+      colors = .GlobalEnv$cols,
+      limits = base::c(0L,1L)
+    ) +
+  theme_bw() +
+  theme(
+    # aspect.ratio = 1,
+    axis.text.x = element_text(
+        angle = 90,
+        hjust = 1
+      ),
+    axis.title = element_blank(),
+    legend.title = element_blank()
+  )
+```
+
+## [2.2.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "GWAS_trait_enrichment_vs_cell_line.pdf"
+      ),
+    width = 3,
+    height = 5
+  )
+```
+
+
+```{r}
+focus.traits <- base::as.character(
+  base::unique(
+      base::subset(x = point.GWAS.df, enrichment >= 10)$trait
+    )
+  )
 
 for (trait in focus.traits) {
   
   m <- trait.matrices[[trait]]
+  base::print(base::dim(m))
   
-  print(dim(m))
+  ro <- stats::hclust(stats::dist(m))$order
+  co <- stats::hclust(stats::dist(base::t(m)))$order
   
-  ro <- hclust(dist(m))$order
-  co <- hclust(dist(t(m)))$order
+  df <- base::data.frame(
+      score = base::as.numeric(m),
+      cell.line = base::rep(
+          base::colnames(m),
+          each = base::nrow(m)
+        ),
+      variant = base::rownames(m)
+    )
+  df$variant <- base::factor(
+      x = df$variant,
+      levels = base::rownames(m)[ro]
+    )
+  df$cell.line <- base::factor(
+      x = df$cell.line,
+      levels = base::colnames(m)[co]
+    )
   
-  df <- data.frame(score=as.numeric(m),
-                   cell.line=rep(colnames(m),each=nrow(m)),
-                   variant=rownames(m))
-  df$variant <- factor(df$variant,levels=rownames(m)[ro])
-  df$cell.line <- factor(df$cell.line, levels=colnames(m)[co])
-  
-  ggplot(df, aes(cell.line, variant, fill=score)) + geom_tile() + xlab("") + ylab("") + 
+  ggplot2::ggplot(
+    data = df, aes(cell.line, variant, fill=score)) + geom_tile() + xlab("") + ylab("") + 
     theme(axis.text.x = element_text(angle=90,hjust=1)) + 
     #theme(axis.text.y = element_blank()) + 
     scale_fill_distiller(direction=1) +
