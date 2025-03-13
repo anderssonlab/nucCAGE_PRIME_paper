@@ -119,7 +119,7 @@ unfiltered.PRIMEloci <- base::lapply(
       return(gr)
     }
   )
-base::names(pooled.PRIMEloci) <- base::names(pooled.PRIMEloci.files)
+base::names(unfiltered.PRIMEloci) <- base::names(pooled.PRIMEloci.files)
 ```
 
 ## [1.4.] Read in, prepare and subset GWAS data to contain only intergenic GWAS
@@ -158,7 +158,7 @@ GWAS.data <- GWAS.data[-S4Vectors::queryHits(olap)] ## 28.182
 traits <- base::unique(GWAS.data$trait) # 94
 ```
 
-## [1.5.] Overlap PRIMElocis with GWAS in a trait-specific manner & aggregate overlaps into a matrix
+## [1.5.] Overlap PRIMElocis with GWAS in a trait-specific manner to subset traits
 #### evaluate with t = "MCV", n = "K562_C", x = trait.loci.olap[[1]]
 ##  'trait.loci.olap' includes all GWAS hits for a particular trait that overlaps with any of the PRIMElocis from any PRIMEloci dataset
 ## 'trait.olap.count' summarises the overall overlaps of traits across all PRIMEloci datasets
@@ -200,29 +200,50 @@ filtered.traits <- base::names(
   )
 ```
 
-
+## [1.6.] Aggregate PRIMEloci-GWAS-overlaps into a matrix
+#### evaluate with t = "eGFRcys", n = "K562_C"
 ```{r}
 trait.matrices <- base::lapply(
-  X = filtered.traits,
-  FUN = function(t) {
-  
-    #g <- unique(GWAS.data[trait.loci.olap[[t]],])
-    g <- GWAS.data[trait.loci.olap[[t]],]
-    name <- paste0(seqnames(g),":",start(g)+1,":",end(g),":",g$RS_id)
-    m <- matrix(0,ncol=length(pooled.PRIMEloci),nrow=length(g),dimnames=list(name, names(pooled.PRIMEloci)))
+    X = filtered.traits,
+    FUN = function(t) {
     
-    for (n in names(pooled.PRIMEloci)) {
-      pd <- unfiltered.PRIMEloci[[n]]
-      GWAS.olap <- findOverlaps(g, pd, minoverlap=1)
-      m[unique(queryHits(GWAS.olap)),n] <- as.numeric(by(pd$score[subjectHits(GWAS.olap)], queryHits(GWAS.olap), max))
+      #g <- unique(GWAS.data[trait.loci.olap[[t]],])
+      g <- GWAS.data[trait.loci.olap[[t]],]
+      name <- base::paste0(
+          GenomeInfoDb::seqnames(g),":",
+          GenomicRanges::start(g) + 1,":",
+          GenomicRanges::end(g),":",
+          g$RS_id
+        )
+      m <- base::matrix(
+          data = 0,
+          ncol = base::length(pooled.PRIMEloci),
+          nrow = base::length(g),
+          dimnames = base::list(name, base::names(pooled.PRIMEloci))
+        )
+      
+      for (n in base::names(pooled.PRIMEloci)) {
+          pd <- unfiltered.PRIMEloci[[n]]
+          GWAS.olap <- IRanges::findOverlaps(
+              query = g,
+              subject = pd,
+              minoverlap = 1
+            )
+          m[base::unique(S4Vectors::queryHits(GWAS.olap)),n] <- base::as.numeric(
+            base::by(
+                data = pd$score[S4Vectors::subjectHits(GWAS.olap)],
+                INDICES = S4Vectors::queryHits(GWAS.olap),
+                FUN = base::max
+              )
+            )
+        }
+      return(m)
     }
-    m
-  })
-names(trait.matrices) <- filtered.traits
-
+  )
+base::names(trait.matrices) <- filtered.traits
 ```
 
-Calculate GWAS enrichment and recall
+## Calculate GWAS enrichment and recall
 
 ```{r}
 
