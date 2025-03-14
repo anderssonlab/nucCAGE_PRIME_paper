@@ -1258,3 +1258,129 @@ for (trait in base::c(blood.traits,hep.traits,immune.traits)) {
   #   )
 }
 ```
+
+## [4.5.] Prepare data for MCHC trait specific plotting
+```{r}
+trait = "MCHC"
+m <- trait.matrices[[trait]]
+
+ro <- stats::hclust(stats::dist(m))$order
+#co <- hclust(dist(t(m)))$order
+  
+df <- base::data.frame(
+    score = base::as.numeric(m),
+    cell.line = base::rep(base::colnames(m), each = base::nrow(m)),
+    variant = base::rownames(m)
+  )
+df$variant <- base::factor(
+    x = df$variant,
+    levels = base::rownames(m)[ro]
+  )
+  
+midpoint <- base::mean(df$score[df$score>0])
+# df$score[df$score==0] <- NA
+  
+df <- base::merge(
+    x = df,
+    y = GWAS.df[,base::c("name","type")],
+    by.x = "variant",
+    by.y = "name"
+  )
+```
+
+## [4.6.] MCHC trait specific plotting
+```{r}
+coef = midpoint
+cols <- base::c(
+  grDevices::colorRampPalette(
+      base::c("#ffffff","#e7f0fa", "#c9e2f6", "#95cbee", "#0099dc")
+    )(coef*100),
+  grDevices::colorRampPalette(
+      base::c("#eec73a", "#e29421", "#e29421", "#f05336","#ce472e")
+    )((1-coef)*100)
+  )
+
+df %>%
+  dplyr::filter(type == "distal") %>% 
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+          x = variant,
+          y = cell.line
+        )
+      ) + 
+    geom_tile(
+        mapping = aes(
+            fill = score
+          ),
+        color = "grey90",
+        size = 0.1
+      ) +  # Heatmap
+    scale_fill_gradientn(
+        colors = .GlobalEnv$cols,
+        limits = base::c(0L,1L)
+      ) +
+    theme_bw() +
+    theme(
+        aspect.ratio = 1/3,
+        axis.title = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(
+              color = "black",
+              fill = NA,
+              linewidth = 1
+            ),
+        legend.title = element_blank()
+      ) +
+    guides(
+        fill = guide_colorbar(
+          label.position = "right",
+          title = NULL,
+          title.position = "left",
+          title.theme = element_text(
+              angle = 90,
+              hjust = 0.5
+            ),
+          ticks=T,
+          nbin=100,
+          barheight=5,
+          label=T,
+          barwidth=0.5
+        ),
+        color = "none"
+      )
+```
+
+```{r}
+df %>%
+  dplyr::filter(
+      type == "distal"
+    ) %>%
+  dplyr::group_by(cell.line) %>% 
+  dplyr::summarise(
+      nr_0 = base::sum(score > 0),
+      nr_75 = base::sum(score > 0.75)
+    )
+
+
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        y = cell.line,
+        x = score
+      )
+    ) +
+  geom_violin() +
+  geom_jitter(
+      height = 0.3,
+      width = 0
+    ) +
+  theme_bw() +
+  theme(
+    aspect.ratio = 1
+  )
+```
+
