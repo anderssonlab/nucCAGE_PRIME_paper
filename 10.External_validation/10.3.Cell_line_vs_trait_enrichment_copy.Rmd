@@ -1081,7 +1081,7 @@ GWAS.df$name <- base::paste0(
   )
 ```
 
-## [4.2.]
+## [4.2.] Overlap non-subset PRIMElocis with GWAS in a trait-specific manner to subset traits
 #### see [1.5.] above for previous instalment of 'trait.loci.olap' object generation
 #### difference to [1.5.] is that here overlaps are calculated with 'unfiltered.PRIMEloci'
 ```{r}
@@ -1107,66 +1107,154 @@ trait.loci.olap <- base::sapply(
       )
     }
   )
-
-trait.matrices <- lapply(c(blood.traits,hep.traits,immune.traits), function(t) {
-  
-  g <- GWAS.data[trait.loci.olap[[t]],]
-  name <- paste0(seqnames(g),":",start(g)+1,":",end(g),":",g$RS_id)
-  m <- matrix(0,ncol=length(unfiltered.PRIMEloci),nrow=length(g),dimnames=list(name, names(unfiltered.PRIMEloci)))
-  
-  for (n in names(unfiltered.PRIMEloci)) {
-    pd <- unfiltered.PRIMEloci[[n]]
-    GWAS.olap <- findOverlaps(g, pd, minoverlap=1)
-    m[unique(queryHits(GWAS.olap)),n] <- as.numeric(by(pd$score[subjectHits(GWAS.olap)], queryHits(GWAS.olap), max))
-  }
-  m
-})
-names(trait.matrices) <- c(blood.traits,hep.traits,immune.traits)
-
-for (trait in c(blood.traits,hep.traits,immune.traits)) {
-  
-  m <- trait.matrices[[trait]]
-  
-  print(dim(m))
-  
-  ro <- hclust(dist(m))$order
-  #co <- hclust(dist(t(m)))$order
-  
-  df <- data.frame(score=as.numeric(m),
-                   cell.line=rep(colnames(m),each=nrow(m)),
-                   variant=rownames(m))
-  df$variant <- factor(df$variant,levels=rownames(m)[ro])
-  #df$cell.line <- factor(df$cell.line, levels=colnames(m)[co])
-  m <- mean(df$score[df$score>0])
-  df$score[df$score==0] <- NA
-  
-  df <- merge(df, GWAS.df[,c("name","type")], by.x="variant",by.y="name")
-  
-  ggplot(df, aes(cell.line, variant)) + 
-      geom_tile(aes(fill=score), color="grey90", size=0.1) +  # Heatmap
-      scale_fill_gradient2(low = "#256866", mid = "#FFFFCC", high = "orange", na.value=NA, midpoint=m) +  
-      ggnewscale::new_scale_fill() +  # Allows a second independent fill scale
-      geom_tile(aes(x=length(unique(df$cell.line))+0.5, fill=type), width=0.2) +  # Annotation strip
-      scale_fill_manual(values=c("proximal"="#4daf4a", "distal"="#984ea3")) +  # Discrete for annotation
-      xlab("") + 
-      ylab("") + 
-      theme_bw() +
-      theme(axis.text.x = element_text(angle=90, hjust=1),
-            axis.text.y = element_text(size=3),
-            panel.grid.major = element_blank(),
-            panel.grid.minor = element_blank(),
-            panel.border = element_rect(color="black", fill=NA, linewidth=1)) +
-      scale_x_discrete(expand = c(0, 0)) +
-      scale_y_discrete(expand = c(0, 0)) +  
-      ggtitle(trait)
-
-  ggsave(paste0("plots/cellLinePlots/",trait,"_variant_PRIMEloci_score_vs_cell_line.pdf"),width=5,height=5)
-  
-}
-
 ```
 
+## [4.3.] Aggregate PRIMEloci-GWAS-overlaps into a matrix
+```{r}
+trait.matrices <- base::lapply(
+  X = base::c(
+      blood.traits, hep.traits, immune.traits
+    ),
+  FUN = function(t) {
+    g <- GWAS.data[trait.loci.olap[[t]],]
+    name <- base::paste0(
+        GenomeInfoDb::seqnames(g),":",
+        GenomicRanges::start(g) + 1,":",
+        GenomicRanges::end(g),":",
+        g$RS_id
+      )
+    m <- base::matrix(
+        data = 0,
+        ncol = base::length(unfiltered.PRIMEloci),
+        nrow = base::length(g),
+        dimnames = base::list(name, base::names(unfiltered.PRIMEloci))
+      )
+  
+    for (n in base::names(unfiltered.PRIMEloci)){
+      pd <- unfiltered.PRIMEloci[[n]]
+      GWAS.olap <- IRanges::findOverlaps(
+          query = g,
+          subject = pd,
+          minoverlap = 1
+        )
+      m[base::unique(S4Vectors::queryHits(GWAS.olap)),n] <- base::as.numeric(
+        base::by(
+            data = pd$score[subjectHits(GWAS.olap)],
+            INDICES = S4Vectors::queryHits(GWAS.olap),
+            FUN = base::max
+          )
+        )
+      }
+    return(m)
+    }
+  )
+base::names(trait.matrices) <- base::c(blood.traits,hep.traits,immune.traits)
+utils::str(trait.matrices)
+```
 
-
-
-
+## [4.4.] Plot traits
+#### evaluate with trait = "HbA1c"
+```{r}
+for (trait in base::c(blood.traits,hep.traits,immune.traits)) {
+  
+  m <- trait.matrices[[trait]]
+  base::print(base::dim(m))
+  
+  ro <- stats::hclust(stats::dist(m))$order
+  #co <- hclust(dist(t(m)))$order
+  
+  df <- base::data.frame(
+      score = base::as.numeric(m),
+      cell.line = base::rep(base::colnames(m), each = base::nrow(m)),
+      variant = base::rownames(m)
+    )
+  df$variant <- base::factor(
+      x = df$variant,
+      levels = base::rownames(m)[ro]
+    )
+  #df$cell.line <- factor(df$cell.line, levels=colnames(m)[co])
+  m <- base::mean(df$score[df$score>0])
+  df$score[df$score==0] <- NA
+  
+  df <- base::merge(
+      x = df,
+      y = GWAS.df[,base::c("name","type")],
+      by.x = "variant",
+      by.y = "name"
+    )
+  
+  ggplot2::ggplot(
+      data = df,
+      mapping = aes(
+          x = cell.line,
+          y = variant
+        )
+      ) + 
+    geom_tile(
+        mapping = aes(
+            fill = score
+          ),
+        color = "grey90",
+        size = 0.1
+      ) +  # Heatmap
+    scale_fill_gradient2(
+        low = "#256866",
+        mid = "#FFFFCC",
+        high = "orange",
+        na.value = NA,
+        midpoint = m
+      ) +
+    ggnewscale::new_scale_fill() +
+    # Allows a second independent fill scale
+    geom_tile(
+        mapping = aes(
+            x = base::length(base::unique(df$cell.line)) + 0.5,
+            fill = type
+          ),
+        width = 0.2
+      ) +  # Annotation strip
+    ggtitle(trait) +
+    scale_x_discrete(
+        expand = base::c(0, 0)
+      ) +
+    scale_y_discrete(
+        expand = base::c(0, 0)
+      ) +  
+    scale_fill_manual(
+      values = base::c(
+          "proximal"="#4daf4a",
+          "distal" = "#984ea3"
+        )
+      ) + # Discrete for annotation
+    theme_bw() +
+    theme(
+      axis.title = element_blank(),
+      axis.text.x = element_text(
+          angle = 90,
+          hjust = 1
+        ),
+      axis.text.y = element_text(
+          size = 3
+        ),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.border = element_rect(
+            color = "black",
+            fill = NA,
+            linewidth = 1
+          )
+        )
+     
+  # ggplot2::ggsave(
+  #     filename = base::paste0(
+  #         here::here("10.External_validation/plots/"),
+  #         "cellLinePlots/",
+  #         trait,
+  #         "_variant_PRIMEloci_score_vs_cell_line.pdf"
+  #       ),
+  #     width = 5,
+  #     height = 5,
+  #     device = "pdf"
+  #   )
+}
+```
