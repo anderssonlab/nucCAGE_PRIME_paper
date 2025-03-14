@@ -23,11 +23,6 @@ col.scheme <- base::c(
   )
 ```
 
-## [0.2.] Parameters
-```{r}
-
-```
-
 ## [1.] Read in & prepare data -------------------------
 
 ## [1.0.] Read in CDSs from txdb
@@ -393,7 +388,8 @@ ggplot2::ggsave(
   )
 ```
 
-
+## [2.3.] Plot all trait matrices across all GWAS & all cell lines
+#### evaluate with 'trait = "MCH"'
 ```{r}
 focus.traits <- base::as.character(
   base::unique(
@@ -404,7 +400,7 @@ focus.traits <- base::as.character(
 for (trait in focus.traits) {
   
   m <- trait.matrices[[trait]]
-  base::print(base::dim(m))
+  # base::print(base::dim(m))
   
   ro <- stats::hclust(stats::dist(m))$order
   co <- stats::hclust(stats::dist(base::t(m)))$order
@@ -427,145 +423,265 @@ for (trait in focus.traits) {
     )
   
   ggplot2::ggplot(
-    data = df, aes(cell.line, variant, fill=score)) + geom_tile() + xlab("") + ylab("") + 
-    theme(axis.text.x = element_text(angle=90,hjust=1)) + 
-    #theme(axis.text.y = element_blank()) + 
-    scale_fill_distiller(direction=1) +
-    ggtitle(trait)
-  ggsave(paste0("plots/",trait,"_variant_PRIMEloci_score_vs_cell_line.pdf"),width=5,height=5)
-  
-}
-
+      data = df,
+      mapping = aes(
+          x = cell.line,
+          y = variant,
+          fill = score
+        )
+      ) +
+    scale_fill_distiller(
+        direction = 1
+      ) +
+    ggtitle(trait) +
+    geom_tile() +
+    theme(
+        axis.text.x = element_text(
+            angle = 90,
+            hjust = 1
+          ),
+        axis.title = element_blank()
+      )
+    
+  # ggplot2::ggsave(
+  #   filename = base::paste0(
+  #         here::here("10.External_validation/plots/"),
+  #         trait,
+  #         "_variant_PRIMEloci_score_vs_cell_line.pdf"
+  #       ),
+  #     width = 5,
+  #     height = 5,
+  #     device = "pdf"
+  #   )
+  }
 ```
 
+## [3.] Calculate enrichment, precision, and recall versus score threshold -------------------------
 
-
-
+## [3.0.] Helper function for preparing enrichment-recall curves
 ```{r}
 enrichment.precision.recall <- function(data, fg.data, bg.data, assay) {
   
-  do.call("rbind", lapply(names(data), function(n) {
-
-    gr <- data[[n]]
-    scores <- seq(0,1,by=0.05)
-    cnt <- sapply(scores, function(sco) sum(gr$score>=sco))
-    scores <- scores[cnt>=10]
+  base::do.call(
+    what = "rbind",
+    args = base::lapply(
+      X = base::names(data),
+      FUN = function(n) {
     
-    gr.fg.olap <- findOverlaps(fg.data, gr, minoverlap=1)
-    gr.bg.olap <- findOverlaps(bg.data, gr, minoverlap=1)
+        gr <- data[[n]]
+        scores <- base::seq(0, 1, by = 0.01)
+        cnt <- base::sapply(
+          X = scores,
+          FUN = function(sco){
+              base::sum(gr$score>=sco)
+            }
+          )
+        scores <- scores[cnt>=10]
+        
+        gr.fg.olap <- GenomicRanges::findOverlaps(
+            query = fg.data,
+            subject = gr,
+            minoverlap = 1
+          )
+        gr.bg.olap <- GenomicRanges::findOverlaps(
+            query = bg.data,
+            subject = gr,
+            minoverlap = 1
+          )
     
-    do.call("rbind", lapply(scores, function(sco) {
+        base::do.call(
+          what = "rbind",
+          args = base::lapply(
+            X = scores,
+            FUN = function(sco){
       
-      selection <- which(gr$score>=sco)
-      fg.count <- length(unique(queryHits(gr.fg.olap)[which(subjectHits(gr.fg.olap) %in% selection)]))
-      bg.count <- length(unique(queryHits(gr.bg.olap)[which(subjectHits(gr.bg.olap) %in% selection)]))
-      
-      data.frame(enrichment=(fg.count/length(fg.data))/(bg.count/length(bg.data)),
-                 precision=fg.count/(fg.count+bg.count),
-                 recall=fg.count/length(fg.data),
-                 fg.count=fg.count,
-                 bg.count=bg.count,
-                 score=sco,
-                 sample=n,
-                 assay=assay[n])
-    }))
-    
-  }))
-}
-
-
-run_enrichment_for_trait <- function(trait) {
-  enrichment.precision.recall(
-    unfiltered.PRIMEloci,
-    GWAS.data[GWAS.data$trait == trait,], 
-    SNP.data, 
-    names(unfiltered.PRIMEloci)
-  )
-}
-
-per.trait.results <- mclapply(filtered.traits, run_enrichment_for_trait,mc.cores=30)
-names(per.trait.results) <- focus.traits 
-
-lapply(seq_along(per.trait.results), function(i) {
-  trait_name <- filtered.traits[i]
-  data <- per.trait.results[[i]]
-  
-  # Create plots
-  pr <- ggplot(data, aes(recall, enrichment, color = sample)) +
-    geom_line(aes(group = sample)) +
-    theme(aspect.ratio = 1) +
-    xlab(paste0("recall")) +
-    ggtitle(paste("Recall vs Enrichment for", trait_name))
-  
-  
-  # Save arranged plots
-  ggsave(filename = paste0("plots/cellLinePlots/", trait_name, "_enrichment_recall_plot.pdf"),
-         plot = pr, device = "pdf")
-})
+              selection <- base::which(gr$score>=sco)
+              fg.count <- base::length(
+                base::unique(
+                  S4Vectors::queryHits(gr.fg.olap)[
+                      base::which(S4Vectors::subjectHits(gr.fg.olap) %in% selection)
+                    ]
+                  )
+                )
+              bg.count <- base::length(
+                base::unique(
+                  S4Vectors::queryHits(gr.bg.olap)[
+                      base::which(S4Vectors::subjectHits(gr.bg.olap) %in% selection)
+                    ]
+                  )
+                )
+              
+              base::data.frame(
+                    enrichment = (fg.count/length(fg.data))/(bg.count/length(bg.data)),
+                    precision = fg.count/(fg.count+bg.count),
+                    recall = fg.count/length(fg.data),
+                    fg.count = fg.count,
+                    bg.count = bg.count,
+                    score = sco,
+                    sample = n,
+                    assay = assay[n]
+                )
+              }
+            )
+          )
+        }
+      )
+    )
+  }
 ```
 
+## [3.1.] Run enrichment recall analysis for all traits separately
+#### run_enrichment_for_trait as a wrapper function of enrichment.precision.recall
+```{r}
+run_enrichment_for_trait <- function(trait) {
+    .GlobalEnv$enrichment.precision.recall(
+      data = unfiltered.PRIMEloci,
+      fg.data = GWAS.data[GWAS.data$trait == trait,], 
+      bg.data = SNP.data, 
+      assay = names(unfiltered.PRIMEloci)
+    )
+  }
 
+per.trait.results <- parallel::mclapply(
+    X = filtered.traits,
+    FUN = run_enrichment_for_trait,
+    mc.cores = 30
+  )
+base::names(per.trait.results) <- focus.traits
+```
 
+## [3.2.] Plot all trait-specific enrichment-recall curves
+```{r}
+base::lapply(
+    X = base::seq_along(per.trait.results),
+    FUN = function(i) {
+      trait_name <- filtered.traits[i]
+      data <- per.trait.results[[i]]
+    
+      # Create plots
+      pr <- ggplot2::ggplot(
+          data = data,
+          mapping = aes(
+              x = recall,
+              y = enrichment,
+              color = sample
+            )
+          ) +
+        geom_line(
+          mapping = aes(
+              group = sample
+            )
+          ) +
+        ggtitle(
+          base::paste(
+              "Recall vs Enrichment for", trait_name
+            )
+          ) +
+        theme_bw() +
+        theme(
+            aspect.ratio = 1
+          )
+    
+      # ggplot2::ggsave(
+      #     filename = base::paste0(
+      #         here::here("10.External_validation/plots/"),
+      #         "cellLinePlots/",
+      #         trait_name, "_enrichment_recall_plot.pdf"
+      #       ),
+      #     plot = pr,
+      #     device = "pdf"
+      #   )
+    }
+  )
+```
 
-
-
-
+## [3.3.] Subset traits
 ```{r}
 # Over pooled traits
 #blood.traits <- c("HbA1c","Hb","RBC","MCV","MCH","MCHC")
 #hep.traits <- c("ApoB", "TC", "TBil", "SHBG", "LDLC", "TG","Alb")
 
 # Blood-related traits (erythrocytes, platelets, hematology)
-blood.traits <- c("HbA1c",  # Glycated hemoglobin, diabetes marker
-                  "Hb",      # Hemoglobin, oxygen transport
-                  "RBC",     # Red Blood Cell count
-                  "MCV",     # Mean Corpuscular Volume, RBC size
-                  "MCH",     # Mean Corpuscular Hemoglobin, RBC hemoglobin content
-                  "MCHC",    # Mean Corpuscular Hemoglobin Concentration
-                  "Plt")     # Platelet count, clotting function
-
+blood.traits <- base::c(
+    "HbA1c",  # Glycated hemoglobin, diabetes marker
+    "Hb",      # Hemoglobin, oxygen transport
+    "RBC",     # Red Blood Cell count
+    "MCV",     # Mean Corpuscular Volume, RBC size
+    "MCH",     # Mean Corpuscular Hemoglobin, RBC hemoglobin content
+    "MCHC",    # Mean Corpuscular Hemoglobin Concentration
+    "Plt"      # Platelet count, clotting function
+  )
 # Immune-related traits (white blood cells, inflammation, autoimmunity)
-immune.traits <- c("WBC",    # Total White Blood Cell count
-                   "Neutro", # Neutrophils, first-line immune defense
-                   "Lym",    # Lymphocytes, adaptive immunity
-                   "Mono",   # Monocytes, innate immune response
-                   "Eosino", # Eosinophils, allergy and parasite defense
-                   "Baso",   # Basophils, involved in histamine response
-                   "CRP",    # C-reactive protein, systemic inflammation marker
-                   "IBD",    # Inflammatory Bowel Disease, chronic immune disorder
-                   "AID_Combined", # Autoimmune diseases combined category
-                   "Asthma", # Chronic inflammatory airway disease
-                   "Hypothyroidism", # Can be autoimmune (e.g., Hashimoto's)
-                   "Fibroblastic_Disorders") # Potential immune involvement
-
+immune.traits <- base::c(
+    "WBC",    # Total White Blood Cell count
+    "Neutro", # Neutrophils, first-line immune defense
+    "Lym",    # Lymphocytes, adaptive immunity
+    "Mono",   # Monocytes, innate immune response
+    "Eosino", # Eosinophils, allergy and parasite defense
+    "Baso",   # Basophils, involved in histamine response
+    "CRP",    # C-reactive protein, systemic inflammation marker
+    "IBD",    # Inflammatory Bowel Disease, chronic immune disorder
+    "AID_Combined", # Autoimmune diseases combined category
+    "Asthma", # Chronic inflammatory airway disease
+    "Hypothyroidism", # Can be autoimmune (e.g., Hashimoto's)
+    "Fibroblastic_Disorders" # Potential immune involvement
+  )
 # Liver/metabolic traits (hepatic function, lipids, glucose metabolism)
-hep.traits <- c("ApoB",     # Apolipoprotein B, LDL-associated
-                "TC",       # Total Cholesterol
-                "LDLC",     # Low-Density Lipoprotein Cholesterol (bad cholesterol)
-                "TG",       # Triglycerides, fat storage
-                "Alb",      # Albumin, major liver protein
-                "SHBG",     # Sex Hormone Binding Globulin, linked to liver metabolism
-                "TBil",     # Total Bilirubin, liver function indicator
-                "ALT",      # Alanine Aminotransferase, liver enzyme
-                "AST",      # Aspartate Aminotransferase, liver enzyme
-                "GGT",      # Gamma-Glutamyl Transferase, liver and bile function
-                "Urea",     # Metabolic waste, partly liver-related
-                "Glucose",  # Blood glucose levels, diabetes-related
-                "IGF1")     # Insulin-like Growth Factor 1, growth hormone-related
+hep.traits <- base::c(
+    "ApoB",     # Apolipoprotein B, LDL-associated
+    "TC",       # Total Cholesterol
+    "LDLC",     # Low-Density Lipoprotein Cholesterol (bad cholesterol)
+    "TG",       # Triglycerides, fat storage
+    "Alb",      # Albumin, major liver protein
+    "SHBG",     # Sex Hormone Binding Globulin, linked to liver metabolism
+    "TBil",     # Total Bilirubin, liver function indicator
+    "ALT",      # Alanine Aminotransferase, liver enzyme
+    "AST",      # Aspartate Aminotransferase, liver enzyme
+    "GGT",      # Gamma-Glutamyl Transferase, liver and bile function
+    "Urea",     # Metabolic waste, partly liver-related
+    "Glucose",  # Blood glucose levels, diabetes-related
+    "IGF1"      # Insulin-like Growth Factor 1, growth hormone-related
+  )
 
-blood.GWAS.data <- subset(GWAS.data, trait %in% blood.traits)
-hep.GWAS.data <- subset(GWAS.data, trait %in% hep.traits)
-immune.GWAS.data <- subset(GWAS.data, trait %in% immune.traits)
+blood.GWAS.data <- base::subset(GWAS.data, trait %in% blood.traits)
+hep.GWAS.data <- base::subset(GWAS.data, trait %in% hep.traits)
+immune.GWAS.data <- base::subset(GWAS.data, trait %in% immune.traits)
+```
 
+## [3.4.] Run enrichment recall analysis for subset traits
+```{r}
+cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = unfiltered.PRIMEloci,
+    fg.data = blood.GWAS.data,
+    bg.data = SNP.data,
+    assay = base::names(unfiltered.PRIMEloci)
+  )
 
-cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data <- enrichment.precision.recall(unfiltered.PRIMEloci, blood.GWAS.data, SNP.data, names(unfiltered.PRIMEloci))
+cellLines.PRIMEloci.hep.GWAS.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = unfiltered.PRIMEloci,
+    fg.data = hep.GWAS.data,
+    bg.data = SNP.data,
+    assay = base::names(unfiltered.PRIMEloci)
+  )
 
-cellLines.PRIMEloci.hep.GWAS.enrichment.recall.data <- enrichment.precision.recall(unfiltered.PRIMEloci, hep.GWAS.data, SNP.data, names(unfiltered.PRIMEloci))
+cellLines.PRIMEloci.immune.GWAS.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = unfiltered.PRIMEloci,
+    fg.data = immune.GWAS.data,
+    bg.data = SNP.data,
+    assay = base::names(unfiltered.PRIMEloci)
+  )
+```
 
-cellLines.PRIMEloci.immune.GWAS.enrichment.recall.data <- enrichment.precision.recall(unfiltered.PRIMEloci, immune.GWAS.data, SNP.data, names(unfiltered.PRIMEloci))
-
-
-ggplot(cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data, aes(recall, enrichment, color=sample)) + geom_line(aes(group=sample)) +
+## [3.5.] Plot data
+```{r}
+ggplot2::ggplot(
+  data = cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data,
+  mapping = aes(
+      x = recall,
+      y = enrichment,
+      color = sample
+    )
+  ) + geom_line(aes(group=sample)) +
   theme(aspect.ratio=1)  + xlab(paste0("recall (n=",length(blood.GWAS.data$name),")")) + scale_color_manual(values=col.scheme) + 
   geom_point(data=cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data[cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data$score==0.75,])
 
