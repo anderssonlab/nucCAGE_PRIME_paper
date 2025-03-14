@@ -672,79 +672,272 @@ cellLines.PRIMEloci.immune.GWAS.enrichment.recall.data <- .GlobalEnv$enrichment.
   )
 ```
 
-## [3.5.] Plot data
+## [3.5.] Plot blood GWAS data
 ```{r}
 ggplot2::ggplot(
-  data = cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data,
-  mapping = aes(
-      x = recall,
-      y = enrichment,
-      color = sample
+    data = cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data,
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = sample
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  geom_point(
+    data = cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data[
+        cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data$score==0.75,
+      ]
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  xlab(
+    base::paste0(
+        "recall (n=", base::length(blood.GWAS.data$name),")"
+      )
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
     )
-  ) + geom_line(aes(group=sample)) +
-  theme(aspect.ratio=1)  + xlab(paste0("recall (n=",length(blood.GWAS.data$name),")")) + scale_color_manual(values=col.scheme) + 
-  geom_point(data=cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data[cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data$score==0.75,])
+```
 
-ggsave(filename = paste0("plots/cellLinePlots/", "bloodTraits", "_enrichment_recall_plot.pdf"), device = "pdf")
+## [3.6.] Print blood GWAS plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "cellLinePlots/",
+        "bloodTraits",
+        "_enrichment_recall_plot.pdf"
+      ),
+    device = "pdf"
+  )
+```
 
+## [3.7.] Plot hepatocyte / liver GWAS
+```{r}
+ggplot2::ggplot(
+    data = cellLines.PRIMEloci.hep.GWAS.enrichment.recall.data,
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = sample
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  geom_point(
+    data = cellLines.PRIMEloci.hep.GWAS.enrichment.recall.data[
+        cellLines.PRIMEloci.hep.GWAS.enrichment.recall.data$score == 0.75,
+      ]
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  xlab(
+    base::paste0(
+        "recall (n=", base::length(hep.GWAS.data$name), ")"
+      )
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
 
-ggplot(cellLines.PRIMEloci.hep.GWAS.enrichment.recall.data, aes(recall, enrichment, color=sample)) + geom_line(aes(group=sample)) +
-  theme(aspect.ratio=1)  + xlab(paste0("recall (n=",length(hep.GWAS.data$name),")")) + scale_color_manual(values=col.scheme)+ 
-  geom_point(data=cellLines.PRIMEloci.hep.GWAS.enrichment.recall.data[cellLines.PRIMEloci.hep.GWAS.enrichment.recall.data$score==0.75,])
+## [3.8.] Print hepatocyte / liver GWAS plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "cellLinePlots/",
+        "hepTraits",
+        "_enrichment_recall_plot.pdf"
+      ),
+    device = "pdf"
+  )
+```
 
+## [3.9.] Plot immune GWAS
+```{r}
+ggplot2::ggplot(
+    data = cellLines.PRIMEloci.immune.GWAS.enrichment.recall.data,
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = sample
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  geom_point(
+    data = cellLines.PRIMEloci.immune.GWAS.enrichment.recall.data[
+        cellLines.PRIMEloci.immune.GWAS.enrichment.recall.data$score == 0.75,
+      ]
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) + 
+  xlab(
+    base::paste0(
+        "recall (n=", base::length(immune.GWAS.data$name),")"
+      )
+    ) + 
+  theme_bw()
+  theme(
+      aspect.ratio = 1
+    )
+```
 
-ggsave(filename = paste0("plots/cellLinePlots/", "hepTraits", "_enrichment_recall_plot.pdf"), device = "pdf")
+## [3.10.] Print immune GWAS plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "cellLinePlots/",
+        "immuneTraits",
+        "_enrichment_recall_plot.pdf"
+      ),
+    device = "pdf"
+  )
+```
 
-
-ggplot(cellLines.PRIMEloci.immune.GWAS.enrichment.recall.data, aes(recall, enrichment, color=sample)) + geom_line(aes(group=sample)) +
-  theme(aspect.ratio=1)  + xlab(paste0("recall (n=",length(immune.GWAS.data$name),")")) + scale_color_manual(values=col.scheme) + 
-  geom_point(data=cellLines.PRIMEloci.immune.GWAS.enrichment.recall.data[cellLines.PRIMEloci.immune.GWAS.enrichment.recall.data$score==0.75,])
-
-ggsave(filename = paste0("plots/cellLinePlots/", "immuneTraits", "_enrichment_recall_plot.pdf"), device = "pdf")
-
+## [3.11.] 
+```{r}
+ggplot2::ggplot(
+    data = point.GWAS.df[point.GWAS.df$trait%in%blood.traits,],
+    mapping = aes(
+        x = sample,
+        y = trait,
+        fill = enrichment
+      )
+    ) +
+  geom_tile() +
+  scale_fill_distiller(
+      direction = 1,
+      palette = 7
+    ) +
+  theme_bw() +
+  theme(
+      axis.text.x = element_text(
+          angle = 90,
+          hjust = 1
+        ),
+      axis.title = element_blank()
+    )
 ```
 
 
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "cellLinePlots/",
+        "bloodTraits",
+        "_enrichment_hm.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
 
 ```{r}
-ggplot(point.GWAS.df[point.GWAS.df$trait%in%blood.traits,],aes(sample,trait,fill=enrichment)) + geom_tile() +
-  theme(axis.text.x = element_text(angle=90,hjust=1)) + scale_fill_distiller(direction=1,palette=7) +
-  xlab("") + ylab("")
+ggplot2::ggplot(
+    data = point.GWAS.df[point.GWAS.df$trait%in%blood.traits,],
+    mapping = aes(
+        x = sample,
+        y = trait,
+        fill = recall
+      )
+    ) +
+  geom_tile() +
+  scale_fill_distiller(
+      direction = 1,
+      palette = 2
+    ) +
+  theme(
+      axis.text.x = element_text(
+          angle = 90,
+          hjust = 1
+        ),
+      axis.title = element_blank()
+    )
+```
 
-ggsave(filename = paste0("plots/cellLinePlots/", "bloodTraits", "_enrichment_hm.pdf"), device = "pdf",width=7,height=5)
 
-ggplot(point.GWAS.df[point.GWAS.df$trait%in%blood.traits,],aes(sample,trait,fill=recall)) + geom_tile() +
-  theme(axis.text.x = element_text(angle=90,hjust=1)) + scale_fill_distiller(direction=1,palette=2) +
-  xlab("") + ylab("")
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "cellLinePlots/",
+        "bloodTraits",
+        "_recall_hm.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
 
-ggsave(filename = paste0("plots/cellLinePlots/", "bloodTraits", "_recall_hm.pdf"), device = "pdf",width=7,height=5)
 
-
+```{r}
 ggplot(point.GWAS.df[point.GWAS.df$trait%in%hep.traits,],aes(sample,trait,fill=enrichment)) + geom_tile() +
   theme(axis.text.x = element_text(angle=90,hjust=1)) + scale_fill_distiller(direction=1,palette=7) +
   xlab("") + ylab("")
+```
 
+
+```{r}
 ggsave(filename = paste0("plots/cellLinePlots/", "hepTraits", "_enrichment_hm.pdf"), device = "pdf",width=7,height=5)
+```
 
+
+```{r}
 ggplot(point.GWAS.df[point.GWAS.df$trait%in%hep.traits,],aes(sample,trait,fill=recall)) + geom_tile() +
   theme(axis.text.x = element_text(angle=90,hjust=1)) + scale_fill_distiller(direction=1,palette=2) +
   xlab("") + ylab("")
+```
 
+
+```{r}
 ggsave(filename = paste0("plots/cellLinePlots/", "hepTraits", "_recall_hm.pdf"), device = "pdf",width=7,height=5)
+```
 
 
+```{r}
 ggplot(point.GWAS.df[point.GWAS.df$trait%in%immune.traits,],aes(sample,trait,fill=enrichment)) + geom_tile() +
   theme(axis.text.x = element_text(angle=90,hjust=1)) + scale_fill_distiller(direction=1,palette=7) +
   xlab("") + ylab("")
+```
 
+
+```{r}
 ggsave(filename = paste0("plots/cellLinePlots/", "immuneTraits", "_enrichment_hm.pdf"), device = "pdf",width=7,height=5)
+```
 
+
+```{r}
 ggplot(point.GWAS.df[point.GWAS.df$trait%in%immune.traits,],aes(sample,trait,fill=recall)) + geom_tile() +
   theme(axis.text.x = element_text(angle=90,hjust=1)) + scale_fill_distiller(direction=1,palette=2) +
   xlab("") + ylab("")
+```
 
+
+```{r}
 ggsave(filename = paste0("plots/cellLinePlots/", "immuneTraits", "_recall_hm.pdf"), device = "pdf",width=7,height=5)
-
 ```
 
 
