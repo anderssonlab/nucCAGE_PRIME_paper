@@ -1052,25 +1052,61 @@ ggplot2::ggsave(
   )
 ```
 
+# [4.]
 
+## [4.0.] Annotate GWAS hits as promoter (proximal) or enhancer (distal)
 ```{r}
-library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-promoters <- promoters(txdb,upstream=500,downstream=500)
-GWAS.data$type <- rep("distal",length(GWAS.data))
-olap <- findOverlaps(GWAS.data,promoters,minoverlap = 1)
-GWAS.data$type[queryHits(olap)] <- "proximal"
-GWAS.df <- as.data.frame(GWAS.data)
-GWAS.df$name <- paste0(seqnames(GWAS.data),":",start(GWAS.data)+1,":",end(GWAS.data),":",GWAS.data$RS_id)
+promoters <- IRanges::promoters(
+    x = txdb,
+    upstream = 500,
+    downstream = 500
+  )
+GWAS.data$type <- base::rep("distal",base::length(GWAS.data))
+olap <- IRanges::findOverlaps(
+    query = GWAS.data,
+    subject = promoters,
+    minoverlap = 1
+  )
+GWAS.data$type[S4Vectors::queryHits(olap)] <- "proximal"
+```
 
-trait.loci.olap <- sapply(traits, function(t) {
-  ids <- which(GWAS.data$trait==t)
-  unique(unlist(lapply(names(unfiltered.PRIMEloci), function(n) {
-    pd <- unfiltered.PRIMEloci[[n]]
-    GWAS.olap <- findOverlaps(GWAS.data[ids,], pd, minoverlap=1)
-    ids[queryHits(GWAS.olap)]
-})))
-})
+## [4.1.] Convert data
+```{r}
+GWAS.df <- base::as.data.frame(GWAS.data)
+GWAS.df$name <- base::paste0(
+    GenomeInfoDb::seqnames(GWAS.data),":",
+    GenomicRanges::start(GWAS.data) + 1,":",
+    GenomicRanges::end(GWAS.data),":",
+    GWAS.data$RS_id
+  )
+```
+
+## [4.2.]
+#### see [1.5.] above for previous instalment of 'trait.loci.olap' object generation
+#### difference to [1.5.] is that here overlaps are calculated with 'unfiltered.PRIMEloci'
+```{r}
+trait.loci.olap <- base::sapply(
+  X = traits,
+  FUN = function(t) {
+    ids <- base::which(GWAS.data$trait == t)
+    base::unique(
+      base::unlist(
+        base::lapply(
+          X = base::names(unfiltered.PRIMEloci),
+          FUN = function(n) {
+              pd <- unfiltered.PRIMEloci[[n]]
+              GWAS.olap <- IRanges::findOverlaps(
+                  query = GWAS.data[ids,],
+                  subject = pd,
+                  minoverlap = 1
+                )
+              return(ids[S4Vectors::queryHits(GWAS.olap)])
+            }
+          )
+        )
+      )
+    }
+  )
 
 trait.matrices <- lapply(c(blood.traits,hep.traits,immune.traits), function(t) {
   
