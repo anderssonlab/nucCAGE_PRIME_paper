@@ -1261,7 +1261,7 @@ for (trait in base::c(blood.traits,hep.traits,immune.traits)) {
 
 ## [4.5.] Prepare data for MCHC trait specific plotting
 ```{r}
-trait = "MCHC"
+trait = "ApoB" # "MCHC" # "ApoB"
 m <- trait.matrices[[trait]]
 
 ro <- stats::hclust(stats::dist(m))$order
@@ -1306,6 +1306,7 @@ df <- base::merge(
 ## [4.6.] MCHC trait specific plotting
 ```{r}
 coef = midpoint
+REtype = "proximal" # "distal" # "proximal"
 cols <- base::c(
   grDevices::colorRampPalette(
       base::c("#ffffff","#e7f0fa", "#c9e2f6", "#95cbee", "#0099dc")
@@ -1316,7 +1317,166 @@ cols <- base::c(
   )
 
 df %>%
-  dplyr::filter(type == "distal") %>% 
+  dplyr::filter(type == REtype) %>%
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+          x = variant,
+          y = cell.line
+        )
+      ) + 
+    geom_tile(
+        mapping = aes(
+            fill = score
+          ),
+        color = "grey90",
+        size = 0.1
+      ) +  # Heatmap
+    scale_fill_gradientn(
+        colors = .GlobalEnv$cols,
+        limits = base::c(0L,1L)
+      ) +
+    theme_bw() +
+    theme(
+        aspect.ratio = 5/3, #5/3, #1/3,
+        axis.title = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_rect(
+              color = "black",
+              fill = NA,
+              linewidth = 1
+            ),
+        legend.title = element_blank()
+      ) +
+    guides(
+        fill = guide_colorbar(
+          label.position = "right",
+          title = NULL,
+          title.position = "left",
+          title.theme = element_text(
+              angle = 90,
+              hjust = 0.5
+            ),
+          ticks = T,
+          nbin = 100,
+          barheight = 5,
+          label = T,
+          barwidth = 0.5
+        ),
+        color = "none"
+      )
+```
+
+## [4.7.] Print plot to file
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_", trait,
+        "_", REtype,
+        "_variant_PRIMEloci_score_vs_cell_line.pdf"
+      ),
+    plot = ggplot2::last_plot(),
+    dpi = 300,
+    width = 3, #1.6, #8,
+    height = 3
+  )
+```
+
+## [4.8.] Summary plot
+```{r}
+df %>%
+  dplyr::filter(
+      type == REtype
+    ) %>%
+  dplyr::group_by(cell.line) %>% 
+  dplyr::summarise(
+      nr_0 = base::sum(score > 0),
+      nr_75 = base::sum(score > 0.75)
+    ) %>%
+  tidyr::pivot_longer(
+      cols = base::c("nr_0","nr_75"),
+      values_to = "count",
+      names_to = "cutoff"
+    ) %>% 
+  ggplot2::ggplot(
+        data = .,
+        mapping = aes(
+          x = count,
+          y = cell.line,
+          fill = cutoff
+        )
+      ) +
+    geom_bar(
+        stat = "identity",
+        colour = "black",
+        position = position_identity()
+      ) +
+    scale_fill_manual(
+        values = base::c("white","grey50")
+      ) +
+    # geom_jitter(
+    #     height = 0.3,
+    #     width = 0
+    #   ) +
+    theme_bw() +
+    theme(
+        aspect.ratio = 1,
+        panel.grid.major.y = element_blank(),
+        axis.title = element_blank(),
+        legend.justification = base::c(1,0),
+        legend.position = base::c(0.95,0.05),
+        legend.background = element_rect(
+          fill = "grey"
+        )
+      )
+```
+
+## [4.9.] Print summary plot to file
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_", trait,
+        "_", REtype,
+        "_variant_PRIMEloci_score_vs_cell_line",
+        "_summary",
+        ".pdf"
+      ),
+    plot = ggplot2::last_plot(),
+    dpi = 300,
+    width = 3,
+    height = 3
+  )
+```
+
+## [4.10.] Alternative plotting
+```{r}
+df %>%
+  dplyr::filter(type == "distal") %>%
+  tidyr::pivot_wider(
+      names_from = "cell.line",
+      values_from = "score"
+    ) %>%
+  dplyr::mutate(
+      diff = 2*K562_N - base::rowSums(dplyr::across(tidyselect::contains("_")))
+    ) %>%
+  dplyr::arrange(
+      K562_N, dplyr::desc(diff)
+    ) %>%
+  dplyr::mutate(
+      variant = forcats::fct_inorder(f = variant)
+    ) %>%
+  tidyr::pivot_longer(
+      cols = tidyselect::contains("_"),
+      names_to = "cell.line",
+      values_to = "score"
+    ) %>% 
   ggplot2::ggplot(
       data = .,
       mapping = aes(
@@ -1367,61 +1527,5 @@ df %>%
         ),
         color = "none"
       )
-```
-
-```{r}
-df %>%
-  dplyr::filter(
-      type == "distal"
-    ) %>%
-  dplyr::group_by(cell.line) %>% 
-  dplyr::summarise(
-      nr_0 = base::sum(score > 0),
-      nr_75 = base::sum(score > 0.75)
-    ) %>%
-  tidyr::pivot_longer(
-      cols = base::c("nr_0","nr_75"),
-      values_to = "count",
-      names_to = "cutoff"
-    ) %>% 
-  ggplot2::ggplot(
-        data = .,
-        mapping = aes(
-          x = count,
-          y = cell.line,
-          fill = cutoff
-        )
-      ) +
-    geom_bar(
-        stat = "identity",
-        colour = "black"
-      ) +
-    scale_fill_manual(
-        values = base::c("white","grey50")
-      ) +
-    # geom_jitter(
-    #     height = 0.3,
-    #     width = 0
-    #   ) +
-    theme_bw() +
-    theme(
-        aspect.ratio = 1,
-        panel.grid.major.y = element_blank(),
-        axis.title = element_blank(),
-        legend.justification = base::c(1,0),
-        legend.position = base::c(0.95,0.05),
-        legend.background = element_rect(
-          fill = "grey"
-        )
-      )
-```
-
-```{r}
-df %>%
-  dplyr::filter(type == "distal") %>%
-  tidyr::pivot_wider(
-      names_from = "cell.line",
-      values_from = "score"
-    )
 ```
 
