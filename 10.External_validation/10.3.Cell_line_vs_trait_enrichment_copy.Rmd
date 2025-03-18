@@ -644,7 +644,7 @@ hep.traits <- base::c(
     "IGF1"      # Insulin-like Growth Factor 1, growth hormone-related
   )
 
-blood.GWAS.data <- base::subset(GWAS.data, trait %in% blood.traits) # 4.848
+blood.GWAS.data <- base::subset(GWAS.data, trait %in% blood.traits) # 4.848 # 3.838 w/o Plt
 hep.GWAS.data <- base::subset(GWAS.data, trait %in% hep.traits) # 5.005
 immune.GWAS.data <- base::subset(GWAS.data, trait %in% immune.traits) # 4.093
 ```
@@ -766,19 +766,29 @@ ggplot2::ggplot(
     ) +
   theme_bw() +
   theme(
-      aspect.ratio = 1
-    )
+        aspect.ratio = 1,
+        legend.justification = base::c(1,1),
+        legend.position = base::c(0.95,0.95),
+        legend.background = element_rect(
+            fill = "grey"
+          ),
+        legend.title = element_blank(),
+        legend.spacing.y = grid::unit(3, 'lines')
+      )
 ```
 
 ## [3.8.] Print hepatocyte / liver GWAS plot
 ```{r}
 ggplot2::ggsave(
     filename = base::paste0(
-        here::here("10.External_validation/plots/"),
-        "cellLinePlots/",
-        "hepTraits",
+        here::here("10.External_validation/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_hepTraits",
         "_enrichment_recall_plot.pdf"
       ),
+    dpi = 300,
+    height = 4,
+    width = 4,
     device = "pdf"
   )
 ```
@@ -805,16 +815,26 @@ ggplot2::ggplot(
     ) +
   scale_color_manual(
       values = col.scheme
-    ) + 
+    ) +
+  scale_y_continuous(
+      limits = base::c(0,13)
+    ) +
   xlab(
     base::paste0(
-        "recall (n=", base::length(immune.GWAS.data$name),")"
+        "recall (n=", base::length(hep.GWAS.data$name), ")"
       )
-    ) + 
-  theme_bw()
+    ) +
+  theme_bw() +
   theme(
-      aspect.ratio = 1
-    )
+        aspect.ratio = 1,
+        legend.justification = base::c(1,1),
+        legend.position = base::c(0.95,0.95),
+        legend.background = element_rect(
+            fill = "grey"
+          ),
+        legend.title = element_blank(),
+        legend.spacing.y = grid::unit(3, 'lines')
+      )
 ```
 
 ## [3.10.] Print immune GWAS plot
