@@ -456,6 +456,7 @@ for (trait in focus.traits) {
   }
 ```
 
+
 ## [3.] Calculate enrichment, precision, and recall versus score threshold -------------------------
 
 ## [3.0.] Helper function for preparing enrichment-recall curves
@@ -608,8 +609,8 @@ blood.traits <- base::c(
     "RBC",     # Red Blood Cell count
     "MCV",     # Mean Corpuscular Volume, RBC size
     "MCH",     # Mean Corpuscular Hemoglobin, RBC hemoglobin content
-    "MCHC",    # Mean Corpuscular Hemoglobin Concentration
-    "Plt"      # Platelet count, clotting function
+    "MCHC"    # Mean Corpuscular Hemoglobin Concentration
+    # "Plt"      # Platelet count, clotting function
   )
 # Immune-related traits (white blood cells, inflammation, autoimmunity)
 immune.traits <- base::c(
@@ -643,9 +644,9 @@ hep.traits <- base::c(
     "IGF1"      # Insulin-like Growth Factor 1, growth hormone-related
   )
 
-blood.GWAS.data <- base::subset(GWAS.data, trait %in% blood.traits)
-hep.GWAS.data <- base::subset(GWAS.data, trait %in% hep.traits)
-immune.GWAS.data <- base::subset(GWAS.data, trait %in% immune.traits)
+blood.GWAS.data <- base::subset(GWAS.data, trait %in% blood.traits) # 4.848
+hep.GWAS.data <- base::subset(GWAS.data, trait %in% hep.traits) # 5.005
+immune.GWAS.data <- base::subset(GWAS.data, trait %in% immune.traits) # 4.093
 ```
 
 ## [3.4.] Run enrichment recall analysis for subset traits
@@ -695,6 +696,9 @@ ggplot2::ggplot(
   scale_color_manual(
       values = col.scheme
     ) +
+  scale_y_continuous(
+      limits = base::c(0,13)
+    ) +
   xlab(
     base::paste0(
         "recall (n=", base::length(blood.GWAS.data$name),")"
@@ -702,7 +706,14 @@ ggplot2::ggplot(
     ) +
   theme_bw() +
   theme(
-      aspect.ratio = 1
+      aspect.ratio = 1,
+      legend.justification = base::c(1,1),
+      legend.position = base::c(0.95,0.95),
+      legend.background = element_rect(
+          fill = "grey"
+        ),
+      legend.title = element_blank(),
+      legend.spacing.y = grid::unit(3, 'lines')
     )
 ```
 
@@ -710,11 +721,14 @@ ggplot2::ggplot(
 ```{r}
 ggplot2::ggsave(
     filename = base::paste0(
-        here::here("10.External_validation/plots/"),
-        "cellLinePlots/",
-        "bloodTraits",
+        here::here("10.External_validation/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_bloodTraits",
         "_enrichment_recall_plot.pdf"
       ),
+    dpi = 300,
+    height = 4,
+    width = 4,
     device = "pdf"
   )
 ```
@@ -741,6 +755,9 @@ ggplot2::ggplot(
     ) +
   scale_color_manual(
       values = col.scheme
+    ) +
+  scale_y_continuous(
+      limits = base::c(0,13)
     ) +
   xlab(
     base::paste0(
