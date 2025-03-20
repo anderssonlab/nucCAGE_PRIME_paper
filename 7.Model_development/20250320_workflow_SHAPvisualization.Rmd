@@ -108,7 +108,130 @@ ggplot2::ggplot(
   theme_bw()
 ```
 
+```{r}
+sample_name = "K562_N"
+annotation = "all"
+num_data = base::nrow(K562_N$df)
 
+ggplot2::ggplot(
+    data = data_ave_N,
+    mapping = aes(
+        x = X,
+        y = SHAP
+      )
+    ) +
+  geom_bar(
+      stat = "identity",
+      fill = "#7771AF",
+      alpha = 0.7
+    ) +
+  labs(
+      title = base::paste(
+          "Average SHAP Values (", sample_name, ") -",
+          annotation, "-", as.character(num_data), " rows"
+        ),
+      x = "Position (bp)",
+      y = "SHAP Value"
+    ) +
+  theme_bw()
+```
+
+```{r}
+data_ave_C <- dplyr::mutate(
+    .data = data_ave_C,
+    sample = "cells"
+  )
+data_ave_N <- dplyr::mutate(
+    .data = data_ave_C,
+    sample = "nuclei"
+  )
+
+comb <- dplyr::bind_rows(data_ave_C,data_ave_N)
+```
+
+```{r}
+sample_name = "K562_N"
+annotation = "all"
+num_data = base::nrow(K562_N$df)
+
+ggplot2::ggplot(
+    data = comb,
+    mapping = aes(
+        x = X,
+        y = SHAP
+      )
+    ) +
+  geom_bar(
+      stat = "identity",
+      fill = "#7771AF",
+      colour = "#7771AF",
+      alpha = 1
+    ) +
+  facet_wrap(
+      facets = ~ sample
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      panel.spacing = grid::unit(0.1,"lines")
+    )
+```
+
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("7.Model_development/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_ShapValues",
+        "_CellsNuclei.pdf"
+      ),
+    width = 8,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+```{r}
+sample_name = "K562_N"
+annotation = "all"
+num_data = base::nrow(K562_N$df)
+
+ggplot2::ggplot(
+    data = comb,
+    mapping = aes(
+        x = X,
+        y = subtnorm
+      )
+    ) +
+  geom_bar(
+      stat = "identity",
+      fill = "#3E8E74",
+      colour = "#3E8E74",
+      alpha = 1
+    ) +
+  facet_wrap(
+      facets = ~ sample
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      panel.spacing = grid::unit(0.1,"lines")
+    )
+```
+
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("7.Model_development/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_SubtnormValues",
+        "_CellsNuclei.pdf"
+      ),
+    width = 8,
+    height = 5,
+    device = "pdf"
+  )
+```
 
 ```{r}
 # Function to generate plots
