@@ -172,7 +172,7 @@ ggplot2::ggplot(
     ) +
   theme_bw() +
   theme(
-      aspect.ratio = 1/2,
+      aspect.ratio = 1,
       panel.spacing = grid::unit(0.1,"lines")
     )
 ```
@@ -187,7 +187,7 @@ ggplot2::ggsave(
       ),
     plot = ggplot2::last_plot(),
     width = 8,
-    height = 3,
+    height = 5,
     device = "pdf"
   )
 ```
@@ -215,7 +215,7 @@ ggplot2::ggplot(
     ) +
   theme_bw() +
   theme(
-      aspect.ratio = 1/2,
+      aspect.ratio = 1,
       panel.spacing = grid::unit(0.1,"lines")
     )
 ```
@@ -230,7 +230,7 @@ ggplot2::ggsave(
       ),
     plot = ggplot2::last_plot(),
     width = 8,
-    height = 3,
+    height = 5,
     device = "pdf"
   )
 ```
