@@ -1557,7 +1557,7 @@ df %>%
 ## [4.11.] Acquire scores for all variants across metabolic / hep traits
 ```{r}
 # collection = hep.traits # coefficient = 0.6143635
-collection = blood.traits
+collection = blood.traits # coefficient = 0.6222139
 
 comb <- base::do.call(
     what = base::rbind,
@@ -1675,7 +1675,7 @@ ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/"),
         base::format(base::Sys.Date(),"%Y%m%d"),
-        "_", "AllHepTraits",
+        "_", "AllBloodTraits", # "AllHepTraits",
         "_variant_PRIMEloci_score_vs_cell_line",
         ".pdf"
       ),
@@ -1735,7 +1735,7 @@ ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/"),
         base::format(base::Sys.Date(),"%Y%m%d"),
-        "_", "AllHepTraits",
+        "_", "AllBloodTraits", #"AllHepTraits",
         "_variant_PRIMEloci_score_vs_cell_line",
         "_summary",
         ".pdf"
