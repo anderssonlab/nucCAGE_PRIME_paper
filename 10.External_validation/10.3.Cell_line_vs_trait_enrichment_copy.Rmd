@@ -1554,11 +1554,14 @@ df %>%
       )
 ```
 
-
+## [4.11.] Acquire scores for all variants across metabolic / hep traits
 ```{r}
+# collection = hep.traits # coefficient = 0.6143635
+collection = blood.traits
+
 comb <- base::do.call(
     what = base::rbind,
-    args = trait.matrices[hep.traits]
+    args = trait.matrices[collection]
   )
 # base::dim(comb)
 sub <- comb[base::unique(base::rownames(comb)),]
@@ -1588,8 +1591,16 @@ df <- base::merge(
     )
 ```
 
+## [4.12.] Evaluate
+```{r}
+base::min(df$score[df$score > 0])
 
+df %>%
+  dplyr::group_by(cell.line) %>%
+  dplyr::summarise(count = dplyr::n())
+```
 
+## [4.12.] Plot
 ```{r}
 cols <- base::c(
   grDevices::colorRampPalette(
@@ -1658,18 +1669,36 @@ ggplot2::ggplot(
     )
 ```
 
+## [4.13.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_", "AllHepTraits",
+        "_variant_PRIMEloci_score_vs_cell_line",
+        ".pdf"
+      ),
+    plot = ggplot2::last_plot(),
+    dpi = 300,
+    width = 4,
+    height = 3
+  )
+```
+
+## [4.14.] Summary plot across all variants for hep traits 
 ```{r}
 df %>%
   dplyr::group_by(cell.line) %>% 
   dplyr::summarise(
       nr_0 = base::sum(score > 0),
-      nr_75 = base::sum(score > 0.75)
+      nr_75 = base::sum(score >= 0.75)
     ) %>%
   tidyr::pivot_longer(
-      cols = base::c("nr_0","nr_75"),
+      cols = base::c("nr_0", "nr_75"),
       values_to = "count",
       names_to = "cutoff"
-    ) %>% 
+    ) %>%
   ggplot2::ggplot(
         data = .,
         mapping = aes(
@@ -1684,12 +1713,79 @@ df %>%
         position = position_identity()
       ) +
     scale_fill_manual(
+        limits = base::c("nr_0","nr_75"),
         values = base::c("white","grey50")
       ) +
-    # geom_jitter(
-    #     height = 0.3,
-    #     width = 0
-    #   ) +
+    theme_bw() +
+    theme(
+        aspect.ratio = 1,
+        panel.grid.major.y = element_blank(),
+        axis.title = element_blank(),
+        legend.justification = base::c(1,0),
+        legend.position = base::c(0.95,0.05),
+        legend.background = element_rect(
+          fill = "grey"
+        )
+      )
+```
+
+## [4.15.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_", "AllHepTraits",
+        "_variant_PRIMEloci_score_vs_cell_line",
+        "_summary",
+        ".pdf"
+      ),
+    plot = ggplot2::last_plot(),
+    dpi = 300,
+    width = 4,
+    height = 3
+  )
+```
+
+## [4.16.] Alternative plotting
+```{r}
+df %>%
+  dplyr::group_by(cell.line) %>% 
+  dplyr::summarise(
+      nr_0 = base::sum(score < 0.1),
+      nr_mid = base::sum(score > 0 & score < 0.75),
+      nr_75 = base::sum(score >= 0.75)
+    ) %>%
+  tidyr::pivot_longer(
+      cols = base::c("nr_0","nr_mid","nr_75"),
+      values_to = "count",
+      names_to = "cutoff"
+    ) %>%
+  dplyr::mutate(
+      cutoff = base::factor(
+        x = cutoff,
+        levels = base::c("nr_0","nr_mid","nr_75"),
+        ordered = TRUE
+      )
+    ) %>% 
+  ggplot2::ggplot(
+        data = .,
+        mapping = aes(
+          x = count,
+          y = cell.line,
+          fill = cutoff
+        )
+      ) +
+    geom_bar(
+        stat = "identity",
+        colour = "black",
+        # position = position_identity()
+        position = "stack"
+      ) +
+    scale_fill_manual(
+        limits = base::c("nr_0","nr_mid","nr_75"),
+        values = base::c("white","grey50","black")
+      ) +
     theme_bw() +
     theme(
         aspect.ratio = 1,
