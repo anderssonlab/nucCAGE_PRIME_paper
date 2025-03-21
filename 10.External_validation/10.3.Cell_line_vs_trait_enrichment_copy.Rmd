@@ -1554,58 +1554,43 @@ df %>%
       )
 ```
 
-```{r}
-for (trait in base::c(hep.traits)) {
-    base::print(trait)
-    m <- trait.matrices[[trait]]
-    
-    ro <- stats::hclust(stats::dist(m))$order
-    #co <- hclust(dist(t(m)))$order
-      
-    df <- base::data.frame(
-        score = base::as.numeric(m),
-        cell.line = base::rep(base::colnames(m), each = base::nrow(m)),
-        variant = base::rownames(m)
-      )
-    df$variant <- base::factor(
-        x = df$variant,
-        levels = base::rownames(m)[ro]
-      )
-    
-    coef <- base::mean(df$score[df$score>0])
-    
-    df <- base::merge(
-          x = df,
-          y = GWAS.df[,base::c("name","type")],
-          by.x = "variant",
-          by.y = "name"
-        ) %>%
-      dplyr::distinct(
-          variant, score, cell.line, type
-        )
-    if(base::exists("hep.all")){
-        hep.all <- dplyr::bind_rows(hep.all,df)
-      } else {
-        hep.all <- df
-      }
-    
-  }
-hep.all <- hep.all %>% 
-  dplyr::distinct(variant,cell.line, score, type)
-```
 
 ```{r}
 comb <- base::do.call(
     what = base::rbind,
     args = trait.matrices[hep.traits]
   )
+# base::dim(comb)
+sub <- comb[base::unique(base::rownames(comb)),]
+ro <- stats::hclust(stats::dist(sub))$order
+      
+df <- base::data.frame(
+    score = base::as.numeric(sub),
+    cell.line = base::rep(base::colnames(sub), each = base::nrow(sub)),
+    variant = base::rownames(sub)
+  ) # 28,332 of 35,064
+
+df$variant <- base::factor(
+    x = df$variant,
+    levels = base::rownames(sub)[base::rev(ro)]
+  )
+    
+coef <- base::mean(df$score[df$score > 0])
+    
+df <- base::merge(
+      x = df,
+      y = GWAS.df[,base::c("name","type")],
+      by.x = "variant",
+      by.y = "name"
+    ) %>%
+  dplyr::distinct(
+      variant, score, cell.line, type
+    )
 ```
 
 
 
 ```{r}
-coef <- base::mean(hep.all$score[hep.all$score > 0])
-
 cols <- base::c(
   grDevices::colorRampPalette(
       base::c("#ffffff","#e7f0fa", "#c9e2f6", "#95cbee", "#0099dc")
@@ -1616,7 +1601,7 @@ cols <- base::c(
   )
 
 ggplot2::ggplot(
-    data = hep.all,
+    data = df,
     mapping = aes(
         x = variant,
         y = cell.line
@@ -1673,3 +1658,47 @@ ggplot2::ggplot(
     )
 ```
 
+```{r}
+df %>%
+  dplyr::group_by(cell.line) %>% 
+  dplyr::summarise(
+      nr_0 = base::sum(score > 0),
+      nr_75 = base::sum(score > 0.75)
+    ) %>%
+  tidyr::pivot_longer(
+      cols = base::c("nr_0","nr_75"),
+      values_to = "count",
+      names_to = "cutoff"
+    ) %>% 
+  ggplot2::ggplot(
+        data = .,
+        mapping = aes(
+          x = count,
+          y = cell.line,
+          fill = cutoff
+        )
+      ) +
+    geom_bar(
+        stat = "identity",
+        colour = "black",
+        position = position_identity()
+      ) +
+    scale_fill_manual(
+        values = base::c("white","grey50")
+      ) +
+    # geom_jitter(
+    #     height = 0.3,
+    #     width = 0
+    #   ) +
+    theme_bw() +
+    theme(
+        aspect.ratio = 1,
+        panel.grid.major.y = element_blank(),
+        axis.title = element_blank(),
+        legend.justification = base::c(1,0),
+        legend.position = base::c(0.95,0.05),
+        legend.background = element_rect(
+          fill = "grey"
+        )
+      )
+```
