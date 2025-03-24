@@ -1297,6 +1297,8 @@ for (trait in base::c(blood.traits,hep.traits,immune.traits)) {
 ```
 
 ## [4.5.] Prepare data for MCHC trait specific plotting
+#### For Apo use hep.traits coefficient = 0.6143635, see [4.11.]
+#### For MCHC use blood.traits coefficient = 0.6222139, see [4.11.]
 ```{r}
 trait = "ApoB" # "MCHC" # "ApoB"
 m <- trait.matrices[[trait]]
@@ -1314,7 +1316,7 @@ df$variant <- base::factor(
     levels = base::rownames(m)[ro]
   )
 
-midpoint <- base::mean(df$score[df$score>0])
+# midpoint <- base::mean(df$score[df$score>0]) ## see [4.11]
 # # df$score[df$score==0] <- NA
 
 df <- base::merge(
@@ -1328,9 +1330,11 @@ df <- base::merge(
     )
 ```
 
-## [4.6.] MCHC trait specific plotting
+## [4.6.] Trait specific plotting
+#### For Apo use hep.traits coefficient = 0.6143635, see [4.11.]
+#### For MCHC use blood.traits coefficient = 0.6222139, see [4.11.]
 ```{r}
-coef = midpoint
+coef = 0.6143635 # midpoint
 REtype = "proximal" # "distal" # "proximal"
 cols <- base::c(
   grDevices::colorRampPalette(
@@ -1354,8 +1358,8 @@ df %>%
         mapping = aes(
             fill = score
           ),
-        color = "grey90",
-        size = 0.1
+        color = NA
+        # size = 0.1
       ) +  # Heatmap
     scale_fill_gradientn(
         colors = .GlobalEnv$cols,
@@ -1403,7 +1407,9 @@ ggplot2::ggsave(
         base::format(base::Sys.Date(),"%Y%m%d"),
         "_", trait,
         "_", REtype,
-        "_variant_PRIMEloci_score_vs_cell_line.pdf"
+        "_variant_PRIMEloci_score_vs_cell_line",
+        "_", "HepTraitCoeff",
+        ".pdf"
       ),
     plot = ggplot2::last_plot(),
     dpi = 300,
