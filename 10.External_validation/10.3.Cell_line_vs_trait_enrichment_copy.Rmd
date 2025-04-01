@@ -1487,8 +1487,12 @@ ggplot2::ggsave(
 ```
 
 ## [4.10.] Identify individual variants
-#### ApoB examples for Fig5: chr9:133274296:133274295:rs115478735 in ABO gene
-#### related to the above: chr9:133263363:133263374:9:136138765_GCGCCCACCACTA_G
+#### ApoB examples for Fig5: chr9:133274296:133274295:rs115478735 in ABO gene (Klop et al., 2013, 10.1371/journal.pone.0075573)
+#### related to the above: chr9:133263363:133263374:9:136138765_GCGCCCACCACTA_G corresponds well with ABO signal at https://tinyurl.com/2av47r5b
+#### chr15:58430392:58430391:rs35980001 upstream of LIPC gene (lipid clearance) no correspondence with signal at https://tinyurl.com/2av47r5b
+#### chr8:19961929:19961928:rs326 within intron of LPL (Lipoprotein Lipase, lipid clearance from the blood stream)
+#### Less clear example: chr16:72045759:72045758:rs77303550 in intergenic region close to HP (Haptoglobin) and HPR (Haptoglobin-related)
+#### chr19:44913485:44913484:rs438811 upstream of APOC1 (Apolipoprotein C-1)
 ```{r}
 df %>%
   tidyr::pivot_wider(
@@ -1501,7 +1505,7 @@ df %>%
       comb = difN*difCN #*K562_N
     ) %>%
   dplyr::arrange(
-      dplyr::desc(difCN) # dplyr::desc(K562_N)
+      dplyr::desc(K562_N) #dplyr::desc(difCN) # dplyr::desc(K562_N)
     ) %>%
   dplyr::mutate(
       variant = forcats::fct_inorder(f = variant)
