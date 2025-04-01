@@ -1335,7 +1335,7 @@ df <- base::merge(
 #### For MCHC use blood.traits coefficient = 0.6222139, see [4.11.]
 ```{r}
 coef = 0.6143635 # midpoint
-REtype = "proximal" # "distal" # "proximal"
+REtype = "distal" # "distal" # "proximal"
 cols <- base::c(
   grDevices::colorRampPalette(
       base::c("#ffffff","#e7f0fa", "#c9e2f6", "#95cbee", "#0099dc")
@@ -1346,7 +1346,7 @@ cols <- base::c(
   )
 
 df %>%
-  dplyr::filter(type == REtype) %>%
+  dplyr::filter(type == REtype) %>% distinct(variant) %>% nrow()
   ggplot2::ggplot(
       data = .,
       mapping = aes(
@@ -1408,7 +1408,7 @@ ggplot2::ggsave(
         "_", trait,
         "_", REtype,
         "_variant_PRIMEloci_score_vs_cell_line",
-        "_", "HepTraitCoeff",
+        "_", "BloodTraitCoeff", # "HepTraitCoeff",
         ".pdf"
       ),
     plot = ggplot2::last_plot(),
@@ -1484,6 +1484,28 @@ ggplot2::ggsave(
     width = 3,
     height = 3
   )
+```
+
+## [4.10.] Identify individual variants
+#### ApoB examples for Fig5: chr9:133274296:133274295:rs115478735 in ABO gene
+#### related to the above: chr9:133263363:133263374:9:136138765_GCGCCCACCACTA_G
+```{r}
+df %>%
+  tidyr::pivot_wider(
+      names_from = "cell.line",
+      values_from = "score"
+    ) %>%
+  dplyr::mutate(
+      difN = 2*K562_N - base::rowSums(dplyr::across(tidyselect::contains("_"))),
+      difCN = (2*K562_N + 2*K562_C) - base::rowSums(dplyr::across(tidyselect::contains("_"))),
+      comb = difN*difCN #*K562_N
+    ) %>%
+  dplyr::arrange(
+      dplyr::desc(difCN) # dplyr::desc(K562_N)
+    ) %>%
+  dplyr::mutate(
+      variant = forcats::fct_inorder(f = variant)
+    )
 ```
 
 ## [4.10.] Alternative plotting
@@ -1562,8 +1584,8 @@ df %>%
 
 ## [4.11.] Acquire scores for all variants across metabolic / hep traits
 ```{r}
-# collection = hep.traits # coefficient = 0.6143635
-collection = blood.traits # coefficient = 0.6222139
+collection = hep.traits # coefficient = 0.6143635
+# collection = blood.traits # coefficient = 0.6222139 # 2.363
 
 comb <- base::do.call(
     what = base::rbind,
@@ -1604,6 +1626,8 @@ base::min(df$score[df$score > 0])
 df %>%
   dplyr::group_by(cell.line) %>%
   dplyr::summarise(count = dplyr::n())
+
+df %>% distinct(variant) %>% nrow()
 ```
 
 ## [4.12.] Plot
