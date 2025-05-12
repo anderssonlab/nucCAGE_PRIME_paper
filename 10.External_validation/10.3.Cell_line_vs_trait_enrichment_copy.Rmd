@@ -1139,26 +1139,27 @@ ggplot2::ggsave(
 ## [4.0.] Annotate GWAS hits as promoter (proximal) or enhancer (distal)
 ```{r}
 promoters <- IRanges::promoters(
-    x = txdb,
-    upstream = 500,
-    downstream = 500
-  )
+      x = txdb,
+      upstream = 500,
+      downstream = 500
+    )
 GWAS.data$type <- base::rep("distal",base::length(GWAS.data))
 olap <- IRanges::findOverlaps(
     query = GWAS.data,
     subject = promoters,
     minoverlap = 1
   )
-GWAS.data$type[S4Vectors::queryHits(olap)] <- "proximal"
+GWAS.data$type[S4Vectors::queryHits(olap)] <- "proximal" # 28,068
 
-GWAS.data %>%
-  tibble::as_tibble() %>%
-  dplyr::group_by(type)
+# GWAS.data %>%
+#   tibble::as_tibble() %>%
+#   dplyr::group_by(type) %>%
+#   dplyr::summarise(nr = dplyr::n())
 ```
 
 ## [4.1.] Convert data
 ```{r}
-GWAS.df <- base::as.data.frame(GWAS.data)
+GWAS.df <- base::as.data.frame(GWAS.data) # 28,068
 GWAS.df$name <- base::paste0(
     GenomeInfoDb::seqnames(GWAS.data),":",
     GenomicRanges::start(GWAS.data) + 1,":",
@@ -1175,6 +1176,7 @@ trait.loci.olap <- base::sapply(
   X = traits,
   FUN = function(t) {
     ids <- base::which(GWAS.data$trait == t)
+    
     base::unique(
       base::unlist(
         base::lapply(
@@ -1193,6 +1195,8 @@ trait.loci.olap <- base::sapply(
       )
     }
   )
+
+# base::length(trait.loci.olap[["MCV"]]) # 724
 ```
 
 ## [4.3.] Aggregate PRIMEloci-GWAS-overlaps into a matrix
@@ -1234,12 +1238,12 @@ trait.matrices <- base::lapply(
     return(m)
     }
   )
-base::names(trait.matrices) <- base::c(blood.traits,hep.traits,immune.traits)
-utils::str(trait.matrices)
+base::names(trait.matrices) <- base::c(blood.traits,hep.traits,immune.traits) # 31
+# utils::str(trait.matrices)
 ```
 
 ## [4.4.] Plot traits
-#### evaluate with trait = "HbA1c"
+#### evaluate with trait = "MCV"
 ```{r}
 for (trait in base::c(blood.traits,hep.traits,immune.traits)) {
   
@@ -1350,12 +1354,12 @@ for (trait in base::c(blood.traits,hep.traits,immune.traits)) {
 #### For MCHC use blood.traits coefficient = 0.6222139, see [4.11.]
 ```{r}
 trait = "MCHC" # "MCHC" # "ApoB"
-m <- trait.matrices[[trait]]
+m <- trait.matrices[[trait]] # MCHC: 143
 
 ro <- stats::hclust(stats::dist(m))$order
 #co <- hclust(dist(t(m)))$order
   
-df <- base::data.frame(
+df <- base::data.frame( # MCHC: 1287
     score = base::as.numeric(m),
     cell.line = base::rep(base::colnames(m), each = base::nrow(m)),
     variant = base::rownames(m)
@@ -1368,7 +1372,7 @@ df$variant <- base::factor(
 # midpoint <- base::mean(df$score[df$score>0]) ## see [4.11]
 # # df$score[df$score==0] <- NA
 
-df <- base::merge(
+df <- base::merge( # MCHC: 1287
       x = df,
       y = GWAS.df[,base::c("name","type")],
       by.x = "variant",
@@ -1395,7 +1399,7 @@ cols <- base::c(
   )
 
 df %>%
-  dplyr::filter(type == REtype) %>% distinct(variant) %>% nrow()
+  dplyr::filter(type == REtype) %>% # 119
   ggplot2::ggplot(
       data = .,
       mapping = aes(
@@ -1543,8 +1547,8 @@ ggplot2::ggsave(
 #### chr19:44913485:44913484:rs438811 upstream of APOC1 (Apolipoprotein C-1) overlapping with OCR corresponds well with APOC1 signal at https://tinyurl.com/2av47r5b
 #### Less clear example: chr16:72045759:72045758:rs77303550 in intergenic region close to HP (Haptoglobin) and HPR (Haptoglobin-related)
 ```{r}
-df %>%
-  tidyr::pivot_wider(
+df %>% # 1,287
+  tidyr::pivot_wider( # 143
       names_from = "cell.line",
       values_from = "score"
     ) %>%
@@ -1658,18 +1662,19 @@ df %>%
 
 ## [4.11.] Acquire scores for all variants across metabolic / hep traits
 ```{r}
-collection = hep.traits # coefficient = 0.6143635
+collection = hep.traits # coefficient = 0.6139217
 # collection = blood.traits # coefficient = 0.6222139 # 2.363
 
-comb <- base::do.call(
+comb <- base::do.call( # 3,869
     what = base::rbind,
     args = trait.matrices[collection]
   )
 # base::dim(comb)
-sub <- comb[base::unique(base::rownames(comb)),]
+sub <- comb[base::unique(base::rownames(comb)),] # 3,134
+# base::dim(sub)
 ro <- stats::hclust(stats::dist(sub))$order
       
-df <- base::data.frame(
+df <- base::data.frame( # 28,206
     score = base::as.numeric(sub),
     cell.line = base::rep(base::colnames(sub), each = base::nrow(sub)),
     variant = base::rownames(sub)
