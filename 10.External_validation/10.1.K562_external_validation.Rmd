@@ -662,17 +662,17 @@ ggplot(pooled.PRIMEloci.ClinVar.enrichment.recall.data[pooled.PRIMEloci.CRISPR.e
   geom_point(data=subset(point.ClinVar.df,loc=="genome")) + xlab(paste0("recall (n=",ClinVar.n,")")) + scale_color_manual(values=col.scheme)
 ggsave("plots/K562_pooled_PRIMEloci_ClinVar_enrichment_vs_recall_and_point_estimates_genome.pdf",width=7,height=5)
 
-ggplot(pooled.PRIMEloci.eQTL.enrichment.recall.data[pooled.PRIMEloci.CRISPR.enrichment.recall.data$recall>0.01,], aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
+ggplot(pooled.PRIMEloci.eQTL.enrichment.recall.data, aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
   theme(aspect.ratio=1) +
   geom_point(data=point.eQTL.genome.df) + xlab(paste0("recall (n=",eQTL.n,")")) + scale_color_manual(values=col.scheme)
 ggsave(paste0("plots/K562_pooled_PRIMEloci_eQTL_enrichment_vs_recall_PIP_",eQTL.pip.thres,"_and_point_estimates_genome.pdf"),width=7,height=5)
 
-ggplot(pooled.PRIMEloci.GWAS.enrichment.recall.data[pooled.PRIMEloci.CRISPR.enrichment.recall.data$recall>0.01,], aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
+ggplot(pooled.PRIMEloci.GWAS.enrichment.recall.data, aes(recall, enrichment, color=assay)) + geom_line(aes(group=sample)) +
   theme(aspect.ratio=1) +
   geom_point(data=point.GWAS.genome.df) + xlab(paste0("recall (n=",GWAS.n,")")) + scale_color_manual(values=col.scheme)
 ggsave(paste0("plots/K562_pooled_PRIMEloci_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,"_and_point_estimates_genome.pdf"),width=7,height=5)
 
-ggplot(pooled.PRIMEloci.CRISPR.enrichment.recall.data[pooled.PRIMEloci.CRISPR.enrichment.recall.data$recall>0.01,], aes(recall, precision, color=assay)) + geom_line(aes(group=sample)) +
+ggplot(pooled.PRIMEloci.CRISPR.enrichment.recall.data, aes(recall, precision, color=assay)) + geom_line(aes(group=sample)) +
   theme(aspect.ratio=1) +
   geom_point(data=point.CRISPR.genome.df) + xlab(paste0("recall (n=",CRISPR.n,")")) + scale_color_manual(values=col.scheme)
 ggsave(paste0("plots/K562_pooled_PRIMEloci_CRISPR_precision_vs_recall_and_point_estimates_genome.pdf"),width=7,height=5)

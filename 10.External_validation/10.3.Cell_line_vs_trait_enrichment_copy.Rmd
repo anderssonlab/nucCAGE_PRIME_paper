@@ -10,7 +10,7 @@ date: "2024-07-01"
 ```{r warning=TRUE, message=TRUE}
 base::library(tidyverse)
 base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-base::library(UpSetR)
+# base::library(UpSetR)
 ```
 
 ## [0.1.] Add custom color palettes
@@ -56,6 +56,7 @@ SNP.data <- base::unique( # 9.914.129
 
 ## [1.2.] Subset PRIMEloci from pooled replicates by threshold
 #### evaluate with  n = "K562_C" # 4,049,568
+#### "pooled.PRIMEloci[[n]]" # 32,407
 ```{r}
 PRIMEloci.thres = 0.75
 resize.width = 200
@@ -97,6 +98,7 @@ base::names(pooled.PRIMEloci) <- base::names(pooled.PRIMEloci.files)
 ```
 
 ## [1.3.] Prepare non-subset PRIMEloci set
+#### Neither thresholded nor resized as in [1.2.]
 ```{r}
 unfiltered.PRIMEloci <- base::lapply(
     X = base::names(pooled.PRIMEloci.files),
@@ -118,6 +120,7 @@ base::names(unfiltered.PRIMEloci) <- base::names(pooled.PRIMEloci.files)
 ```
 
 ## [1.4.] Read in, prepare and subset GWAS data to contain only intergenic GWAS
+#### Remove all GWAS with a PIP score below 0.2 and outside of gene CDSs
 #### Read out traits associated with these intergenic GWAS
 ```{r}
 GWAS.pip.thres = 0.2
@@ -149,29 +152,33 @@ olap <- GenomicRanges::findOverlaps(
     subject = cds,
     minoverlap = 1
   )
-GWAS.data <- GWAS.data[-S4Vectors::queryHits(olap)] ## 28.182
+GWAS.data <- GWAS.data[-S4Vectors::queryHits(olap)] ## 28.182 / 28.068
+```
+
+#### Read out traits based on the residual, filtered GWAS
+```{r}
 traits <- base::unique(GWAS.data$trait) # 94
 ```
 
 ## [1.5.] Overlap PRIMElocis with GWAS in a trait-specific manner to subset traits
-#### evaluate with t = "MCV", n = "K562_C", x = trait.loci.olap[[1]]
-##  'trait.loci.olap' includes all GWAS hits for a particular trait that overlaps with any of the PRIMElocis from any PRIMEloci dataset
+#### evaluate with t = "MCV", n = "K562_C", "x = trait.loci.olap[[t]]"
+## 'trait.loci.olap' includes all GWAS hits for a particular trait that overlaps with any of the PRIMElocis from any PRIMEloci dataset
 ## 'trait.olap.count' summarises the overall overlaps of traits across all PRIMEloci datasets
 ```{r}
 trait.loci.olap <- base::sapply(
     X = traits,
     FUN = function(t) {
-      ids <- base::which(GWAS.data$trait == t)
+      ids <- base::which(GWAS.data$trait == t) # 856
       
-      base::unique(
+      base::unique( # 132
         base::unlist(
           base::lapply(
             X = base::names(pooled.PRIMEloci),
             FUN = function(n) {
-              pd <- pooled.PRIMEloci[[n]] # 32.407
-              GWAS.olap <- GenomicRanges::findOverlaps(
-                  query = GWAS.data[ids,],
-                  subject = pd,
+              pd <- pooled.PRIMEloci[[n]] # "K562_C": 32.407
+              GWAS.olap <- GenomicRanges::findOverlaps( # 62
+                  query = GWAS.data[ids,], # 856
+                  subject = pd, # 32,407
                   minoverlap = 1
                 )
               return(ids[S4Vectors::queryHits(GWAS.olap)])
@@ -181,6 +188,7 @@ trait.loci.olap <- base::sapply(
       )
     }
   )
+# trait.loci.olap[[t]]: 132
 
 trait.olap.count <- base::sapply(
   X = trait.loci.olap,
@@ -190,13 +198,15 @@ trait.olap.count <- base::sapply(
       )
     }
   )
-filtered.traits <- base::names(
+# trait.olap.count[t]: 132
+
+filtered.traits <- base::names( # 52
     base::which(trait.olap.count >= 10)
   )
 ```
 
 ## [1.6.] Aggregate PRIMEloci-GWAS-overlaps into a matrix
-#### evaluate with t = "eGFRcys", n = "K562_C"
+#### evaluate with t = "MCV", n = "K562_C", "trait.matrices[[t]]"
 ```{r}
 trait.matrices <- base::lapply(
     X = filtered.traits,
@@ -236,27 +246,32 @@ trait.matrices <- base::lapply(
     }
   )
 base::names(trait.matrices) <- filtered.traits
+# trait.matrices[[t]] with t = "MCV": 132
 ```
 
-## [1.7.] Calculate GWAS enrichment and recall for every trait separately
+## [1.7.] Calculate GWAS enrichment & recall for every trait separately
+#### Evaluate with X = n = "K562_C"
 ```{r}
 point.GWAS.df <- base::do.call(
           what = "rbind",
           args = base::lapply(
             X = base::names(pooled.PRIMEloci),
             FUN = function(n) {
-              pd <- pooled.PRIMEloci[[n]]
-              bg.olap <- IRanges::findOverlaps(
+              pd <- pooled.PRIMEloci[[n]] # 32,407
+              
+              ## Overlaps of all non-CDS SNPs with cell-specific PRIMEloci (see [1.1.])
+              bg.olap <- IRanges::findOverlaps( # 42,943
                   query = SNP.data,
                   subject = pd,
                   minoverlap = 1
                 )
-              bg.count <- base::length(
+              bg.count <- base::length( # 42,943
                 base::unique(
-                    S4Vectors::queryHits(bg.olap)
+                    S4Vectors::queryHits(bg.olap) # 42,943
                   )
                 )
-              GWAS.olap <- IRanges::findOverlaps(
+              ## Overlaps of intergenic, filtered GWAS with PRIMEloci (see [1.4.])
+              GWAS.olap <- IRanges::findOverlaps( # 839
                   query = GWAS.data,
                   subject = pd,
                   minoverlap = 1
@@ -268,9 +283,9 @@ point.GWAS.df <- base::do.call(
                 X = filtered.traits,
                 FUN = function(t){
             
-                  fg <- base::which(GWAS.data$trait == t)
-                  fg.olap <- GWAS.olap[S4Vectors::queryHits(GWAS.olap) %in% fg,]
-                  fg.count <- base::length(
+                  fg <- base::which(GWAS.data$trait == t) # 856
+                  fg.olap <- GWAS.olap[S4Vectors::queryHits(GWAS.olap) %in% fg,] # 62
+                  fg.count <- base::length( # 62
                     base::unique(
                         S4Vectors::queryHits(fg.olap)
                       )
@@ -455,7 +470,6 @@ for (trait in focus.traits) {
   #   )
   }
 ```
-
 
 ## [3.] Calculate enrichment, precision, and recall versus score threshold -------------------------
 
@@ -1300,7 +1314,7 @@ for (trait in base::c(blood.traits,hep.traits,immune.traits)) {
 #### For Apo use hep.traits coefficient = 0.6143635, see [4.11.]
 #### For MCHC use blood.traits coefficient = 0.6222139, see [4.11.]
 ```{r}
-trait = "ApoB" # "MCHC" # "ApoB"
+trait = "MCHC" # "MCHC" # "ApoB"
 m <- trait.matrices[[trait]]
 
 ro <- stats::hclust(stats::dist(m))$order
@@ -1488,11 +1502,11 @@ ggplot2::ggsave(
 
 ## [4.10.] Identify individual variants
 #### ApoB examples for Fig5: chr9:133274296:133274295:rs115478735 in ABO gene (Klop et al., 2013, 10.1371/journal.pone.0075573)
-#### related to the above: chr9:133263363:133263374:9:136138765_GCGCCCACCACTA_G corresponds well with ABO signal at https://tinyurl.com/2av47r5b
-#### chr15:58430392:58430391:rs35980001 upstream of LIPC gene (lipid clearance) no correspondence with signal at https://tinyurl.com/2av47r5b
-#### chr8:19961929:19961928:rs326 within intron of LPL (Lipoprotein Lipase, lipid clearance from the blood stream)
+#### related to the above: chr9:133263363:133263374:9:136138765_GCGCCCACCACTA_G overlapping with OCR corresponds well with ABO signal at https://tinyurl.com/2av47r5b
+#### chr15:58430392:58430391:rs35980001 upstream of LIPC gene (lipid clearance) overlapping with OCR no correspondence with signal at https://tinyurl.com/2av47r5b
+#### chr8:19961929:19961928:rs326 within intron of LPL (Lipoprotein Lipase, lipid clearance from the blood stream) overlapping with OCR no correspondence with signal at https://tinyurl.com/2av47r5b
+#### chr19:44913485:44913484:rs438811 upstream of APOC1 (Apolipoprotein C-1) overlapping with OCR corresponds well with APOC1 signal at https://tinyurl.com/2av47r5b
 #### Less clear example: chr16:72045759:72045758:rs77303550 in intergenic region close to HP (Haptoglobin) and HPR (Haptoglobin-related)
-#### chr19:44913485:44913484:rs438811 upstream of APOC1 (Apolipoprotein C-1)
 ```{r}
 df %>%
   tidyr::pivot_wider(
@@ -1511,6 +1525,27 @@ df %>%
       variant = forcats::fct_inorder(f = variant)
     )
 ```
+#### MCHC examples for Fig5: chr19:1050876:1050875:rs12151021 expressed in HepG2 and K562, but likely different ABCA7 proteins, has effect on red blood cell count and hemoglobin (https://pheweb.jp/gene/ABCA7), but region could also regulate ARHGAP45 as seen in https://tinyurl.com/2av47r5b
+#### great example: chr22:37109513:37109512 at the promoter of TMPRSS6, regulator of expression of the iron absorption-regulating hormone hepicidin/HAMP, plays a role in iron homeostasis, very low mean corpuscular erythrocyte volume (Gan et al., 2012, 10.3945/ajcn.111.025684) 
+```{r}
+df %>%
+  tidyr::pivot_wider(
+      names_from = "cell.line",
+      values_from = "score"
+    ) %>%
+  dplyr::mutate(
+      difN = 2*HepG2_N - base::rowSums(dplyr::across(tidyselect::contains("_"))),
+      difCN = (2*HepG2_N + 2*HepG2_C) - base::rowSums(dplyr::across(tidyselect::contains("_"))),
+      comb = difN*difCN #*HepG2_N
+    ) %>%
+  dplyr::arrange(
+      dplyr::desc(difCN) #dplyr::desc(difCN) # dplyr::desc(HepG2_N)
+    ) %>%
+  dplyr::mutate(
+      variant = forcats::fct_inorder(f = variant)
+    )
+```
+
 
 ## [4.10.] Alternative plotting
 ```{r}
