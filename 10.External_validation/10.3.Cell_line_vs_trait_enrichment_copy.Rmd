@@ -406,7 +406,7 @@ ggplot2::ggsave(
 ## [2.3.] Plot all trait matrices across all GWAS & all cell lines
 #### evaluate with 'trait = "MCH"'
 ```{r}
-focus.traits <- base::as.character(
+focus.traits <- base::as.character( # 27
   base::unique(
       base::subset(x = point.GWAS.df, enrichment >= 10)$trait
     )
@@ -474,30 +474,35 @@ for (trait in focus.traits) {
 ## [3.] Calculate enrichment, precision, and recall versus score threshold -------------------------
 
 ## [3.0.] Helper function for preparing enrichment-recall curves
+#### Evaluate with trait = "MCV", n = "K562_C", sco = 0.89
+#### 'data = unfiltered.PRIMEloci',  fg.data = GWAS.data[GWAS.data$trait == trait,], bg.data = SNP.data, assay = names(unfiltered.PRIMEloci)
 ```{r}
 enrichment.precision.recall <- function(data, fg.data, bg.data, assay) {
   
   base::do.call(
     what = "rbind",
     args = base::lapply(
-      X = base::names(data),
+      X = base::names(data), # equals assay
       FUN = function(n) {
-    
-        gr <- data[[n]]
-        scores <- base::seq(0, 1, by = 0.01)
-        cnt <- base::sapply(
+        
+        ## Subset PRIMEloci via scores in a stepwise manner
+        gr <- data[[n]] # 3,915,085
+        scores <- base::seq(0, 1, by = 0.01) # 101
+        cnt <- base::sapply( # 101
           X = scores,
           FUN = function(sco){
               base::sum(gr$score>=sco)
             }
           )
-        scores <- scores[cnt>=10]
+        scores <- scores[cnt>=10] # 100
         
+        ## Overlap all trait-specific, filtered, non-CDS GWAS with all unfiltered PRIMEloci
         gr.fg.olap <- GenomicRanges::findOverlaps(
             query = fg.data,
             subject = gr,
             minoverlap = 1
           )
+        ## Overlap all non-CDS SNPs with all unfiltered PRIMEloci
         gr.bg.olap <- GenomicRanges::findOverlaps(
             query = bg.data,
             subject = gr,
@@ -508,17 +513,17 @@ enrichment.precision.recall <- function(data, fg.data, bg.data, assay) {
           what = "rbind",
           args = base::lapply(
             X = scores,
-            FUN = function(sco){
+            FUN = function(sco){ # 0.89
       
               selection <- base::which(gr$score>=sco)
-              fg.count <- base::length(
+              fg.count <- base::length( # 43
                 base::unique(
                   S4Vectors::queryHits(gr.fg.olap)[
                       base::which(S4Vectors::subjectHits(gr.fg.olap) %in% selection)
                     ]
                   )
                 )
-              bg.count <- base::length(
+              bg.count <- base::length( # 28,998
                 base::unique(
                   S4Vectors::queryHits(gr.bg.olap)[
                       base::which(S4Vectors::subjectHits(gr.bg.olap) %in% selection)
@@ -547,6 +552,7 @@ enrichment.precision.recall <- function(data, fg.data, bg.data, assay) {
 
 ## [3.1.] Run enrichment recall analysis for all traits separately
 #### run_enrichment_for_trait as a wrapper function of enrichment.precision.recall
+#### 'focus.traits' replaced by 'filtered.traits'
 ```{r}
 run_enrichment_for_trait <- function(trait) {
     .GlobalEnv$enrichment.precision.recall(
@@ -562,10 +568,35 @@ per.trait.results <- parallel::mclapply(
     FUN = run_enrichment_for_trait,
     mc.cores = 30
   )
-base::names(per.trait.results) <- focus.traits
+base::names(per.trait.results) <- filtered.traits # focus.traits
+# per.trait.results[[t]] # 900
 ```
 
+## Save and read 'per.trait.results' object
+```{r}
+base::saveRDS(
+    object = per.trait.results,
+    file = base::paste0(
+        here::here("10.External_validation/"),
+        base::format(base::Sys.Date(), "%Y%m%d"),
+        "_PerTraitResults",
+        ".rds"
+      ),
+    compress = TRUE
+  )
+```
+
+```{r}
+per.trait.results <- base::list.files(
+      path = here::here("10.External_validation"),
+      full.names = TRUE
+    ) %>%
+  stringr::str_subset("PerTraitResults")
+```
+
+
 ## [3.2.] Plot all trait-specific enrichment-recall curves
+#### Evaluate with trait_name = "MCV", data = per.trait.results[[trait_name]]
 ```{r}
 base::lapply(
     X = base::seq_along(per.trait.results),
@@ -1119,6 +1150,10 @@ olap <- IRanges::findOverlaps(
     minoverlap = 1
   )
 GWAS.data$type[S4Vectors::queryHits(olap)] <- "proximal"
+
+GWAS.data %>%
+  tibble::as_tibble() %>%
+  dplyr::group_by(type)
 ```
 
 ## [4.1.] Convert data
