@@ -1,4 +1,4 @@
----
+SummarizedExperiment::---
 title: "20240411_workflow_trackVisualization"
 output: html_document
 date: "2024-04-11"
@@ -300,7 +300,7 @@ cols <- base::c(
 #   )
 ```
 
-## [1.3.] Identify files
+## [1.3.] Identify bigwig files to be read
 ```{r}
 fs <- base::list.files(
       path = here::here("trackHubFiles"),
@@ -311,53 +311,23 @@ fs <- base::list.files(
   # stringr::str_subset("K562") # K562-specific
 ```
 
-## [1.4.] Load tmm.CTSSs object
-#### see [1.15.2.] in "1.1.CTSSs.processing.Rmd" for more info
-```{r}
-# fn <- base::list.files(
-#       path = here::here("1.CTSSs"),
-#       full.names = TRUE
-#     ) %>%
-#   stringr::str_subset("tmm.CTSSs")
-# 
-# tmm.CTSSs <- base::readRDS(file = fn)
-```
-
-## [1.5.] Load prepared objects
-```{r}
-GM12878.CTSSs <- base::readRDS(
-  file = base::paste0(
-      here::here("1.CTSSs/"),
-      "all.combined.GM12878.CTSSs.rds"
-    )
-  )
-```
-
-```{r}
-K562.CTSSs <- base::readRDS(
-  file = base::paste0(
-      here::here("1.CTSSs/"),
-      "all.combined.k562.CTSSs.rds"
-    )
-  )
-```
-
-#### Load HepG2-, HCT116-, A549-CTSS objects & adapt names
-#### Evaluate with 'rsen = "A549"'
+## [1.4.] Load HepG2-, HCT116-, A549-CTSS objects & adapt names
+#### Evaluate with 'rsen = "A549"', 'SummarizedExperiment::colData(CTSSs.objects[[rsen]])'
 ```{r}
 CTSSs.objects_ <- base::list.files(
       path = here::here("1.CTSSs"),
       full.names = TRUE
     ) %>%
-  stringr::str_subset("poolSub") %>%
+  stringr::str_subset("\\/poolSub") %>%
   stringr::str_subset("HepG2|HCT116|A549")
+  # stringr::str_subset("HepG2|HCT116|A549|combined.GM12878|combined.k562")
 
 CTSSs.objects <- purrr::map(
     .x = CTSSs.objects_,
     .f = base::readRDS
   )
 base::names(CTSSs.objects) <- stringr::str_replace(
-    CTSSs.objects_, ".*/poolSub\\.(.*?)\\.CTSSs.*", "\\1"
+    CTSSs.objects_, ".*/poolSub(\\.combined)?\\.(.*?)\\.CTSSs.*", "\\2"
   )
 CTSSs.objects <- purrr::map(
     .x = base::names(CTSSs.objects),
@@ -370,12 +340,108 @@ CTSSs.objects <- purrr::map(
     }
   )
 base::names(CTSSs.objects) <- stringr::str_replace(
-    CTSSs.objects_, ".*/poolSub\\.(.*?)\\.CTSSs.*", "\\1"
+    CTSSs.objects_, ".*/poolSub(\\.combined)?\\.(.*?)\\.CTSSs.*", "\\2"
   )
 ```
 
-## [1.6.] Subset for samples of interest
+## [1.5.] Add the corresponding GM12878 and K562 poolSub data to CTSSs.objects of [1.5.]
+#### Evaluate with SummarizedExperiment::colData(K562.CTSSs.sub), SummarizedExperiment::assay(K562.CTSSs.sub, i = "counts.noSingletons")
+```{r}
+K562.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "poolSub.combined.k562.CTSSs.rmSingletons.rds"
+    )
+  )
+
+ids <- SummarizedExperiment::colData(x = K562.CTSSs) %>%
+  tibble::as_tibble(rownames = "type") %>%
+  dplyr::filter(
+      stringr::str_detect(type, "K562_C$|K562_N$")
+    ) %>%
+  dplyr::pull(ID)
+
+K562.CTSSs.sub <- S4Vectors::subset(
+    x = K562.CTSSs,
+    select = SummarizedExperiment::colData(K562.CTSSs)$ID %in% ids
+  )
+CTSSs.objects[["K562"]] <- K562.CTSSs.sub
+base::remove(K562.CTSSs,K562.CTSSs.sub)
+```
+
+```{r}
+GM12878.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "poolSub.combined.GM12878.CTSSs.rmSingletons.rds"
+    )
+  )
+
+ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
+  tibble::as_tibble(rownames = "type") %>%
+  dplyr::filter(
+     stringr::str_detect(type, "GM12878_1M_C$|GM12878_1M_N$")
+    ) %>%
+  dplyr::pull(ID)
+
+GM12878.CTSSs.sub <- S4Vectors::subset(
+    x = GM12878.CTSSs,
+    select = SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids
+  )
+CTSSs.objects[["GM12878"]] <- GM12878.CTSSs.sub
+# SummarizedExperiment::colData(GM12878.CTSSs.sub)
+base::remove(GM12878.CTSSs,GM12878.CTSSs.sub)
+```
+
+## [1.6.] Load prepared 'all CTSS' - objects for GM12878 and K562
 #### Evaluate with 'SummarizedExperiment::colData(GM12878.CTSSs.sub)' & 'SummarizedExperiment::assay(GM12878.CTSSs.sub, "counts")'
+```{r}
+GM12878.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "all.combined.GM12878.CTSSs.rds"
+    )
+  )
+
+ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
+  tibble::as_tibble(rownames = "type") %>%
+  dplyr::filter(
+      (pooled == "yes" & stringr::str_detect(type, "trip|ctrl")) |
+      (stringr::str_detect(type, "groCap")) |
+      (pooled == "yes" & stringr::str_detect(ID, "500K|5M"))
+    ) %>%
+  dplyr::pull(ID)
+
+GM12878.CTSSs.sub <- S4Vectors::subset(
+    x = GM12878.CTSSs,
+    select = SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids
+  )
+```
+
+#### Evaluate with 'SummarizedExperiment::colData(K562.CTSSs.sub)' & 'SummarizedExperiment::assay(K562.CTSSs.sub, "counts")'
+```{r}
+K562.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "all.combined.k562.CTSSs.rds"
+    )
+  )
+
+ids <- SummarizedExperiment::colData(x = K562.CTSSs) %>%
+  tibble::as_tibble() %>%
+  dplyr::filter(
+      # pooled == "yes" &
+      stringr::str_detect(ID, "Cap", negate = TRUE)
+    ) %>%
+  dplyr::pull(ID)
+
+K562.CTSSs.sub <- S4Vectors::subset(
+    x = K562.CTSSs,
+    select = SummarizedExperiment::colData(K562.CTSSs)$ID %in% ids
+  )
+```
+
+## [1.7.] Subset for other samples of interest, e.g., 5M, Triptolide or GROcap
 ```{r}
 # ##GM12878 5M and 500k samples
 # ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
@@ -401,40 +467,9 @@ base::names(CTSSs.objects) <- stringr::str_replace(
 #       stringr::str_detect(type, "groCap")
 #     ) %>%
 #   dplyr::pull(ID)
-
-#Selected GM12878 samples
-ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
-  tibble::as_tibble(rownames = "type") %>%
-  dplyr::filter(
-      (pooled == "yes" & stringr::str_detect(type, "trip|ctrl")) |
-      (stringr::str_detect(type, "groCap")) |
-      (pooled == "yes" & stringr::str_detect(ID, "500K|5M"))
-    ) %>%
-  dplyr::pull(ID)
-
-GM12878.CTSSs.sub <- S4Vectors::subset(
-    x = GM12878.CTSSs,
-    select = SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids
-  )
 ```
 
-#### Evaluate with 'SummarizedExperiment::colData(K562.CTSSs.sub)' & 'SummarizedExperiment::assay(K562.CTSSs.sub, "counts")'
-```{r}
-ids <- SummarizedExperiment::colData(x = K562.CTSSs) %>%
-  tibble::as_tibble() %>%
-  dplyr::filter(
-      # pooled == "yes" &
-      stringr::str_detect(ID, "Cap", negate = TRUE)
-    ) %>%
-  dplyr::pull(ID)
-
-K562.CTSSs.sub <- S4Vectors::subset(
-    x = K562.CTSSs,
-    select = SummarizedExperiment::colData(K562.CTSSs)$ID %in% ids
-  )
-```
-
-## [1.7.] Write out bigWig files
+## [1.8.] Write out bigWig files
 ```{r}
 samples = base::rownames(
     SummarizedExperiment::colData(GM12878.CTSSs.sub)
@@ -483,7 +518,7 @@ purrr::map(
   )
 ```
 
-## [1.8.] TMM normalise data
+## [1.9.] TMM normalise data
 ```{r}
 # base::debugonce(edgeR::calcNormFactors)
 # facs <- edgeR::calcNormFactors(
@@ -533,7 +568,19 @@ purrr::map(
 #   }
 ```
 
-## [1.9.] Read in CRISPR-gRNA locations
+## [1.10.] Load tmm.CTSSs object
+#### see [1.15.2.] in "1.1.CTSSs.processing.Rmd" for more info
+```{r}
+# fn <- base::list.files(
+#       path = here::here("1.CTSSs"),
+#       full.names = TRUE
+#     ) %>%
+#   stringr::str_subset("tmm.CTSSs")
+# 
+# tmm.CTSSs <- base::readRDS(file = fn)
+```
+
+## [1.11.] Read in CRISPR-gRNA locations
 ```{r}
 dir = "/projects/ralab/people/pbr316/20221208_scCAGE/resources/"
 crispr <- readr::read_delim(
@@ -583,6 +630,14 @@ crispr_data <- crispr %>%
 #### BCL2 promoter/PROMPTs: "chr18:63,317,868-63,320,926"
 ```{r}
 l_ <- "chr4:159,101,737-159,104,305"
+```
+
+#### see [4.10.] in 10.3.Cell_line_vs_trait_enrichment.Rmd for 'chr22:37109513:37109512'
+```{r}
+l_ <- "chr22:37109513-37109512"
+```
+
+```{r}
 l <- stringr::str_replace_all(l_,",","")
 chr = stringr::str_replace(l,"^(chr.*):.*","\\1")
 s = stringr::str_replace(l,"^chr.*:(.*)-(.*)","\\1") %>%
@@ -591,6 +646,7 @@ e = stringr::str_replace(l,"^chr.*:(.*)-(.*)","\\2") %>%
   base::as.integer()
 out <- base::paste0("_",chr,"_",s,"_",e)
 ```
+
 
 ```{r}
 extend = 0
