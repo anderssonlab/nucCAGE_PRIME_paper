@@ -323,7 +323,7 @@ fs <- base::list.files(
 # tmm.CTSSs <- base::readRDS(file = fn)
 ```
 
-## [1.5.] Load  object
+## [1.5.] Load prepared objects
 ```{r}
 GM12878.CTSSs <- base::readRDS(
   file = base::paste0(
@@ -343,6 +343,7 @@ K562.CTSSs <- base::readRDS(
 ```
 
 #### Load HepG2-, HCT116-, A549-CTSS objects & adapt names
+#### Evaluate with 'rsen = "A549"'
 ```{r}
 CTSSs.objects_ <- base::list.files(
       path = here::here("1.CTSSs"),
@@ -367,6 +368,9 @@ CTSSs.objects <- purrr::map(
         )
       return(CTSSs.objects[[rsen]])
     }
+  )
+base::names(CTSSs.objects) <- stringr::str_replace(
+    CTSSs.objects_, ".*/poolSub\\.(.*?)\\.CTSSs.*", "\\1"
   )
 ```
 
