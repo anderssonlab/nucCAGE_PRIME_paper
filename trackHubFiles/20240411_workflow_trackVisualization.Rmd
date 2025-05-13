@@ -647,9 +647,8 @@ e = stringr::str_replace(l,"^chr.*:(.*)-(.*)","\\2") %>%
 out <- base::paste0("_",chr,"_",s,"_",e)
 ```
 
-
 ```{r}
-extend = 0
+extend = 200
 ran <- GenomicRanges::GRanges(
     seqnames = chr,
     ranges = IRanges::IRanges(start = s, end = e)
@@ -781,6 +780,71 @@ scrs <- SummarizedExperiment::assay(GM12878.CTSSs.sub,"TPM")[ovl@to,] %>% # K562
 
 cage_sel_ <- dplyr::bind_cols(crds,scrs)
 ```
+
+#### Evaluate with 'c = "HepG2"'
+#### Alternative for combining data: base::do.call(what = "rbind",args = base::lapply(X = base::names(ovl),FUN = function(c){}))'
+```{r}
+ovl <- purrr::map(
+  .x = base::names(CTSSs.objects),
+  .f = function(c){
+      ovl <- IRanges::findOverlaps(
+          query = ran,
+          subject = CTSSs.objects[[c]]
+        )
+      gr <- SummarizedExperiment::rowRanges(CTSSs.objects[[c]])[ovl@to,]
+      return(methods::as(gr,"GRanges"))
+    }
+  )
+base::names(ovl) <- base::names(CTSSs.objects)
+
+crds <- purrr::map_dfr(
+  .x = base::names(ovl),
+  .f = function(c){
+    ovl[[c]] %>% 
+      base::as.data.frame() %>%
+        tibble::as_tibble() %>%
+        dplyr::mutate(
+            celltype = c
+          ) %>%
+        dplyr::select(
+            celltype,seqnames,start,end,strand
+          )
+        }
+      )
+```
+
+```{r}
+ovl <- purrr::map(
+  .x = base::names(CTSSs.objects),
+  .f = function(c){
+      return(
+        IRanges::findOverlaps(
+          query = ran,
+          subject = CTSSs.objects[[c]]
+        )
+      )
+    }
+  )
+base::names(ovl) <- base::names(CTSSs.objects)
+
+crds <- purrr::map_dfr(
+  .x = base::names(ovl),
+  .f = function(c){
+    gr <- SummarizedExperiment::rowRanges(CTSSs.objects[[c]])[ovl[[c]]@to,]
+    methods::as(gr,"GRanges")
+    ovl[[c]] %>% 
+      base::as.data.frame() %>%
+        tibble::as_tibble() %>%
+        dplyr::mutate(
+            celltype = c
+          ) %>%
+        dplyr::select(
+            celltype,seqnames,start,end,strand
+          )
+        }
+      )
+```
+
 
 ## [4.1.] Summarise data
 #### Evaluate with 'dplyr::arrange(cage_sel,dplyr::desc(score))'
