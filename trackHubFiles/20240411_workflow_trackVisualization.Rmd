@@ -831,20 +831,49 @@ crds <- purrr::map_dfr(
   .x = base::names(ovl),
   .f = function(c){
     gr <- SummarizedExperiment::rowRanges(CTSSs.objects[[c]])[ovl[[c]]@to,]
-    methods::as(gr,"GRanges")
-    ovl[[c]] %>% 
+    methods::as(gr,"GRanges") %>% 
       base::as.data.frame() %>%
         tibble::as_tibble() %>%
         dplyr::mutate(
-            celltype = c
+            celltype = c,
+            rowID = ovl[[c]]@to
           ) %>%
         dplyr::select(
-            celltype,seqnames,start,end,strand
+            celltype,seqnames,start,
+            end,strand,rowID
           )
         }
       )
 ```
 
+#### Evaluate with 'c = "HCT116"', 'c = "A549"','c = "K562"', 'c = "HepG2"'
+```{r}
+scrs <-  purrr::map_dfr(
+  .x = base::names(ovl),
+  .f = function(c){
+    
+    mat <- CTSSs.objects[[c]]@assays@data$TPM %>%
+      base::as.matrix()
+    
+    base::colnames(mat) <- stringr::str_extract(base::colnames(mat), "C|N")
+    return(
+      mat %>% 
+        tibble::as_tibble() %>%
+        dplyr::filter(
+            dplyr::row_number() %in% ovl[[c]]@to
+          ) %>%
+        dplyr::mutate(
+            celltype = c,
+            rowID = ovl[[c]]@to
+          )
+      )
+    }
+  )
+
+cage_sel_ <- dplyr::left_join(
+    crds, scrs, by = base::c("celltype","rowID")
+  )
+```
 
 ## [4.1.] Summarise data
 #### Evaluate with 'dplyr::arrange(cage_sel,dplyr::desc(score))'
