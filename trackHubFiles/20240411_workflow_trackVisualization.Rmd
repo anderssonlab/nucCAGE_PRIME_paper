@@ -416,6 +416,7 @@ GM12878.CTSSs.sub <- S4Vectors::subset(
     x = GM12878.CTSSs,
     select = SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids
   )
+base::remove(GM12878.CTSSs)
 ```
 
 #### Evaluate with 'SummarizedExperiment::colData(K562.CTSSs.sub)' & 'SummarizedExperiment::assay(K562.CTSSs.sub, "counts")'
@@ -784,33 +785,33 @@ cage_sel_ <- dplyr::bind_cols(crds,scrs)
 #### Evaluate with 'c = "HepG2"'
 #### Alternative for combining data: base::do.call(what = "rbind",args = base::lapply(X = base::names(ovl),FUN = function(c){}))'
 ```{r}
-ovl <- purrr::map(
-  .x = base::names(CTSSs.objects),
-  .f = function(c){
-      ovl <- IRanges::findOverlaps(
-          query = ran,
-          subject = CTSSs.objects[[c]]
-        )
-      gr <- SummarizedExperiment::rowRanges(CTSSs.objects[[c]])[ovl@to,]
-      return(methods::as(gr,"GRanges"))
-    }
-  )
-base::names(ovl) <- base::names(CTSSs.objects)
-
-crds <- purrr::map_dfr(
-  .x = base::names(ovl),
-  .f = function(c){
-    ovl[[c]] %>% 
-      base::as.data.frame() %>%
-        tibble::as_tibble() %>%
-        dplyr::mutate(
-            celltype = c
-          ) %>%
-        dplyr::select(
-            celltype,seqnames,start,end,strand
-          )
-        }
-      )
+# ovl <- purrr::map(
+#   .x = base::names(CTSSs.objects),
+#   .f = function(c){
+#       ovl <- IRanges::findOverlaps(
+#           query = ran,
+#           subject = CTSSs.objects[[c]]
+#         )
+#       gr <- SummarizedExperiment::rowRanges(CTSSs.objects[[c]])[ovl@to,]
+#       return(methods::as(gr,"GRanges"))
+#     }
+#   )
+# base::names(ovl) <- base::names(CTSSs.objects)
+# 
+# crds <- purrr::map_dfr(
+#   .x = base::names(ovl),
+#   .f = function(c){
+#     ovl[[c]] %>% 
+#       base::as.data.frame() %>%
+#         tibble::as_tibble() %>%
+#         dplyr::mutate(
+#             celltype = c
+#           ) %>%
+#         dplyr::select(
+#             celltype,seqnames,start,end,strand
+#           )
+#         }
+#       )
 ```
 
 ```{r}
@@ -835,11 +836,11 @@ crds <- purrr::map_dfr(
       base::as.data.frame() %>%
         tibble::as_tibble() %>%
         dplyr::mutate(
-            celltype = c,
+            type = c,
             rowID = ovl[[c]]@to
           ) %>%
         dplyr::select(
-            celltype,seqnames,start,
+            type,seqnames,start,
             end,strand,rowID
           )
         }
@@ -863,7 +864,7 @@ scrs <-  purrr::map_dfr(
             dplyr::row_number() %in% ovl[[c]]@to
           ) %>%
         dplyr::mutate(
-            celltype = c,
+            type = c,
             rowID = ovl[[c]]@to
           )
       )
@@ -871,8 +872,14 @@ scrs <-  purrr::map_dfr(
   )
 
 cage_sel_ <- dplyr::left_join(
-    crds, scrs, by = base::c("celltype","rowID")
-  )
+      crds, scrs, by = base::c("type","rowID")
+    ) %>%
+  dplyr::mutate(
+      dplyr::across(
+        C:N, ~ base::replace(., base::is.na(.), 0)
+      )
+    ) %>%
+  dplyr::select(-rowID)
 ```
 
 ## [4.1.] Summarise data
@@ -914,6 +921,26 @@ cage_sel <- cage_sel_ %>%
       )
     )
 ```
+
+```{r}
+ cage_sel <- cage_sel_ %>%
+  tidyr::pivot_longer(
+      cols = base::c("C","N"),
+      names_to = "sample",
+      values_to = "score"
+    ) %>%
+  dplyr::mutate(
+    score = dplyr::case_when(
+        strand == "-" ~ (-1)*score,
+        TRUE ~ score
+      ),
+    strand = dplyr::case_when(
+        strand == "+" ~ "plus",
+        strand == "-" ~ "minus"
+      )
+    )
+```
+
 
 # [5.] Plot data -------------------------
 
@@ -1008,6 +1035,32 @@ for(ext in c("pdf", "png")){
     )
   }
 ```
+
+```{r}
+plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
+  ggplot2::facet_wrap(
+      facets = . ~ type + sample,
+      ncol = 1,
+      strip.position = "right",
+      scales = "fixed" #"free_y"
+    )
+  # ggh4x::facetted_pos_scales(
+  #   y = base::list(
+  #     type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ scale_y_continuous(
+  #         limits = base::c(-3,3)
+  #       ),
+  #     type %in% base::c("500K_N","5M_N","500K_C") ~ scale_y_continuous(
+  #         limits = base::c(0,300)
+  #       )
+  #     )
+  #   )
+ggrastr::rasterise(
+    input = plot,
+    layers = "Bar",
+    dpi = 300
+  )
+```
+
 
 ## [6.] Genomic_landscape -------------------------
 
