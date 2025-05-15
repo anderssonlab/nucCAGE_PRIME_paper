@@ -941,6 +941,7 @@ cage_sel <- cage_sel_ %>%
     )
 ```
 
+##<<bookmark>> - GM12878 & K562 are both empty - likely not sorted
 
 # [5.] Plot data -------------------------
 
@@ -1042,7 +1043,7 @@ plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
       facets = . ~ type + sample,
       ncol = 1,
       strip.position = "right",
-      scales = "fixed" #"free_y"
+      scales = "free_y" #"fixed" "free_y"
     )
   # ggh4x::facetted_pos_scales(
   #   y = base::list(
