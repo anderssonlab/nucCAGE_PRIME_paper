@@ -424,10 +424,31 @@ ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
     ) %>%
   dplyr::pull(ID)
 
-GM12878.CTSSs.sub <- S4Vectors::subset(
-    x = GM12878.CTSSs,
-    select = SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids
+# GM12878.CTSSs.sub <- S4Vectors::subset(
+#     x = GM12878.CTSSs,
+#     select = SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids
+#   )
+
+tpm <- SummarizedExperiment::assay(GM12878.CTSSs,"TPM")[,SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids]
+GM12878.CTSSs.sub <- SummarizedExperiment::SummarizedExperiment(
+    assays = base::list(
+        TPM = SummarizedExperiment::assay(GM12878.CTSSs,"TPM")[
+            (Matrix::rowSums(tpm) != 0),
+            SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids
+          ], # 8810502, 2
+        counts = SummarizedExperiment::assay(GM12878.CTSSs,"counts")[
+            (Matrix::rowSums(tpm) != 0),
+            SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids
+          ], # 8810502, 2
+        counts.noSingletons = SummarizedExperiment::assay(GM12878.CTSSs,"counts.noSingletons")[
+            (Matrix::rowSums(tpm) != 0),
+            SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids
+          ] # 8810502, 2
+      ),
+    colData = SummarizedExperiment::colData(GM12878.CTSSs)[SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids,],
+    rowRanges = SummarizedExperiment::rowRanges(GM12878.CTSSs)[(Matrix::rowSums(tpm) != 0),]
   )
+
 CTSSs.objects[["GM12878"]] <- GM12878.CTSSs.sub
 # SummarizedExperiment::colData(GM12878.CTSSs.sub)
 base::remove(GM12878.CTSSs,GM12878.CTSSs.sub)
@@ -994,8 +1015,6 @@ cage_sel <- cage_sel_ %>%
       )
     )
 ```
-
-##<<bookmark>> - GM12878 & K562 are both empty - likely not sorted
 
 # [5.] Plot data -------------------------
 
