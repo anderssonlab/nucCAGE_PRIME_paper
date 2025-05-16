@@ -361,10 +361,31 @@ ids <- SummarizedExperiment::colData(x = K562.CTSSs) %>%
     ) %>%
   dplyr::pull(ID)
 
-K562.CTSSs.sub <- S4Vectors::subset(
-    x = K562.CTSSs,
-    select = SummarizedExperiment::colData(K562.CTSSs)$ID %in% ids
+# K562.CTSSs.sub <- S4Vectors::subset(
+#     x = K562.CTSSs,
+#     select = SummarizedExperiment::colData(K562.CTSSs)$ID %in% ids
+#   )
+
+tpm <- SummarizedExperiment::assay(K562.CTSSs,"TPM")[,SummarizedExperiment::colData(K562.CTSSs)$ID %in% ids]
+K562.CTSSs.sub <- SummarizedExperiment::SummarizedExperiment(
+    assays = base::list(
+        TPM = SummarizedExperiment::assay(K562.CTSSs,"TPM")[
+            (Matrix::rowSums(tpm) != 0),
+            SummarizedExperiment::colData(K562.CTSSs)$ID %in% ids
+          ], # 8810502, 2
+        counts = SummarizedExperiment::assay(K562.CTSSs,"counts")[
+            (Matrix::rowSums(tpm) != 0),
+            SummarizedExperiment::colData(K562.CTSSs)$ID %in% ids
+          ], # 8810502, 2
+        counts.noSingletons = SummarizedExperiment::assay(K562.CTSSs,"counts.noSingletons")[
+            (Matrix::rowSums(tpm) != 0),
+            SummarizedExperiment::colData(K562.CTSSs)$ID %in% ids
+          ] # 8810502, 2
+      ),
+    colData = SummarizedExperiment::colData(K562.CTSSs)[SummarizedExperiment::colData(K562.CTSSs)$ID %in% ids,],
+    rowRanges = SummarizedExperiment::rowRanges(K562.CTSSs)[(Matrix::rowSums(tpm) != 0),]
   )
+
 CTSSs.objects[["K562"]] <- K562.CTSSs.sub
 base::remove(K562.CTSSs,K562.CTSSs.sub)
 ```
@@ -382,7 +403,6 @@ setdiff(
     SummarizedExperiment::rowRanges(K562.CTSSs),
     base::sort(SummarizedExperiment::rowRanges(K562.CTSSs))
   )
-
 tpm <- SummarizedExperiment::assay(K562.CTSSs.sub,"TPM")
 tpm[(Matrix::rowSums(tpm) != 0),] # 8,810,502
 SummarizedExperiment::rowRanges(K562.CTSSs)[(Matrix::rowSums(tpm) != 0),] # 8,810,502
