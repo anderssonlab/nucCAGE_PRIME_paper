@@ -369,6 +369,26 @@ CTSSs.objects[["K562"]] <- K562.CTSSs.sub
 base::remove(K562.CTSSs,K562.CTSSs.sub)
 ```
 
+#### Evaluations
+```{r}
+SummarizedExperiment::assay(K562.CTSSs,"TPM")[1:13,]
+SummarizedExperiment::assay(K562.CTSSs.sub,"TPM")[1:13,]
+
+assertthat::are_equal(
+    SummarizedExperiment::rowRanges(K562.CTSSs)[1030345:1030545],
+    base::sort(SummarizedExperiment::rowRanges(K562.CTSSs))[1030345:1030545]
+  )
+setdiff(
+    SummarizedExperiment::rowRanges(K562.CTSSs),
+    base::sort(SummarizedExperiment::rowRanges(K562.CTSSs))
+  )
+
+tpm <- SummarizedExperiment::assay(K562.CTSSs.sub,"TPM")
+tpm[(Matrix::rowSums(tpm) != 0),] # 8,810,502
+SummarizedExperiment::rowRanges(K562.CTSSs)[(Matrix::rowSums(tpm) != 0),] # 8,810,502
+```
+
+
 ```{r}
 GM12878.CTSSs <- base::readRDS(
   file = base::paste0(
@@ -391,6 +411,20 @@ GM12878.CTSSs.sub <- S4Vectors::subset(
 CTSSs.objects[["GM12878"]] <- GM12878.CTSSs.sub
 # SummarizedExperiment::colData(GM12878.CTSSs.sub)
 base::remove(GM12878.CTSSs,GM12878.CTSSs.sub)
+```
+
+#### Evaluations
+```{r}
+SummarizedExperiment::assay(GM12878.CTSSs,"TPM")[1:13,]
+SummarizedExperiment::assay(GM12878.CTSSs.sub,"TPM")[13,]
+assertthat::are_equal(
+    SummarizedExperiment::rowRanges(GM12878.CTSSs)[1030345:1030545],
+    base::sort(SummarizedExperiment::rowRanges(GM12878.CTSSs))[1030345:1030545]
+  )
+setdiff(
+    SummarizedExperiment::rowRanges(GM12878.CTSSs),
+    base::sort(SummarizedExperiment::rowRanges(GM12878.CTSSs))
+  )
 ```
 
 ## [1.6.] Load prepared 'all CTSS' - objects for GM12878 and K562
