@@ -1240,7 +1240,8 @@ grDevices::dev.off()
 outfile <- base::paste0(
     here::here("trackHubFiles/plots/"),
     base::format(base::Sys.time(), "%Y%m%d"),
-    "_ABCA7enhancer",
+    # "_ABCA7enhancer",
+    "_TMPRSS6promoter",
     out,
     ".pdf"
   )

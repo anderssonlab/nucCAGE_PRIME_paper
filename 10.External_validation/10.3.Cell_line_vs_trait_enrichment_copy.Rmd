@@ -1353,7 +1353,7 @@ for (trait in base::c(blood.traits,hep.traits,immune.traits)) {
 #### For Apo use hep.traits coefficient = 0.6143635, see [4.11.]
 #### For MCHC use blood.traits coefficient = 0.6222139, see [4.11.]
 ```{r}
-trait = "MCHC" # "MCHC" # "ApoB"
+trait = "ApoB" # "MCHC" # "ApoB"
 m <- trait.matrices[[trait]] # MCHC: 143
 
 ro <- stats::hclust(stats::dist(m))$order
