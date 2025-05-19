@@ -709,9 +709,11 @@ l_ <- "chr4:159,101,737-159,104,305"
 ```
 
 #### see [4.10.] in 10.3.Cell_line_vs_trait_enrichment.Rmd for 'chr22:37109513:37109512'
+#### Whole ABCA7 gene including "chr19:1050876-1050875": "chr19:1039521-1065670"
+#### Whole TMPRSS6 gene including "chr22:37109513:37109512": "chr22:37,065,000-37,110,700"
 ```{r}
-l_ <- "chr22:37109513-37109512"
-l_ <- "chr19:1050876-1050875"
+l_ <- "chr19:1,039,521-1,065,670"
+l_ <- "chr22:37,065,000-37,110,700"
 ```
 
 ```{r}
@@ -725,7 +727,7 @@ out <- base::paste0("_",chr,"_",s,"_",e)
 ```
 
 ```{r}
-extend = 200
+extend = 0
 ran <- GenomicRanges::GRanges(
     seqnames = chr,
     ranges = IRanges::IRanges(start = s, end = e)
@@ -999,7 +1001,7 @@ cage_sel <- cage_sel_ %>%
 ```
 
 ```{r}
- cage_sel <- cage_sel_ %>%
+cage_sel <- cage_sel_ %>%
   tidyr::pivot_longer(
       cols = base::c("C","N"),
       names_to = "sample",
@@ -1015,6 +1017,28 @@ cage_sel <- cage_sel_ %>%
         strand == "-" ~ "minus"
       )
     )
+```
+
+## [4.2.] Add mock lines for issing cell types
+#### Evaluate with "ins <- base::names(CTSSs.objects)"
+```{r}
+ins <- cage_sel %>% 
+  dplyr::distinct(type) %>%
+  dplyr::pull(type)
+
+ous <- base::names(CTSSs.objects)[! base::names(CTSSs.objects) %in% ins]
+
+insert <- tibble::tibble(
+    type = base::sort(base::rep(ous,2)),
+    seqnames = base::rep(chrom,2*base::length(ous)),
+    start = base::rep(start_pos,2*base::length(ous)),
+    end = base::rep(end_pos,2*base::length(ous)),
+    strand = base::rep("plus",2*base::length(ous)),
+    sample = base::rep(base::c("C","N"),base::length(ous)),
+    score = base::rep(base::as.double(0),2*base::length(ous))
+  )
+
+cage_sel <- dplyr::bind_rows(cage_sel,insert)
 ```
 
 # [5.] Plot data -------------------------
@@ -1119,6 +1143,7 @@ plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
       strip.position = "right",
       scales = "fixed" #"fixed" "free_y"
     )
+  # ylim(-1,10) # for ABCA7, "chr19:1,039,521-1,065,670"
   # ggh4x::facetted_pos_scales(
   #   y = base::list(
   #     type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ scale_y_continuous(
@@ -1211,5 +1236,26 @@ base::print(
 grDevices::dev.off()
 ```
 
+```{r}
+outfile <- base::paste0(
+    here::here("trackHubFiles/plots/"),
+    base::format(base::Sys.time(), "%Y%m%d"),
+    "_ABCA7enhancer",
+    out,
+    ".pdf"
+  )
 
+grDevices::pdf(
+    file = outfile,
+    width = 8,
+    height = 4
+  )
+base::print(
+    gridExtra::grid.arrange(
+      g,l_add,
+      heights = grid::unit(base::c(0.8, 0.2),"npc")
+    )
+  )
+grDevices::dev.off()
+```
 
