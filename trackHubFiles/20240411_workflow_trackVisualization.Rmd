@@ -711,6 +711,7 @@ l_ <- "chr4:159,101,737-159,104,305"
 #### see [4.10.] in 10.3.Cell_line_vs_trait_enrichment.Rmd for 'chr22:37109513:37109512'
 ```{r}
 l_ <- "chr22:37109513-37109512"
+l_ <- "chr19:1050876-1050875"
 ```
 
 ```{r}
@@ -1116,7 +1117,7 @@ plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
       facets = . ~ type + sample,
       ncol = 1,
       strip.position = "right",
-      scales = "free_y" #"fixed" "free_y"
+      scales = "fixed" #"fixed" "free_y"
     )
   # ggh4x::facetted_pos_scales(
   #   y = base::list(
