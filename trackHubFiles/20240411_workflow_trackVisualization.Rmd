@@ -712,12 +712,15 @@ l_ <- "chr4:159,101,737-159,104,305"
 #### Whole ABCA7 gene including "chr19:1050876-1050875": "chr19:1039521-1065670"
 #### Whole TMPRSS6 gene including "chr22:37109513:37109512": "chr22:37,065,000-37,110,700"
 #### Whole ABO gene including "chr9:133274296:133274295" and "chr9:133263363:133263374": "chr9:133,250,000-133,276,238"
-#### Whole LIPC gene including: "chr15:58430392:58430391": 
+#### Whole LPL gene including: "chr8:19961929-19961928":
+#### Whole APOC1 gene including "chr19:44913485:44913484": "chr19:44,914,000-44,920,000" & with alternatively entire promoter proximal region "chr19:44,913,101-44,914,607"
 ```{r}
 l_ <- "chr19:1,039,521-1,065,670"
 l_ <- "chr22:37,065,000-37,110,700"
-
 l_ <- "chr9:133,263,363-133,263,374"
+
+l_ <- "chr8:19,961,929-19,961,928"
+l_ <- "chr19:44,913,101-44,914,607"
 ```
 
 ```{r}
@@ -731,7 +734,7 @@ out <- base::paste0("_",chr,"_",s,"_",e)
 ```
 
 ```{r}
-extend = 200
+extend = 0
 ran <- GenomicRanges::GRanges(
     seqnames = chr,
     ranges = IRanges::IRanges(start = s, end = e)
@@ -1146,8 +1149,8 @@ plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
       ncol = 1,
       strip.position = "right",
       scales = "fixed" #"fixed" "free_y"
-    )
-  # ylim(-1,10) # for ABCA7, "chr19:1,039,521-1,065,670"
+    ) +
+  ylim(-1,1) # for ABCA7, "chr19:1,039,521-1,065,670"
   # ggh4x::facetted_pos_scales(
   #   y = base::list(
   #     type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ scale_y_continuous(
@@ -1246,15 +1249,17 @@ outfile <- base::paste0(
     base::format(base::Sys.time(), "%Y%m%d"),
     # "_ABCA7enhancer",
     # "_TMPRSS6promoter",
-    "_ABOenhancer_2",
+    # "_ABOenhancer_2",
+    # "_LPLenhancer",
+    "_APOC1proximalpromoter",
     out,
     ".pdf"
   )
 
 grDevices::pdf(
     file = outfile,
-    width = 4,
-    height = 6
+    width = 8, # 4 # 8
+    height = 4 # 6 # 4
   )
 base::print(
     gridExtra::grid.arrange(
