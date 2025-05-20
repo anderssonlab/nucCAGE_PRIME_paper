@@ -594,7 +594,6 @@ per.trait.results <- base::list.files(
   stringr::str_subset("PerTraitResults")
 ```
 
-
 ## [3.2.] Plot all trait-specific enrichment-recall curves
 #### Evaluate with trait_name = "MCV", data = per.trait.results[[trait_name]]
 ```{r}
@@ -1372,7 +1371,7 @@ df$variant <- base::factor(
 # midpoint <- base::mean(df$score[df$score>0]) ## see [4.11]
 # # df$score[df$score==0] <- NA
 
-df <- base::merge( # MCHC: 1287
+df <- base::merge( # MCHC: 1287 # ApoB: 1962
       x = df,
       y = GWAS.df[,base::c("name","type")],
       by.x = "variant",
@@ -1546,7 +1545,7 @@ ggplot2::ggsave(
 #### chr8:19961929:19961928:rs326 within intron of LPL (Lipoprotein Lipase, lipid clearance from the blood stream) overlapping with OCR no correspondence with signal at https://tinyurl.com/2av47r5b
 #### chr19:44913485:44913484:rs438811 upstream of APOC1 (Apolipoprotein C-1) overlapping with OCR corresponds well with APOC1 signal at https://tinyurl.com/2av47r5b
 #### Less clear example: chr16:72045759:72045758:rs77303550 in intergenic region close to HP (Haptoglobin) and HPR (Haptoglobin-related)
-```{r}
+```{r} 
 df %>% # 1,287
   tidyr::pivot_wider( # 143
       names_from = "cell.line",
