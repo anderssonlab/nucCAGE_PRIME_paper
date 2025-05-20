@@ -1382,6 +1382,30 @@ df <- base::merge( # MCHC: 1287 # ApoB: 1962
     )
 ```
 
+```{r}
+base::saveRDS(
+    object = df,
+    file = base::paste0(
+      here::here("10.External_validation/"),
+      base::format(base::Sys.Date(),"%Y%m%d"),
+      # "_traitdata_ApoB",
+      # "_traitdata_MCHC",
+      ".rds"
+    ),
+    compress = TRUE
+  )
+```
+
+```{r}
+df <- base::readRDS(
+  file = base::list.files(
+        path = here::here("10.External_validation"),
+        full.names = TRUE
+      ) %>%
+    stringr::str_subset("ApoB.rds")
+  )
+```
+
 ## [4.6.] Trait specific plotting
 #### For Apo use hep.traits coefficient = 0.6143635, see [4.11.]
 #### For MCHC use blood.traits coefficient = 0.6222139, see [4.11.]
@@ -1538,12 +1562,12 @@ ggplot2::ggsave(
   )
 ```
 
-## [4.10.] Identify individual variants
+## [4.10.] Identify individual variants for ApoB trait
 #### ApoB examples for Fig5: chr9:133274296:133274295:rs115478735 in ABO gene (Klop et al., 2013, 10.1371/journal.pone.0075573)
 #### related to the above: chr9:133263363:133263374:9:136138765_GCGCCCACCACTA_G overlapping with OCR corresponds well with ABO signal at https://tinyurl.com/2av47r5b
 #### chr15:58430392:58430391:rs35980001 upstream of LIPC gene (lipid clearance) overlapping with OCR no correspondence with signal at https://tinyurl.com/2av47r5b
 #### chr8:19961929:19961928:rs326 within intron of LPL (Lipoprotein Lipase, lipid clearance from the blood stream) overlapping with OCR no correspondence with signal at https://tinyurl.com/2av47r5b
-#### chr19:44913485:44913484:rs438811 upstream of APOC1 (Apolipoprotein C-1) overlapping with OCR corresponds well with APOC1 signal at https://tinyurl.com/2av47r5b
+#### APOC1: chr19:44913485:44913484:rs438811 upstream of APOC1 (Apolipoprotein C-1) overlapping with OCR corresponds well with APOC1 signal at https://tinyurl.com/2av47r5b
 #### Less clear example: chr16:72045759:72045758:rs77303550 in intergenic region close to HP (Haptoglobin) and HPR (Haptoglobin-related)
 ```{r} 
 df %>% # 1,287
@@ -1563,6 +1587,24 @@ df %>% # 1,287
       variant = forcats::fct_inorder(f = variant)
     )
 ```
+
+```{r}
+df %>% # 1,287
+  tidyr::pivot_wider( # 143
+      names_from = "cell.line",
+      values_from = "score"
+    ) %>%
+  dplyr::filter(
+      stringr::str_detect(variant, "chr19:44")
+    ) %>%
+  dplyr::mutate(
+      chrom = stringr::str_replace(variant,"^(.*?):(.*?):.*$","\\2") %>%
+        base::as.numeric()
+    )
+```
+
+
+## [4.11.] Identify individual variants for MCHC trait
 #### MCHC examples for Fig5: chr19:1050876:1050875:rs12151021 expressed in HepG2 and K562, but likely different ABCA7 proteins, has effect on red blood cell count and hemoglobin (https://pheweb.jp/gene/ABCA7), but region could also regulate ARHGAP45 as seen in https://tinyurl.com/2av47r5b
 #### great example: chr22:37109513:37109512 at the promoter of TMPRSS6, regulator of expression of the iron absorption-regulating hormone hepicidin/HAMP, plays a role in iron homeostasis, very low mean corpuscular erythrocyte volume (Gan et al., 2012, 10.3945/ajcn.111.025684) 
 ```{r}
@@ -1585,7 +1627,7 @@ df %>%
 ```
 
 
-## [4.10.] Alternative plotting
+## [4.12.] Alternative plotting
 ```{r}
 df %>%
   dplyr::filter(type == "distal") %>%
@@ -1659,7 +1701,7 @@ df %>%
       )
 ```
 
-## [4.11.] Acquire scores for all variants across metabolic / hep traits
+## [4.13.] Acquire scores for all variants across metabolic / hep traits
 ```{r}
 collection = hep.traits # coefficient = 0.6139217
 # collection = blood.traits # coefficient = 0.6222139 # 2.363
@@ -1697,7 +1739,7 @@ df <- base::merge(
     )
 ```
 
-## [4.12.] Evaluate
+## [4.14.] Evaluate
 ```{r}
 base::min(df$score[df$score > 0])
 
@@ -1708,7 +1750,7 @@ df %>%
 df %>% distinct(variant) %>% nrow()
 ```
 
-## [4.12.] Plot
+## [4.15.] Plot
 ```{r}
 cols <- base::c(
   grDevices::colorRampPalette(
@@ -1777,7 +1819,7 @@ ggplot2::ggplot(
     )
 ```
 
-## [4.13.] Print plot
+## [4.16.] Print plot
 ```{r}
 ggplot2::ggsave(
     filename = base::paste0(
@@ -1794,7 +1836,7 @@ ggplot2::ggsave(
   )
 ```
 
-## [4.14.] Summary plot across all variants for hep traits 
+## [4.17.] Summary plot across all variants for hep traits 
 ```{r}
 df %>%
   dplyr::group_by(cell.line) %>% 
@@ -1837,7 +1879,36 @@ df %>%
       )
 ```
 
-## [4.15.] Print plot
+```{r}
+df %>%
+  dplyr::group_by(cell.line) %>%
+  dplyr::arrange(dplyr::desc(score)) %>%
+  dplyr::mutate(
+      cnt = dplyr::row_number()
+    ) %>%
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = score,
+        y = cnt,
+        color = cell.line
+      )
+    ) +
+  geom_line(
+      stat = "identity"
+    ) +
+  facet_wrap(
+      facets = ~ type,
+      nrow = 1
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+
+## [4.18.] Print plot
 ```{r}
 ggplot2::ggsave(
     filename = base::paste0(
@@ -1855,7 +1926,7 @@ ggplot2::ggsave(
   )
 ```
 
-## [4.16.] Alternative plotting
+## [4.18.] Alternative plotting
 ```{r}
 df %>%
   dplyr::group_by(cell.line) %>% 

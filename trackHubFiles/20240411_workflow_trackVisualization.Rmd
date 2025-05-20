@@ -711,16 +711,20 @@ l_ <- "chr4:159,101,737-159,104,305"
 #### see [4.10.] in 10.3.Cell_line_vs_trait_enrichment.Rmd for 'chr22:37109513:37109512'
 #### Whole ABCA7 gene including "chr19:1050876-1050875": "chr19:1039521-1065670"
 #### Whole TMPRSS6 gene including "chr22:37109513:37109512": "chr22:37,065,000-37,110,700"
+
 #### Whole ABO gene including "chr9:133274296:133274295" and "chr9:133263363:133263374": "chr9:133,250,000-133,276,238"
 #### Whole LPL gene including: "chr8:19961929-19961928":
+
+## APOC1
 #### Whole APOC1 gene including "chr19:44913485:44913484": "chr19:44,914,000-44,920,000" & with alternatively entire promoter proximal region "chr19:44,913,101-44,914,607"
+#### APOE - APOC1: "chr19:44,908,532-44,915,200"
 ```{r}
 l_ <- "chr19:1,039,521-1,065,670"
 l_ <- "chr22:37,065,000-37,110,700"
 l_ <- "chr9:133,263,363-133,263,374"
 
 l_ <- "chr8:19,961,929-19,961,928"
-l_ <- "chr19:44,913,101-44,914,607"
+l_ <- "chr19:44,908,532-44,915,200"
 ```
 
 ```{r}
@@ -917,7 +921,7 @@ crds <- purrr::map_dfr(
   .x = base::names(ovl),
   .f = function(c){
     gr <- SummarizedExperiment::rowRanges(CTSSs.objects[[c]])[ovl[[c]]@to,]
-    methods::as(gr,"GRanges") %>% 
+    methods::as(gr,"GRanges") %>%
       base::as.data.frame() %>%
         tibble::as_tibble() %>%
         dplyr::mutate(
@@ -1150,7 +1154,7 @@ plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
       strip.position = "right",
       scales = "fixed" #"fixed" "free_y"
     ) +
-  ylim(-1,1) # for ABCA7, "chr19:1,039,521-1,065,670"
+  ylim(-0.5,0.5) # for ABCA7, "chr19:1,039,521-1,065,670"
   # ggh4x::facetted_pos_scales(
   #   y = base::list(
   #     type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ scale_y_continuous(
