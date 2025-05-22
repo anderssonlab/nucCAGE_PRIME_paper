@@ -1588,6 +1588,7 @@ df %>% # 1,287
     )
 ```
 
+#### alternative for separation: 'stringr::str_replace(variant,"^(.*?):(.*?):.*$","\\2")'
 ```{r}
 df %>% # 1,287
   tidyr::pivot_wider( # 143
@@ -1597,12 +1598,13 @@ df %>% # 1,287
   dplyr::filter(
       stringr::str_detect(variant, "chr19:44")
     ) %>%
-  dplyr::mutate(
-      chrom = stringr::str_replace(variant,"^(.*?):(.*?):.*$","\\2") %>%
-        base::as.numeric()
+  tidyr::separate(
+      col = variant,
+      sep = ":",
+      into = base::c("chrom","start","end","gv"),
+      convert = TRUE
     )
 ```
-
 
 ## [4.11.] Identify individual variants for MCHC trait
 #### MCHC examples for Fig5: chr19:1050876:1050875:rs12151021 expressed in HepG2 and K562, but likely different ABCA7 proteins, has effect on red blood cell count and hemoglobin (https://pheweb.jp/gene/ABCA7), but region could also regulate ARHGAP45 as seen in https://tinyurl.com/2av47r5b
