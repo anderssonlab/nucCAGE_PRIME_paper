@@ -1178,10 +1178,13 @@ sites <- sites_ %>%
       start > start_pos & end < end_pos
     ) %>%
   dplyr::mutate(
-      start = base::as.double(start) - extend,
-      end = base::as.double(end) + extend
-    )
+      s = base::as.double(start) - extend,
+      e = base::as.double(end) + extend
+    ) %>% 
+  dplyr::select(s, start, e, end)
 ```
+
+##<<bookmark>> Find the actual PRIMEloci rather than the genetic variants.
 
 ```{r}
 minY = -0.5
