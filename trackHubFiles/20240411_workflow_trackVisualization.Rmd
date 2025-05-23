@@ -1159,15 +1159,15 @@ sites_ <- base::readRDS(
 ```
 
 ```{r}
-extend = 200
+# extend = 200
 sites <- sites_ %>%
   tidyr::pivot_wider(
       names_from = "cell.line",
       values_from = "score"
     ) %>%
-  dplyr::filter(
-      stringr::str_detect(variant, "chr19:44")
-    ) %>%
+  # dplyr::filter(
+  #     stringr::str_detect(variant, "chr19:44")
+  #   ) %>%
   tidyr::separate(
       col = variant,
       sep = ":",
@@ -1178,11 +1178,29 @@ sites <- sites_ %>%
       start > start_pos & end < end_pos
     ) %>%
   dplyr::mutate(
-      s = base::as.double(start) - extend,
-      e = base::as.double(end) + extend
+      start = base::as.double(start) - extend,
+      end = base::as.double(end) + extend
     ) %>% 
   dplyr::select(s, start, e, end)
 ```
+
+```{r}
+for (n in base::names(unfiltered.PRIMEloci)){
+      pd <- unfiltered.PRIMEloci[[n]]
+      GWAS.olap <- IRanges::findOverlaps(
+          query = g,
+          subject = pd,
+          minoverlap = 1
+        )
+      m[base::unique(S4Vectors::queryHits(GWAS.olap)),n] <- base::as.numeric(
+        base::by(
+            data = pd$score[subjectHits(GWAS.olap)],
+            INDICES = S4Vectors::queryHits(GWAS.olap),
+            FUN = base::max
+          )
+        )
+```
+
 
 ##<<bookmark>> Find the actual PRIMEloci rather than the genetic variants.
 
