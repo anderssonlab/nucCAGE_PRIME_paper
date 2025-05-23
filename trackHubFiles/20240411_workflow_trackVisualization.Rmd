@@ -1212,8 +1212,7 @@ for (n in base::names(pooled.PRIMEloci)){
   }
 ```
 
-
-##<<bookmark>> Find the actual PRIMEloci rather than the genetic variants.
+##<<bookmark>> Use IRanges::reduce() on olap from unfiltered.PRIMEloci and filter for the highest PRIMEloci score
 
 ```{r}
 minY = -0.5
