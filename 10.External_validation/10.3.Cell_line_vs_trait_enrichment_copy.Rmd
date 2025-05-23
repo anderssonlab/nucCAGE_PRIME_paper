@@ -1199,6 +1199,7 @@ trait.loci.olap <- base::sapply(
 ```
 
 ## [4.3.] Aggregate PRIMEloci-GWAS-overlaps into a matrix
+#### Evaluate with 't = "MCHC"'
 ```{r}
 trait.matrices <- base::lapply(
   X = base::c(
