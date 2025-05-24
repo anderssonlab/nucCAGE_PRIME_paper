@@ -149,12 +149,14 @@ plotTracks <- function(data, range){
       ) +
     ggplot2::scale_color_manual(
         limits = base::c("minus","plus"),
-        values = base::c("#FF6400","#632770")
+        values = base::c("#FF6400","#632770"),
+        guide = "none"
       ) +
     ggplot2::scale_linetype_manual(
         limits = base::c("minus","plus"),
         breaks = base::c("minus","plus"),
-        values = base::c("solid","solid")
+        values = base::c("solid","solid"),
+        guide = "none"
       ) +
     ggplot2::facet_wrap(
         facets = . ~ sample,
@@ -163,7 +165,7 @@ plotTracks <- function(data, range){
       ) +
     ggplot2::theme_bw() +
     ggplot2::theme(
-        legend.position = "none",
+        # legend.position = "none",
         axis.title.x = element_blank(),
         panel.spacing = grid::unit(0.05,"lines"),
         panel.grid.minor = element_blank(),
@@ -1160,7 +1162,7 @@ sites_ <- base::readRDS(
 
 ```{r warning=FALSE}
 # extend = 200
-g <- sites_ %>%
+sites <- sites_ %>%
   tidyr::pivot_wider(
       names_from = "cell.line",
       values_from = "score"
@@ -1193,10 +1195,11 @@ g <- sites_ %>%
 #### Alternative: Use IRanges::reduce() on olap from unfiltered.PRIMEloci and filter for the highest PRIMEloci score
 #### evaluate with 'n = "HepG2_N"' # 61,589
 ```{r}
-sites <- purrr::map_dfr(
-  .x = base::names(pooled.PRIMEloci), # base::names(unfiltered.PRIMEloci)
+# pooled PRIMEloci data
+sites_scores_ <- purrr::map_dfr(
+  .x = base::names(pooled.PRIMEloci),
   .f = function(n){
-    pd <- pooled.PRIMEloci[[n]] # unfiltered.PRIMEloci[[n]]
+    pd <- pooled.PRIMEloci[[n]]
     olap <- IRanges::findOverlaps(
         query = g,
         subject = pd,
@@ -1206,12 +1209,59 @@ sites <- purrr::map_dfr(
       pd[S4Vectors::subjectHits(olap),] %>%
         tibble::as_tibble() %>%
         dplyr::mutate(
-          type = stringr::str_replace(n,"(.*?)_.*","\\1"),
-          sample = stringr::str_replace(n,"(.*?)_(.*)","\\2")
-        )
+            type = stringr::str_replace(n,"(.*?)_.*","\\1"),
+            sample = stringr::str_replace(n,"(.*?)_(.*)","\\2")
+          )
       )
     }
   )
+
+# unfiltered PRIMEloci data
+sites_scores_ <- purrr::map_dfr(
+  .x = base::names(unfiltered.PRIMEloci),
+  .f = function(n){
+    pd <- unfiltered.PRIMEloci[[n]]
+    olap <- IRanges::findOverlaps(
+        query = g,
+        subject = pd,
+        minoverlap = 1
+      )
+    
+    gr <- pd[S4Vectors::subjectHits(olap),]
+    out <- IRanges::reduce(x = gr, with.revmap = TRUE)
+    S4Vectors::mcols(out)$score <- base::do.call(
+          what = rbind,
+          args = base::lapply(
+            X = S4Vectors::mcols(out)$revmap,
+            FUN = function(i) {
+              base::max(S4Vectors::mcols(gr)$score[i])
+            }
+          )
+        )
+    
+    return(
+      out %>%
+        tibble::as_tibble() %>%
+        dplyr::mutate(
+            type = stringr::str_replace(n,"(.*?)_.*","\\1"),
+            sample = stringr::str_replace(n,"(.*?)_(.*)","\\2")
+          )
+      )
+    }
+  )
+
+# Cap sites to plotted range
+sites_scores <- sites_scores_ %>%
+  dplyr::mutate(
+    start = dplyr::case_when(
+        start <= start_pos ~ start_pos,
+        .default = start
+      ),
+    end = dplyr::case_when(
+        end >= end_pos ~ end_pos,
+        .default = end
+      )
+    )
 ```
 
 
@@ -1219,11 +1269,21 @@ sites <- purrr::map_dfr(
 ```{r}
 minY = -0.5
 maxY = 0.5
+coef = 0.75
+cols <- base::c(
+  grDevices::colorRampPalette(
+      base::c("#e7f0fa", "#c9e2f6", "#95cbee", "#0099dc", "#4ab04a", "#ffd73e")
+    )(coef*100),
+  grDevices::colorRampPalette(
+      c("#eec73a", "#e29421", "#e29421", "#f05336","#ce472e"),
+      bias=2
+    )((1-coef)*100)
+  )
 
 plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
   geom_rect(
       inherit.aes = FALSE,
-      data = sites,
+      data = sites_scores,
       mapping = aes(
           xmin = start,
           xmax = end,
@@ -1234,13 +1294,33 @@ plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
       # fill = "grey",
       alpha = 0.5
     ) +
-   ggplot2::facet_wrap(
+  facet_wrap(
       facets = . ~ type + sample,
       ncol = 1,
       strip.position = "right",
       scales = "fixed" #"fixed" "free_y"
     ) +
-  ylim(minY,maxY) 
+  scale_fill_gradientn(
+      limits = base::c(0,1),
+      colours = cols
+    ) +
+  ylim(minY,maxY)  +
+  guides(
+      fill = guide_colourbar(
+        label.position = "right",
+        title = NULL,
+        title.position = "left",
+        title.theme = element_text(
+            angle = 90,
+            hjust = 0.5
+          ),
+        ticks=T,
+        nbin=100,
+        barheight=10,
+        label=T,
+        barwidth=0.5
+      )
+    )
   
 plot
 # ggrastr::rasterise(
@@ -1333,7 +1413,8 @@ outfile <- base::paste0(
     # "_TMPRSS6promoter",
     # "_ABOenhancer_2",
     # "_LPLenhancer",
-    "_APOC1proximalpromoter",
+    "_APOC1intergenic",
+    "_unfilteredPRIMEloci",
     out,
     ".pdf"
   )

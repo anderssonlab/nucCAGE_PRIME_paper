@@ -92,7 +92,9 @@ pooled.PRIMEloci <- base::lapply(
           fix = "center"
         )
       
+      # Merge (=reduce) ranges to combined ranges
       out <- IRanges::reduce(x = gr, with.revmap = TRUE)
+      # Transfer max PRIMEloci score fo reduced ranges
       S4Vectors::mcols(out)$score <- base::do.call(
           what = rbind,
           args = base::lapply(
