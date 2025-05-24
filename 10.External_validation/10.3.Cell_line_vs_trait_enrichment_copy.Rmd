@@ -1571,7 +1571,7 @@ ggplot2::ggsave(
 #### APOC1: chr19:44913485:44913484:rs438811 upstream of APOC1 (Apolipoprotein C-1) overlapping with OCR corresponds well with APOC1 signal at https://tinyurl.com/2av47r5b
 #### Less clear example: chr16:72045759:72045758:rs77303550 in intergenic region close to HP (Haptoglobin) and HPR (Haptoglobin-related)
 ```{r} 
-df %>% # 1,287
+df %>% # 1,287 # 1,962
   tidyr::pivot_wider( # 143
       names_from = "cell.line",
       values_from = "score"
@@ -1591,8 +1591,8 @@ df %>% # 1,287
 
 #### alternative for separation: 'stringr::str_replace(variant,"^(.*?):(.*?):.*$","\\2")'
 ```{r}
-df %>% # 1,287
-  tidyr::pivot_wider( # 143
+df %>% # 1,287 # 1,962
+  tidyr::pivot_wider( # 143 # 218
       names_from = "cell.line",
       values_from = "score"
     ) %>%
