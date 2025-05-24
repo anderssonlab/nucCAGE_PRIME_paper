@@ -75,13 +75,14 @@ pooled.PRIMEloci.files <- base::c(
 pooled.PRIMEloci <- base::lapply(
   X = base::names(pooled.PRIMEloci.files),
   FUN = function(n) {
-      gr <- readr::read_tsv( # # 4.049.578
+      df <- readr::read_tsv( # # 4.049.578
           file = pooled.PRIMEloci.files[n],
           show_col_types = FALSE
         )
       
-      gr <- gr[base::which(gr$score >= PRIMEloci.thres),] # 245.709
-      gr <- GenomicRanges::makeGRangesFromDataFrame(gr[,1:3])
+      df <- df[base::which(df$score >= PRIMEloci.thres),] # 245.709
+      gr <- GenomicRanges::makeGRangesFromDataFrame(df[,1:3])
+      S4Vectors::mcols(gr)$score <- df$score
       
       GenomeInfoDb::seqlevels(gr, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data) # 237.454
       

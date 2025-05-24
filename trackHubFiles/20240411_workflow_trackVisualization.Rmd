@@ -1208,8 +1208,10 @@ for (n in base::names(unfiltered.PRIMEloci)){
         type = n
       )
 }
+```
 
 
+```{r}
 sites <- purrr::map_dfr(
   .x = base::names(pooled.PRIMEloci),
   .f = function(n){
@@ -1223,7 +1225,8 @@ sites <- purrr::map_dfr(
       pd[S4Vectors::subjectHits(olap),] %>%
         tibble::as_tibble() %>%
         dplyr::mutate(
-          type = n
+          type = stringr::str_replace(n,"(.*?)_.*","\\1"),
+          sample = stringr::str_replace(n,"(.*?)_(.*)","\\2")
         )
       )
     }
