@@ -1193,29 +1193,10 @@ g <- sites_ %>%
 #### Alternative: Use IRanges::reduce() on olap from unfiltered.PRIMEloci and filter for the highest PRIMEloci score
 #### evaluate with 'n = "HepG2_N"' # 61,589
 ```{r}
-# for (n in base::names(pooled.PRIMEloci)){
-for (n in base::names(unfiltered.PRIMEloci)){
-    # pd <- unfiltered.PRIMEloci[[n]]
-    pd <- pooled.PRIMEloci[[n]]
-    olap <- IRanges::findOverlaps(
-        query = g,
-        subject = pd,
-        minoverlap = 1
-      )
-    pd[S4Vectors::subjectHits(olap),] %>%
-      tibble::as_tibble() %>%
-      dplyr::mutate(
-        type = n
-      )
-}
-```
-
-
-```{r}
 sites <- purrr::map_dfr(
-  .x = base::names(pooled.PRIMEloci),
+  .x = base::names(pooled.PRIMEloci), # base::names(unfiltered.PRIMEloci)
   .f = function(n){
-    pd <- pooled.PRIMEloci[[n]]
+    pd <- pooled.PRIMEloci[[n]] # unfiltered.PRIMEloci[[n]]
     olap <- IRanges::findOverlaps(
         query = g,
         subject = pd,
@@ -1245,11 +1226,12 @@ plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
       data = sites,
       mapping = aes(
           xmin = start,
-          xmax = end
+          xmax = end,
+          fill = score
         ),
       ymin = minY,
       ymax = maxY,
-      fill = "grey",
+      # fill = "grey",
       alpha = 0.5
     ) +
    ggplot2::facet_wrap(

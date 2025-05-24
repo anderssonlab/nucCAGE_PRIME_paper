@@ -92,7 +92,18 @@ pooled.PRIMEloci <- base::lapply(
           fix = "center"
         )
       
-      return(IRanges::reduce(x = gr))
+      out <- IRanges::reduce(x = gr, with.revmap = TRUE)
+      S4Vectors::mcols(out)$score <- base::do.call(
+          what = rbind,
+          args = base::lapply(
+            X = S4Vectors::mcols(out)$revmap,
+            FUN = function(i) {
+              base::max(S4Vectors::mcols(gr)$score[i])
+            }
+          )
+        )
+      
+      return(out)
     }
   )
 base::names(pooled.PRIMEloci) <- base::names(pooled.PRIMEloci.files)
