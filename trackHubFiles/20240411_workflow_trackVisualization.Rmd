@@ -1,4 +1,4 @@
-SummarizedExperiment::---
+---
 title: "20240411_workflow_trackVisualization"
 output: html_document
 date: "2024-04-11"
@@ -1160,10 +1160,14 @@ sites_ <- base::readRDS(
   )
 ```
 
+## Filter out ApoB-related genetic variants in the vicinity of APOC1 gene
+#### see also [2.3.] for 'start_pos' and 'end_pos' objects
 ```{r warning=FALSE}
-# extend = 200
-sites <- sites_ %>%
-  tidyr::pivot_wider(
+start_pos <- BiocGenerics::start(ran)
+end_pos <- BiocGenerics::end(ran)
+
+sites <- sites_ %>% 
+  tidyr::pivot_wider( # 218
       names_from = "cell.line",
       values_from = "score"
     ) %>%
@@ -1194,14 +1198,15 @@ sites <- sites_ %>%
 #### see [1.3.] in "10.3.Cell_line_vs_trait_enrichment.Rmd" for 'unfiltered.PRIMEloci'-object
 #### Alternative: Use IRanges::reduce() on olap from unfiltered.PRIMEloci and filter for the highest PRIMEloci score
 #### evaluate with 'n = "HepG2_N"' # 61,589
+
+#### Pooled PRIMEloci data
 ```{r}
-# pooled PRIMEloci data
 sites_scores_ <- purrr::map_dfr(
   .x = base::names(pooled.PRIMEloci),
   .f = function(n){
     pd <- pooled.PRIMEloci[[n]]
     olap <- IRanges::findOverlaps(
-        query = g,
+        query = sites,
         subject = pd,
         minoverlap = 1
       )
@@ -1215,14 +1220,16 @@ sites_scores_ <- purrr::map_dfr(
       )
     }
   )
+```
 
-# unfiltered PRIMEloci data
+#### Unfiltered PRIMEloci data
+```{r}
 sites_scores_ <- purrr::map_dfr(
   .x = base::names(unfiltered.PRIMEloci),
   .f = function(n){
     pd <- unfiltered.PRIMEloci[[n]]
     olap <- IRanges::findOverlaps(
-        query = g,
+        query = sites,
         subject = pd,
         minoverlap = 1
       )
@@ -1249,8 +1256,10 @@ sites_scores_ <- purrr::map_dfr(
       )
     }
   )
+```
 
-# Cap sites to plotted range
+#### Cut sites to plotted range
+```{r}
 sites_scores <- sites_scores_ %>%
   dplyr::mutate(
     start = dplyr::case_when(
@@ -1264,8 +1273,7 @@ sites_scores <- sites_scores_ %>%
     )
 ```
 
-
-
+#### Plot data
 ```{r}
 minY = -0.5
 maxY = 0.5
@@ -1322,14 +1330,13 @@ plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
       )
     )
   
-plot
-# ggrastr::rasterise(
-#     input = plot,
-#     layers = "Bar",
-#     dpi = 300
-#   )
+# plot
+ggrastr::rasterise(
+    input = plot,
+    layers = "Bar",
+    dpi = 300
+  )
 ```
-
 
 ## [6.] Genomic_landscape -------------------------
 
@@ -1414,7 +1421,8 @@ outfile <- base::paste0(
     # "_ABOenhancer_2",
     # "_LPLenhancer",
     "_APOC1intergenic",
-    "_unfilteredPRIMEloci",
+    # "_unfilteredPRIMEloci",
+    "_pooledPRIMEloci",
     out,
     ".pdf"
   )
