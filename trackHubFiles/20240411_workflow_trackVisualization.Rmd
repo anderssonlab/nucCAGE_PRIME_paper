@@ -711,22 +711,25 @@ l_ <- "chr4:159,101,737-159,104,305"
 ```
 
 #### see [4.10.] in 10.3.Cell_line_vs_trait_enrichment.Rmd for 'chr22:37109513:37109512'
+
+### MCHC trait
 #### Whole ABCA7 gene including "chr19:1050876-1050875": "chr19:1039521-1065670"
 #### Whole TMPRSS6 gene including "chr22:37109513:37109512": "chr22:37,065,000-37,110,700"
+```{r}
+l_ <- "chr19:1,039,521-1,065,670" # ABCA7
+l_ <- "chr22:37,065,000-37,110,700" # TMPRSS6
+```
 
+### ApoB trait
 #### Whole ABO gene including "chr9:133274296:133274295" and "chr9:133263363:133263374": "chr9:133,250,000-133,276,238"
-#### Whole LPL gene including: "chr8:19961929-19961928":
+#### Whole LPL gene including: "chr8:19961929-19961928": "chr8:19,938,800-19,968,800"
 
-## APOC1
 #### Whole APOC1 gene including "chr19:44913485:44913484": "chr19:44,914,000-44,920,000" & with alternatively entire promoter proximal region "chr19:44,913,101-44,914,607"
 #### APOE - APOC1: "chr19:44,908,532-44,915,200"
 ```{r}
-l_ <- "chr19:1,039,521-1,065,670"
-l_ <- "chr22:37,065,000-37,110,700"
-l_ <- "chr9:133,263,363-133,263,374"
-
-l_ <- "chr8:19,961,929-19,961,928"
-l_ <- "chr19:44,908,532-44,915,200"
+l_ <- "chr9:133,250,000-133,276,238" # ABO
+l_ <- "chr8:19,938,800-19,968,800" # LPL
+l_ <- "chr19:44,908,532-44,915,200" # APOC1
 ```
 
 ```{r}
@@ -849,28 +852,28 @@ cage_sel <- cage_sel %>%
 ## [4.0.] Subset & convert scores from RangedSummarizedExperiment to tibble
 #### Evaluate samples "base::rownames(SummarizedExperiment::colData(GM12878.CTSSs.sub))"
 ```{r}
-ovl <- IRanges::findOverlaps(
-    query = ran,
-    subject = GM12878.CTSSs.sub # K562.CTSSs.sub
-  )
-gr <- SummarizedExperiment::rowRanges(GM12878.CTSSs.sub)[ovl@to,] # K562.CTSSs.sub
-
-crds <- gr %>% 
-  base::as.data.frame() %>%
-  tibble::as_tibble() %>%
-  dplyr::mutate(
-      start = pos,
-      end = pos
-    ) %>%
-  dplyr::select(
-      seqnames,start,end,strand
-    )
-
-scrs <- SummarizedExperiment::assay(GM12878.CTSSs.sub,"TPM")[ovl@to,] %>% # K562.CTSSs.sub
-  base::as.matrix() %>%
-  base::as.data.frame()
-
-cage_sel_ <- dplyr::bind_cols(crds,scrs)
+# ovl <- IRanges::findOverlaps(
+#     query = ran,
+#     subject = GM12878.CTSSs.sub # K562.CTSSs.sub
+#   )
+# gr <- SummarizedExperiment::rowRanges(GM12878.CTSSs.sub)[ovl@to,] # K562.CTSSs.sub
+# 
+# crds <- gr %>% 
+#   base::as.data.frame() %>%
+#   tibble::as_tibble() %>%
+#   dplyr::mutate(
+#       start = pos,
+#       end = pos
+#     ) %>%
+#   dplyr::select(
+#       seqnames,start,end,strand
+#     )
+# 
+# scrs <- SummarizedExperiment::assay(GM12878.CTSSs.sub,"TPM")[ovl@to,] %>% # K562.CTSSs.sub
+#   base::as.matrix() %>%
+#   base::as.data.frame()
+# 
+# cage_sel_ <- dplyr::bind_cols(crds,scrs)
 ```
 
 #### Evaluate with 'c = "HepG2"'
@@ -977,40 +980,40 @@ cage_sel_ <- dplyr::left_join(
 #### Evaluate with 'dplyr::arrange(cage_sel,dplyr::desc(score))'
 #### Use 'TRUE ~ (20)*score' for GATA1 enhancer example
 ```{r}
-regex_f = "(?<=C|N)\\d$" # ".*(.)$"
-regex_s = "^(.*?)_(.*?)(\\d)?$" # "^(.*?)_(.*)(_)?(.)"
-
-cage_sel <- cage_sel_ %>%
-  tidyr::pivot_longer(
-      cols = tidyselect::contains("_"),
-      names_to = "sample",
-      values_to = "score"
-    ) %>%
-  dplyr::mutate(
-    replicate = stringr::str_extract(
-        sample, regex_f
-      ),
-    replicate = dplyr::case_when(
-        base::is.na(replicate) ~ "pool",
-        TRUE ~ replicate
-      ),
-    type = stringr::str_replace(
-          sample, regex_s, "\\2"
-        ) %>%
-      stringr::str_replace(
-        .,"^(.*?)[_]$","\\1"
-      )
-    ) %>%
-  dplyr::mutate(
-    score = dplyr::case_when(
-        strand == "-" ~ (-1)*score,
-        TRUE ~ score
-      ),
-    strand = dplyr::case_when(
-        strand == "+" ~ "plus",
-        strand == "-" ~ "minus"
-      )
-    )
+# regex_f = "(?<=C|N)\\d$" # ".*(.)$"
+# regex_s = "^(.*?)_(.*?)(\\d)?$" # "^(.*?)_(.*)(_)?(.)"
+# 
+# cage_sel <- cage_sel_ %>%
+#   tidyr::pivot_longer(
+#       cols = tidyselect::contains("_"),
+#       names_to = "sample",
+#       values_to = "score"
+#     ) %>%
+#   dplyr::mutate(
+#     replicate = stringr::str_extract(
+#         sample, regex_f
+#       ),
+#     replicate = dplyr::case_when(
+#         base::is.na(replicate) ~ "pool",
+#         TRUE ~ replicate
+#       ),
+#     type = stringr::str_replace(
+#           sample, regex_s, "\\2"
+#         ) %>%
+#       stringr::str_replace(
+#         .,"^(.*?)[_]$","\\1"
+#       )
+#     ) %>%
+#   dplyr::mutate(
+#     score = dplyr::case_when(
+#         strand == "-" ~ (-1)*score,
+#         TRUE ~ score
+#       ),
+#     strand = dplyr::case_when(
+#         strand == "+" ~ "plus",
+#         strand == "-" ~ "minus"
+#       )
+#     )
 ```
 
 ```{r}
@@ -1032,7 +1035,7 @@ cage_sel <- cage_sel_ %>%
     )
 ```
 
-## [4.2.] Add mock lines for issing cell types
+## [4.2.] Add mock lines for missing cell types
 #### Evaluate with "ins <- base::names(CTSSs.objects)"
 ```{r}
 ins <- cage_sel %>% 
@@ -1058,97 +1061,97 @@ cage_sel <- dplyr::bind_rows(cage_sel,insert)
 
 ## [5.0.] Plot genome tracks
 ```{r}
-plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
-  ggplot2::facet_wrap(
-      facets = . ~ type + replicate,
-      ncol = 1,
-      strip.position = "right",
-      scales = "free_y"
-    ) +
-  ggh4x::facetted_pos_scales(
-    y = base::list(
-      type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ scale_y_continuous(
-          limits = base::c(-3,3)
-        ),
-      type %in% base::c("500K_N","5M_N","500K_C") ~ scale_y_continuous(
-          limits = base::c(0,300)
-        )
-      )
-    )
-ggrastr::rasterise(
-    input = plot,
-    layers = "Bar",
-    dpi = 300
-  )
+# plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
+#   ggplot2::facet_wrap(
+#       facets = . ~ type + replicate,
+#       ncol = 1,
+#       strip.position = "right",
+#       scales = "free_y"
+#     ) +
+#   ggh4x::facetted_pos_scales(
+#     y = base::list(
+#       type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ scale_y_continuous(
+#           limits = base::c(-3,3)
+#         ),
+#       type %in% base::c("500K_N","5M_N","500K_C") ~ scale_y_continuous(
+#           limits = base::c(0,300)
+#         )
+#       )
+#     )
+# ggrastr::rasterise(
+#     input = plot,
+#     layers = "Bar",
+#     dpi = 300
+#   )
 ```
 
 ```{r}
-plot <- cage_sel %>%
-  dplyr::filter(
-      sample != "GM12878_10M_Cap_align"
-    ) %>% 
-  dplyr::mutate(
-    type = base::factor(
-        x = type,
-        levels = base::c("500K_C","500K_N","5M_N","1M_trip","1M_ctrl","groCap","10M_Cap_align"),
-        ordered = TRUE
-      ),
-    score = dplyr::case_when(
-        strand == "minus" & type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ score,
-        strand == "minus" & type %in% base::c("500K_N","5M_N","500K_C") ~ score*200,
-        TRUE ~ score
-      )
-    ) %>%
-  .GlobalEnv$plotTracks(., ran) +
-    ggplot2::facet_wrap(
-        facets = . ~ type,
-        ncol = 1,
-        strip.position = "right",
-        scales = "free_y"
-      ) +
-    ggh4x::facetted_pos_scales(
-      y = base::list(
-        type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ scale_y_continuous(
-            limits = base::c(-3,3)
-          ),
-        type %in% base::c("500K_N","5M_N","500K_C") ~ scale_y_continuous(
-            limits = base::c(-300,300),
-            breaks = base::c(-200,0,200),
-            labels = base::c(-1,0,200)
-          )
-        )
-      )
-ggrastr::rasterise(
-    input = plot,
-    layers = "Bar",
-    dpi = 300
-  )
+# plot <- cage_sel %>%
+#   dplyr::filter(
+#       sample != "GM12878_10M_Cap_align"
+#     ) %>% 
+#   dplyr::mutate(
+#     type = base::factor(
+#         x = type,
+#         levels = base::c("500K_C","500K_N","5M_N","1M_trip","1M_ctrl","groCap","10M_Cap_align"),
+#         ordered = TRUE
+#       ),
+#     score = dplyr::case_when(
+#         strand == "minus" & type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ score,
+#         strand == "minus" & type %in% base::c("500K_N","5M_N","500K_C") ~ score*200,
+#         TRUE ~ score
+#       )
+#     ) %>%
+#   .GlobalEnv$plotTracks(., ran) +
+#     ggplot2::facet_wrap(
+#         facets = . ~ type,
+#         ncol = 1,
+#         strip.position = "right",
+#         scales = "free_y"
+#       ) +
+#     ggh4x::facetted_pos_scales(
+#       y = base::list(
+#         type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ scale_y_continuous(
+#             limits = base::c(-3,3)
+#           ),
+#         type %in% base::c("500K_N","5M_N","500K_C") ~ scale_y_continuous(
+#             limits = base::c(-300,300),
+#             breaks = base::c(-200,0,200),
+#             labels = base::c(-1,0,200)
+#           )
+#         )
+#       )
+# ggrastr::rasterise(
+#     input = plot,
+#     layers = "Bar",
+#     dpi = 300
+#   )
 ```
 
 
 ## [5.1.] Print data
 ```{r eval=FALSE}
-for(ext in c("pdf", "png")){
-    ggplot2::ggsave(
-      filename = base::paste0(
-          here::here("trackHubFiles/"),
-          format(Sys.time(), "%Y%m%d"),
-          out,
-          # "_enh2",
-          "_500k5M",
-          "_TmmTpm",
-          ".", ext
-        ),
-      plot = ggplot2::last_plot(),
-      device = ext,
-      dpi = 300,
-      width = 4,
-      height = 8
-    )
-  }
+# for(ext in c("pdf", "png")){
+#     ggplot2::ggsave(
+#       filename = base::paste0(
+#           here::here("trackHubFiles/"),
+#           format(Sys.time(), "%Y%m%d"),
+#           out,
+#           # "_enh2",
+#           "_500k5M",
+#           "_TmmTpm",
+#           ".", ext
+#         ),
+#       plot = ggplot2::last_plot(),
+#       device = ext,
+#       dpi = 300,
+#       width = 4,
+#       height = 8
+#     )
+#   }
 ```
 
-## [5.2.] APOC1 example
+## [5.2.] E.g., APOC1 example (ABO)
 #### see [4.10.] in "10.3.Cell_line_vs_trait_enrichment.Rmd"
 ```{r}
 sites_ <- base::readRDS(
@@ -1160,7 +1163,7 @@ sites_ <- base::readRDS(
   )
 ```
 
-## Filter out ApoB-related genetic variants in the vicinity of APOC1 gene
+## E.g., Filter out ApoB-related genetic variants in the vicinity of APOC1 gene (ABO)
 #### see also [2.3.] for 'start_pos' and 'end_pos' objects
 ```{r warning=FALSE}
 start_pos <- BiocGenerics::start(ran)
@@ -1418,11 +1421,11 @@ outfile <- base::paste0(
     base::format(base::Sys.time(), "%Y%m%d"),
     # "_ABCA7enhancer",
     # "_TMPRSS6promoter",
-    # "_ABOenhancer_2",
-    # "_LPLenhancer",
-    "_APOC1intergenic",
-    # "_unfilteredPRIMEloci",
-    "_pooledPRIMEloci",
+    # "_ABOgene", # "_ABOenhancer_2",
+    "_LPLgene", # "_LPLenhancer",
+    # "_APOC1intergenic",
+    "_unfilteredPRIMEloci",
+    # "_pooledPRIMEloci",
     out,
     ".pdf"
   )
