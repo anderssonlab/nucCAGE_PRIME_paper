@@ -723,12 +723,14 @@ l_ <- "chr22:37,065,000-37,110,700" # TMPRSS6
 ### ApoB trait
 #### Whole ABO gene including "chr9:133274296:133274295" and "chr9:133263363:133263374": "chr9:133,250,000-133,276,238"
 #### Whole LPL gene including: "chr8:19961929-19961928": "chr8:19,938,800-19,968,800"
+#### Whole LIPC gene including: "chr15:58430392:58430391": "chr15:58,400,000-58,570,000"
 
 #### Whole APOC1 gene including "chr19:44913485:44913484": "chr19:44,914,000-44,920,000" & with alternatively entire promoter proximal region "chr19:44,913,101-44,914,607"
 #### APOE - APOC1: "chr19:44,908,532-44,915,200"
 ```{r}
 l_ <- "chr9:133,250,000-133,276,238" # ABO
 l_ <- "chr8:19,938,800-19,968,800" # LPL
+l_ <- "chr15:58,400,000-58,570,000" # LIPCs
 l_ <- "chr19:44,908,532-44,915,200" # APOC1
 ```
 
@@ -1166,6 +1168,8 @@ sites_ <- base::readRDS(
 ## E.g., Filter out ApoB-related genetic variants in the vicinity of APOC1 gene (ABO)
 #### see also [2.3.] for 'start_pos' and 'end_pos' objects
 ```{r warning=FALSE}
+chr <- GenomeInfoDb::seqnames(ran) %>%
+  base::as.character()
 start_pos <- BiocGenerics::start(ran)
 end_pos <- BiocGenerics::end(ran)
 
@@ -1184,7 +1188,7 @@ sites <- sites_ %>%
       convert = TRUE
     ) %>%
   dplyr::filter(
-      start > start_pos & end < end_pos,
+      chrom == chr & start > start_pos & end < end_pos,
     ) %>%
   dplyr::mutate(
       end = start
@@ -1278,8 +1282,8 @@ sites_scores <- sites_scores_ %>%
 
 #### Plot data
 ```{r}
-minY = -0.5
-maxY = 0.5
+minY = 2.1 # -0.5
+maxY = -2.1 # 0.5
 coef = 0.75
 cols <- base::c(
   grDevices::colorRampPalette(
@@ -1340,6 +1344,8 @@ ggrastr::rasterise(
     dpi = 300
   )
 ```
+
+##<<bookmark>> Adapt y-scale to range of cage_sel to highlight HepG2 signal better
 
 ## [6.] Genomic_landscape -------------------------
 
