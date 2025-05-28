@@ -717,7 +717,10 @@ l_ <- "chr4:159,101,737-159,104,305"
 #### Whole TMPRSS6 gene including "chr22:37109513:37109512": "chr22:37,065,000-37,110,700"
 ```{r}
 l_ <- "chr19:1,039,521-1,065,670" # ABCA7
+l_ <- "chr19:1,050,492-1,051,269" # ABCA7 Primeloci
+
 l_ <- "chr22:37,065,000-37,110,700" # TMPRSS6
+l_ <- "chr22:37,109,199-37,109,898" # TMPRSS6 Primeloci
 ```
 
 ### ApoB trait
@@ -1167,7 +1170,8 @@ sites_ <- base::readRDS(
         path = here::here("10.External_validation"),
         full.names = TRUE
       ) %>%
-    stringr::str_subset("ApoB.rds")
+    # stringr::str_subset("ApoB.rds")
+    stringr::str_subset("MCHC.rds")
   )
 ```
 
@@ -1290,8 +1294,8 @@ sites_scores <- sites_scores_ %>%
 #### Plot data
 ```{r}
 # base::range(cage_sel$score)
-minY = -0.15 # base::range(cage_sel$score)[1] # 2.1 # -0.5
-maxY = 0.15 # base::range(cage_sel$score)[2] # -2.1 # 0.5
+minY = base::range(cage_sel$score)[1] # 2.1 # -0.5 # -0.15
+maxY = base::range(cage_sel$score)[2] # -2.1 # 0.5 # 0.15
 coef = 0.75
 cols <- base::c(
   grDevices::colorRampPalette(
@@ -1343,10 +1347,10 @@ plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
         label=T,
         barwidth=0.5
       )
-    ) # +
-  # theme(
-  #   aspect.ratio = 0.8
-  # )
+    ) +
+  theme(
+      aspect.ratio = 0.8
+    )
   
 # plot
 ggrastr::rasterise(
@@ -1365,7 +1369,9 @@ for(ext in c("pdf", "png")){
           base::format(base::Sys.time(), "%Y%m%d"),
           # "_ABOprimelocus",
           # "_LPLprimelocus",
-          "_LIPCprimeloci",
+          # "_LIPCprimeloci",
+          # "_ABCA7primelocus",
+          "_TMPRSS6primelocus",
           "_unfilteredPRIMEloci",
           out,
           ".", ext
@@ -1373,8 +1379,8 @@ for(ext in c("pdf", "png")){
       plot = ggplot2::last_plot(),
       device = ext,
       dpi = 300,
-      width = 8,
-      height = 4
+      width = 4,
+      height = 8
     )
   }
 ```
@@ -1457,15 +1463,15 @@ grDevices::dev.off()
 outfile <- base::paste0(
     here::here("trackHubFiles/plots/"),
     base::format(base::Sys.time(), "%Y%m%d"),
-    # "_ABCA7enhancer",
-    # "_TMPRSS6promoter",
+    # "_ABCA7gene", # "_ABCA7enhancer",
+    "_TMPRSS6gene", # "_TMPRSS6promoter",
     # "_ABOprimelocus", # "_ABOgene", # "_ABOenhancer_2",
     # "_LPLgene", # "_LPLenhancer",
     # "_LIPCgene",
-    "_APOC1intergenic",
+    # "_APOC1intergenic",
     "_unfilteredPRIMEloci",
     # "_pooledPRIMEloci",
-    "_rescaled",
+    # "_rescaled",
     out,
     ".pdf"
   )

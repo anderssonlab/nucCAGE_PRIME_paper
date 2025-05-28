@@ -1367,7 +1367,7 @@ for (trait in base::c(blood.traits,hep.traits,immune.traits)) {
 #### For Apo use hep.traits coefficient = 0.6143635, see [4.11.]
 #### For MCHC use blood.traits coefficient = 0.6222139, see [4.11.]
 ```{r}
-trait = "ApoB" # "MCHC" # "ApoB"
+trait = "MCHC" # "MCHC" # "ApoB"
 m <- trait.matrices[[trait]] # MCHC: 143
 
 ro <- stats::hclust(stats::dist(m))$order
@@ -1404,7 +1404,7 @@ base::saveRDS(
       here::here("10.External_validation/"),
       base::format(base::Sys.Date(),"%Y%m%d"),
       # "_traitdata_ApoB",
-      # "_traitdata_MCHC",
+      "_traitdata_MCHC",
       ".rds"
     ),
     compress = TRUE
@@ -1607,25 +1607,25 @@ df %>% # 1,287 # 1,962
 
 #### alternative for separation: 'stringr::str_replace(variant,"^(.*?):(.*?):.*$","\\2")'
 ```{r}
-df %>% # 1,287 # 1,962
-  tidyr::pivot_wider( # 143 # 218
-      names_from = "cell.line",
-      values_from = "score"
-    ) %>%
-  dplyr::filter(
-      stringr::str_detect(variant, "chr19:44")
-    ) %>%
-  tidyr::separate(
-      col = variant,
-      sep = ":",
-      into = base::c("chrom","start","end","gv"),
-      convert = TRUE
-    )
+# df %>% # 1,287 # 1,962
+#   tidyr::pivot_wider( # 143 # 218
+#       names_from = "cell.line",
+#       values_from = "score"
+#     ) %>%
+#   dplyr::filter(
+#       stringr::str_detect(variant, "chr19:44")
+#     ) %>%
+#   tidyr::separate(
+#       col = variant,
+#       sep = ":",
+#       into = base::c("chrom","start","end","gv"),
+#       convert = TRUE
+#     )
 ```
 
 ## [4.11.] Identify individual variants for MCHC trait
-#### MCHC examples for Fig5: chr19:1050876:1050875:rs12151021 expressed in HepG2 and K562, but likely different ABCA7 proteins, has effect on red blood cell count and hemoglobin (https://pheweb.jp/gene/ABCA7), but region could also regulate ARHGAP45 as seen in https://tinyurl.com/2av47r5b
-#### great example: chr22:37109513:37109512 at the promoter of TMPRSS6, regulator of expression of the iron absorption-regulating hormone hepicidin/HAMP, plays a role in iron homeostasis, very low mean corpuscular erythrocyte volume (Gan et al., 2012, 10.3945/ajcn.111.025684) 
+#### ABCA7: chr19:1050876:1050875:rs12151021 expressed in HepG2 and K562, but likely different ABCA7 proteins, has effect on red blood cell count and hemoglobin (https://pheweb.jp/gene/ABCA7), but region could also regulate ARHGAP45 as seen in https://tinyurl.com/2av47r5b
+#### TMPRSS6: great example: chr22:37109513:37109512 at the promoter of TMPRSS6, regulator of expression of the iron absorption-regulating hormone hepicidin/HAMP, plays a role in iron homeostasis, very low mean corpuscular erythrocyte volume (Gan et al., 2012, 10.3945/ajcn.111.025684) 
 ```{r}
 df %>%
   tidyr::pivot_wider(
