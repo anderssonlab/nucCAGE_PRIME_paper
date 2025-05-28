@@ -729,8 +729,14 @@ l_ <- "chr22:37,065,000-37,110,700" # TMPRSS6
 #### APOE - APOC1: "chr19:44,908,532-44,915,200"
 ```{r}
 l_ <- "chr9:133,250,000-133,276,238" # ABO
+l_ <- "chr9:133,273,899-133,274,680" # ABO PRIMElocus
+
 l_ <- "chr8:19,938,800-19,968,800" # LPL
+l_ <- "chr8:19,961,537-19,962,318" # LPL Primelocus
+
 l_ <- "chr15:58,400,000-58,570,000" # LIPCs
+l_ <- "chr15:58429996-58435030" # LIPCs PRIMEloci
+
 l_ <- "chr19:44,908,532-44,915,200" # APOC1
 ```
 
@@ -1280,10 +1286,12 @@ sites_scores <- sites_scores_ %>%
     )
 ```
 
+
 #### Plot data
 ```{r}
-minY = 2.1 # -0.5
-maxY = -2.1 # 0.5
+# base::range(cage_sel$score)
+minY = -0.15 # base::range(cage_sel$score)[1] # 2.1 # -0.5
+maxY = 0.15 # base::range(cage_sel$score)[2] # -2.1 # 0.5
 coef = 0.75
 cols <- base::c(
   grDevices::colorRampPalette(
@@ -1335,7 +1343,10 @@ plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
         label=T,
         barwidth=0.5
       )
-    )
+    ) # +
+  # theme(
+  #   aspect.ratio = 0.8
+  # )
   
 # plot
 ggrastr::rasterise(
@@ -1345,7 +1356,28 @@ ggrastr::rasterise(
   )
 ```
 
-##<<bookmark>> Adapt y-scale to range of cage_sel to highlight HepG2 signal better
+## Print data
+```{r eval=FALSE}
+for(ext in c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("trackHubFiles/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          # "_ABOprimelocus",
+          # "_LPLprimelocus",
+          "_LIPCprimeloci",
+          "_unfilteredPRIMEloci",
+          out,
+          ".", ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 8,
+      height = 4
+    )
+  }
+```
 
 ## [6.] Genomic_landscape -------------------------
 
@@ -1427,11 +1459,13 @@ outfile <- base::paste0(
     base::format(base::Sys.time(), "%Y%m%d"),
     # "_ABCA7enhancer",
     # "_TMPRSS6promoter",
-    # "_ABOgene", # "_ABOenhancer_2",
-    "_LPLgene", # "_LPLenhancer",
-    # "_APOC1intergenic",
+    # "_ABOprimelocus", # "_ABOgene", # "_ABOenhancer_2",
+    # "_LPLgene", # "_LPLenhancer",
+    # "_LIPCgene",
+    "_APOC1intergenic",
     "_unfilteredPRIMEloci",
     # "_pooledPRIMEloci",
+    "_rescaled",
     out,
     ".pdf"
   )
