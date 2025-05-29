@@ -1587,7 +1587,7 @@ ggplot2::ggsave(
 #### APOC1: chr19:44913485:44913484:rs438811 upstream of APOC1 (Apolipoprotein C-1) overlapping with OCR corresponds well with APOC1 signal at https://tinyurl.com/2av47r5b
 #### (Less clear example: chr16:72045759:72045758:rs77303550 in intergenic region close to HP (Haptoglobin) and HPR (Haptoglobin-related))
 ```{r} 
-df %>% # 1,287 # 1,962
+df %>% # 1,962
   tidyr::pivot_wider( # 143
       names_from = "cell.line",
       values_from = "score"
@@ -1625,17 +1625,24 @@ df %>% # 1,287 # 1,962
 
 ## [4.11.] Identify individual variants for MCHC trait
 #### ABCA7: chr19:1050876:1050875:rs12151021 expressed in HepG2 and K562, but likely different ABCA7 proteins, has effect on red blood cell count and hemoglobin (https://pheweb.jp/gene/ABCA7), but region could also regulate ARHGAP45 as seen in https://tinyurl.com/2av47r5b
-#### TMPRSS6: great example: chr22:37109513:37109512 at the promoter of TMPRSS6, regulator of expression of the iron absorption-regulating hormone hepicidin/HAMP, plays a role in iron homeostasis, very low mean corpuscular erythrocyte volume (Gan et al., 2012, 10.3945/ajcn.111.025684) 
+
+#### TMPRSS6: great example: chr22:37109513:37109512 at the promoter of TMPRSS6, regulator of expression of the iron absorption-regulating hormone hepicidin/HAMP, plays a role in iron homeostasis, very low mean corpuscular erythrocyte volume (Gan et al., 2012, 10.3945/ajcn.111.025684)
+
+#### GMPR: Strong signal in intron: chr6:16267245:16267244
+#### SMIM1: Strong differences between K562 and HepG2 and K562 N vs. C, but PRIMEloci doesn't pick it up: chr1:3774965:3774964
 ```{r}
-df %>%
+df %>% # 1,287
   tidyr::pivot_wider(
       names_from = "cell.line",
       values_from = "score"
     ) %>%
   dplyr::mutate(
-      difN = 2*HepG2_N - base::rowSums(dplyr::across(tidyselect::contains("_"))),
-      difCN = (2*HepG2_N + 2*HepG2_C) - base::rowSums(dplyr::across(tidyselect::contains("_"))),
-      comb = difN*difCN #*HepG2_N
+      # difN = 2*HepG2_N - base::rowSums(dplyr::across(tidyselect::contains("_"))),
+      # difCN = (2*HepG2_N + 2*HepG2_C) - base::rowSums(dplyr::across(tidyselect::contains("_"))),
+      # comb = difN*difCN #*HepG2_N
+      difN = 2*K562_N - base::rowSums(dplyr::across(tidyselect::contains("_"))),
+      difCN = (2*K562_N + 2*K562_C) - base::rowSums(dplyr::across(tidyselect::contains("_"))),
+      comb = difN*difCN #*K562_N
     ) %>%
   dplyr::arrange(
       dplyr::desc(difCN) #dplyr::desc(difCN) # dplyr::desc(HepG2_N)

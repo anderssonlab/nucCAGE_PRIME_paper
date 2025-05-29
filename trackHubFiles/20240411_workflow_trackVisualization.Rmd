@@ -707,7 +707,8 @@ crispr_data <- crispr %>%
 #### KLF2 promoter: "chr19:16,324,467-16,325,106"
 #### BCL2 promoter/PROMPTs: "chr18:63,317,868-63,320,926"
 ```{r}
-l_ <- "chr4:159,101,737-159,104,305"
+# l_ <- "chr4:159,101,737-159,104,305"
+l_ <- "chr1:3,772,250-3,776,000"
 ```
 
 #### see [4.10.] in 10.3.Cell_line_vs_trait_enrichment.Rmd for 'chr22:37109513:37109512'
@@ -1294,8 +1295,8 @@ sites_scores <- sites_scores_ %>%
 #### Plot data
 ```{r}
 # base::range(cage_sel$score)
-minY = base::range(cage_sel$score)[1] # 2.1 # -0.5 # -0.15
-maxY = base::range(cage_sel$score)[2] # -2.1 # 0.5 # 0.15
+minY = -0.5 # base::range(cage_sel$score)[1] # 2.1 # -0.5 # -0.15
+maxY = 0.5 # base::range(cage_sel$score)[2] # -2.1 # 0.5 # 0.15
 coef = 0.75
 cols <- base::c(
   grDevices::colorRampPalette(
@@ -1347,10 +1348,10 @@ plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
         label=T,
         barwidth=0.5
       )
-    ) +
-  theme(
-      aspect.ratio = 0.8
-    )
+    ) # +
+  # theme(
+  #     aspect.ratio = 0.8
+  #   )
   
 # plot
 ggrastr::rasterise(
@@ -1464,8 +1465,8 @@ outfile <- base::paste0(
     here::here("trackHubFiles/plots/"),
     base::format(base::Sys.time(), "%Y%m%d"),
     # "_ABCA7gene", # "_ABCA7enhancer",
-    "_TMPRSS6gene", # "_TMPRSS6promoter",
-    # "_ABOprimelocus", # "_ABOgene", # "_ABOenhancer_2",
+    # "_TMPRSS6gene", # "_TMPRSS6promoter",
+    "_ABOgene", # "_ABOprimelocus", # "_ABOgene", # "_ABOenhancer_2",
     # "_LPLgene", # "_LPLenhancer",
     # "_LIPCgene",
     # "_APOC1intergenic",
