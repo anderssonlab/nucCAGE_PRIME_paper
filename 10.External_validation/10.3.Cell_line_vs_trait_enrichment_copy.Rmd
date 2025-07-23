@@ -1418,6 +1418,7 @@ df <- base::readRDS(
         full.names = TRUE
       ) %>%
     stringr::str_subset("ApoB.rds")
+    # stringr::str_subset("MCHC.rds")
   )
 ```
 
@@ -1588,7 +1589,7 @@ ggplot2::ggsave(
 #### (Less clear example: chr16:72045759:72045758:rs77303550 in intergenic region close to HP (Haptoglobin) and HPR (Haptoglobin-related))
 ```{r} 
 df %>% # 1,962
-  tidyr::pivot_wider( # 143
+  tidyr::pivot_wider( # 1962/9 = 218
       names_from = "cell.line",
       values_from = "score"
     ) %>%
@@ -1632,7 +1633,7 @@ df %>% # 1,962
 #### SMIM1: Strong differences between K562 and HepG2 and K562 N vs. C, but PRIMEloci doesn't pick it up: chr1:3774965:3774964
 ```{r}
 df %>% # 1,287
-  tidyr::pivot_wider(
+  tidyr::pivot_wider( # 1,287/9 = 143 
       names_from = "cell.line",
       values_from = "score"
     ) %>%
@@ -1651,7 +1652,6 @@ df %>% # 1,287
       variant = forcats::fct_inorder(f = variant)
     )
 ```
-
 
 ## [4.12.] Alternative plotting
 ```{r}

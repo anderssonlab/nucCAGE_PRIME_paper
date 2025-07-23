@@ -346,7 +346,7 @@ base::names(CTSSs.objects) <- stringr::str_replace(
   )
 ```
 
-## [1.5.] Add the corresponding GM12878 and K562 poolSub data to CTSSs.objects of [1.5.]
+## [1.5.] Add the corresponding GM12878 and K562 poolSub data to CTSSs.objects of [1.4.]
 #### Evaluate with SummarizedExperiment::colData(K562.CTSSs.sub), SummarizedExperiment::assay(K562.CTSSs.sub, i = "counts.noSingletons")
 ```{r}
 K562.CTSSs <- base::readRDS(
@@ -409,7 +409,6 @@ tpm <- SummarizedExperiment::assay(K562.CTSSs.sub,"TPM")
 tpm[(Matrix::rowSums(tpm) != 0),] # 8,810,502
 SummarizedExperiment::rowRanges(K562.CTSSs)[(Matrix::rowSums(tpm) != 0),] # 8,810,502
 ```
-
 
 ```{r}
 GM12878.CTSSs <- base::readRDS(
@@ -708,7 +707,7 @@ crispr_data <- crispr %>%
 #### BCL2 promoter/PROMPTs: "chr18:63,317,868-63,320,926"
 ```{r}
 # l_ <- "chr4:159,101,737-159,104,305"
-l_ <- "chr1:3,772,250-3,776,000"
+l_ <- "chr4:144,080,727-144,158,976"
 ```
 
 #### see [4.10.] in 10.3.Cell_line_vs_trait_enrichment.Rmd for 'chr22:37109513:37109512'
@@ -725,6 +724,7 @@ l_ <- "chr22:37,109,199-37,109,898" # TMPRSS6 Primeloci
 ```
 
 ### ApoB trait
+#### Whole ApoB gene locus as control: "chr2:20,999,429-21,046,073"
 #### Whole ABO gene including "chr9:133274296:133274295" and "chr9:133263363:133263374": "chr9:133,250,000-133,276,238"
 #### Whole LPL gene including: "chr8:19961929-19961928": "chr8:19,938,800-19,968,800"
 #### Whole LIPC gene including: "chr15:58430392:58430391": "chr15:58,400,000-58,570,000"
@@ -732,6 +732,8 @@ l_ <- "chr22:37,109,199-37,109,898" # TMPRSS6 Primeloci
 #### Whole APOC1 gene including "chr19:44913485:44913484": "chr19:44,914,000-44,920,000" & with alternatively entire promoter proximal region "chr19:44,913,101-44,914,607"
 #### APOE - APOC1: "chr19:44,908,532-44,915,200"
 ```{r}
+l_ <- "chr2:20,999,429-21,046,073"
+
 l_ <- "chr9:133,250,000-133,276,238" # ABO
 l_ <- "chr9:133,273,899-133,274,680" # ABO PRIMElocus
 
@@ -1171,8 +1173,8 @@ sites_ <- base::readRDS(
         path = here::here("10.External_validation"),
         full.names = TRUE
       ) %>%
-    # stringr::str_subset("ApoB.rds")
-    stringr::str_subset("MCHC.rds")
+    stringr::str_subset("ApoB.rds")
+    # stringr::str_subset("MCHC.rds")
   )
 ```
 
@@ -1213,7 +1215,7 @@ sites <- sites_ %>%
   # dplyr::select(start, end)
 ```
 
-#### see [1.3.] in "10.3.Cell_line_vs_trait_enrichment.Rmd" for 'unfiltered.PRIMEloci'-object
+#### see [1.0.-1.4.] in "10.3.Cell_line_vs_trait_enrichment.Rmd" for 'unfiltered.PRIMEloci'-object
 #### Alternative: Use IRanges::reduce() on olap from unfiltered.PRIMEloci and filter for the highest PRIMEloci score
 #### evaluate with 'n = "HepG2_N"' # 61,589
 
@@ -1295,8 +1297,8 @@ sites_scores <- sites_scores_ %>%
 #### Plot data
 ```{r}
 # base::range(cage_sel$score)
-minY = -0.5 # base::range(cage_sel$score)[1] # 2.1 # -0.5 # -0.15
-maxY = 0.5 # base::range(cage_sel$score)[2] # -2.1 # 0.5 # 0.15
+minY = base::range(cage_sel$score)[1] # -2.1 # -0.5 # -0.15
+maxY = base::range(cage_sel$score)[2] # 2.1 # 0.5 # 0.15
 coef = 0.75
 cols <- base::c(
   grDevices::colorRampPalette(
@@ -1308,7 +1310,7 @@ cols <- base::c(
     )((1-coef)*100)
   )
 
-plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
+plot_ <- .GlobalEnv$plotTracks(cage_sel, ran) +
   geom_rect(
       inherit.aes = FALSE,
       data = sites_scores,
@@ -1353,12 +1355,12 @@ plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
   #     aspect.ratio = 0.8
   #   )
   
-# plot
-ggrastr::rasterise(
-    input = plot,
+plot <- ggrastr::rasterise(
+    input = plot_,
     layers = "Bar",
     dpi = 300
   )
+plot
 ```
 
 ## Print data
@@ -1371,8 +1373,8 @@ for(ext in c("pdf", "png")){
           # "_ABOprimelocus",
           # "_LPLprimelocus",
           # "_LIPCprimeloci",
-          # "_ABCA7primelocus",
-          "_TMPRSS6primelocus",
+          "_ABCA7primelocus",
+          # "_TMPRSS6primelocus",
           "_unfilteredPRIMEloci",
           out,
           ".", ext
@@ -1380,8 +1382,8 @@ for(ext in c("pdf", "png")){
       plot = ggplot2::last_plot(),
       device = ext,
       dpi = 300,
-      width = 4,
-      height = 8
+      width = 8,
+      height = 4
     )
   }
 ```
@@ -1435,38 +1437,39 @@ gridExtra::grid.arrange(
 
 ## [6.2.] Print data
 ```{r}
-outfile <- base::paste0(
-    here::here("trackHubFiles/plots/"),
-    base::format(base::Sys.time(), "%Y%m%d"),
-    "_proximalTripGro",
-    out,
-    "_RAPGEF2",
-    "_GM12878",
-    "_poolsOnly",
-    ".pdf"
-  )
-
-grDevices::pdf(
-    file = outfile,
-    width = 8,
-    height = 4
-  )
-base::print(
-    gridExtra::grid.arrange(
-      g,l_add,
-      heights = grid::unit(base::c(0.8, 0.2),"npc")
-    )
-  )
-grDevices::dev.off()
+# outfile <- base::paste0(
+#     here::here("trackHubFiles/plots/"),
+#     base::format(base::Sys.time(), "%Y%m%d"),
+#     "_proximalTripGro",
+#     out,
+#     "_RAPGEF2",
+#     "_GM12878",
+#     "_poolsOnly",
+#     ".pdf"
+#   )
+# 
+# grDevices::pdf(
+#     file = outfile,
+#     width = 8,
+#     height = 4
+#   )
+# base::print(
+#     gridExtra::grid.arrange(
+#       g,l_add,
+#       heights = grid::unit(base::c(0.8, 0.2),"npc")
+#     )
+#   )
+# grDevices::dev.off()
 ```
 
 ```{r}
 outfile <- base::paste0(
     here::here("trackHubFiles/plots/"),
     base::format(base::Sys.time(), "%Y%m%d"),
+    "_APOBgene",
     # "_ABCA7gene", # "_ABCA7enhancer",
     # "_TMPRSS6gene", # "_TMPRSS6promoter",
-    "_ABOgene", # "_ABOprimelocus", # "_ABOgene", # "_ABOenhancer_2",
+    # "_ABOgene", # "_ABOprimelocus", # "_ABOgene", # "_ABOenhancer_2",
     # "_LPLgene", # "_LPLenhancer",
     # "_LIPCgene",
     # "_APOC1intergenic",
