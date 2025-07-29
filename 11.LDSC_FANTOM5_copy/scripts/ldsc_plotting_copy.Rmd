@@ -4,6 +4,11 @@ date: "2025-06-03"
 output: html_document
 ---
 
+## [-1.0.] Install necessary packages
+```{r}
+utils::install.packages("factoextra")
+```
+
 ## [0.] Prerequsites -------------------------
 
 ## [0.0.] Load necesarray packages
@@ -43,9 +48,20 @@ cellFacet.rse_1 <- base::readRDS(
       "cellFacet.rds"
     )
   )
+```
+
+```{r}
 SummarizedExperiment::colData(cellFacet.rse)
-SummarizedExperiment::assay(cellFacet.rse,"PL.score")
-rm(cellFacet.rse_1)
+mat <- SummarizedExperiment::assay(cellFacet.rse,"PL.score") %>%
+  base::replace(base::is.na(.), 0) %>% 
+  base::as.matrix()
+pr <- stats::prcomp(mat)
+factoextra::fviz_pca_ind(
+    pr,
+    col.ind = "cos2",
+    gradient.cols = base::c("#00AFBB", "#E7B800", "#FC4E07"),
+    repel = TRUE
+  )
 ```
 
 ## [0.2.] Read in FANTOM5 predictions
