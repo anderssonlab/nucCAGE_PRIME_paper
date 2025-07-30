@@ -7,6 +7,7 @@ output: html_document
 ## [-1.0.] Install necessary packages
 ```{r}
 utils::install.packages("factoextra")
+utils::install.packages("tsne")
 ```
 
 ## [0.] Prerequsites -------------------------
@@ -53,15 +54,69 @@ cellFacet.rse_1 <- base::readRDS(
 ```{r}
 SummarizedExperiment::colData(cellFacet.rse)
 mat <- SummarizedExperiment::assay(cellFacet.rse,"PL.score") %>%
-  base::replace(base::is.na(.), 0) %>% 
-  base::as.matrix()
+  base::replace(base::is.na(.), 0) %>%
+  base::as.matrix() %>%
+  base::t()
+mat[1:5,1:5]
+base::dim(mat)
 pr <- stats::prcomp(mat)
+utils::str(pr)
+
+tmat <- tsne::tsne(X = pr$x, initial_dims = 2)
+base::colnames(tmat) <- base::c("tsne_1","tsne_2")
+base::rownames(tmat) <- base::rownames(pr$x)
+```
+
+```{r}
+tmat %>%
+  tibble::as.tibble(
+    rownames = "cat"
+  ) %>% 
+ggplot2::ggplot(
+      data = ,
+      mapping = aes(
+        x = tsne_1,
+        y = tsne_2
+      )
+    ) +
+  geom_point() +
+  theme_bw()
+
+```
+
+```{r}
 factoextra::fviz_pca_ind(
     pr,
     col.ind = "cos2",
     gradient.cols = base::c("#00AFBB", "#E7B800", "#FC4E07"),
     repel = TRUE
   )
+```
+
+```{r}
+pr$x %>%
+  tibble::as_tibble(rownames = "var") %>%
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = PC1,
+        y = PC2,
+        label = base::ifelse(PC2  > 50, var, "")
+      )
+    ) +
+  geom_point() +
+  ggrepel::geom_text_repel(
+      box.padding = 0.5,
+      max.overlaps = Inf,
+      size = 2
+    ) +
+  scale_x_continuous(
+      limits = base::c(-700,700)
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
 ```
 
 ## [0.2.] Read in FANTOM5 predictions
@@ -74,81 +129,9 @@ F5 <- rtracklayer::import.bed(
   )
 ```
 
-## [1.] Data wrangling -------------------------
-
-## [1.0.] Add annotations
+## [0.3.] Define categories for all cellFacets
 ```{r}
-SummarizedExperiment::rowData(cellFacet.rse)$location <- NA
-SummarizedExperiment::rowData(cellFacet.rse)$location[SummarizedExperiment::rowData(cellFacet.rse)$txType %in% base::c("promoter","proximal","fiveUTR")] <- "proximal"
-SummarizedExperiment::rowData(cellFacet.rse)$location[SummarizedExperiment::rowData(cellFacet.rse)$txType %in% base::c("intron","intergenic")] <- "distal"
-keep <- !base::is.na(SummarizedExperiment::rowData(cellFacet.rse)$location)
-cellFacet.rse <- cellFacet.rse[keep,]
-
-F5 <- CAGEfightR::assignTxType(
-    object = F5,
-    txModels = txdb
-  )
-F5$location[F5$txType %in% c("promoter","proximal","fiveUTR")] <- "proximal"
-F5$location[F5$txType %in% c("intron","intergenic")] <- "distal"
-```
-
-## [1.1.] Calculate support across cellFacets at PL score 0.5
-```{r}
-SummarizedExperiment::assay(cellFacet.rse, "qn.PL.score")[
-    base::is.na(SummarizedExperiment::assay(cellFacet.rse, "qn.PL.score"))
-  ] <- 0
-cellFacet.rse <- CAGEfightR::calcSupport(
-    object = cellFacet.rse,
-    inputAssay = "qn.PL.score",
-    unexpressed = 0.5,
-    outputColumn = "support0.5"
-  )
-```
-
-## [1.2.] Calculate number of proximal and distal regions at PL score 0.5 and 0.75
-```{r}
-SummarizedExperiment::colData(cellFacet.rse)$distal0.5 <- base::colSums(
-  SummarizedExperiment::assay(
-      x = base::subset(cellFacet.rse,location == "distal"),
-      i = "qn.PL.score"
-    ) > 0.5
-  )
-SummarizedExperiment::colData(cellFacet.rse)$distal0.75 <- base::colSums(
-  SummarizedExperiment::assay(
-      x = base::subset(cellFacet.rse, location == "distal"),
-      i = "qn.PL.score"
-    ) > 0.75
-  )
-SummarizedExperiment::colData(cellFacet.rse)$proximal0.5 <- base::colSums(
-  SummarizedExperiment::assay(
-      x = base::subset(cellFacet.rse, location == "proximal"),
-      i = "qn.PL.score"
-    ) > 0.5
-  )
-SummarizedExperiment::colData(cellFacet.rse)$proximal0.75 <- base::colSums(
-  SummarizedExperiment::assay(
-      x = base::subset(cellFacet.rse, location == "proximal"),
-      i = "qn.PL.score"
-    ) > 0.75
-  )
-```
-
-## [1.2.] Calculate binary jaccard distance between cellFacets at PL score 0.5
-```{r}
-binary_mat <- SummarizedExperiment::assay(cellFacet.rse, "qn.PL.score") > 0.5
-
-jaccard_dist <- vegan::vegdist(
-    x = base::t(binary_mat),
-    method = "jaccard"
-  )
-jaccard_mat <- base::as.matrix(jaccard_dist)
-
-jaccard_sim <- 1 - jaccard_mat
-```
-
-```{r}
-# Categories cellFacets
-cell_type_categories <- c(
+cell_type_categories <- base::c(
   "acute.lymphoblastic.leukemia.T.ALL" = "Cancer / Tumor",
   "heart" = "Muscle",
   "acute.myeloid.leukemia.FAB.M6" = "Cancer / Tumor",
@@ -293,65 +276,171 @@ cell_type_categories <- c(
 )
 ```
 
+## [1.] Data wrangling -------------------------
+
+## [1.0.] Add annotations
 ```{r}
-# Selecting cellFacets for main figure
-main <- names(cell_type_categories)[cell_type_categories!="Cancer / Tumor"]
+SummarizedExperiment::rowData(cellFacet.rse)$location <- NA
+SummarizedExperiment::rowData(cellFacet.rse)$location[SummarizedExperiment::rowData(cellFacet.rse)$txType %in% base::c("promoter","proximal","fiveUTR")] <- "proximal"
+SummarizedExperiment::rowData(cellFacet.rse)$location[SummarizedExperiment::rowData(cellFacet.rse)$txType %in% base::c("intron","intergenic")] <- "distal"
+keep <- !base::is.na(SummarizedExperiment::rowData(cellFacet.rse)$location)
+cellFacet.rse <- cellFacet.rse[keep,]
 
-jaccard_sim_main <- jaccard_sim[row.names(jaccard_sim) %in% main, colnames(jaccard_sim) %in% main]
+F5 <- CAGEfightR::assignTxType(
+    object = F5,
+    txModels = txdb
+  )
+F5$location[F5$txType %in% base::c("promoter","proximal","fiveUTR")] <- "proximal"
+F5$location[F5$txType %in% base::c("intron","intergenic")] <- "distal"
+```
 
-# Cluster and sort
-hc <- hclust(as.dist(1 - jaccard_sim), method = "average")
+## [1.1.] Calculate support across cellFacets at PL score 0.5
+```{r}
+SummarizedExperiment::assay(cellFacet.rse, "qn.PL.score")[
+    base::is.na(SummarizedExperiment::assay(cellFacet.rse, "qn.PL.score"))
+  ] <- 0
+cellFacet.rse <- CAGEfightR::calcSupport(
+    object = cellFacet.rse,
+    inputAssay = "qn.PL.score",
+    unexpressed = 0.5,
+    outputColumn = "support0.5"
+  )
+```
+
+## [1.2.] Calculate number of proximal and distal regions at PL score 0.5 and 0.75
+```{r}
+SummarizedExperiment::colData(cellFacet.rse)$distal0.5 <- base::colSums(
+  SummarizedExperiment::assay(
+      x = base::subset(cellFacet.rse,location == "distal"),
+      i = "qn.PL.score"
+    ) > 0.5
+  )
+SummarizedExperiment::colData(cellFacet.rse)$distal0.75 <- base::colSums(
+  SummarizedExperiment::assay(
+      x = base::subset(cellFacet.rse, location == "distal"),
+      i = "qn.PL.score"
+    ) > 0.75
+  )
+SummarizedExperiment::colData(cellFacet.rse)$proximal0.5 <- base::colSums(
+  SummarizedExperiment::assay(
+      x = base::subset(cellFacet.rse, location == "proximal"),
+      i = "qn.PL.score"
+    ) > 0.5
+  )
+SummarizedExperiment::colData(cellFacet.rse)$proximal0.75 <- base::colSums(
+  SummarizedExperiment::assay(
+      x = base::subset(cellFacet.rse, location == "proximal"),
+      i = "qn.PL.score"
+    ) > 0.75
+  )
+```
+
+## [1.2.] Calculate binary jaccard distance between cellFacets at PL score 0.5
+```{r}
+binary_mat <- SummarizedExperiment::assay(cellFacet.rse, "qn.PL.score") > 0.5
+
+jaccard_dist <- vegan::vegdist(
+    x = base::t(binary_mat),
+    method = "jaccard"
+  )
+jaccard_mat <- base::as.matrix(jaccard_dist)
+
+jaccard_sim <- 1 - jaccard_mat
+```
+
+## [1.3.] Selecting cellFacets for main figure
+```{r}
+main <- base::names(cell_type_categories)[cell_type_categories != "Cancer / Tumor"]
+
+jaccard_sim_main <- jaccard_sim[
+    base::row.names(jaccard_sim) %in% main,
+    base::colnames(jaccard_sim) %in% main
+  ]
+```
+
+## [1.4.] Cluster and sort
+```{r}
+hc <- stats::hclust(
+    stats::as.dist(1 - jaccard_sim),
+    method = "average"
+  )
 hc_sorted <- dendsort::dendsort(hc)
 
-hc_main <- hclust(as.dist(1 - jaccard_sim_main), method = "average")
+hc_main <- stats::hclust(
+    stats::as.dist(1 - jaccard_sim_main),
+    method = "average"
+  )
 hc_main_sorted <- dendsort::dendsort(hc_main)
 ```
 
+## [2.] Descriptive plots -------------------------
 
-
-## [1.] Descriptive plots -------------------------
-
-
-## [1.0.] CellFacet support at PL score 0.5
+## [2.0.] Plot support across cellFacets at PL score 0.5
+#### ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/support0.5.pdf", height=10,width=7)
 ```{r}
-# Plot support across cellFacets at PL score 0.5
 cellFacet.rse %>%
-  rowData() %>%
-  as.data.frame() %>%
-  mutate(location = factor(location, levels = c("proximal", "distal"))) %>%
-  ggplot(aes(support0.5,fill=location))  +
-  scale_fill_manual(values = c("proximal" = "#1b9e77", "distal" = "#d95f02")) +
+  SummarizedExperiment::rowData() %>%
+  base::as.data.frame() %>%
+  dplyr::mutate(
+    location = base::factor(
+        x = location,
+        levels = base::c("proximal", "distal")
+      )
+    ) %>%
+  ggplot2::ggplot(
+    mapping = aes(
+        support0.5,
+        fill = location
+      )
+    )  +
   geom_bar() +
-  facet_wrap(~location, scales = "free", ncol = 1)
-
-ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/support0.5.pdf", height=10,width=7)
+  scale_fill_manual(
+      values = base::c("proximal" = "#1b9e77", "distal" = "#d95f02")
+    ) +
+  facet_wrap(
+      facets = ~location,
+      scales = "free",
+      ncol = 1
+    )
 ```
 
-
-## [1.1.] Number of RE at PL score 0.5 clustered based on jaccard distance
+## [2.1.] Number of RE at PL score 0.5 clustered based on jaccard distance
+#### see [1.3.] above for 'hc_sorted' object
 ```{r}
 ordered_samples <- hc_sorted$labels[hc_sorted$order]
 
 # Filter colData to include only those in clustering
-df <- as.data.frame(colData(cellFacet.rse)) %>%
-  as_tibble() %>%
-  filter(sample %in% ordered_samples)
+df <- SummarizedExperiment::colData(cellFacet.rse) %>%
+  tibble::as_tibble() %>%
+  dplyr::filter(
+      sample %in% ordered_samples
+    )
 
 # Get dendrogram data
-dend <- as.dendrogram(hc_sorted)
-dend_data <- dendro_data(dend)
-label_map <- setNames(dend_data$labels$x, dend_data$labels$label)
+dend <- stats::as.dendrogram(hc_sorted)
+dend_data <- ggdendro::dendro_data(dend)
+label_map <- stats::setNames(dend_data$labels$x, dend_data$labels$label)
 seg_data <- dend_data$segments
 
 # Reshape data to long format for plotting and assign dendrogram x positions
 df_long <- df %>%
-  pivot_longer(cols = c(distal0.5, proximal0.5),
-               names_to = "region_type",
-               values_to = "count") %>%
-  mutate(region_type = factor(region_type, levels = c("proximal0.5", "distal0.5")),
-         x = label_map[as.character(sample)])
+  tidyr::pivot_longer(
+      cols = base::c("distal0.5", "proximal0.5"),
+      names_to = "region_type",
+      values_to = "count"
+    ) %>%
+  dplyr::mutate(
+      region_type = base::factor(
+          x = region_type,
+          levels = base::c("proximal0.5", "distal0.5")
+        ),
+      x = label_map[as.character(sample)]
+    )
+```
 
-# Bar plot 
+## [2.1.] Bar plot 
+```{r}
+
 bar_plot <- ggplot(df_long, aes(x = x, y = count, fill = region_type)) +
   geom_bar(stat = "identity", position = "dodge") +
   scale_fill_manual(values = c("proximal0.5" = "#1b9e77", "distal0.5" = "#d95f02")) +
