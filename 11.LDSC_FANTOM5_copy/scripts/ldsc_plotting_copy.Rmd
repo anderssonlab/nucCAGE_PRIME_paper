@@ -68,6 +68,18 @@ base::rownames(tmat) <- base::rownames(pr$x)
 ```
 
 ```{r}
+factoextra::fviz_nbclust(mat, kmeans, method = "wss")
+```
+```{r}
+kmat <- stats::kmeans(
+    x = mat,
+    centers = 7,
+    nstart = 25
+  )
+```
+
+
+```{r}
 tmat %>%
   tibble::as.tibble(
     rownames = "cat"
@@ -80,8 +92,10 @@ ggplot2::ggplot(
       )
     ) +
   geom_point() +
-  theme_bw()
-
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
 ```
 
 ```{r}
@@ -376,7 +390,7 @@ hc_main_sorted <- dendsort::dendsort(hc_main)
 ## [2.] Descriptive plots -------------------------
 
 ## [2.0.] Plot support across cellFacets at PL score 0.5
-#### ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/support0.5.pdf", height=10,width=7)
+#### ggsave("11.LDSC_FANTOM5/plots/support0.5.pdf", height=10,width=7)
 ```{r}
 cellFacet.rse %>%
   SummarizedExperiment::rowData() %>%
@@ -438,45 +452,79 @@ df_long <- df %>%
     )
 ```
 
-## [2.1.] Bar plot 
+## [2.1.] Bar plot
+#### ggsave("11.LDSC_FANTOM5/plots/nBarplot.pdf", combined_plot, width = 7, height = 15)
 ```{r}
-
-bar_plot <- ggplot(df_long, aes(x = x, y = count, fill = region_type)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  scale_fill_manual(values = c("proximal0.5" = "#1b9e77", "distal0.5" = "#d95f02")) +
-  scale_x_continuous(breaks = df_long$x,
-                     labels = df_long$sample) +
+# bar_plot <-
+ggplot2::ggplot(
+    data = df_long,
+    mapping = aes(
+        x = x,
+        y = count,
+        fill = region_type
+      )
+    ) +
+  geom_bar(
+      stat = "identity", position = "dodge"
+    ) +
+  geom_hline(
+      yintercept = base::length(F5),
+      linetype = "dashed",
+      color = "darkred",
+      linewidth = 0.7
+    ) +
+  geom_hline(
+      yintercept = 100000,
+      linetype = "dashed",
+      color = "darkgrey",
+      linewidth = 0.7
+    ) +
+  scale_x_continuous(
+      breaks = df_long$x,
+      labels = df_long$sample
+    ) +
+  scale_fill_manual(
+      values = base::c("proximal0.5" = "#1b9e77", "distal0.5" = "#d95f02")
+    ) +
   coord_flip() +
-  labs(x = NULL, y = "Region count", fill = "Region Type") +
-  theme_minimal() +
-  theme(axis.text.y = element_text(size = 6, hjust = 1),
-        axis.title.y = element_blank()) +
-  geom_hline(yintercept = length(F5), linetype = "dashed", color = "darkred", linewidth = 0.7) +
-  geom_hline(yintercept = 100000, linetype = "dashed", color = "darkgrey", linewidth = 0.7)+
+  labs(
+      x = NULL,
+      y = "Region count",
+      fill = "Region Type"
+    ) +
   theme_minimal() +
   theme(
-    axis.text.y = element_text(size = 6, hjust = 1),
-    panel.grid.major.y = element_blank(),  # remove horizontal lines
-    panel.grid.minor.y = element_blank()   # just in case
-  )
-
-
+      axis.text.y = element_text(size = 6, hjust = 1),
+      axis.title.y = element_blank(),
+      panel.grid.major.y = element_blank(),  # remove horizontal lines
+      panel.grid.minor.y = element_blank()   # just in case
+    )
 
 # Dendrogram plot 
-dend_plot <- ggplot(seg_data) +
-  geom_segment(aes(x = x, y = y, xend = xend, yend = yend)) +
+# dend_plot <-
+ggplot2::ggplot(
+      data = seg_data,
+      mapping = aes(
+        x = x,
+        y = y,
+        xend = xend,
+        yend = yend
+      )
+    ) +
+  geom_segment() +
   scale_y_reverse() +
   coord_flip() +
   theme_void() +
-  theme(plot.margin = margin(r = -10))  # Reduce spacing to snugly align with barplot
+  theme(
+      plot.margin = margin(r = -10)
+    )  # Reduce spacing to snugly align with barplot
 
 # Combine and plot
 combined_plot <- dend_plot + bar_plot + plot_layout(widths = c(1, 3))
-combined_plot
-
-ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/nBarplot.pdf", combined_plot, width = 7, height = 15)
+```
 
 
+```{r}
 
 
 # Same for main figure
@@ -538,23 +586,25 @@ combined_plot
 ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/nBarplot.main.pdf", combined_plot, width = 15, height = 15)
 ```
 
-
-
-
 ## [2.] LDSC analysis plots -------------------------
-
 
 ## [2.0] Read in main LDSC results
 ```{r}
-# Input file
-input_file <- "/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/combined_results.tsv"
-sumstat_file <- "/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/ukb31063_ldsc_sumstat_manifest_aws_sep2022.tsv"
-
 # Load the data
-ldsc_score <- read_tsv(input_file)
-ldsc_score$Trait<- sub("_score[0-9.]+$", "", ldsc_score$Trait) 
+ldsc_score <- readr::read_tsv(
+    file = base::paste0(
+      here::here("11.LDSC_FANTOM5/ldsc_files/"),
+      "combined_results.tsv"
+    )
+  )
+ldsc_score$Trait<- base::sub(pattern = "_score[0-9.]+$", "", ldsc_score$Trait) 
 
-sumstat_annot <- read_tsv(sumstat_file)
+sumstat_annot <- readr::read_tsv(
+    file = base::paste0(
+      here::here("11.LDSC_FANTOM5/ldsc_files/"),
+      "ukb31063_ldsc_sumstat_manifest_aws_sep2022.tsv"
+    )
+  )
 sumstat_annot <- filter(sumstat_annot, is_primary_gwas==TRUE & phenotype %in% unique(ldsc_score$Trait))
 
 # Add description to data
