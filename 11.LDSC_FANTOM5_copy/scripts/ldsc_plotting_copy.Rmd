@@ -481,6 +481,12 @@ cellFacet.rse <- CAGEfightR::calcSupport(
     unexpressed = 0.5,
     outputColumn = "support0.5"
   )
+cellFacet.rse <- CAGEfightR::calcSupport(
+    object = cellFacet.rse,
+    inputAssay = "qn.PL.score",
+    unexpressed = 0.75,
+    outputColumn = "support0.75"
+  )
 ```
 
 ## [1.2.] Calculate number of proximal and distal regions at PL score 0.5 and 0.75
@@ -557,15 +563,26 @@ hc_main_sorted <- dendsort::dendsort(hc_main)
 cellFacet.rse %>%
   SummarizedExperiment::rowData() %>%
   base::as.data.frame() %>%
+  tidyr::pivot_longer(
+      cols = base::c("support0.5", "support0.75"),
+      names_to = "support",
+      values_to = "qn.PL.score"
+    ) %>% 
   dplyr::mutate(
     location = base::factor(
         x = location,
-        levels = base::c("proximal", "distal")
+        levels = base::c("proximal", "distal"),
+        ordered = TRUE
+      ),
+    support = base::factor(
+        x = support,
+        levels = base::c("support0.5", "support0.75"),
+        ordered = TRUE
       )
     ) %>%
   ggplot2::ggplot(
     mapping = aes(
-        support0.5,
+        x = qn.PL.score,
         fill = location
       )
     )  +
@@ -574,14 +591,15 @@ cellFacet.rse %>%
       values = base::c("proximal" = "#1b9e77", "distal" = "#d95f02")
     ) +
   facet_wrap(
-      facets = ~location,
-      scales = "free",
-      ncol = 1
+      facets = support ~ location,
+      # ncol = 1,
+      scales = "free"
     )
 ```
 
 ## [2.1.] Number of RE at PL score 0.5 clustered based on jaccard distance
 #### see [1.3.] above for 'hc_sorted' object
+#### 1:29; 30:73; 74:85;  131:141; :130
 ```{r}
 ordered_samples <- hc_sorted$labels[hc_sorted$order]
 
@@ -617,8 +635,7 @@ df_long <- df %>%
 ## [2.1.] Bar plot
 #### ggsave("11.LDSC_FANTOM5/plots/nBarplot.pdf", combined_plot, width = 7, height = 15)
 ```{r}
-# bar_plot <-
-ggplot2::ggplot(
+bar_plot <- ggplot2::ggplot(
     data = df_long,
     mapping = aes(
         x = x,
@@ -663,8 +680,7 @@ ggplot2::ggplot(
     )
 
 # Dendrogram plot 
-# dend_plot <-
-ggplot2::ggplot(
+dend_plot <- ggplot2::ggplot(
       data = seg_data,
       mapping = aes(
         x = x,
@@ -682,13 +698,27 @@ ggplot2::ggplot(
     )  # Reduce spacing to snugly align with barplot
 
 # Combine and plot
-combined_plot <- dend_plot + bar_plot + plot_layout(widths = c(1, 3))
+library(patchwork)
+combined_plot <- dend_plot + bar_plot + patchwork::plot_layout(widths = c(1, 3))
+combined_plot
+```
+
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("11.LDSC_FANTOM5_copy/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_nBarplot.pdf"
+      ),
+    device = "pdf",
+    plot = combined_plot,
+    width = 7,
+    height = 15
+  )
 ```
 
 
 ```{r}
-
-
 # Same for main figure
 ordered_samples <- hc_main_sorted$labels[hc_main_sorted$order]
 
