@@ -51,6 +51,7 @@ cellFacet.rse_1 <- base::readRDS(
   )
 ```
 
+
 ```{r}
 SummarizedExperiment::colData(cellFacet.rse)
 mat <- SummarizedExperiment::assay(cellFacet.rse,"PL.score") %>%
@@ -61,41 +62,6 @@ mat[1:5,1:5]
 base::dim(mat)
 pr <- stats::prcomp(mat)
 utils::str(pr)
-
-tmat <- tsne::tsne(X = pr$x, initial_dims = 2)
-base::colnames(tmat) <- base::c("tsne_1","tsne_2")
-base::rownames(tmat) <- base::rownames(pr$x)
-```
-
-```{r}
-factoextra::fviz_nbclust(mat, kmeans, method = "wss")
-```
-```{r}
-kmat <- stats::kmeans(
-    x = mat,
-    centers = 7,
-    nstart = 25
-  )
-```
-
-
-```{r}
-tmat %>%
-  tibble::as.tibble(
-    rownames = "cat"
-  ) %>% 
-ggplot2::ggplot(
-      data = ,
-      mapping = aes(
-        x = tsne_1,
-        y = tsne_2
-      )
-    ) +
-  geom_point() +
-  theme_bw() +
-  theme(
-      aspect.ratio = 1
-    )
 ```
 
 ```{r}
@@ -132,6 +98,77 @@ pr$x %>%
       aspect.ratio = 1
     )
 ```
+
+```{r}
+tmat <- tsne::tsne(X = pr$x, initial_dims = 2)
+base::colnames(tmat) <- base::c("tsne_1","tsne_2")
+base::rownames(tmat) <- base::rownames(pr$x)
+```
+
+```{r}
+factoextra::fviz_nbclust(mat, kmeans, method = "wss")
+```
+
+```{r}
+kmat <- stats::kmeans(
+    x = mat,
+    centers = 7,
+    nstart = 25
+  )
+utils::str(kmat)
+```
+
+```{r}
+base::saveRDS(
+  object = kmat,
+  file = base::paste0(
+      here::here("11.LDSC_FANTOM5_copy/"),
+      base::format(base::Sys.Date(), "%Y%m%d"),
+      "_F5_clusters.rds"
+    )
+  )
+```
+
+```{r}
+f5cl <- tibble::tibble(
+    cat = base::names(kmat$cluster),
+    clus = kmat$cluster
+  )
+f5mat <- tmat %>%
+  tibble::as.tibble(
+      rownames = "cat"
+    ) %>%
+  dplyr::left_join(
+      x = ., y = f5cl, by = "cat"
+    ) %>%
+  dplyr::mutate(
+      clus = base::factor(
+        x = clus,
+        levels = 1:7,
+        ordered = TRUE
+      )
+    ) %>%
+  dplyr::arrange(clus)
+```
+
+
+```{r}
+ggplot2::ggplot(
+      data = f5mat,
+      mapping = aes(
+        x = tsne_1,
+        y = tsne_2,
+        colour = clus
+      )
+    ) +
+  geom_point() +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+
 
 ## [0.2.] Read in FANTOM5 predictions
 ```{r}
@@ -288,6 +325,131 @@ cell_type_categories <- base::c(
   "keratocyte" = "Fibroblast/Connective",
   "B.lymphoblastoid" = "Immune"
 )
+```
+
+## [1.] PCA & k means clustering -------------------------
+
+## [1.0.] Perform PCA
+```{r}
+SummarizedExperiment::colData(cellFacet.rse)
+mat <- SummarizedExperiment::assay(cellFacet.rse,"PL.score") %>%
+  base::replace(base::is.na(.), 0) %>%
+  base::as.matrix() %>%
+  base::t()
+mat[1:5,1:5]
+base::dim(mat)
+pr <- stats::prcomp(mat)
+utils::str(pr)
+```
+
+## [1.1.] Visualize PCA results
+```{r}
+factoextra::fviz_pca_ind(
+    pr,
+    col.ind = "cos2",
+    gradient.cols = base::c("#00AFBB", "#E7B800", "#FC4E07"),
+    repel = TRUE
+  )
+```
+
+## [1.2.] Visualize PCA results
+```{r}
+pr$x %>%
+  tibble::as_tibble(rownames = "var") %>%
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = PC1,
+        y = PC2,
+        label = base::ifelse(PC2  > 50, var, "")
+      )
+    ) +
+  geom_point() +
+  ggrepel::geom_text_repel(
+      box.padding = 0.5,
+      max.overlaps = Inf,
+      size = 2
+    ) +
+  scale_x_continuous(
+      limits = base::c(-700,700)
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [1.3.] PCA-dependent tSNE analysis
+```{r}
+tmat <- tsne::tsne(X = pr$x, initial_dims = 2)
+base::colnames(tmat) <- base::c("tsne_1","tsne_2")
+base::rownames(tmat) <- base::rownames(pr$x)
+```
+
+```{r}
+factoextra::fviz_nbclust(mat, kmeans, method = "wss")
+```
+
+## [1.4.] k means clustering
+```{r}
+kmat <- stats::kmeans(
+    x = mat,
+    centers = 7,
+    nstart = 25
+  )
+utils::str(kmat)
+```
+
+## [1.5.] Save 'kmat' object
+```{r}
+base::saveRDS(
+  object = kmat,
+  file = base::paste0(
+      here::here("11.LDSC_FANTOM5_copy/"),
+      base::format(base::Sys.Date(), "%Y%m%d"),
+      "_F5_clusters.rds"
+    )
+  )
+```
+
+## [1.6.] Data wrangling & combination
+```{r}
+f5cl <- tibble::tibble(
+    cat = base::names(kmat$cluster),
+    clus = kmat$cluster
+  )
+f5mat <- tmat %>%
+  tibble::as.tibble(
+      rownames = "cat"
+    ) %>%
+  dplyr::left_join(
+      x = ., y = f5cl, by = "cat"
+    ) %>%
+  dplyr::mutate(
+      clus = base::factor(
+        x = clus,
+        levels = 1:7,
+        ordered = TRUE
+      )
+    ) %>%
+  dplyr::arrange(clus)
+```
+
+## [1.6.] Data visualization
+```{r}
+ggplot2::ggplot(
+      data = f5mat,
+      mapping = aes(
+        x = tsne_1,
+        y = tsne_2,
+        colour = clus
+      )
+    ) +
+  geom_point() +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
 ```
 
 ## [1.] Data wrangling -------------------------
