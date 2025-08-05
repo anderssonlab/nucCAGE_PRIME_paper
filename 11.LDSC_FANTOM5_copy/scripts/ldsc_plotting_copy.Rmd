@@ -729,6 +729,52 @@ combined_plot
 ```
 
 ```{r}
+ggplot2::ggplot(
+    data = df_long,
+    mapping = aes(
+        x = x,
+        y = count,
+        fill = region_type
+      )
+    ) +
+  geom_bar(
+      stat = "identity", position = "dodge"
+    ) +
+  geom_hline(
+      yintercept = base::length(F5),
+      linetype = "dashed",
+      color = "darkred",
+      linewidth = 0.7
+    ) +
+  geom_hline(
+      yintercept = 100000,
+      linetype = "dashed",
+      color = "darkgrey",
+      linewidth = 0.7
+    ) +
+  scale_x_continuous(
+      breaks = df_long$x,
+      labels = df_long$sample
+    ) +
+  scale_fill_manual(
+      values = base::c("proximal0.5" = "#1b9e77", "distal0.5" = "#d95f02")
+    ) +
+  coord_flip() +
+  labs(
+      x = NULL,
+      y = "Region count",
+      fill = "Region Type"
+    ) +
+  theme_minimal() +
+  theme(
+      axis.text.y = element_text(size = 6, hjust = 1),
+      axis.title.y = element_blank(),
+      panel.grid.major.y = element_blank(),  # remove horizontal lines
+      panel.grid.minor.y = element_blank()   # just in case
+    )
+```
+
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("11.LDSC_FANTOM5_copy/plots/"),
