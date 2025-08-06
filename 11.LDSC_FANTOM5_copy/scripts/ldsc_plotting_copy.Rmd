@@ -960,35 +960,40 @@ ldsc_score <- readr::read_tsv(
   )
 ldsc_score$Trait<- base::sub(pattern = "_score[0-9.]+$", "", ldsc_score$Trait) 
 
-sumstat_annot <- readr::read_tsv(
+sumstat_annot <- readr::read_tsv( # 12,098
     file = base::paste0(
       here::here("11.LDSC_FANTOM5/ldsc_files/"),
       "ukb31063_ldsc_sumstat_manifest_aws_sep2022.tsv"
     )
   )
-sumstat_annot <- filter(sumstat_annot, is_primary_gwas==TRUE & phenotype %in% unique(ldsc_score$Trait))
+sumstat_annot <- sumstat_annot %>% #4,170
+  dplyr::filter(
+      is_primary_gwas == TRUE &
+      phenotype %in% base::unique(ldsc_score$Trait)
+    )
+```
 
-# Add description to data
+## [2.1.] Add description to data
+#### 25020 "unknown"  locations
+```{r}
 ldsc_score <- dplyr::left_join(
-  ldsc_score,
-  sumstat_annot %>% dplyr::select(phenotype, description),
-  by = c("Trait" = "phenotype")
-)
+    x = ldsc_score,
+    y = dplyr::select(sumstat_annot, phenotype, description),
+    by = base::c("Trait" = "phenotype")
+  )
 
 ldsc_score <- ldsc_score %>%
-  mutate(loc = case_when(
-    grepl("distal", Category) ~ "distal",  
-    grepl("proximal", Category) ~ "proximal",  
-    TRUE ~ "unknown"  
-  ))
+  dplyr::mutate(
+      loc = stringr::str_extract(Category, "distal|proximal"),
+      loc = tidyr::replace_na(loc, "unknown")
+    )
 
-ldsc_score$score <- sub(".*_(\\d+\\.\\d+)L2_0$", "\\1", ldsc_score$Category)
+ldsc_score$score <- base::sub(".*_(\\d+\\.\\d+)L2_0$", "\\1", ldsc_score$Category)
 
-ldsc_score$sample <- sub("_.*", "", ldsc_score$Category)
+ldsc_score$sample <- base::sub("_.*", "", ldsc_score$Category)
 
-
-ldsc_score <- ldsc_score[ldsc_score$Category!="baseL2_0",]
-ldsc_data <- ldsc_score[ldsc_score$score=="0.5",]
+ldsc_score <- ldsc_score[ldsc_score$Category != "baseL2_0",] # 3,552,840
+ldsc_data <- ldsc_score[ldsc_score$score == "0.5",] # 592,140
 ```
 
 
@@ -999,35 +1004,42 @@ ldsc_data <- ldsc_score[ldsc_score$score=="0.5",]
 ```{r}
 plot_trait_scores <- function(ldsc_score, description, samples, min_top_scores) {
   # Subset relevant data
-  df <- unique(ldsc_score[ldsc_score$description == description &
-                            ldsc_score$sample %in% c("F5", samples), ])
+  df <- base::unique(
+    ldsc_score[
+        ldsc_score$description == description &
+        ldsc_score$sample %in% base::c("F5", samples),
+      ]
+    )
   
   # Average F5 per category
   f5_summary <- df %>%
-    filter(sample == "F5") %>%
-    group_by(sample) %>%
-    summarize(
-      Prop._h2 = mean(Prop._h2, na.rm = TRUE),
-      Enrichment = mean(Enrichment, na.rm = TRUE),
-      Enrichment_p = min(Enrichment_p, na.rm = TRUE),
-      score = "F5",
-      Category = "F5",
-      sample = "F5")
+    dplyr::filter(sample == "F5") %>%
+    dplyr::group_by(sample) %>%
+    dplyr::summarize(
+        Prop._h2 = base::mean(Prop._h2, na.rm = TRUE),
+        Enrichment = base::mean(Enrichment, na.rm = TRUE),
+        Enrichment_p = base::min(Enrichment_p, na.rm = TRUE),
+        score = "F5",
+        Category = "F5",
+        sample = "F5"
+      )
 
   # Other samples as-is
   other_samples <- df %>%
-    filter(sample %in% samples) %>%
-    group_by(sample) %>%
-    filter({
-      min_score <- min_top_scores[sample[1]]
-      if (!is.na(min_score) && min_score > 0.5) {
-        threshold <- floor((min_score - 1e-8) * 20) / 20  # round down to nearest 0.05
-        as.numeric(as.character(score)) >= threshold
-      } else {
-        TRUE
-      }
-    }) %>%
-    ungroup()
+    dplyr::filter(sample %in% samples) %>%
+    dplyr::group_by(sample) %>%
+    dplyr::filter(
+          {
+            min_score <- min_top_scores[sample[1]]
+            if (!base::is.na(min_score) && min_score > 0.5) {
+              threshold <- floor((min_score - 1e-8) * 20) / 20  # round down to nearest 0.05
+              base::as.numeric(as.character(score)) >= threshold
+          } else {
+            TRUE
+          }
+        }
+      ) %>%
+    dplyr::ungroup()
   
   # Combine
   plot_data <- bind_rows(f5_summary, other_samples)
@@ -1046,7 +1058,9 @@ plot_trait_scores <- function(ldsc_score, description, samples, min_top_scores) 
     labs(title = description) +
     theme_minimal() 
 }
+```
 
+```{r}
 # For cellFacets with over 100K regions
 min_top_scores <- apply(assay(cellFacet.rse, "qn.PL.score")[rowData(cellFacet.rse)$location=="distal",], 2, function(x) {
   sorted_vals <- sort(x, decreasing = TRUE)
