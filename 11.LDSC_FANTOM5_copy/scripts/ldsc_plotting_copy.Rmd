@@ -547,6 +547,9 @@ df_long <- df %>%
 #### clus2: kidney, colon, stomach, liver, fibroblast, epithelia, smooth & sceletal muscle, mesothelium, fat, thyroid, gums & mouth, epidermis, ovary, urinary tract, gall bladder cervics, lung, prostate, glia, nerves, pancreas, bones
 #### clus3: blood vessel, skeletal & smooth muscle, skin fibroblast,
 ```{r}
+type <- "PPPPPPPPPPPPPPPCPPPPPCCPCPCCCPCPCPPPPPPPPPCCPPCCCCCCCCCCCCCCCCCCPCCCCCCPPPPCPPPPPPPPPCCCCCCPPPPPPPPPPPPPPPPCCCCPCCCCCCPCPPPPCPPPPPPPPPPPPPCPP"
+stringr::str_length(type)
+
 curclus <- tibble::tibble(
     cat = hc_sorted$labels[hc_sorted$order],
     comb = base::c(
@@ -556,8 +559,8 @@ curclus <- tibble::tibble(
         base::rep("4_P",85-72+1),
         base::rep("5_C",91-86+1),
         base::rep("6_P",107-92+1),
-        base::rep("7_I",125-108+1),
-        base::rep("8_E",141-126+1)
+        base::rep("7_C",125-108+1),
+        base::rep("8_P",141-126+1)
       )
     ) %>%
   tidyr::separate(
@@ -584,12 +587,18 @@ curmat <- tmat %>%
     ) %>%
   dplyr::left_join(
       x = ., y = curclus, by = "cat"
+    ) %>%
+  dplyr::mutate(
+      cp = stringr::str_split_1(type,"")
     )
 
 curpca <- pr$x %>%
   tibble::as_tibble(rownames = "cat") %>%
    dplyr::left_join(
       x = ., y = curclus, by = "cat"
+    ) %>%
+  dplyr::mutate(
+      cp = stringr::str_split_1(type,"")
     )
 ```
 
@@ -599,7 +608,7 @@ ggplot2::ggplot(
       mapping = aes(
         x = tsne_1,
         y = tsne_2,
-        colour = bio, #clus,
+        colour = cp, #bio, #clus,
         label = base::ifelse(clus == "4", cat, "")
       )
     ) +
@@ -624,6 +633,23 @@ ggplot2::ggplot(
       aspect.ratio = 1
     )
 ```
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("11.LDSC_FANTOM5_copy/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_tSNE",
+        # "_TumPhysClusters",
+        "_TumorPhysio",
+        ".pdf"
+      ),
+    device = "pdf",
+    plot = ggplot2::last_plot(),
+    width = 5,
+    height = 4
+  )
+```
+
 #### 1:6 clusters: base::c("#588b8b", "#f94144" , "#f28f3b" ,"#95e214" ,"#2d3047" ,"#c86bfa")
 ```{r}
 ggplot2::ggplot(
@@ -631,7 +657,7 @@ ggplot2::ggplot(
       mapping = aes(
         x = PC1,
         y = PC2,
-        color = clus,
+        color = cp, #bio, #clus,
         label = base::ifelse(clus == "4", cat, "")
       )
     ) +
@@ -639,14 +665,17 @@ ggplot2::ggplot(
       size = 3,
       alpha = 0.5
     ) +
-  ggrepel::geom_text_repel(
-      box.padding = 0.5,
-      max.overlaps = Inf,
-      size = 2
-    ) +
+  # ggrepel::geom_text_repel(
+  #     box.padding = 0.5,
+  #     max.overlaps = Inf,
+  #     size = 2
+  #   ) +
+  # scale_color_manual(
+  #     limits = base::as.character(1:8),
+  #     values = base::c("#588b8b", "#f94144" , "#f28f3b" ,"#95e214" ,"#2d3047" ,"#c86bfa", "#90be6d", "#ffb703")
+  #   ) +
   scale_color_manual(
-      limits = base::as.character(1:8),
-      values = base::c("#588b8b", "#f94144" , "#f28f3b" ,"#95e214" ,"#2d3047" ,"#c86bfa", "#90be6d", "#ffb703")
+      values = base::c("#2d3047" ,"#c86bfa")
     ) +
   # scale_x_continuous(
   #     limits = base::c(-700,700)
@@ -655,6 +684,23 @@ ggplot2::ggplot(
   theme(
       aspect.ratio = 1
     )
+```
+
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("11.LDSC_FANTOM5_copy/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_PCA",
+        # "_TumPhysClusters",
+        "_TumorPhysio",
+        ".pdf"
+      ),
+    device = "pdf",
+    plot = ggplot2::last_plot(),
+    width = 5,
+    height = 4
+  )
 ```
 
 ## [2.1.] Combined plot
