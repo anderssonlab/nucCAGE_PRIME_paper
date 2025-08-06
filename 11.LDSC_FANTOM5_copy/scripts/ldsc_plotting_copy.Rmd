@@ -996,94 +996,7 @@ ldsc_score <- ldsc_score[ldsc_score$Category != "baseL2_0",] # 3,552,840
 ldsc_data <- ldsc_score[ldsc_score$score == "0.5",] # 592,140
 ```
 
-
-
-
-
-## [2.2.] Helper function .GlobalEnv$plot_trait_scores()
-```{r}
-plot_trait_scores <- function(ldsc_score, description, samples, min_top_scores) {
-    # Subset relevant data
-    df <- base::unique(
-      ldsc_score[
-          ldsc_score$description %in% description &
-          ldsc_score$sample %in% base::c("F5", samples),
-        ]
-      )
-    
-    # Average F5 per category
-    f5_summary <- df %>%
-      dplyr::filter(sample == "F5") %>%
-      dplyr::group_by(sample,description) %>%
-      dplyr::summarize(
-          Prop._h2 = base::mean(Prop._h2, na.rm = TRUE),
-          Enrichment = base::mean(Enrichment, na.rm = TRUE),
-          Enrichment_p = base::min(Enrichment_p, na.rm = TRUE),
-          score = "F5",
-          Category = "F5",
-          sample = "F5",
-          .groups = "drop"
-        )
-  
-    # Other samples as-is
-    other_samples <- df %>%
-      dplyr::filter(sample %in% samples) %>%
-      dplyr::group_by(sample) %>% #,description
-      dplyr::filter(
-            {
-              min_score <- min_top_scores[sample[1]]
-              if (!base::is.na(min_score) && min_score > 0.5) {
-                threshold <- base::floor((min_score - 1e-8) * 20) / 20  # round down to nearest 0.05
-                base::as.numeric(base::as.character(score)) >= threshold
-            } else {
-              TRUE
-            }
-          }
-        ) %>%
-      dplyr::ungroup()
-    
-    # Combine
-    return(
-        dplyr::bind_rows(f5_summary, other_samples)
-      )
-  }
-```
-
-```{r}
-    # Generate dynamic color mapping
-    other_levels <- base::unique(plot_data$sample)
-    other_levels <- base::setdiff(other_levels, "F5")
-    sample_colors <- stats::setNames(
-        base::c("#1f78b4", RColorBrewer::brewer.pal(base::max(3, base::length(other_levels)), "Set1")[1:length(other_levels)]),
-        base::c("F5", other_levels)
-      )
-    
-    # Plot
-      ggplot2::ggplot(
-          data = plot_data,
-          mapping = aes(
-              x = Prop._h2,
-              y = Enrichment,
-              color = sample,
-              size = (-1)*base::log10(Enrichment_p)
-            )
-          ) +
-        geom_point() +
-        geom_text(
-            mapping = aes(label = score),
-            vjust = -1.2,
-            size = 4,
-            show.legend = FALSE
-          ) +
-        scale_color_manual(
-            values = sample_colors
-          ) +
-        labs(
-            title = description
-          ) +
-        theme_minimal()
-```
-
+## [2.2.] Read out minimum scores
 #### For cellFacets with over 100K regions
 ```{r}
 min_top_scores <- base::apply(
@@ -1100,18 +1013,100 @@ min_top_scores <- base::apply(
   )
 ```
 
+## [2.3.] Read out data
+```{r}
+sub <- tibble::tibble(
+    description = base::c("Reticulocyte count","Reticulocyte count","Monocyte count","Monocyte count","Basophill count","Basophill count","Urate (umol/L)","Urate (umol/L)"),
+    sample = base::c("reticulocyte", "F5", "monocyte", "F5", "mast.cell", "F5", "kidney", "F5")
+  )
+
+thresh <- function(score, min_score){
+  # base::cat(score," ", min_score)
+  if (!base::is.na(min_score) && min_score > 0.5) {
+      threshold <- base::floor((min_score - 1e-8) * 20) / 20  # round down to nearest 0.05
+      base::as.numeric(base::as.character(score)) >= threshold
+    } else {
+      TRUE
+    }
+  }
+
+df <- dplyr::inner_join(
+    x = ldsc_score,
+    y = sub,
+    by = base::colnames(sub)
+  )
+
+f5sum <- df %>%
+  dplyr::filter(sample == "F5") %>%
+  dplyr::group_by(description) %>%
+  dplyr::summarize(
+      Prop._h2 = base::mean(Prop._h2, na.rm = TRUE),
+      Enrichment = base::mean(Enrichment, na.rm = TRUE),
+      Enrichment_p = base::min(Enrichment_p, na.rm = TRUE),
+      sample = "F5",
+      .groups = "drop"
+    )
+
+dfsum <- df %>%
+  dplyr::filter(sample != "F5") %>%
+  dplyr::group_by(description,sample) %>%
+  dplyr::mutate(
+      min_score = min_top_scores[sample],
+      fil_score = purrr::pmap_lgl(
+        .l = base::list(score, min_score),
+        .f = .GlobalEnv$thresh
+      )
+    ) %>%
+  dplyr::filter(fil_score == TRUE)
+
+comb <- dplyr::bind_rows(f5sum, dfsum)
+```
+
+```{r}
+ ggplot2::ggplot(
+    data = comb,
+    mapping = aes(
+        x = Prop._h2,
+        y = Enrichment,
+        color = sample,
+        size = (-1)*base::log10(Enrichment_p),
+        label = score
+      )
+    ) +
+  geom_point(
+      alpha = 0.5
+    ) +
+  ggrepel::geom_text_repel(
+      size = 3,
+      show.legend = FALSE
+    ) +
+  scale_color_manual(
+      values = base::c("#1f78b4" ,"#c86bfa", "#90be6d", "#ffb703", "#2d3047")
+    ) +
+  facet_wrap(
+      facets = ~ description,
+      nrow = 1
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      panel.spacing = grid::unit(0.1, "lines")
+    )
+```
+
+
+
+
 ```{r}
 .GlobalEnv$plot_trait_scores(
     ldsc_score = ldsc_score,
-    description = base::c("Reticulocyte count", "Monocyte count"),
-    samples = base::c("reticulocyte", "monocyte"),
+    description = "Reticulocyte count",
+    samples = "reticulocyte",
     min_top_scores = min_top_scores
   )
-description = "Reticulocyte count"
-samples = "reticulocyte"
-sample = sam = "reticulocyte"
-sco = 0.55
+
 # ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/her.enrichment.reticulocyte.pdf",width=7.5, height=5)
+
 .GlobalEnv$plot_trait_scores(
     ldsc_score = ldsc_score,
     description = "Monocyte count",
@@ -1135,16 +1130,7 @@ sco = 0.55
     min_top_scores = min_top_scores
   )
 # ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/her.enrichment.urate.pdf",width=7.5, height=5)
-
-.GlobalEnv$plot_trait_scores(
-    ldsc_score = ldsc_score,
-    description = "Urate (umol/L)",
-    samples = base::c("kidney"),
-    min_top_scores = min_top_scores
-  )
 ```
-
-
 
 
 ```{r}
