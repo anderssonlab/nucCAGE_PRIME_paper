@@ -852,59 +852,99 @@ ggplot2::ggsave(
 ordered_samples <- hc_main_sorted$labels[hc_main_sorted$order]
 
 # Filter colData to include only those in clustering
-df <- as.data.frame(colData(cellFacet.rse)) %>%
-  as_tibble() %>%
-  filter(sample %in% ordered_samples)
+df <- SummarizedExperiment::colData(cellFacet.rse) %>% 
+  base::as.data.frame() %>%
+  tibble::as_tibble() %>%
+  dplyr::filter(sample %in% ordered_samples)
 
 # Get dendrogram data
-dend <- as.dendrogram(hc_main_sorted)
-dend_data <- dendro_data(dend)
-label_map <- setNames(dend_data$labels$x, dend_data$labels$label)
+dend <- stats::as.dendrogram(hc_main_sorted)
+dend_data <- ggdendro::dendro_data(dend)
+label_map <- stats::setNames(dend_data$labels$x, dend_data$labels$label)
 seg_data <- dend_data$segments
 
 # Reshape data to long format for plotting and assign dendrogram x positions
 df_long <- df %>%
-  pivot_longer(cols = c(distal0.5, proximal0.5),
-               names_to = "region_type",
-               values_to = "count") %>%
-  mutate(region_type = factor(region_type, levels = c("proximal0.5", "distal0.5")),
-         x = label_map[as.character(sample)])
+  tidyr::pivot_longer(
+      cols = base::c("distal0.5", "proximal0.5"),
+      names_to = "region_type",
+      values_to = "count"
+    ) %>%
+  dplyr::mutate(
+      region_type = base::factor(
+          x = region_type,
+          levels = base::c("proximal0.5", "distal0.5"),
+          ordered = TRUE
+        ),
+      x = label_map[base::as.character(sample)]
+    )
+```
 
+```{r}
 # Bar plot 
-bar_plot <- ggplot(df_long, aes(x = x, y = count, fill = region_type)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  scale_fill_manual(values = c("proximal0.5" = "#1b9e77", "distal0.5" = "#d95f02")) +
-  scale_x_continuous(breaks = df_long$x,
-                     labels = df_long$sample) +
+bar_plot <- ggplot2::ggplot(
+    data = df_long,
+    mapping = aes(
+        x = x,
+        y = count,
+        fill = region_type
+      )
+    ) +
+  geom_bar(
+      stat = "identity",
+      position = "dodge"
+    ) +
+  geom_hline(
+      yintercept = base::length(F5),
+      linetype = "dashed",
+      color = "darkred",
+      linewidth = 0.7
+    ) +
+  geom_hline(
+      yintercept = 100000,
+      linetype = "dashed",
+      color = "darkgrey",
+      linewidth = 0.7
+    ) +
+  scale_fill_manual(
+      values = base::c("proximal0.5" = "#1b9e77", "distal0.5" = "#d95f02")
+    ) +
+  scale_x_continuous(
+      breaks = df_long$x,
+      labels = df_long$sample
+    ) +
   coord_flip() +
-  labs(x = NULL, y = "Region count", fill = "Region Type") +
-  theme_minimal() +
-  theme(axis.text.y = element_text(size = 6, hjust = 1),
-        axis.title.y = element_blank()) +
-  geom_hline(yintercept = length(F5), linetype = "dashed", color = "darkred", linewidth = 0.7) +
-  geom_hline(yintercept = 100000, linetype = "dashed", color = "darkgrey", linewidth = 0.7)+
+  labs(
+      x = NULL,
+      y = "Region count",
+      fill = "Region Type"
+    ) +
   theme_minimal() +
   theme(
-    axis.text.y = element_text(size = 6, hjust = 1),
-    panel.grid.major.y = element_blank(),  # remove horizontal lines
-    panel.grid.minor.y = element_blank()   # just in case
-  )
-
-
+        axis.text.y = element_text(size = 6, hjust = 1),
+        axis.title.y = element_blank(),
+      panel.grid.major.y = element_blank(),  # remove horizontal lines
+      panel.grid.minor.y = element_blank()   # just in case
+    )
 
 # Dendrogram plot 
-dend_plot <- ggplot(seg_data) +
-  geom_segment(aes(x = x, y = y, xend = xend, yend = yend)) +
+dend_plot <- ggplot2::ggplot(
+      data = seg_data
+    ) +
+  geom_segment(
+    mapping = aes(
+        x = x,y = y, xend = xend, yend = yend)
+    ) +
   scale_y_reverse() +
   coord_flip() +
   theme_void() +
-  theme(plot.margin = margin(r = -10))  # Reduce spacing to snugly align with barplot
+  theme(
+      plot.margin = margin(r = -10)
+    )  # Reduce spacing to snugly align with barplot
 
 # Combine and plot
 combined_plot <- dend_plot + bar_plot + plot_layout(widths = c(1, 3))
 combined_plot
-
-ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/nBarplot.main.pdf", combined_plot, width = 15, height = 15)
 ```
 
 ## [2.] LDSC analysis plots -------------------------
