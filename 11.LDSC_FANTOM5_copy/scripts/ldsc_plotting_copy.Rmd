@@ -1095,6 +1095,8 @@ comb <- dplyr::bind_rows(f5sum, dfsum)
     )
 ```
 
+## [2.5.] Scale enrichment and prepare visualisation
+#### Subset data for PRIMEloci threshold of 0.5
 ```{r}
 scaling_individual <- function(Enrichment,max_enr,min_enr){
   base::ifelse(
@@ -1140,6 +1142,8 @@ ldsc_data <- ldsc_score %>% # 592,140
   dplyr::ungroup()
 ```
 
+## [2.6.] Define groups of traits and cellFacets to integrate
+#### Grouped dotplot for enrichments
 ```{r}
 cat <- base::c(
     "B.lymphoblastoid", "blood.vessel.endothelial.cell", "brain",
@@ -1157,7 +1161,38 @@ trai <- base::c(
     "Mean corpuscular volume", "Monocyte count", "Reticulocyte count",
     "SHBG (nmol/L)", "Urate (umol/L)", "White blood cell (leukocyte) count"
   )
+```
 
+#### Grouped dotplot for enrichments specifically in blood!
+```{r}
+trai <- base::c(
+    #"White blood cell (leukocyte) count", "Red blood cell (erythrocyte) count", "Haemoglobin concentration",
+    "Mean corpuscular volume",
+    #"Mean corpuscular haemoglobin", #"Mean corpuscular haemoglobin concentration",
+    "Red blood cell (erythrocyte) distribution width",
+    #"Platelet count", "Mean platelet (thrombocyte) volume", "Platelet distribution width",
+    "Lymphocyte count", "Monocyte count",
+    #"Neutrophill count",
+    "Eosinophill count", "Basophill count",
+    #"Mean reticulocyte volume", "Mean sphered cell volume", "Immature reticulocyte fraction",
+    "Reticulocyte count" #"High light scatter reticulocyte count"
+  )
+
+cat <- base::c(
+    # Immune cells
+    "B.lymphoblastoid", "cord.blood.derived", "dendritic.cell",
+    "lymphocyte.of.B.lineage", "macrophage", "mast.cell",
+    "monocyte", "natural.killer.cell", "neutrophil",
+    "reticulocyte", "T.cell",
+    # Immune-related tissues
+    "spleen", "thymus", "blood.vessel", "blood.vessel.endothelial.cell",
+    # Include FANTOM5 for comparison
+    "F5"
+  )
+```
+
+## [2.7.] Heatmap for visualization of enrichment and proportion of heritability
+```{r}
 df_sub <- ldsc_data %>%
   dplyr::filter(
       Category %in% cat &
@@ -1192,7 +1227,7 @@ ggplot2::ggplot(
       high = "orange",
       midpoint = m, 
       na.value = "grey50", 
-      name = "Enrichment"
+      name = "Scaled Enrichment"
     ) +
   # labs(
   #     x = "Trait",
@@ -1212,9 +1247,18 @@ ggplot2::ggplot(
     )
 ```
 
+```{r}
+ldsc_score %>% # 3,552,840 
+  dplyr::filter(score == 0.5) %>% # 592,140
+  dplyr::select(
+    sample,
+  )
+```
+
+
 # Grouped dotplot for enrichments specifically in blood!
 ```{r}
-blood_traits <- c(
+blood_traits <- base::c(
   #"White blood cell (leukocyte) count",
   #"Red blood cell (erythrocyte) count",
   #"Haemoglobin concentration",
@@ -1237,29 +1281,26 @@ blood_traits <- c(
   "Reticulocyte count"
 )
 
-
-immune_relevant_celltypes <- c(
+immune_relevant_celltypes <- base::c(
   # Immune cells
-  "B.lymphoblastoid_distal",
-  "cord.blood.derived_distal",
-  "dendritic.cell_distal",
-  "lymphocyte.of.B.lineage_distal",
-  "macrophage_distal",
-  "mast.cell_distal",
-  "monocyte_distal",
-  "natural.killer.cell_distal",
-  "neutrophil_distal",
-  "reticulocyte_distal",
-  "T.cell_distal",
-
+  "B.lymphoblastoid",
+  "cord.blood.derived",
+  "dendritic.cell",
+  "lymphocyte.of.B.lineage",
+  "macrophage",
+  "mast.cell",
+  "monocyte",
+  "natural.killer.cell",
+  "neutrophil",
+  "reticulocyte",
+  "T.cell",
   # Immune-related tissues
-  "spleen_distal",
-  "thymus_distal",
-  "blood.vessel_distal",
-  "blood.vessel.endothelial.cell_distal",
-  
+  "spleen",
+  "thymus",
+  "blood.vessel",
+  "blood.vessel.endothelial.cell",
   # Include FANTOM5 for comparison
-  "F5_distal"
+  "F5"
 )
 
 df <- filter(ldsc_data, Category %in% immune_relevant_celltypes & description %in% blood_traits)
