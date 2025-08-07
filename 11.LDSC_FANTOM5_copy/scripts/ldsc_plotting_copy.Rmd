@@ -1062,6 +1062,7 @@ dfsum <- df %>%
 comb <- dplyr::bind_rows(f5sum, dfsum)
 ```
 
+## [2.4.] Visualize data
 ```{r}
  ggplot2::ggplot(
     data = comb,
@@ -1094,118 +1095,88 @@ comb <- dplyr::bind_rows(f5sum, dfsum)
     )
 ```
 
-
-
-
 ```{r}
-.GlobalEnv$plot_trait_scores(
-    ldsc_score = ldsc_score,
-    description = "Reticulocyte count",
-    samples = "reticulocyte",
-    min_top_scores = min_top_scores
-  )
-
-# ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/her.enrichment.reticulocyte.pdf",width=7.5, height=5)
-
-.GlobalEnv$plot_trait_scores(
-    ldsc_score = ldsc_score,
-    description = "Monocyte count",
-    samples = base::c("monocyte"),
-    min_top_scores = min_top_scores
-  )
-# ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/her.enrichment.monocyte.pdf",width=7.5, height=5)
-
-.GlobalEnv$plot_trait_scores(
-    ldsc_score = ldsc_score,
-    description = "Basophill count",
-    samples = base::c("mast.cell"),
-    min_top_scores = min_top_scores
-  )
-# ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/her.enrichment.basophill.pdf",width=7.5, height=5)
-
-.GlobalEnv$plot_trait_scores(
-    ldsc_score = ldsc_score,
-    description = "Urate (umol/L)",
-    samples = base::c("kidney"),
-    min_top_scores = min_top_scores
-  )
-# ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/her.enrichment.urate.pdf",width=7.5, height=5)
+ldsc_score <- ldsc_score %>%
+  dplyr::mutate(
+      Category = stringr::str_replace(Category, "(.*?)_.*$", "\\1")
+    )
 ```
 
-
 ```{r}
+cat <- base::c(
+    "B.lymphoblastoid", "blood.vessel.endothelial.cell", "brain",
+    "F5", "kidney", "liver",
+    "monocyte", "neutrophil", "reticulocyte",
+    "skeletal.muscle.tissue", "spleen", "T.cell",
+    "thymus"
+  )
 
-ldsc_data$Category <- gsub("_top1e\\+05L2_0","",ldsc_data$Category)
-ldsc_data$Category <- gsub("_0.5L2_0","",ldsc_data$Category)
-cat <- c("B.lymphoblastoid_distal",
-         "blood.vessel.endothelial.cell_distal",
-         "brain_distal",
-         "F5_distal",
-         "kidney_distal",
-         "liver_distal",
-         "monocyte_distal",
-         "neutrophil_distal",
-         "reticulocyte_distal",
-         "skeletal.muscle.tissue_distal",
-         "spleen_distal",
-         "T.cell_distal",
-         "thymus_distal"
-  
-)
+trai <- base::c(
+    "Alanine aminotransferase (U/L)", "Albumin (g/L)", "Apoliprotein A (g/L)",
+    "Aspartate aminotransferase (U/L)", "Body mass index (BMI)", "Creatinine (umol/L)",
+    "Diastolic blood pressure, automated reading", "Eosinophill count",
+    "Ever depressed for a whole week", "Getting up in morning", "High light scatter reticulocyte count",
+    "Mean corpuscular volume", "Monocyte count", "Reticulocyte count",
+    "SHBG (nmol/L)", "Urate (umol/L)", "White blood cell (leukocyte) count"
+  )
 
-
-trai <- c("Alanine aminotransferase (U/L)",
-          "Albumin (g/L)",
-          "Apoliprotein A (g/L)",
-          "Aspartate aminotransferase (U/L)",
-          "Body mass index (BMI)",
-          "Creatinine (umol/L)",
-          "Diastolic blood pressure, automated reading",
-          "Eosinophill count",
-          "Ever depressed for a whole week",
-          "Getting up in morning",
-          "High light scatter reticulocyte count",
-          "Mean corpuscular volume",
-          "Monocyte count",
-          "Reticulocyte count",
-          "SHBG (nmol/L)",
-          "Urate (umol/L)",
-          "White blood cell (leukocyte) count"
-  
-)
-
-#  Heatmap
-df_sub <- filter(ldsc_data, Category %in% cat & description %in% trai)
-m <- mean(df_sub$Enrichment_scaled)
- p <- ggplot(df_sub, aes(x = description, y = Category)) +
-    geom_tile(aes(fill = Enrichment_scaled, 
-                  height = Prop._h2 + 0.4, 
-                  width  = Prop._h2 + 0.4),
-              color = NA) +
-    geom_tile(fill = NA, color = "black", width = 1, height = 1) +
-    scale_fill_gradient2(
-      low      = "#256866", 
-      mid      = "#FFFFCC", 
-      high     = "orange",
+df_sub <- ldsc_score %>%
+  dplyr::filter(
+      score == "0.5" &
+      Category %in% cat &
+      description %in% trai
+    )
+m <- base::mean(df_sub$Enrichment_scaled)
+ggplot2::ggplot(
+    data = df_sub,
+    mapping = aes(
+        x = description,
+        y = Category
+      )
+    ) +
+  geom_tile(
+      mapping = aes(
+          fill = Enrichment_scaled, 
+          height = Prop._h2 + 0.4, 
+          width  = Prop._h2 + 0.4
+        ),
+      color = NA
+    ) +
+  geom_tile(
+      fill = NA,
+      color = "black",
+      width = 1,
+      height = 1
+    ) +
+  scale_fill_gradient2(
+      low = "#256866", 
+      mid = "#FFFFCC", 
+      high = "orange",
       midpoint = m, 
       na.value = "grey50", 
-      name     = "Enrichment"
+      name = "Enrichment"
     ) +
-    labs(
-      x     = "Trait",
-      y     = "Category"
+  labs(
+      x = "Trait",
+      y = "Category"
     ) +
-    theme_minimal() +
-    theme(
-      axis.text.x     = element_text(angle = 45, hjust = 1),
-      axis.text.y     = element_text(size = 3),
+  theme_bw() +
+  theme(
+      axis.text.x = element_text(
+          angle = 45,
+          hjust = 1
+        ),
+      axis.text.y = element_text(
+          size = 3
+        ),
       legend.position = "right",
-      panel.grid      = element_blank()
+      panel.grid = element_blank()
     ) +
-    coord_fixed(ratio = 1)
-  
-# Grouped dotplot for enrichments specifically in blood!
+  coord_fixed(ratio = 1)
+```
 
+# Grouped dotplot for enrichments specifically in blood!
+```{r}
 blood_traits <- c(
   #"White blood cell (leukocyte) count",
   #"Red blood cell (erythrocyte) count",
