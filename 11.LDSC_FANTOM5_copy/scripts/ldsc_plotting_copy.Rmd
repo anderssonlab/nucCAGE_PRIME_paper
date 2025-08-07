@@ -63,149 +63,149 @@ F5 <- rtracklayer::import.bed(
 
 ## [0.3.] Define categories for all cellFacets
 ```{r}
-cell_type_categories <- base::c(
-  "acute.lymphoblastic.leukemia.T.ALL" = "Cancer / Tumor",
-  "heart" = "Muscle",
-  "acute.myeloid.leukemia.FAB.M6" = "Cancer / Tumor",
-  "embryonic.kidney" = "Stem / Progenitor",
-  "hair.follicle.cell" = "Epithelial",
-  "kidney" = "Epithelial",
-  "melanoma" = "Cancer / Tumor",
-  "giant.cell.carcinoma" = "Cancer / Tumor",
-  "fibroblast.of.gingiva" = "Fibroblast/Connective",
-  "T.cell" = "Immune",
-  "fibroblast.of.choroid.plexus" = "Fibroblast/Connective",
-  "cord.blood.derived" = "Stem / Progenitor",
-  "preadipocyte" = "Fibroblast/Connective",
-  "small.cell.lung.carcinoma" = "Cancer / Tumor",
-  "gingival.epithelial.cell" = "Epithelial",
-  "fibroblast.of.tunica.adventitia.of.artery" = "Fibroblast/Connective",
-  "thyroid.carcinoma" = "Cancer / Tumor",
-  "placental.epithelial.cell" = "Epithelial",
-  "tendon.cell" = "Fibroblast/Connective",
-  "Wilms.tumor" = "Cancer / Tumor",
-  "carcinoid" = "Cancer / Tumor",
-  "fat.cell" = "Fibroblast/Connective",
-  "thymus" = "Immune",
-  "neuroblastoma" = "Cancer / Tumor",
-  "mesothelioma" = "Cancer / Tumor",
-  "meninx" = "CNS/Neural",
-  "eye" = "CNS/Neural",
-  "clear.cell.carcinoma" = "Cancer / Tumor",
-  "lung.adenocarcinoma" = "Cancer / Tumor",
-  "schwannoma" = "CNS/Neural",
-  "choriocarcinoma" = "Cancer / Tumor",
-  "acute.myeloid.leukemia.FAB.M7" = "Cancer / Tumor",
-  "endothelial.cell.of.hepatic.sinusoid" = "Endothelial",
-  "small.intestine" = "Epithelial",
-  "acute.myeloid.leukemia.FAB.M4eo" = "Cancer / Tumor",
-  "smooth.muscle.cell.of.prostate" = "Muscle",
-  "monocyte" = "Immune",
-  "testicular.germ.cell.embryonal.carcinoma" = "Cancer / Tumor",
-  "chondrocyte" = "Fibroblast/Connective",
-  "teratocarcinoma" = "Cancer / Tumor",
-  "urothelial.cell" = "Epithelial",
-  "merkel.cell.carcinoma" = "Cancer / Tumor",
-  "mammary.epithelial.cell" = "Epithelial",
-  "retinal.pigment.epithelial.cell" = "Epithelial",
-  "internal.male.genitalia" = "Other / Mixed",
-  "breast.carcinoma" = "Cancer / Tumor",
-  "hepatocellular.carcinoma" = "Cancer / Tumor",
-  "blood.vessel" = "Endothelial",
-  "colon.carcinoma" = "Cancer / Tumor",
-  "mesothelial.cell" = "Epithelial",
-  "epithelial.cell.of.esophagus" = "Epithelial",
-  "oral.squamous.cell.carcinoma" = "Cancer / Tumor",
-  "hepatocyte" = "Epithelial",
-  "spinal.cord" = "CNS/Neural",
-  "melanocyte" = "CNS/Neural",
-  "neuron" = "CNS/Neural",
-  "neuroectodermal.tumor" = "Cancer / Tumor",
-  "spleen" = "Immune",
-  "rhabdomyosarcoma" = "Cancer / Tumor",
-  "medulloblastoma" = "Cancer / Tumor",
-  "Hep.2" = "Cancer / Tumor",
-  "lung" = "Epithelial",
-  "epidermoid.carcinoma" = "Cancer / Tumor",
-  "large.cell.lung.carcinoma" = "Cancer / Tumor",
-  "testis" = "Other / Mixed",
-  "enteric.smooth.muscle.cell" = "Muscle",
-  "transitional.cell.carcinoma" = "Cancer / Tumor",
-  "tongue" = "Epithelial",
-  "cardiac.myocyte" = "Muscle",
-  "myxofibrosarcoma" = "Cancer / Tumor",
-  "endothelial.cell.of.lymphatic.vessel" = "Endothelial",
-  "neuronal.stem.cell" = "Stem / Progenitor",
-  "acute.myeloid.leukemia.FAB.M5" = "Cancer / Tumor",
-  "leiomyoma" = "Cancer / Tumor",
-  "ductal.cell.carcinoma" = "Cancer / Tumor",
-  "keratinocyte" = "Epithelial",
-  "myoblast" = "Muscle",
-  "epithelioid.sarcoma" = "Cancer / Tumor",
-  "osteosarcoma" = "Cancer / Tumor",
-  "squamous.cell.lung.carcinoma" = "Cancer / Tumor",
-  "brain" = "CNS/Neural",
-  "bronchioalveolar.carcinoma" = "Cancer / Tumor",
-  "acute.myeloid.leukemia.FAB.M4" = "Cancer / Tumor",
-  "epithelial.cell.of.prostate" = "Epithelial",
-  "fibroblast.of.lymphatic.vessel" = "Fibroblast/Connective",
-  "amniotic.epithelial.cell" = "Epithelial",
-  "liposarcoma" = "Cancer / Tumor",
-  "epithelial.cell.of.Malassez" = "Epithelial",
-  "hepatic.stellate.cell" = "Fibroblast/Connective",
-  "corneal.epithelial.cell" = "Epithelial",
-  "gastric.cancer" = "Cancer / Tumor",
-  "squamous.cell.carcinoma" = "Cancer / Tumor",
-  "liver" = "Epithelial",
-  "stromal.cell" = "Fibroblast/Connective",
-  "astrocyte" = "CNS/Neural",
-  "cardiac.fibroblast" = "Fibroblast/Connective",
-  "acute.lymphoblastic.leukemia.B.ALL" = "Cancer / Tumor",
-  "thyroid.gland" = "Epithelial",
-  "gastric.adenocarcinoma" = "Cancer / Tumor",
-  "renal.cell.carcinoma" = "Cancer / Tumor",
-  "lens.epithelial.cell" = "Epithelial",
-  "dendritic.cell" = "Immune",
-  "smooth.muscle.cell.of.trachea" = "Muscle",
-  "macrophage" = "Immune",
-  "pericyte.cell" = "Endothelial",
-  "mast.cell" = "Immune",
-  "gall.bladder.carcinoma" = "Cancer / Tumor",
-  "skin.fibroblast" = "Fibroblast/Connective",
-  "skeletal.muscle.cell" = "Muscle",
-  "respiratory.epithelial.cell" = "Epithelial",
-  "uterus" = "Epithelial",
-  "trabecular.meshwork.cell" = "Fibroblast/Connective",
-  "mesenchymal.cell" = "Fibroblast/Connective",
-  "ciliated.epithelial.cell" = "Epithelial",
-  "epitheloid.carcinoma" = "Cancer / Tumor",
-  "sensory.epithelial.cell" = "Epithelial",
-  "fibroblast.of.periodontium" = "Fibroblast/Connective",
-  "bile.duct.carcinoma" = "Cancer / Tumor",
-  "prostate.cancer" = "Cancer / Tumor",
-  "neutrophil" = "Immune",
-  "kidney.epithelial.cell" = "Epithelial",
-  "glioblastoma" = "Cancer / Tumor",
-  "lymphocyte.of.B.lineage" = "Immune",
-  "chronic.myelogenous.leukemia" = "Cancer / Tumor",
-  "acute.myeloid.leukemia.FAB.M2" = "Cancer / Tumor",
-  "throat" = "Epithelial",
-  "large.intestine" = "Epithelial",
-  "osteoblast" = "Fibroblast/Connective",
-  "serous.adenocarcinoma" = "Cancer / Tumor",
-  "cervical.cancer" = "Cancer / Tumor",
-  "Burkitts.lymphoma" = "Cancer / Tumor",
-  "reticulocyte" = "Immune",
-  "skeletal.muscle.tissue" = "Muscle",
-  "natural.killer.cell" = "Immune",
-  "signet.ring.carcinoma" = "Cancer / Tumor",
-  "vascular.associated.smooth.muscle.cell" = "Muscle",
-  "embryonic.pancreas" = "Stem / Progenitor",
-  "acinar.cell" = "Epithelial",
-  "blood.vessel.endothelial.cell" = "Endothelial",
-  "keratocyte" = "Fibroblast/Connective",
-  "B.lymphoblastoid" = "Immune"
-)
+# cell_type_categories <- base::c(
+#   "acute.lymphoblastic.leukemia.T.ALL" = "Cancer / Tumor",
+#   "heart" = "Muscle",
+#   "acute.myeloid.leukemia.FAB.M6" = "Cancer / Tumor",
+#   "embryonic.kidney" = "Stem / Progenitor",
+#   "hair.follicle.cell" = "Epithelial",
+#   "kidney" = "Epithelial",
+#   "melanoma" = "Cancer / Tumor",
+#   "giant.cell.carcinoma" = "Cancer / Tumor",
+#   "fibroblast.of.gingiva" = "Fibroblast/Connective",
+#   "T.cell" = "Immune",
+#   "fibroblast.of.choroid.plexus" = "Fibroblast/Connective",
+#   "cord.blood.derived" = "Stem / Progenitor",
+#   "preadipocyte" = "Fibroblast/Connective",
+#   "small.cell.lung.carcinoma" = "Cancer / Tumor",
+#   "gingival.epithelial.cell" = "Epithelial",
+#   "fibroblast.of.tunica.adventitia.of.artery" = "Fibroblast/Connective",
+#   "thyroid.carcinoma" = "Cancer / Tumor",
+#   "placental.epithelial.cell" = "Epithelial",
+#   "tendon.cell" = "Fibroblast/Connective",
+#   "Wilms.tumor" = "Cancer / Tumor",
+#   "carcinoid" = "Cancer / Tumor",
+#   "fat.cell" = "Fibroblast/Connective",
+#   "thymus" = "Immune",
+#   "neuroblastoma" = "Cancer / Tumor",
+#   "mesothelioma" = "Cancer / Tumor",
+#   "meninx" = "CNS/Neural",
+#   "eye" = "CNS/Neural",
+#   "clear.cell.carcinoma" = "Cancer / Tumor",
+#   "lung.adenocarcinoma" = "Cancer / Tumor",
+#   "schwannoma" = "CNS/Neural",
+#   "choriocarcinoma" = "Cancer / Tumor",
+#   "acute.myeloid.leukemia.FAB.M7" = "Cancer / Tumor",
+#   "endothelial.cell.of.hepatic.sinusoid" = "Endothelial",
+#   "small.intestine" = "Epithelial",
+#   "acute.myeloid.leukemia.FAB.M4eo" = "Cancer / Tumor",
+#   "smooth.muscle.cell.of.prostate" = "Muscle",
+#   "monocyte" = "Immune",
+#   "testicular.germ.cell.embryonal.carcinoma" = "Cancer / Tumor",
+#   "chondrocyte" = "Fibroblast/Connective",
+#   "teratocarcinoma" = "Cancer / Tumor",
+#   "urothelial.cell" = "Epithelial",
+#   "merkel.cell.carcinoma" = "Cancer / Tumor",
+#   "mammary.epithelial.cell" = "Epithelial",
+#   "retinal.pigment.epithelial.cell" = "Epithelial",
+#   "internal.male.genitalia" = "Other / Mixed",
+#   "breast.carcinoma" = "Cancer / Tumor",
+#   "hepatocellular.carcinoma" = "Cancer / Tumor",
+#   "blood.vessel" = "Endothelial",
+#   "colon.carcinoma" = "Cancer / Tumor",
+#   "mesothelial.cell" = "Epithelial",
+#   "epithelial.cell.of.esophagus" = "Epithelial",
+#   "oral.squamous.cell.carcinoma" = "Cancer / Tumor",
+#   "hepatocyte" = "Epithelial",
+#   "spinal.cord" = "CNS/Neural",
+#   "melanocyte" = "CNS/Neural",
+#   "neuron" = "CNS/Neural",
+#   "neuroectodermal.tumor" = "Cancer / Tumor",
+#   "spleen" = "Immune",
+#   "rhabdomyosarcoma" = "Cancer / Tumor",
+#   "medulloblastoma" = "Cancer / Tumor",
+#   "Hep.2" = "Cancer / Tumor",
+#   "lung" = "Epithelial",
+#   "epidermoid.carcinoma" = "Cancer / Tumor",
+#   "large.cell.lung.carcinoma" = "Cancer / Tumor",
+#   "testis" = "Other / Mixed",
+#   "enteric.smooth.muscle.cell" = "Muscle",
+#   "transitional.cell.carcinoma" = "Cancer / Tumor",
+#   "tongue" = "Epithelial",
+#   "cardiac.myocyte" = "Muscle",
+#   "myxofibrosarcoma" = "Cancer / Tumor",
+#   "endothelial.cell.of.lymphatic.vessel" = "Endothelial",
+#   "neuronal.stem.cell" = "Stem / Progenitor",
+#   "acute.myeloid.leukemia.FAB.M5" = "Cancer / Tumor",
+#   "leiomyoma" = "Cancer / Tumor",
+#   "ductal.cell.carcinoma" = "Cancer / Tumor",
+#   "keratinocyte" = "Epithelial",
+#   "myoblast" = "Muscle",
+#   "epithelioid.sarcoma" = "Cancer / Tumor",
+#   "osteosarcoma" = "Cancer / Tumor",
+#   "squamous.cell.lung.carcinoma" = "Cancer / Tumor",
+#   "brain" = "CNS/Neural",
+#   "bronchioalveolar.carcinoma" = "Cancer / Tumor",
+#   "acute.myeloid.leukemia.FAB.M4" = "Cancer / Tumor",
+#   "epithelial.cell.of.prostate" = "Epithelial",
+#   "fibroblast.of.lymphatic.vessel" = "Fibroblast/Connective",
+#   "amniotic.epithelial.cell" = "Epithelial",
+#   "liposarcoma" = "Cancer / Tumor",
+#   "epithelial.cell.of.Malassez" = "Epithelial",
+#   "hepatic.stellate.cell" = "Fibroblast/Connective",
+#   "corneal.epithelial.cell" = "Epithelial",
+#   "gastric.cancer" = "Cancer / Tumor",
+#   "squamous.cell.carcinoma" = "Cancer / Tumor",
+#   "liver" = "Epithelial",
+#   "stromal.cell" = "Fibroblast/Connective",
+#   "astrocyte" = "CNS/Neural",
+#   "cardiac.fibroblast" = "Fibroblast/Connective",
+#   "acute.lymphoblastic.leukemia.B.ALL" = "Cancer / Tumor",
+#   "thyroid.gland" = "Epithelial",
+#   "gastric.adenocarcinoma" = "Cancer / Tumor",
+#   "renal.cell.carcinoma" = "Cancer / Tumor",
+#   "lens.epithelial.cell" = "Epithelial",
+#   "dendritic.cell" = "Immune",
+#   "smooth.muscle.cell.of.trachea" = "Muscle",
+#   "macrophage" = "Immune",
+#   "pericyte.cell" = "Endothelial",
+#   "mast.cell" = "Immune",
+#   "gall.bladder.carcinoma" = "Cancer / Tumor",
+#   "skin.fibroblast" = "Fibroblast/Connective",
+#   "skeletal.muscle.cell" = "Muscle",
+#   "respiratory.epithelial.cell" = "Epithelial",
+#   "uterus" = "Epithelial",
+#   "trabecular.meshwork.cell" = "Fibroblast/Connective",
+#   "mesenchymal.cell" = "Fibroblast/Connective",
+#   "ciliated.epithelial.cell" = "Epithelial",
+#   "epitheloid.carcinoma" = "Cancer / Tumor",
+#   "sensory.epithelial.cell" = "Epithelial",
+#   "fibroblast.of.periodontium" = "Fibroblast/Connective",
+#   "bile.duct.carcinoma" = "Cancer / Tumor",
+#   "prostate.cancer" = "Cancer / Tumor",
+#   "neutrophil" = "Immune",
+#   "kidney.epithelial.cell" = "Epithelial",
+#   "glioblastoma" = "Cancer / Tumor",
+#   "lymphocyte.of.B.lineage" = "Immune",
+#   "chronic.myelogenous.leukemia" = "Cancer / Tumor",
+#   "acute.myeloid.leukemia.FAB.M2" = "Cancer / Tumor",
+#   "throat" = "Epithelial",
+#   "large.intestine" = "Epithelial",
+#   "osteoblast" = "Fibroblast/Connective",
+#   "serous.adenocarcinoma" = "Cancer / Tumor",
+#   "cervical.cancer" = "Cancer / Tumor",
+#   "Burkitts.lymphoma" = "Cancer / Tumor",
+#   "reticulocyte" = "Immune",
+#   "skeletal.muscle.tissue" = "Muscle",
+#   "natural.killer.cell" = "Immune",
+#   "signet.ring.carcinoma" = "Cancer / Tumor",
+#   "vascular.associated.smooth.muscle.cell" = "Muscle",
+#   "embryonic.pancreas" = "Stem / Progenitor",
+#   "acinar.cell" = "Epithelial",
+#   "blood.vessel.endothelial.cell" = "Endothelial",
+#   "keratocyte" = "Fibroblast/Connective",
+#   "B.lymphoblastoid" = "Immune"
+# )
 ```
 
 ## [1.] PCA & k means clustering -------------------------
@@ -1019,7 +1019,42 @@ sub <- tibble::tibble(
     description = base::c("Reticulocyte count","Reticulocyte count","Monocyte count","Monocyte count","Basophill count","Basophill count","Urate (umol/L)","Urate (umol/L)"),
     sample = base::c("reticulocyte", "F5", "monocyte", "F5", "mast.cell", "F5", "kidney", "F5")
   )
+```
 
+#### evaluate overlap: ldsc_score %>% dplyr::filter(sample %in%  ordered_samples[108:125]) %>% distinct(sample)
+```{r}
+curmat %>%
+  dplyr::filter(clus == 7) %>%
+  dplyr::mutate(
+    cat = base::factor(
+      x = cat,
+      levels = ordered_samples[108:125],
+      ordered = TRUE
+    )
+  )
+
+des <- base::factor(
+      x = base::rep(ordered_samples[108:125],2),
+      levels = ordered_samples[108:125],
+      ordered = TRUE
+    ) %>%
+  base::sort()
+
+
+
+trai <- base::c(
+    "White blood cell (leukocyte) count", "Red blood cell (erythrocyte) count", "Haemoglobin concentration",
+    "Mean corpuscular volume", "Mean corpuscular haemoglobin", "Mean corpuscular haemoglobin concentration",
+    "Red blood cell (erythrocyte) distribution width", "Platelet count", "Mean platelet (thrombocyte) volume",
+    "Platelet distribution width","Lymphocyte count", "Monocyte count",
+    "Neutrophill count","Eosinophill count", "Basophill count",
+    "Mean reticulocyte volume", "Mean sphered cell volume", "Immature reticulocyte fraction",
+    "Reticulocyte count" #"High light scatter reticulocyte count"
+  )
+```
+
+
+```{r}
 thresh <- function(score, min_score){
   # base::cat(score," ", min_score)
   if (!base::is.na(min_score) && min_score > 0.5) {
@@ -1247,14 +1282,44 @@ ggplot2::ggplot(
     )
 ```
 
+#### Doublets are included, e.g., dplyr::filter(sample == "B.lymphoblastoid" & description == "Body mass index (BMI)")
+#### Solved by taking the average of the enrichment scores for duplicated sample-description combinations
 ```{r}
-ldsc_score %>% # 3,552,840 
+pr <- ldsc_score %>% # 3,552,840 
   dplyr::filter(score == 0.5) %>% # 592,140
   dplyr::select(
-    sample,
-  )
+      sample, description, Enrichment # Prop._h2
+    ) %>%
+  dplyr::group_by(sample,description) %>%
+  tidyr::pivot_wider(
+      names_from = description,
+      values_from = Enrichment, # Prop._h2,
+      values_fn = base::mean
+    ) %>%
+  dplyr::ungroup() %>%
+  tibble::column_to_rownames(var = "sample") %>% 
+  base::as.matrix() %>%
+  stats::prcomp(.)
 ```
 
+## Visualize PCA results
+```{r}
+pr$x %>%
+  tibble::as_tibble(rownames = "var") %>%
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = PC1,
+        y = PC2,
+        label = base::ifelse(PC2  > 50, var, "")
+      )
+    ) +
+  geom_point() +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
 
 # Grouped dotplot for enrichments specifically in blood!
 ```{r}
