@@ -993,7 +993,7 @@ ldsc_score$score <- base::sub(".*_(\\d+\\.\\d+)L2_0$", "\\1", ldsc_score$Categor
 ldsc_score$sample <- base::sub("_.*", "", ldsc_score$Category)
 
 ldsc_score <- ldsc_score[ldsc_score$Category != "baseL2_0",] # 3,552,840
-ldsc_data <- ldsc_score[ldsc_score$score == "0.5",] # 592,140
+# ldsc_data <- ldsc_score[ldsc_score$score == "0.5",] # 592,140
 ```
 
 ## [2.2.] Read out minimum scores
@@ -1096,10 +1096,48 @@ comb <- dplyr::bind_rows(f5sum, dfsum)
 ```
 
 ```{r}
-ldsc_score <- ldsc_score %>%
+scaling_individual <- function(Enrichment,max_enr,min_enr){
+  base::ifelse(
+      test = max_enr != min_enr,
+      yes = (Enrichment - min_enr) / (max_enr - min_enr),
+      no = 0
+    )
+  }
+
+scaling_group <- function(df){
+  max_enr <- base::max(df$Enrichment, na.rm = TRUE)
+  min_enr <- base::min(df$Enrichment, na.rm = TRUE)
+  return(
+    df %>%   
+      dplyr::mutate(
+        Enrichment_scaled = purrr::map_dbl(
+            .x = Enrichment,
+            .f = scaling_individual,
+            max_enr = max_enr,
+            min_enr = min_enr
+          )
+        )
+      )
+  }
+
+ldsc_data <- ldsc_score %>% # 592,140
   dplyr::mutate(
       Category = stringr::str_replace(Category, "(.*?)_.*$", "\\1")
-    )
+    ) %>%
+  dplyr::filter(
+      score == "0.5"
+    ) %>%
+  dplyr::group_by(Trait) %>%
+  tidyr::nest() %>% 
+  dplyr::mutate(
+      newData = purrr::map(
+        .x = data,
+        .f = scaling_group
+      )
+    ) %>%
+  dplyr::select(-data) %>% 
+  tidyr::unnest(cols = newData) %>%
+  dplyr::ungroup()
 ```
 
 ```{r}
@@ -1120,12 +1158,12 @@ trai <- base::c(
     "SHBG (nmol/L)", "Urate (umol/L)", "White blood cell (leukocyte) count"
   )
 
-df_sub <- ldsc_score %>%
+df_sub <- ldsc_data %>%
   dplyr::filter(
-      score == "0.5" &
       Category %in% cat &
       description %in% trai
     )
+
 m <- base::mean(df_sub$Enrichment_scaled)
 ggplot2::ggplot(
     data = df_sub,
@@ -1156,23 +1194,22 @@ ggplot2::ggplot(
       na.value = "grey50", 
       name = "Enrichment"
     ) +
-  labs(
-      x = "Trait",
-      y = "Category"
-    ) +
+  # labs(
+  #     x = "Trait",
+  #     y = "Category"
+  #   ) +
+  coord_fixed(ratio = 1) +
   theme_bw() +
   theme(
       axis.text.x = element_text(
-          angle = 45,
-          hjust = 1
-        ),
-      axis.text.y = element_text(
-          size = 3
+          angle = 90,
+          hjust = 1,
+          vjust = 0.5
         ),
       legend.position = "right",
+      axis.title = element_blank(),
       panel.grid = element_blank()
-    ) +
-  coord_fixed(ratio = 1)
+    )
 ```
 
 # Grouped dotplot for enrichments specifically in blood!
@@ -1265,17 +1302,17 @@ ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/bl
 
 
 ```{r}
-ldsc_data <- ldsc_data %>%
-  group_by(Trait) %>%
-  mutate(
-    Enrichment_scaled = if (max(Enrichment, na.rm = TRUE) != min(Enrichment, na.rm = TRUE)) {
-      (Enrichment - min(Enrichment, na.rm = TRUE)) /
-        (max(Enrichment, na.rm = TRUE) - min(Enrichment, na.rm = TRUE))
-    } else {
-      0
-    }
-  ) %>%
-  ungroup()
+# ldsc_data <- ldsc_data %>%
+#   group_by(Trait) %>%
+#   mutate(
+#     Enrichment_scaled = if (max(Enrichment, na.rm = TRUE) != min(Enrichment, na.rm = TRUE)) {
+#       (Enrichment - min(Enrichment, na.rm = TRUE)) /
+#         (max(Enrichment, na.rm = TRUE) - min(Enrichment, na.rm = TRUE))
+#     } else {
+#       0
+#     }
+#   ) %>%
+#   ungroup()
 
 # Selected traits/cellFacets for figures
 cat <- c("B.lymphoblastoid_distal",
