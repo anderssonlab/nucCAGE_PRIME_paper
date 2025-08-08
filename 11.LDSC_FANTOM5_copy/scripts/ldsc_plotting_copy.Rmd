@@ -1202,37 +1202,50 @@ trai <- base::c(
 #### Grouped dotplot for enrichments specifically in blood!
 ```{r}
 trai <- base::c(
-    #"White blood cell (leukocyte) count", "Red blood cell (erythrocyte) count", "Haemoglobin concentration",
+    "White blood cell (leukocyte) count", "Red blood cell (erythrocyte) count", "Haemoglobin concentration",
     "Mean corpuscular volume",
-    #"Mean corpuscular haemoglobin", #"Mean corpuscular haemoglobin concentration",
+    "Mean corpuscular haemoglobin", "Mean corpuscular haemoglobin concentration",
     "Red blood cell (erythrocyte) distribution width",
-    #"Platelet count", "Mean platelet (thrombocyte) volume", "Platelet distribution width",
+    "Platelet count", "Mean platelet (thrombocyte) volume", "Platelet distribution width",
     "Lymphocyte count", "Monocyte count",
-    #"Neutrophill count",
+    "Neutrophill count",
     "Eosinophill count", "Basophill count",
-    #"Mean reticulocyte volume", "Mean sphered cell volume", "Immature reticulocyte fraction",
-    "Reticulocyte count" #"High light scatter reticulocyte count"
+    "Mean reticulocyte volume", "Mean sphered cell volume", "Immature reticulocyte fraction",
+    "Reticulocyte count" "High light scatter reticulocyte count"
   )
 
+# cat <- base::c(
+#     # Immune cells
+#     "B.lymphoblastoid", "cord.blood.derived", "dendritic.cell",
+#     "lymphocyte.of.B.lineage", "macrophage", "mast.cell",
+#     "monocyte", "natural.killer.cell", "neutrophil",
+#     "reticulocyte", "T.cell",
+#     # Immune-related tissues
+#     "spleen", "thymus", "blood.vessel", "blood.vessel.endothelial.cell",
+#     # Include FANTOM5 for comparison
+#     "F5"
+#   )
 cat <- base::c(
-    # Immune cells
-    "B.lymphoblastoid", "cord.blood.derived", "dendritic.cell",
-    "lymphocyte.of.B.lineage", "macrophage", "mast.cell",
-    "monocyte", "natural.killer.cell", "neutrophil",
-    "reticulocyte", "T.cell",
-    # Immune-related tissues
-    "spleen", "thymus", "blood.vessel", "blood.vessel.endothelial.cell",
-    # Include FANTOM5 for comparison
-    "F5"
+    ordered_samples[108:125], "cord.blood.derived", "dendritic.cell",
+    "mast.cell", "monocyte", "reticulocyte",
+    "T.cell", "spleen", "thymus",
+    "blood.vessel", "blood.vessel.endothelial.cell", "F5"
   )
 ```
 
 ## [2.7.] Heatmap for visualization of enrichment and proportion of heritability
 ```{r}
-df_sub <- ldsc_data %>%
+df_sub <- ldsc_data %>% distinct(description)
   dplyr::filter(
       Category %in% cat &
       description %in% trai
+    ) %>%
+  dplyr::mutate(
+    Category = base::factor(
+        x = Category,
+        levels = base::rev(cat),
+        ordered = TRUE
+      )
     )
 
 m <- base::mean(df_sub$Enrichment_scaled)
