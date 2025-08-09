@@ -1200,20 +1200,36 @@ trai <- base::c(
 ```
 
 #### Grouped dotplot for enrichments specifically in blood!
+#### "Type of special diet followed: Vegan"
 ```{r}
-trai <- base::c(
-    "White blood cell (leukocyte) count", "Red blood cell (erythrocyte) count", "Haemoglobin concentration",
-    "Mean corpuscular volume",
-    "Mean corpuscular haemoglobin", "Mean corpuscular haemoglobin concentration",
-    "Red blood cell (erythrocyte) distribution width",
-    "Platelet count", "Mean platelet (thrombocyte) volume", "Platelet distribution width",
-    "Lymphocyte count", "Monocyte count",
-    "Neutrophill count",
-    "Eosinophill count", "Basophill count",
-    "Mean reticulocyte volume", "Mean sphered cell volume", "Immature reticulocyte fraction",
-    "Reticulocyte count" "High light scatter reticulocyte count"
+# trai <- base::c(
+#     "White blood cell (leukocyte) count", "Red blood cell (erythrocyte) count", "Haemoglobin concentration",
+#     "Mean corpuscular volume",
+#     "Mean corpuscular haemoglobin", "Mean corpuscular haemoglobin concentration",
+#     "Red blood cell (erythrocyte) distribution width",
+#     "Platelet count", "Mean platelet (thrombocyte) volume", "Platelet distribution width",
+#     "Lymphocyte count", "Monocyte count",
+#     "Neutrophill count",
+#     "Eosinophill count", "Basophill count",
+#     "Mean reticulocyte volume", "Mean sphered cell volume", "Immature reticulocyte fraction",
+#     "Reticulocyte count", "High light scatter reticulocyte count"
+#   )
+base::c(
+  2386:2391,2393:2417
+  2529:2530, 3002:3016, 3020:3022, 3024:3033, 3034:3192, 3292, 3453:3473, 3512, 3514, 3516, 3521:3551, 3708:3709, 3774:3775, 3986
   )
 
+trai <- ldsc_score %>%
+  dplyr::distinct(description) %>%
+  dplyr::filter(
+      row_number() %in% base::c(2386:2391,2393:2417)
+    ) %>%
+  dplyr::pull(description)
+"inflam","haemorrhage","lymph","rheuma"
+
+ldsc_score %>% dplyr::distinct(description) %>% dplyr::filter(row_number() %in% 2417:3000)
+ldsc_score %>% dplyr::distinct(description) %>% dplyr::filter(row_number() %in% 4001:4125)
+  
 # cat <- base::c(
 #     # Immune cells
 #     "B.lymphoblastoid", "cord.blood.derived", "dendritic.cell",
@@ -1235,7 +1251,7 @@ cat <- base::c(
 
 ## [2.7.] Heatmap for visualization of enrichment and proportion of heritability
 ```{r}
-df_sub <- ldsc_data %>% distinct(description)
+df_sub <- ldsc_data %>%
   dplyr::filter(
       Category %in% cat &
       description %in% trai
