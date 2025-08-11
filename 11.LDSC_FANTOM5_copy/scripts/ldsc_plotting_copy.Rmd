@@ -952,13 +952,13 @@ combined_plot
 ## [2.0] Read in main LDSC results
 ```{r}
 # Load the data
-ldsc_score <- readr::read_tsv(
+ldsc_score_ <- readr::read_tsv(
     file = base::paste0(
       here::here("11.LDSC_FANTOM5/ldsc_files/"),
       "combined_results.tsv"
     )
   )
-ldsc_score$Trait<- base::sub(pattern = "_score[0-9.]+$", "", ldsc_score$Trait) 
+ldsc_score_$Trait<- base::sub(pattern = "_score[0-9.]+$", "", ldsc_score_$Trait) 
 
 sumstat_annot <- readr::read_tsv( # 12,098
     file = base::paste0(
@@ -969,7 +969,15 @@ sumstat_annot <- readr::read_tsv( # 12,098
 sumstat_annot <- sumstat_annot %>% #4,170
   dplyr::filter(
       is_primary_gwas == TRUE &
-      phenotype %in% base::unique(ldsc_score$Trait)
+      phenotype %in% base::unique(ldsc_score_$Trait)
+    )
+```
+
+```{r}
+ldsc_score_ %>%
+  dplyr::arrange(dplyr::desc(Prop._h2)) %>%
+  dplyr::summarise(
+      ran = base::range(Prop._h2)
     )
 ```
 
@@ -977,7 +985,7 @@ sumstat_annot <- sumstat_annot %>% #4,170
 #### 25020 "unknown"  locations
 ```{r}
 ldsc_score <- dplyr::left_join(
-    x = ldsc_score,
+    x = ldsc_score_,
     y = dplyr::select(sumstat_annot, phenotype, description),
     by = base::c("Trait" = "phenotype")
   )
@@ -1145,6 +1153,10 @@ scaling_individual <- function(Enrichment,max_enr,min_enr){
 scaling_group <- function(df){
   max_enr <- base::max(df$Enrichment, na.rm = TRUE)
   min_enr <- base::min(df$Enrichment, na.rm = TRUE)
+  
+  max_prop <- base::max(df$Prop._SNPs, na.rm = TRUE)
+  min_prop <- base::min(df$Prop._SNPs, na.rm = TRUE)
+  
   return(
     df %>%   
       dplyr::mutate(
@@ -1153,9 +1165,10 @@ scaling_group <- function(df){
             .f = scaling_individual,
             max_enr = max_enr,
             min_enr = min_enr
-          )
-        )
+          ),
+        Proportion_scaled = (Prop._SNPs - min_prop) / (max_prop - min_prop)
       )
+    )
   }
 
 ldsc_data <- ldsc_score %>% # 592,140
@@ -1269,6 +1282,19 @@ df_sub <- ldsc_data %>%
 ```
 
 ```{r}
+# ma <- base::max(df_sub$Prop._h2)
+# df_sub <- df_sub %>%
+#   dplyr::mutate(
+#       NormProp = Prop._h2/ma
+#     )
+
+# ldsc_score_ %>%
+#   dplyr::summarise(
+#     ran = base::range(Prop._SNPs)
+#   )
+```
+
+```{r}
 m <- base::mean(df_sub$Enrichment_scaled)
 ggplot2::ggplot(
     data = df_sub,
@@ -1280,8 +1306,8 @@ ggplot2::ggplot(
   geom_tile(
       mapping = aes(
           fill = Enrichment_scaled, 
-          height = Prop._h2 + 0.4, 
-          width  = Prop._h2 + 0.4
+          height = NormProp, #Prop._h2 + 0.25, 
+          width  = NormProp # Prop._h2 + 0.25
         ),
       color = NA
     ) +
@@ -1292,9 +1318,9 @@ ggplot2::ggplot(
       height = 1
     ) +
   scale_fill_gradient2(
-      low = "#256866", 
-      mid = "#FFFFCC", 
-      high = "orange",
+      low = "#0000FF", # "#256866", 
+      mid = "#FFFFFF", # "#FFFFCC", 
+      high = "#FF0000",  # "orange",
       midpoint = m, 
       na.value = "grey50", 
       name = "Scaled Enrichment"
@@ -1306,16 +1332,32 @@ ggplot2::ggplot(
   coord_fixed(ratio = 1) +
   theme_bw() +
   theme(
-      # axis.text.x = element_text(
-      #     angle = 90,
-      #     hjust = 1,
-      #     vjust = 0.5
-      #   ),
-      axis.text = element_blank(),
+      axis.text.x = element_text(
+          angle = 90,
+          hjust = 1,
+          vjust = 0.5
+        ),
+      # axis.text = element_blank(),
       legend.position = "right",
       axis.title = element_blank(),
       panel.grid = element_blank()
     )
+```
+
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("11.LDSC_FANTOM5_copy/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_heatmap",
+        "_ImmuneTotal",
+        ".pdf"
+      ),
+    device = "pdf",
+    plot = ggplot2::last_plot(),
+    width = 30,
+    height = 10
+  )
 ```
 
 #### Doublets are included, e.g., dplyr::filter(sample == "B.lymphoblastoid" & description == "Body mass index (BMI)")
