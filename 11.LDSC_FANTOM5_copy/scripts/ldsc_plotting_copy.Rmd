@@ -1264,87 +1264,98 @@ trai <- ldsc_score %>%
   dplyr::pull(description)
   
 selec <- base::c(
-    "Aortic aneurysm", "Arterial embolism and thrombosis", "Bronchitis",
-    "Certain infectious and parasitic diseases", "Crohns disease of large intestine",
-    "Diagnoses − main ICD10: A87 Viral meningitis",
-    "Diagnoses − main ICD10: C02 Malignant neoplasm of other and unspecified parts of tongue",
-    "Diagnoses − main ICD10: C09 Malignant neoplasm of tonsil",
-    "Diagnoses − main ICD10: C20 Malignant neoplasm of rectum",
-    "Diagnoses − main ICD10: C22 Malignant neoplasm of liver and intrahepatic bile ducts",
-    "Diagnoses − main ICD10: C44 Other malignant neoplasms of skin",
-    "Diagnoses − main ICD10: C45 Mesothelioma",
-    "Diagnoses − main ICD10: C53 Malignant neoplasm of cervix uteri",
-    "Diagnoses − main ICD10: C67 Malignant neoplasm of bladder",
-    "Diagnoses − main ICD10: C69 Malignant neoplasm of eye and adnexa",
-    "Diagnoses − main ICD10: C71 Malignant neoplasm of brain",
-    "Diagnoses − main ICD10: C73 Malignant neoplasm of thyroid gland",
-    "Diagnoses - main ICD10: C77 Secondary and unspecified malignant neoplasm of lymph nodes",
-    "Diagnoses - main ICD10: C91 Lymphoid leukaemia",
-    "Diagnoses - main ICD10: C81 Hodgkin's disease",
-    "Diagnoses - main ICD10: C90 Multiple myeloma and malignant plasma cell neoplasms",
-    "Diagnoses - main ICD10: C91 Lymphoid leukaemia",
-    "Diagnoses - main ICD10: D16 Benign neoplasm of bone and articular cartilage",
-    "Diagnoses - main ICD10: D24 Benign neoplasm of breast",
-    "Diagnoses - main ICD10: D25 Leiomyoma of uterus",
-    "Diagnoses − main ICD10: D61 Other aplastic anaemias",
-    "Diagnoses − main ICD10: D64 Other anaemias",
-    "Diagnoses − main ICD10: I71 Aortic aneurysm and dissection",
-    "Diagnoses − main ICD10: I74 Arterial embolism and thrombosis",
-    "Diagnoses − main ICD10: I77 Other disorders of arteries and arterioles",
-    "Diagnoses − main ICD10: I78 Diseases of capillaries",
-    "Diagnoses − main ICD10: J22 Unspecified acute lower respiratory infection",
-    "Diagnoses − main ICD10: J31 Chronic rhinitis, nasopharyngitis and pharyngitis",
-    "Diagnoses − main ICD10: J33 Nasal polyp",
-    "Diagnoses − main ICD10: J46 Status asthmaticus",
-    "Diagnoses − main ICD10: M05 Seropositive rheumatoid arthritis",
-    "Diagnoses − main ICD10: R59 Enlarged lymph nodes",
-    "Eosinophill count",
-    "Eosinophill percentage",
-    "High light scatter reticulocyte count",
-    "High light scatter reticulocyte percentage",
-    "Hodgkin lymphoma",
-    "Immature reticulocyte fraction",
+    "White blood cell (leukocyte) count",
     "Lymphocyte count",
     "Lymphocyte percentage",
-    "Lymphoid leukaemia",
-    "Lymphomas",
-    "Malignant neoplasm of brain",
-    "Malignant neoplasm of colon",
-    "Malignant neoplasm of endocrine gland",
-    "Malignant neoplasm of eye, brain and central nervous system",
-    "Malignant neoplasm of other connective and soft tissue",
-    "Malignant neoplasm of stomach",
+    "Nucleated red blood cell count",
     "Mean corpuscular haemoglobin",
     "Mean corpuscular haemoglobin concentration",
     "Mean corpuscular volume",
     "Mean platelet (thrombocyte) volume",
     "Mean reticulocyte volume",
     "Mean sphered cell volume",
-    "Melignant neoplasm of mesothelium and soft tissue",
-    "Monocyte count",
-    "Monocyte percentage",
-    "Multiple myeloma and malignant plasma cell neoplasms",
-    "Neutrophill count",
-    "Neutrophill percentage",
-    "Nucleated red blood cell count",
-    "Other anaemias",
-    "Other and unspecified anaemias",
-    "Platelet count",
-    "Platelet crit",
-    "Platelet distribution width",
-    "Primary lymphoid and hematopoietic malignant neoplasms",
     "Red blood cell (erythrocyte) count",
     "Red blood cell (erythrocyte) distribution width",
     "Reticulocyte count",
     "Reticulocyte percentage",
-    "Secondary and unspecified malignant neoplasm of lymph nodes",
-    "Secondary malignant neoplasm of respiratory and digestive organs",
+    "Immature reticulocyte fraction",
+    "High light scatter reticulocyte count",
+    "High light scatter reticulocyte percentage",
+    "Platelet count",
+    "Platelet crit",
+    "Platelet distribution width",
+    "Neutrophill count",
+    "Neutrophill percentage",
+    "Monocyte count",
+    "Monocyte percentage",
+    "Eosinophill count",
+    "Eosinophill percentage",
+   
+    "Other anaemias",
+    "Other and unspecified anaemias",
+    "Diagnoses - main ICD10: D61 Other aplastic anaemias",
+    "Diagnoses - main ICD10: D64 Other anaemias",
     "Secondary polycythaemia",
     "Suggestive for eosinophilic asthma",
     "Thrombocytopenia, unspecified",
+    
+    "Aortic aneurysm",
+    "Diagnoses - main ICD10: I71 Aortic aneurysm and dissection",
+    "Diagnoses - main ICD10: I77 Other disorders of arteries and arterioles",
+    "Diagnoses - main ICD10: I78 Diseases of capillaries",
+    
+    "Lymphomas",
+    "Hodgkin lymphoma",
+    "Diagnoses - main ICD10: C81 Hodgkin's disease",
+    "Diagnoses - main ICD10: C91 Lymphoid leukaemia",
+    "Lymphoid leukaemia",
+    "Primary lymphoid and hematopoietic malignant neoplasms",
+    "Multiple myeloma and malignant plasma cell neoplasms",
+    "Secondary and unspecified malignant neoplasm of lymph nodes",
+    "Diagnoses - main ICD10: C77 Secondary and unspecified malignant neoplasm of lymph nodes",
     "Underlying (primary) cause of death: ICD10: C90.0 Multiple myeloma",
+    "Diagnoses - main ICD10: C90 Multiple myeloma and malignant plasma cell neoplasms",
     "Underlying (primary) cause of death: ICD10: C92.0 Acute myeloid leukaemia",
-    "White blood cell (leukocyte) count"
+    
+    "Arterial embolism and thrombosis",
+    "Diagnoses - main ICD10: I74 Arterial embolism and thrombosis",
+    
+    "Crohns disease of large intestine",
+    
+    "Bronchitis",
+    "Certain infectious and parasitic diseases",
+    "Diagnoses - main ICD10: A87 Viral meningitis",
+    "Diagnoses - main ICD10: J22 Unspecified acute lower respiratory infection",
+    "Diagnoses - main ICD10: J31 Chronic rhinitis, nasopharyngitis and pharyngitis",
+    
+    "Diagnoses - main ICD10: J46 Status asthmaticus",
+    "Diagnoses - main ICD10: M05 Seropositive rheumatoid arthritis",
+    "Diagnoses - main ICD10: R59 Enlarged lymph nodes",
+    
+    "Diagnoses - main ICD10: J33 Nasal polyp",
+    
+    "Diagnoses - main ICD10: D16 Benign neoplasm of bone and articular cartilage",
+    "Diagnoses - main ICD10: D24 Benign neoplasm of breast",
+    "Diagnoses - main ICD10: C02 Malignant neoplasm of other and unspecified parts of tongue",
+    "Diagnoses - main ICD10: C09 Malignant neoplasm of tonsil",
+    "Diagnoses - main ICD10: C22 Malignant neoplasm of liver and intrahepatic bile ducts",
+    "Diagnoses - main ICD10: C44 Other malignant neoplasms of skin",
+    "Diagnoses - main ICD10: C45 Mesothelioma",
+    "Diagnoses - main ICD10: D25 Leiomyoma of uterus",
+    "Diagnoses - main ICD10: C53 Malignant neoplasm of cervix uteri",
+    "Diagnoses - main ICD10: C67 Malignant neoplasm of bladder",
+    "Secondary malignant neoplasm of respiratory and digestive organs",
+    "Malignant neoplasm of stomach",
+    "Malignant neoplasm of colon",
+    "Diagnoses - main ICD10: C20 Malignant neoplasm of rectum",
+    "Diagnoses - main ICD10: C69 Malignant neoplasm of eye and adnexa",
+    "Diagnoses - main ICD10: C71 Malignant neoplasm of brain",
+    "Malignant neoplasm of brain",
+    "Malignant neoplasm of eye, brain and central nervous system",
+    "Diagnoses - main ICD10: C73 Malignant neoplasm of thyroid gland",
+    "Malignant neoplasm of endocrine gland",
+    "Melignant neoplasm of mesothelium and soft tissue",
+    "Malignant neoplasm of other connective and soft tissue"
   )
 trai <- ldsc_score %>%
   dplyr::distinct(description) %>%
@@ -1358,7 +1369,7 @@ trai <- ldsc_score %>%
         ordered = TRUE
       )
     ) %>% 
-  dplyr::arrange
+  dplyr::arrange(description) %>%
   dplyr::pull(description)
 ```
 
@@ -1373,6 +1384,11 @@ df_sub <- ldsc_data %>%
     Category = base::factor(
         x = Category,
         levels = base::rev(cat),
+        ordered = TRUE
+      ),
+      description = base::factor(
+        x = description,
+        levels = trai,
         ordered = TRUE
       )
     ) %>%
@@ -1433,7 +1449,11 @@ ggplot2::ggplot(
       axis.text.x = element_text(
           angle = 90,
           hjust = 1,
-          vjust = 0.5
+          vjust = 0.5,
+          size = 3
+        ),
+      axis.text.y = element_text(
+          size = 3
         ),
       # axis.text = element_blank(),
       legend.position = "right",
@@ -1449,11 +1469,12 @@ ggplot2::ggsave(
         base::format(base::Sys.Date(),"%Y%m%d"),
         "_heatmap",
         "_ImmuneTotal",
+        "_ordered_v1",
         ".pdf"
       ),
     device = "pdf",
     plot = ggplot2::last_plot(),
-    width = 30,
+    width = 10,
     height = 10
   )
 ```
