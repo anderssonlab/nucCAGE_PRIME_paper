@@ -1214,11 +1214,16 @@ ldsc_data <- ldsc_score %>% # 592,140
 #     "F5"
 #   )
 
+# cat <- base::c(
+#     ordered_samples[108:125], "cord.blood.derived", "dendritic.cell",
+#     "mast.cell", "monocyte", "reticulocyte",
+#     "T.cell", "spleen", "thymus",
+#     "blood.vessel", "blood.vessel.endothelial.cell", "F5"
+#   )
+
 cat <- base::c(
-    ordered_samples[108:125], "cord.blood.derived", "dendritic.cell",
-    "mast.cell", "monocyte", "reticulocyte",
-    "T.cell", "spleen", "thymus",
-    "blood.vessel", "blood.vessel.endothelial.cell", "F5"
+    "mast.cell", "dendritic.cell", "monocyte",
+    "T.cell", "reticulocyte", base::rev(ordered_samples[108:125])
   )
 ```
 
@@ -1249,19 +1254,19 @@ cat <- base::c(
 #     "Reticulocyte count", "High light scatter reticulocyte count"
 #   )
 
-sub <- base::c(
-    2386:2391, 2393:2417, 2529:2530,
-    3002:3016, 3020:3022, 3024:3033,
-    3034:3192, 3292, 3453:3473,
-    3512, 3514, 3516, 3521:3551,
-    3708:3709, 3774:3775, 3986
-  )
-trai <- ldsc_score %>%
-  dplyr::distinct(description) %>%
-  dplyr::filter(
-      dplyr::row_number() %in% sub
-    ) %>%
-  dplyr::pull(description)
+# sub <- base::c(
+#     2386:2391, 2393:2417, 2529:2530,
+#     3002:3016, 3020:3022, 3024:3033,
+#     3034:3192, 3292, 3453:3473,
+#     3512, 3514, 3516, 3521:3551,
+#     3708:3709, 3774:3775, 3986
+#   )
+# trai <- ldsc_score %>%
+#   dplyr::distinct(description) %>%
+#   dplyr::filter(
+#       dplyr::row_number() %in% sub
+#     ) %>%
+#   dplyr::pull(description)
   
 selec <- base::c(
     "White blood cell (leukocyte) count",
@@ -1294,69 +1299,72 @@ selec <- base::c(
     "Other anaemias",
     "Other and unspecified anaemias",
     "Diagnoses - main ICD10: D61 Other aplastic anaemias",
-    "Diagnoses - main ICD10: D64 Other anaemias",
-    "Secondary polycythaemia",
-    "Suggestive for eosinophilic asthma",
-    "Thrombocytopenia, unspecified",
+    "Diagnoses - main ICD10: D64 Other anaemias"
     
-    "Aortic aneurysm",
-    "Diagnoses - main ICD10: I71 Aortic aneurysm and dissection",
-    "Diagnoses - main ICD10: I77 Other disorders of arteries and arterioles",
-    "Diagnoses - main ICD10: I78 Diseases of capillaries",
-    
-    "Lymphomas",
-    "Hodgkin lymphoma",
-    "Diagnoses - main ICD10: C81 Hodgkin's disease",
-    "Diagnoses - main ICD10: C91 Lymphoid leukaemia",
-    "Lymphoid leukaemia",
-    "Primary lymphoid and hematopoietic malignant neoplasms",
-    "Multiple myeloma and malignant plasma cell neoplasms",
-    "Secondary and unspecified malignant neoplasm of lymph nodes",
-    "Diagnoses - main ICD10: C77 Secondary and unspecified malignant neoplasm of lymph nodes",
-    "Underlying (primary) cause of death: ICD10: C90.0 Multiple myeloma",
-    "Diagnoses - main ICD10: C90 Multiple myeloma and malignant plasma cell neoplasms",
-    "Underlying (primary) cause of death: ICD10: C92.0 Acute myeloid leukaemia",
-    
-    "Arterial embolism and thrombosis",
-    "Diagnoses - main ICD10: I74 Arterial embolism and thrombosis",
-    
-    "Crohns disease of large intestine",
-    
-    "Bronchitis",
-    "Certain infectious and parasitic diseases",
-    "Diagnoses - main ICD10: A87 Viral meningitis",
-    "Diagnoses - main ICD10: J22 Unspecified acute lower respiratory infection",
-    "Diagnoses - main ICD10: J31 Chronic rhinitis, nasopharyngitis and pharyngitis",
-    
-    "Diagnoses - main ICD10: J46 Status asthmaticus",
-    "Diagnoses - main ICD10: M05 Seropositive rheumatoid arthritis",
-    "Diagnoses - main ICD10: R59 Enlarged lymph nodes",
-    
-    "Diagnoses - main ICD10: J33 Nasal polyp",
-    
-    "Diagnoses - main ICD10: D16 Benign neoplasm of bone and articular cartilage",
-    "Diagnoses - main ICD10: D24 Benign neoplasm of breast",
-    "Diagnoses - main ICD10: C02 Malignant neoplasm of other and unspecified parts of tongue",
-    "Diagnoses - main ICD10: C09 Malignant neoplasm of tonsil",
-    "Diagnoses - main ICD10: C22 Malignant neoplasm of liver and intrahepatic bile ducts",
-    "Diagnoses - main ICD10: C44 Other malignant neoplasms of skin",
-    "Diagnoses - main ICD10: C45 Mesothelioma",
-    "Diagnoses - main ICD10: D25 Leiomyoma of uterus",
-    "Diagnoses - main ICD10: C53 Malignant neoplasm of cervix uteri",
-    "Diagnoses - main ICD10: C67 Malignant neoplasm of bladder",
-    "Secondary malignant neoplasm of respiratory and digestive organs",
-    "Malignant neoplasm of stomach",
-    "Malignant neoplasm of colon",
-    "Diagnoses - main ICD10: C20 Malignant neoplasm of rectum",
-    "Diagnoses - main ICD10: C69 Malignant neoplasm of eye and adnexa",
-    "Diagnoses - main ICD10: C71 Malignant neoplasm of brain",
-    "Malignant neoplasm of brain",
-    "Malignant neoplasm of eye, brain and central nervous system",
-    "Diagnoses - main ICD10: C73 Malignant neoplasm of thyroid gland",
-    "Malignant neoplasm of endocrine gland",
-    "Melignant neoplasm of mesothelium and soft tissue",
-    "Malignant neoplasm of other connective and soft tissue"
+    # "Secondary polycythaemia",
+    # "Suggestive for eosinophilic asthma",
+    # "Thrombocytopenia, unspecified",
+    # 
+    # "Aortic aneurysm",
+    # "Diagnoses - main ICD10: I71 Aortic aneurysm and dissection",
+    # "Diagnoses - main ICD10: I77 Other disorders of arteries and arterioles",
+    # "Diagnoses - main ICD10: I78 Diseases of capillaries",
+    # 
+    # "Lymphomas",
+    # "Hodgkin lymphoma",
+    # "Diagnoses - main ICD10: C81 Hodgkin's disease",
+    # "Diagnoses - main ICD10: C91 Lymphoid leukaemia",
+    # "Lymphoid leukaemia",
+    # "Primary lymphoid and hematopoietic malignant neoplasms",
+    # "Multiple myeloma and malignant plasma cell neoplasms",
+    # "Secondary and unspecified malignant neoplasm of lymph nodes",
+    # "Diagnoses - main ICD10: C77 Secondary and unspecified malignant neoplasm of lymph nodes",
+    # "Underlying (primary) cause of death: ICD10: C90.0 Multiple myeloma",
+    # "Diagnoses - main ICD10: C90 Multiple myeloma and malignant plasma cell neoplasms",
+    # "Underlying (primary) cause of death: ICD10: C92.0 Acute myeloid leukaemia",
+    # 
+    # "Arterial embolism and thrombosis",
+    # "Diagnoses - main ICD10: I74 Arterial embolism and thrombosis",
+    # 
+    # "Crohns disease of large intestine",
+    # 
+    # "Bronchitis",
+    # "Certain infectious and parasitic diseases",
+    # "Diagnoses - main ICD10: A87 Viral meningitis",
+    # "Diagnoses - main ICD10: J22 Unspecified acute lower respiratory infection",
+    # "Diagnoses - main ICD10: J31 Chronic rhinitis, nasopharyngitis and pharyngitis",
+    # 
+    # "Diagnoses - main ICD10: J46 Status asthmaticus",
+    # "Diagnoses - main ICD10: M05 Seropositive rheumatoid arthritis",
+    # "Diagnoses - main ICD10: R59 Enlarged lymph nodes",
+    # 
+    # "Diagnoses - main ICD10: J33 Nasal polyp",
+    # 
+    # "Diagnoses - main ICD10: D16 Benign neoplasm of bone and articular cartilage",
+    # "Diagnoses - main ICD10: D24 Benign neoplasm of breast",
+    # "Diagnoses - main ICD10: C02 Malignant neoplasm of other and unspecified parts of tongue",
+    # "Diagnoses - main ICD10: C09 Malignant neoplasm of tonsil",
+    # "Diagnoses - main ICD10: C22 Malignant neoplasm of liver and intrahepatic bile ducts",
+    # "Diagnoses - main ICD10: C44 Other malignant neoplasms of skin",
+    # "Diagnoses - main ICD10: C45 Mesothelioma",
+    # "Diagnoses - main ICD10: D25 Leiomyoma of uterus",
+    # "Diagnoses - main ICD10: C53 Malignant neoplasm of cervix uteri",
+    # "Diagnoses - main ICD10: C67 Malignant neoplasm of bladder",
+    # "Secondary malignant neoplasm of respiratory and digestive organs",
+    # "Malignant neoplasm of stomach",
+    # "Malignant neoplasm of colon",
+    # "Diagnoses - main ICD10: C20 Malignant neoplasm of rectum",
+    # "Diagnoses - main ICD10: C69 Malignant neoplasm of eye and adnexa",
+    # "Diagnoses - main ICD10: C71 Malignant neoplasm of brain",
+    # "Malignant neoplasm of brain",
+    # "Malignant neoplasm of eye, brain and central nervous system",
+    # "Diagnoses - main ICD10: C73 Malignant neoplasm of thyroid gland",
+    # "Malignant neoplasm of endocrine gland",
+    # "Melignant neoplasm of mesothelium and soft tissue",
+    # "Malignant neoplasm of other connective and soft tissue"
   )
+
+
 trai <- ldsc_score %>%
   dplyr::distinct(description) %>%
   dplyr::filter(
@@ -1396,11 +1404,11 @@ df_sub <- ldsc_data %>%
 ```
 
 ```{r}
-# ma <- base::max(df_sub$Prop._h2)
-# df_sub <- df_sub %>%
-#   dplyr::mutate(
-#       NormProp = Prop._h2/ma
-#     )
+ma <- base::max(df_sub$Prop._h2)
+df_sub <- df_sub %>%
+  dplyr::mutate(
+      NormProp = Prop._h2/ma
+    )
 
 # ldsc_score_ %>%
 #   dplyr::summarise(
@@ -1420,8 +1428,8 @@ ggplot2::ggplot(
   geom_tile(
       mapping = aes(
           fill = Enrichment_scaled, 
-          height = Proportion_scaled, # NormProp, #Prop._h2 + 0.25, 
-          width  = Proportion_scaled # NormProp # Prop._h2 + 0.25
+          height = NormProp, # Proportion_scaled, # NormProp, #Prop._h2 + 0.25, 
+          width  = NormProp # Proportion_scaled # NormProp # Prop._h2 + 0.25
         ),
       color = NA
     ) +
@@ -1450,10 +1458,10 @@ ggplot2::ggplot(
           angle = 90,
           hjust = 1,
           vjust = 0.5,
-          size = 3
+          size = 8
         ),
       axis.text.y = element_text(
-          size = 3
+          size = 8
         ),
       # axis.text = element_blank(),
       legend.position = "right",
@@ -1468,7 +1476,8 @@ ggplot2::ggsave(
         here::here("11.LDSC_FANTOM5_copy/plots/"),
         base::format(base::Sys.Date(),"%Y%m%d"),
         "_heatmap",
-        "_ImmuneTotal",
+        "_Immune",
+        "_NormalisedProportion",
         "_ordered_v1",
         ".pdf"
       ),
