@@ -43,7 +43,7 @@ txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 
 ## [0.1.] Load pooled cellFacets data (PL score > 0.75)
 ```{r}
-cellFacet.rse_1 <- base::readRDS(
+cellFacet.rse <- base::readRDS( # cellFacet.rse_1
   file = base::paste0(
       here::here("11.LDSC_FANTOM5/ldsc_files/"),
       "cellFacet.rds"
@@ -412,13 +412,14 @@ jaccard_sim <- 1 - jaccard_mat
 ```
 
 ## [1.3.] Selecting cellFacets for main figure
+#### __Deprecated__
 ```{r}
-main <- base::names(cell_type_categories)[cell_type_categories != "Cancer / Tumor"]
-
-jaccard_sim_main <- jaccard_sim[
-    base::row.names(jaccard_sim) %in% main,
-    base::colnames(jaccard_sim) %in% main
-  ]
+# main <- base::names(cell_type_categories)[cell_type_categories != "Cancer / Tumor"]
+# 
+# jaccard_sim_main <- jaccard_sim[
+#     base::row.names(jaccard_sim) %in% main,
+#     base::colnames(jaccard_sim) %in% main
+#   ]
 ```
 
 ## [1.4.] Cluster and sort
@@ -429,11 +430,11 @@ hc <- stats::hclust(
   )
 hc_sorted <- dendsort::dendsort(hc)
 
-hc_main <- stats::hclust(
-    stats::as.dist(1 - jaccard_sim_main),
-    method = "average"
-  )
-hc_main_sorted <- dendsort::dendsort(hc_main)
+# hc_main <- stats::hclust(
+#     stats::as.dist(1 - jaccard_sim_main),
+#     method = "average"
+#   )
+# hc_main_sorted <- dendsort::dendsort(hc_main)
 ```
 
 ## [2.] Descriptive plots -------------------------
@@ -582,7 +583,7 @@ curclus <- tibble::tibble(
 #   )
 
 curmat <- tmat %>%
-  tibble::as.tibble(
+  tibble::as_tibble(
       rownames = "cat"
     ) %>%
   dplyr::left_join(
@@ -633,6 +634,7 @@ ggplot2::ggplot(
       aspect.ratio = 1
     )
 ```
+
 ```{r}
 ggplot2::ggsave(
     filename = base::paste0(
@@ -685,6 +687,7 @@ ggplot2::ggplot(
       aspect.ratio = 1
     )
 ```
+
 
 ```{r}
 ggplot2::ggsave(
@@ -774,6 +777,7 @@ combined_plot <- dend_plot + bar_plot + patchwork::plot_layout(widths = c(2, 1))
 combined_plot
 ```
 
+
 ```{r}
 ggplot2::ggplot(
     data = df_long,
@@ -846,105 +850,106 @@ ggplot2::ggsave(
   )
 ```
 
-
+#### __Deprecated__
 ```{r}
-# Same for main figure
-ordered_samples <- hc_main_sorted$labels[hc_main_sorted$order]
-
-# Filter colData to include only those in clustering
-df <- SummarizedExperiment::colData(cellFacet.rse) %>% 
-  base::as.data.frame() %>%
-  tibble::as_tibble() %>%
-  dplyr::filter(sample %in% ordered_samples)
-
-# Get dendrogram data
-dend <- stats::as.dendrogram(hc_main_sorted)
-dend_data <- ggdendro::dendro_data(dend)
-label_map <- stats::setNames(dend_data$labels$x, dend_data$labels$label)
-seg_data <- dend_data$segments
-
-# Reshape data to long format for plotting and assign dendrogram x positions
-df_long <- df %>%
-  tidyr::pivot_longer(
-      cols = base::c("distal0.5", "proximal0.5"),
-      names_to = "region_type",
-      values_to = "count"
-    ) %>%
-  dplyr::mutate(
-      region_type = base::factor(
-          x = region_type,
-          levels = base::c("proximal0.5", "distal0.5"),
-          ordered = TRUE
-        ),
-      x = label_map[base::as.character(sample)]
-    )
+# # Same for main figure
+# ordered_samples <- hc_main_sorted$labels[hc_main_sorted$order]
+# 
+# # Filter colData to include only those in clustering
+# df <- SummarizedExperiment::colData(cellFacet.rse) %>% 
+#   base::as.data.frame() %>%
+#   tibble::as_tibble() %>%
+#   dplyr::filter(sample %in% ordered_samples)
+# 
+# # Get dendrogram data
+# dend <- stats::as.dendrogram(hc_main_sorted)
+# dend_data <- ggdendro::dendro_data(dend)
+# label_map <- stats::setNames(dend_data$labels$x, dend_data$labels$label)
+# seg_data <- dend_data$segments
+# 
+# # Reshape data to long format for plotting and assign dendrogram x positions
+# df_long <- df %>%
+#   tidyr::pivot_longer(
+#       cols = base::c("distal0.5", "proximal0.5"),
+#       names_to = "region_type",
+#       values_to = "count"
+#     ) %>%
+#   dplyr::mutate(
+#       region_type = base::factor(
+#           x = region_type,
+#           levels = base::c("proximal0.5", "distal0.5"),
+#           ordered = TRUE
+#         ),
+#       x = label_map[base::as.character(sample)]
+#     )
 ```
 
+#### __Deprecated__
 ```{r}
-# Bar plot 
-bar_plot <- ggplot2::ggplot(
-    data = df_long,
-    mapping = aes(
-        x = x,
-        y = count,
-        fill = region_type
-      )
-    ) +
-  geom_bar(
-      stat = "identity",
-      position = "dodge"
-    ) +
-  geom_hline(
-      yintercept = base::length(F5),
-      linetype = "dashed",
-      color = "darkred",
-      linewidth = 0.7
-    ) +
-  geom_hline(
-      yintercept = 100000,
-      linetype = "dashed",
-      color = "darkgrey",
-      linewidth = 0.7
-    ) +
-  scale_fill_manual(
-      values = base::c("proximal0.5" = "#1b9e77", "distal0.5" = "#d95f02")
-    ) +
-  scale_x_continuous(
-      breaks = df_long$x,
-      labels = df_long$sample
-    ) +
-  coord_flip() +
-  labs(
-      x = NULL,
-      y = "Region count",
-      fill = "Region Type"
-    ) +
-  theme_minimal() +
-  theme(
-        axis.text.y = element_text(size = 6, hjust = 1),
-        axis.title.y = element_blank(),
-      panel.grid.major.y = element_blank(),  # remove horizontal lines
-      panel.grid.minor.y = element_blank()   # just in case
-    )
-
-# Dendrogram plot 
-dend_plot <- ggplot2::ggplot(
-      data = seg_data
-    ) +
-  geom_segment(
-    mapping = aes(
-        x = x,y = y, xend = xend, yend = yend)
-    ) +
-  scale_y_reverse() +
-  coord_flip() +
-  theme_void() +
-  theme(
-      plot.margin = margin(r = -10)
-    )  # Reduce spacing to snugly align with barplot
-
-# Combine and plot
-combined_plot <- dend_plot + bar_plot + plot_layout(widths = c(1, 3))
-combined_plot
+# # Bar plot 
+# bar_plot <- ggplot2::ggplot(
+#     data = df_long,
+#     mapping = aes(
+#         x = x,
+#         y = count,
+#         fill = region_type
+#       )
+#     ) +
+#   geom_bar(
+#       stat = "identity",
+#       position = "dodge"
+#     ) +
+#   geom_hline(
+#       yintercept = base::length(F5),
+#       linetype = "dashed",
+#       color = "darkred",
+#       linewidth = 0.7
+#     ) +
+#   geom_hline(
+#       yintercept = 100000,
+#       linetype = "dashed",
+#       color = "darkgrey",
+#       linewidth = 0.7
+#     ) +
+#   scale_fill_manual(
+#       values = base::c("proximal0.5" = "#1b9e77", "distal0.5" = "#d95f02")
+#     ) +
+#   scale_x_continuous(
+#       breaks = df_long$x,
+#       labels = df_long$sample
+#     ) +
+#   coord_flip() +
+#   labs(
+#       x = NULL,
+#       y = "Region count",
+#       fill = "Region Type"
+#     ) +
+#   theme_minimal() +
+#   theme(
+#         axis.text.y = element_text(size = 6, hjust = 1),
+#         axis.title.y = element_blank(),
+#       panel.grid.major.y = element_blank(),  # remove horizontal lines
+#       panel.grid.minor.y = element_blank()   # just in case
+#     )
+# 
+# # Dendrogram plot 
+# dend_plot <- ggplot2::ggplot(
+#       data = seg_data
+#     ) +
+#   geom_segment(
+#     mapping = aes(
+#         x = x,y = y, xend = xend, yend = yend)
+#     ) +
+#   scale_y_reverse() +
+#   coord_flip() +
+#   theme_void() +
+#   theme(
+#       plot.margin = margin(r = -10)
+#     )  # Reduce spacing to snugly align with barplot
+# 
+# # Combine and plot
+# combined_plot <- dend_plot + bar_plot + plot_layout(widths = c(1, 3))
+# combined_plot
 ```
 
 ## [2.] LDSC analysis plots -------------------------
@@ -1404,16 +1409,20 @@ df_sub <- ldsc_data %>%
 ```
 
 ```{r}
-ma <- base::max(df_sub$Prop._h2)
+ma <- base::max(df_sub$Prop._SNPs)
 df_sub <- df_sub %>%
   dplyr::mutate(
-      NormProp = Prop._h2/ma
+      NormProp = Prop._SNPs/ma
     )
 
 # ldsc_score_ %>%
 #   dplyr::summarise(
 #     ran = base::range(Prop._SNPs)
 #   )
+df_sub %>%
+  dplyr::summarise(
+      ranNP = base::range(NormProp)
+    )
 ```
 
 ```{r}
