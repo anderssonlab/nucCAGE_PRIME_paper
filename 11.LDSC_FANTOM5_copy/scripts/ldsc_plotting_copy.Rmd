@@ -978,7 +978,7 @@ sumstat_annot <- sumstat_annot %>% #4,170
     )
 ```
 
-#### Evaluate
+#### Evaluate scaling
 ```{r}
 ldsc_score_ %>%
   dplyr::arrange(dplyr::desc(Prop._h2)) %>%
@@ -1028,7 +1028,7 @@ min_top_scores <- base::apply(
   )
 ```
 
-## [2.3.] Read out data
+## [2.3.] Prepare description-sample combinations for plotting
 ```{r}
 sub <- tibble::tibble(
     description = base::c("Reticulocyte count","Reticulocyte count","Monocyte count","Monocyte count","Basophill count","Basophill count","Urate (umol/L)","Urate (umol/L)"),
@@ -1038,15 +1038,6 @@ sub <- tibble::tibble(
 
 #### evaluate overlap: ldsc_score %>% dplyr::filter(sample %in%  ordered_samples[108:125]) %>% distinct(sample)
 ```{r}
-trai <- base::c(
-    "Alanine aminotransferase (U/L)", "Albumin (g/L)", "Apoliprotein A (g/L)",
-    "Aspartate aminotransferase (U/L)", "Body mass index (BMI)", "Creatinine (umol/L)",
-    "Diastolic blood pressure, automated reading", "Eosinophill count",
-    "Ever depressed for a whole week", "Getting up in morning", "High light scatter reticulocyte count",
-    "Mean corpuscular volume", "Monocyte count", "Reticulocyte count",
-    "SHBG (nmol/L)", "Urate (umol/L)", "White blood cell (leukocyte) count"
-  )
-
 des <- base::factor(
       x = base::rep(trai,2),
       levels = trai,
@@ -1067,7 +1058,30 @@ sub <- tibble::tibble(
   )
 ```
 
+#### see [2.6.] further down for trai
+#### base::c("reticulocyte", "mast.cell")
+```{r}
+# cur_trai <- trai[4:17] # all plotted traits
+# cur_trai <- trai[5:17] # reticulocyte without # Nucleated red blood cell count
+cur_trai <- trai[27:30]
+des <- base::factor(
+      x = base::rep(cur_trai,2),
+      levels = cur_trai,
+      ordered = TRUE
+    ) %>%
+  base::sort()
 
+# ct <- "reticulocyte"
+ct <- "mast.cell"
+sps <- base::rep(base::c(ct,"F5"),base::length(cur_trai))
+
+sub <- tibble::tibble(
+    description = des,
+    sample = sps
+  )
+```
+
+## [2.3.] Prepare proportion of heritability and enrichment data for description-sample combinations
 ```{r}
 thresh <- function(score, min_score){
   # base::cat(score," ", min_score)
@@ -1134,14 +1148,31 @@ comb <- dplyr::bind_rows(f5sum, dfsum)
       values = base::c("#1f78b4" ,"#c86bfa", "#90be6d", "#ffb703", "#2d3047")
     ) +
   facet_wrap(
-      facets = ~ description,
-      nrow = 1
+      facets = ~ description
+      # nrow = 1
     ) +
   theme_bw() +
   theme(
+      strip.text.x = element_text(size = 5),
       aspect.ratio = 1,
       panel.spacing = grid::unit(0.1, "lines")
     )
+```
+
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("11.LDSC_FANTOM5_copy/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_enrichment_proportion",
+        "_mastcell",
+        ".pdf"
+      ),
+    device = "pdf",
+    plot = ggplot2::last_plot(),
+    width = 8,
+    height = 6
+  )
 ```
 
 ## [2.5.] Scale enrichment and prepare visualisation
@@ -1277,6 +1308,7 @@ selec <- base::c(
     "White blood cell (leukocyte) count",
     "Lymphocyte count",
     "Lymphocyte percentage",
+    
     "Nucleated red blood cell count",
     "Mean corpuscular haemoglobin",
     "Mean corpuscular haemoglobin concentration",
@@ -1291,6 +1323,7 @@ selec <- base::c(
     "Immature reticulocyte fraction",
     "High light scatter reticulocyte count",
     "High light scatter reticulocyte percentage",
+    
     "Platelet count",
     "Platelet crit",
     "Platelet distribution width",
@@ -1408,21 +1441,23 @@ df_sub <- ldsc_data %>%
   dplyr::arrange(dplyr::desc(Prop._h2))
 ```
 
+#### Normalization strategies and their evaluation
 ```{r}
-ma <- base::max(df_sub$Prop._SNPs)
-df_sub <- df_sub %>%
-  dplyr::mutate(
-      NormProp = Prop._SNPs/ma
-    )
-
-# ldsc_score_ %>%
+# ma <- base::max(df_sub$Prop._SNPs)
+# df_sub <- df_sub %>%
+#   dplyr::mutate(
+#       NormProp = Prop._SNPs/ma
+#     )
+# 
+# # ldsc_score_ %>%
+# #   dplyr::summarise(
+# #     ran = base::range(Prop._SNPs)
+# #   )
+# 
+# df_sub %>%
 #   dplyr::summarise(
-#     ran = base::range(Prop._SNPs)
-#   )
-df_sub %>%
-  dplyr::summarise(
-      ranNP = base::range(NormProp)
-    )
+#       ranNP = base::range(NormProp)
+#     )
 ```
 
 ```{r}
@@ -1437,8 +1472,8 @@ ggplot2::ggplot(
   geom_tile(
       mapping = aes(
           fill = Enrichment_scaled, 
-          height = NormProp, # Proportion_scaled, # NormProp, #Prop._h2 + 0.25, 
-          width  = NormProp # Proportion_scaled # NormProp # Prop._h2 + 0.25
+          height = Proportion_scaled, # NormProp, #Prop._h2 + 0.25, 
+          width  = Proportion_scaled # NormProp # Prop._h2 + 0.25
         ),
       color = NA
     ) +
