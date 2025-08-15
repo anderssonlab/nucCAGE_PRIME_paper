@@ -957,7 +957,7 @@ ggplot2::ggsave(
 ## [2.0] Read in main LDSC results
 ```{r}
 # Load the data
-ldsc_score_ <- readr::read_tsv(
+ldsc_score_ <- readr::read_tsv( # 3,577,860
     file = base::paste0(
       here::here("11.LDSC_FANTOM5/ldsc_files/"),
       "combined_results.tsv"
@@ -986,6 +986,8 @@ ldsc_score_ %>%
       ran = base::range(Prop._h2),
       ran_SNP = base::range(Prop._SNPs)
     )
+
+"anaemias"
 ```
 
 ## [2.1.] Add description to data
@@ -1437,6 +1439,12 @@ df_sub <- ldsc_data %>%
       )
     ) %>%
   dplyr::arrange(dplyr::desc(Prop._h2))
+```
+
+#### Evaluate
+```{r}
+dplyr::filter(ldsc_data, sample == "F5")
+dplyr::filter(df_sub, sample == "F5")
 ```
 
 #### Normalization strategies and their evaluation
