@@ -1,0 +1,96 @@
+---
+title: "20250815_workflow_SNPtracing"
+output: html_document
+date: "2025-08-15"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# [1.] Read in data -------------------------
+
+## [1.0.] Identify LD score files 
+```{r}
+fls <- base::list.files(
+      path = base::paste0(
+          here::here("11.LDSC_FANTOM5/ldsc_files/"),
+          "weights"
+        ),
+      full.names = TRUE
+  ) %>%
+  stringr::str_subset("ldscore.gz")
+```
+
+## [1.0.] Read in all SNP positions
+```{r}
+pos <- purrr::map_dfr( # 1,186,879
+  .x = fls,
+  .f = function(f){
+    readr::read_delim(
+      file = f,
+      delim = "\t",
+      col_names = TRUE,
+      col_types = readr::cols(
+          .default = readr::col_character(),
+          BP = readr::col_integer(),
+          L2 = readr::col_double()
+        )
+      )
+    }
+  ) %>%
+  dplyr::rename(
+      chr = "CHR",
+      start = "BP"
+    )
+```
+
+## []
+#### see [2.0.] in 'ldsc_plotting.Rmd'
+#### crucial information: ldsc_results/D61_score0.5.log 
+```{r}
+sumstat_annot <- readr::read_tsv( # 12,098
+    file = base::paste0(
+      here::here("11.LDSC_FANTOM5/ldsc_files/"),
+      "ukb31063_ldsc_sumstat_manifest_aws_sep2022.tsv"
+    )
+  )
+sumstat_annot <- sumstat_annot %>% #4,170
+  dplyr::filter(
+      is_primary_gwas == TRUE &
+      phenotype %in% base::unique(ldsc_score_$Trait)
+    )
+```
+
+#### D3_OTHERANAEMIA, D3_ANAEMIANAS, D61, D64
+```{r}
+sumstat_annot %>%
+  dplyr::filter(
+      stringr::str_detect(description,"anaemia")
+    )
+```
+
+#### Diagnoses - main ICD10: D61 Other aplastic anaemias
+```{r}
+snps <- readr::read_delim( # 1,096,648
+  file = base::paste0(
+      here::here("11.LDSC_FANTOM5/ldsc_files/"),
+      "sumstats/D61.ldsc.imputed_v3.both_sexes.tsv.bgz"
+    ),
+  delim = "\t",
+  col_names = TRUE,
+  col_types = readr::cols(
+      .default = readr::col_character(),
+      N = readr::col_integer(),
+      Z = readr::col_double()
+    )
+  )
+```
+
+```{r}
+snps %>%
+  dplyr::arrange(dplyr::desc(Z))
+```
+
+
+
