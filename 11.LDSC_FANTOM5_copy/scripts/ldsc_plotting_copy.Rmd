@@ -1227,8 +1227,7 @@ ldsc_data <- ldsc_score %>% # 592,140
   dplyr::ungroup()
 ```
 
-## [2.6.] Define groups of traits and cellFacets to integrate
-#### Grouped dotplot for enrichments
+## [2.6.] Define groups of cellFacets to include into the visualization
 ```{r}
 # cat <- base::c(
 #     "B.lymphoblastoid", "blood.vessel.endothelial.cell", "brain",
@@ -1259,12 +1258,12 @@ ldsc_data <- ldsc_score %>% # 592,140
 
 cat <- base::c(
     "mast.cell", "dendritic.cell", "monocyte",
-    "T.cell", "reticulocyte", base::rev(ordered_samples[108:125])
+    "T.cell", "reticulocyte", base::rev(ordered_samples[108:125]),
+    "F5"
   )
 ```
 
-#### Grouped dotplot for enrichments specifically in blood!
-#### "Type of special diet followed: Vegan"
+## [2.7.] Define groups of traits to include into the visualization
 #### keywords for determined search: "inflam","haemorrhage","lymph","rheuma"
 #### 'sub' includes all relevant immune / disease traits, 'selec' includes a selected group of traits showing strong differences between samples
 ```{r}
@@ -1309,21 +1308,21 @@ selec <- base::c(
     "Lymphocyte count",
     "Lymphocyte percentage",
     
-    "Nucleated red blood cell count",
     "Mean corpuscular haemoglobin",
     "Mean corpuscular haemoglobin concentration",
     "Mean corpuscular volume",
-    "Mean platelet (thrombocyte) volume",
-    "Mean reticulocyte volume",
     "Mean sphered cell volume",
+    "Nucleated red blood cell count",
     "Red blood cell (erythrocyte) count",
     "Red blood cell (erythrocyte) distribution width",
     "Reticulocyte count",
     "Reticulocyte percentage",
+    "Mean reticulocyte volume",
     "Immature reticulocyte fraction",
     "High light scatter reticulocyte count",
     "High light scatter reticulocyte percentage",
     
+    "Mean platelet (thrombocyte) volume",
     "Platelet count",
     "Platelet crit",
     "Platelet distribution width",
@@ -1401,7 +1400,6 @@ selec <- base::c(
     # "Melignant neoplasm of mesothelium and soft tissue",
     # "Malignant neoplasm of other connective and soft tissue"
   )
-
 
 trai <- ldsc_score %>%
   dplyr::distinct(description) %>%
