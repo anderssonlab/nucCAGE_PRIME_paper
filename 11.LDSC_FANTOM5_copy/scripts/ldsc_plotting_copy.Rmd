@@ -977,6 +977,14 @@ sumstat_annot <- sumstat_annot %>% #4,170
       phenotype %in% base::unique(ldsc_score_$Trait)
     )
 ```
+#### D3_OTHERANAEMIA, D3_ANAEMIANAS, D61, D64
+```{r}
+sumstat_annot %>%
+  dplyr::filter(
+    stringr::str_detect(description,"anaemia")
+  )
+```
+
 
 #### Evaluate scaling
 ```{r}
