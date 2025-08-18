@@ -92,20 +92,85 @@ snps <- readr::read_delim( # 1,096,648
 ## [1.4.] Merge the data
 ```{r}
 mrg <- dplyr::left_join(
-    x = snps,
-    y = pos,
-    by = "SNP"
-  )
+      x = snps,
+      y = pos,
+      by = "SNP"
+    ) %>%
+  dplyr::mutate(
+      end = start
+    ) %>% 
+  dplyr::select(
+      chr,start, end, SNP, Z, L2
+    ) %>%
+  tidyr::drop_na()
+  # dplyr::filter(
+  #   dplyr::if_any(
+  #     .cols = tidyselect::everything(),
+  #     .fns =  ~ !base::is.na(.x)
+  #   )
+  # )
 ```
 
 #### Evaluate
 ```{r}
 dplyr::arrange(snps,dplyr::desc(Z))
 dplyr::arrange(mrg,dplyr::desc(Z))
+dplyr::distinct(mrg,N)
+
+GenomicRanges::makeGRangesFromDataFrame(mrg)
 ```
-##<<bookmark>>
-#### Potentially crucial PL scores for mast cells?
+
+## [1.5.] Read in mast cell PRIMEloci
+#### "/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/mast.cell_distal_qn.PL.score0.5.bed"
 ```{r}
-"/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/mast.cell_distal_qn.PL.score0.5.bed"
+base::list.files(
+      path = here::here("0.External_resources/FANTOM5_cellFacet_bedFiles"),
+      full.names = TRUE
+    ) %>%
+  stringr::str_subset("mast.cell")
+
+
+mcPL <- readr::read_delim(
+  file = base::paste0(
+      here::here("0.External_resources/"),
+      "FANTOM5_cellFacet_bedFiles/",
+      "mast.cell_distal_qn.PL.score0.5.bed"
+    ),
+  delim = "\t",
+  col_names = base::c("chr","start","end","PL"),
+  col_types = readr::cols(
+      .default = readr::col_integer(),
+      chr = readr::col_character(),
+      PL = readr::col_double()
+    )
+  )
+```
+
+#### Evaluate
+```{r}
+mcPL %>%
+  dplyr::summarise(
+      ran = base::range(PL)
+    )
+utils::tail(mcPL)
+```
+
+```{r}
+mcPLgr <- GenomicRanges::makeGRangesFromDataFrame(mcPL)
+GenomeInfoDb::seqlevelsStyle(mcPLgr) <- "UCSC"
+S4Vectors::mcols(mcPLgr)[base::c("PL")] <- mcPL$PL
+mcPLgr <- base::sort(mcPLgr)
+
+mrggr <- GenomicRanges::makeGRangesFromDataFrame(mrg)
+GenomeInfoDb::seqlevelsStyle(mrggr) <- "UCSC"
+S4Vectors::mcols(mcPLgr)[base::c("SNP","Z","L2")] <- mrg[,base::c("SNP","Z","L2")]
+mcPLgr <- base::sort(mrggr)
+
+ovl <- IRanges::findOverlaps(
+    query = mcPLgr,
+    subject = mrggr
+  )
+
+mcPLgr[S4Vectors::queryHits(ovl)]
 ```
 
