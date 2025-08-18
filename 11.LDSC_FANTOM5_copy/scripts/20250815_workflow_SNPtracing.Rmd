@@ -153,8 +153,10 @@ mcPL %>%
       ran = base::range(PL)
     )
 utils::tail(mcPL)
+utils::tail(mrg)
 ```
 
+## [1.6.] Identify variants overlapping mast cell PRIMEloci
 ```{r}
 mcPLgr <- GenomicRanges::makeGRangesFromDataFrame(mcPL)
 GenomeInfoDb::seqlevelsStyle(mcPLgr) <- "UCSC"
@@ -163,14 +165,36 @@ mcPLgr <- base::sort(mcPLgr)
 
 mrggr <- GenomicRanges::makeGRangesFromDataFrame(mrg)
 GenomeInfoDb::seqlevelsStyle(mrggr) <- "UCSC"
-S4Vectors::mcols(mcPLgr)[base::c("SNP","Z","L2")] <- mrg[,base::c("SNP","Z","L2")]
-mcPLgr <- base::sort(mrggr)
+S4Vectors::mcols(mrggr)[base::c("SNP","Z","L2")] <- mrg[,base::c("SNP","Z","L2")]
+mrggr <- base::sort(mrggr)
 
 ovl <- IRanges::findOverlaps(
     query = mcPLgr,
     subject = mrggr
   )
 
-mcPLgr[S4Vectors::queryHits(ovl)]
+ovl_1 <- mcPLgr[S4Vectors::queryHits(ovl)] %>%
+  tibble::as_tibble() %>%
+  dplyr::select(
+      seqnames,start,end,PL
+    )
+
+ovl_2 <- mrggr[S4Vectors::subjectHits(ovl)] %>%
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+      var_pos = base::paste(seqnames,start,sep = "_")
+    ) %>% 
+  dplyr::select(
+      var_pos,SNP,Z,L2
+    )
+
+varPL <- dplyr::bind_cols(
+    ovl_1, ovl_2
+  )
+```
+
+```{r}
+varPL %>%
+  dplyr::arrange(dplyr::desc(PL))
 ```
 
