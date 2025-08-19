@@ -193,8 +193,18 @@ varPL <- dplyr::bind_cols(
   )
 ```
 
+#### pos1: KLF6:chr10:3,704,497-4,144,825
 ```{r}
 varPL %>%
+  dplyr::mutate(
+      pos = base::paste0(seqnames,":",start,"-",end)
+    ) %>%
+  dplyr::filter(
+      seqnames == "chr4"
+    ) %>% 
+  dplyr::select(
+      pos,PL,var_pos,SNP,Z,L2
+    ) %>% 
   dplyr::arrange(dplyr::desc(PL))
 ```
 
