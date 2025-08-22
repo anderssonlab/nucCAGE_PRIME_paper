@@ -8,6 +8,11 @@ date: "2025-08-15"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r}
+base::library("org.Hs.eg.db")
+```
+
+
 # [1.] Read in data -------------------------
 
 ## [1.0.] Identify LD score files 
@@ -192,6 +197,49 @@ varPL <- dplyr::bind_cols(
     ovl_1, ovl_2
   )
 ```
+
+#### Identify 
+```{r}
+varPLgr <- GenomicRanges::makeGRangesFromDataFrame(varPL)
+GenomeInfoDb::seqlevelsStyle(varPLgr) <- "UCSC"
+S4Vectors::mcols(varPLgr)[base::c("PL","var_pos","SNP","Z","L2")] <- varPL[,base::c("PL","var_pos","SNP","Z","L2")]
+varPLgr <- base::sort(varPLgr)
+
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+orgDb <- org.Hs.eg.db
+
+extGenes_ <- GenomicFeatures::genes(x = txdb, columns = columns(txdb))
+extGenes <- IRanges::promoters(
+        x = extGenes_,
+        upstream = 1000,
+        downstream = 100
+      ) %>%
+  IRanges::trim() %>%
+  base::sort()
+
+TSSs <- IRanges::resize(
+    x = extGenes,
+    width = 1,
+    fix = "start"
+  )
+geneNames <- AnnotationDbi::select(
+    x = orgDb,
+    keys = TSSs$gene_id,
+    keytype = "ENTREZID",
+    columns = "SYMBOL"
+  )
+
+
+nG <- IRanges::nearest(
+    x = varPLgr,
+    subject = TSSs
+  )
+
+TSSs[nG,]
+
+CAGEfightR::assignGeneID(varPLgr,txdb)
+```
+
 
 #### pos1: KLF6:chr10:3,704,497-4,144,825
 ```{r}
