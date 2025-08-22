@@ -208,17 +208,19 @@ varPLgr <- base::sort(varPLgr)
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 orgDb <- org.Hs.eg.db
 
-extGenes_ <- GenomicFeatures::genes(x = txdb, columns = columns(txdb))
-extGenes <- IRanges::promoters(
-        x = extGenes_,
-        upstream = 1000,
-        downstream = 100
-      ) %>%
+extGenes_ <- GenomicFeatures::genes(x = txdb) %>%
   IRanges::trim() %>%
   base::sort()
+# extGenes <- IRanges::promoters(
+#         x = extGenes_,
+#         upstream = 0,
+#         downstream = 0
+#       ) %>%
+#   IRanges::trim() %>%
+#   base::sort()
 
 TSSs <- IRanges::resize(
-    x = extGenes,
+    x = extGenes_,
     width = 1,
     fix = "start"
   )
@@ -228,7 +230,11 @@ geneNames <- AnnotationDbi::select(
     keytype = "ENTREZID",
     columns = "SYMBOL"
   )
+# S4Vectors::mcols(extGenes_) <- geneNames$SYMBOL
+S4Vectors::mcols(TSSs)["Gene_symbol"] <- geneNames$SYMBOL
 
+# extGenes_[100:200,]
+TSSs[100:200,]
 
 nG <- IRanges::nearest(
     x = varPLgr,
@@ -236,6 +242,8 @@ nG <- IRanges::nearest(
   )
 
 TSSs[nG,]
+varPL[,"Gene_symbol"] <- TSSs[nG,]$Gene_symbol
+
 
 CAGEfightR::assignGeneID(varPLgr,txdb)
 ```
