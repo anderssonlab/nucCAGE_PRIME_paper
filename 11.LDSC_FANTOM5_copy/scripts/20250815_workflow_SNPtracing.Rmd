@@ -198,7 +198,7 @@ varPL <- dplyr::bind_cols(
   )
 ```
 
-#### Identify 
+#### CAGEfightR::assignGeneID(varPLgr,txdb)
 ```{r}
 varPLgr <- GenomicRanges::makeGRangesFromDataFrame(varPL)
 GenomeInfoDb::seqlevelsStyle(varPLgr) <- "UCSC"
@@ -243,24 +243,77 @@ nG <- IRanges::nearest(
 
 TSSs[nG,]
 varPL[,"Gene_symbol"] <- TSSs[nG,]$Gene_symbol
-
-
-CAGEfightR::assignGeneID(varPLgr,txdb)
 ```
 
 
-#### pos1: KLF6:chr10:3,704,497-4,144,825
+#### super enhancer upstream of KLF6: chr10:3,704,497-4,144,825, chr10:3806827-3807227
+#### enhancer upstream of KIT: chr4:54635436-54635836, intronic enhancer in KIT: chr4:54667216-54667616
+#### intronic enhancer in SOX13
+#### intronic enhancer in IL4R and IL1RL2, enhancer upstream of IL6R
 ```{r}
+selec <- base::c(
+    "SLC4A1", "HBB", "FANCA",
+    "SPTB", "PKLR", "G6PD",
+    "RPS19", "FANCI", "SPTA1",
+    "FANCC", "BRCA2", "FANCD2",
+    "BRIP1", "TMPRSS6", "MMACHC",
+    "GATA1", "RPL5", "FANCG",
+    "FANCE", "SLC46A1", "GPI",
+    "RPS26", "PALB2", "MTRR",
+    "BRCA1"
+  )
+selec <- "KIT"
+
+
 varPL %>%
   dplyr::mutate(
       pos = base::paste0(seqnames,":",start,"-",end)
     ) %>%
   dplyr::filter(
-      seqnames == "chr4"
+      # seqnames == "chr4" 
+      Gene_symbol %in% selec
     ) %>% 
   dplyr::select(
-      pos,PL,var_pos,SNP,Z,L2
+      pos,PL,var_pos,SNP,Z,L2,Gene_symbol
     ) %>% 
   dplyr::arrange(dplyr::desc(PL))
+```
+
+# [2.] GO term analysis -------------------------
+
+## [2.0.] Identify mart
+#### listMarts() -> listDatasets()
+```{r}
+biomaRt::useMart(
+      biomart = "ENSEMBL_MART_ENSEMBL"
+    ) %>% 
+  biomaRt::listDatasets() %>%
+  dplyr::filter(
+      base::grepl('.*sapiens.*',dataset)
+    )
+GRCh38.p14.mart <- biomaRt::useMart(
+    biomart = "ENSEMBL_MART_ENSEMBL",
+    dataset = "hsapiens_gene_ensembl"
+  )
+```
+
+## [2.1.]
+```{r}
+attr <- base::c(
+    # "cdna",
+    "ensembl_gene_id",
+    "external_gene_name",
+    "chromosome_name",
+    "start_position",
+    "end_position",
+    "gene_biotype",
+    "ensembl_transcript_id",
+    "transcription_start_site",
+    "strand"
+  )
+BDGP6.28.bm <- biomaRt::getBM(
+    mart = BDGP6.28.mart,
+    attributes = attr
+  )
 ```
 
