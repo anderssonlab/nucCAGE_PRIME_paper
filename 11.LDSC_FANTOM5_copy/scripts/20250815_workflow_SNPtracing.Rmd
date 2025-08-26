@@ -243,6 +243,7 @@ nG <- IRanges::nearest(
 
 TSSs[nG,]
 varPL[,"Gene_symbol"] <- TSSs[nG,]$Gene_symbol
+varPL[,"ENTREZID"] <- TSSs[nG,]$gene_id
 ```
 
 
@@ -297,7 +298,8 @@ GRCh38.p14.mart <- biomaRt::useMart(
   )
 ```
 
-## [2.1.]
+## [2.1.] Retrieve data for all human genes
+#### dplyr::distinct(GRCh38.p14.bm,chromosome_name)
 ```{r}
 attr <- base::c(
     # "cdna",
@@ -311,9 +313,135 @@ attr <- base::c(
     "transcription_start_site",
     "strand"
   )
-BDGP6.28.bm <- biomaRt::getBM(
-    mart = BDGP6.28.mart,
+GRCh38.p14.bm <- biomaRt::getBM(
+    mart = GRCh38.p14.mart,
     attributes = attr
   )
 ```
+
+## [2.2.] Retrieve Entrez-Ensembl-conversions
+```{r}
+attr <- base::c(
+    "ensembl_gene_id",
+    "entrezgene_id",
+    "gene_biotype"
+  )
+GRCh38.p14.EnsToEnt <- biomaRt::getBM(
+    mart = GRCh38.p14.mart,
+    attributes = attr
+  )
+```
+
+## [2.3.] Data wrangling
+```{r}
+sel_chrom <- base::c(base::as.character(1:22),"MT","Y","X")
+
+GRCh38.p14.bm.mod <- GRCh38.p14.bm %>%
+  dplyr::filter(
+      chromosome_name %in% sel_chrom &
+      gene_biotype == "protein_coding"
+    ) %>%
+  dplyr::mutate(
+    chromosome_name = base::factor(
+        x = chromosome_name,
+        levels = sel_chrom,
+        ordered = TRUE
+      ),
+    strand = dplyr::case_when(
+        strand == "1" ~ "+",
+        strand == "-1" ~ "-"
+      ),
+    score = "."
+  ) %>%
+  dplyr::select(
+      chr = "chromosome_name",
+      start = "start_position",
+      end = "end_position",
+      ensembl_transcript_id,
+      score,
+      strand,
+      ensembl_gene_id,
+      external_gene_name,
+      transcription_start_site
+    ) %>% 
+  dplyr::arrange(chr,start)
+```
+
+## [2.4.] Add entrezIds to BDGP6.28.bm.mod
+#### Evaluate with dplyr::filter(GRCh38.p14.bm.mod.ent, external_gene_name == "SCNN1D"), should be "6339"
+```{r}
+GRCh38.p14.bm.mod.ent <- GRCh38.p14.EnsToEnt %>%
+  dplyr::filter(
+      gene_biotype == "protein_coding"
+    ) %>% 
+  dplyr::select(-gene_biotype) %>% 
+  dplyr::left_join(
+      x = GRCh38.p14.bm.mod,
+      y = .,
+      by = "ensembl_gene_id"
+    )
+```
+
+## [2.5.] Read out Ids associated with protein coding genes
+```{r}
+ensUniv <- GRCh38.p14.bm.mod.ent %>%
+  dplyr::distinct(ensembl_gene_id) %>% # 20,096
+  dplyr::pull(ensembl_gene_id)
+
+entUniv <- GRCh38.p14.bm.mod.ent %>% 
+  dplyr::distinct(entrezgene_id) %>% # 19,659
+  dplyr::pull(entrezgene_id) %>%
+  base::as.character()
+```
+
+#### Evaluate with AnnotationDbi::keytypes(org.Hs.eg.db)
+```{r}
+curOnt = base::c("CC", "MF", "BP")[2]
+curGenes <- varPL %>% 
+  dplyr::filter(PL >= 0.75) %>%
+  dplyr::pull("ENTREZID") # %>%
+  # base::as.integer()
+
+allGO <- purrr::map_dfr(
+  .x = base::c("CC", "MF", "BP"),
+  .f = function(curOnt){
+     postGO <- clusterProfiler::enrichGO(
+        gene = curGenes,
+        keyType = "ENTREZID", # "GENENAME",
+        ont = curOnt,
+        pAdjustMethod = "BH",
+        pvalueCutoff = 1,
+        qvalueCutoff = 1,
+        OrgDb = orgDb,
+        universe = entUniv,
+        minGSSize = 0,
+        maxGSSize = Inf,
+        pool = FALSE
+      )
+     return(
+       postGO@result %>%
+          dplyr::mutate(
+              ont = curOnt
+            )
+      )
+    }
+  )
+
+# postGO <- clusterProfiler::enrichGO(
+#     gene = curGenes,
+#     keyType = "ENTREZID", # "GENENAME",
+#     ont = curOnt,
+#     pAdjustMethod = "BH",
+#     pvalueCutoff = 1,
+#     qvalueCutoff = 1,
+#     OrgDb = orgDb,
+#     universe = entUniv,
+#     minGSSize = 0,
+#     maxGSSize = Inf,
+#     pool = FALSE
+#   )
+postGO@result
+```
+
+
 
