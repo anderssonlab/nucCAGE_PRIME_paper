@@ -253,15 +253,15 @@ varPL[,"ENTREZID"] <- TSSs[nG,]$gene_id
 #### intronic enhancer in IL4R and IL1RL2, enhancer upstream of IL6R
 ```{r}
 selec <- base::c(
-    "SLC4A1", "HBB", "FANCA",
-    "SPTB", "PKLR", "G6PD",
-    "RPS19", "FANCI", "SPTA1",
-    "FANCC", "BRCA2", "FANCD2",
-    "BRIP1", "TMPRSS6", "MMACHC",
-    "GATA1", "RPL5", "FANCG",
-    "FANCE", "SLC46A1", "GPI",
-    "RPS26", "PALB2", "MTRR",
-    "BRCA1"
+    "SLC4A1", "HBB", "FANCA",     # not expressed
+    "SPTB", "PKLR", "G6PD",       # SptB, G6PD expr
+    "RPS19", "FANCI", "SPTA1",    # RPS19 & FANCI expr
+    "FANCC", "BRCA2", "FANCD2",   # FANCC, BRCA2, FANCD2
+    "BRIP1", "TMPRSS6", "MMACHC", # BRIP1, TMPRSS6 with intronic enhancer(?), MMACHC with downstream enhancer
+    "GATA1", "RPL5", "FANCG",     # GATA1 expressed and intronic enhancer, RPL5 expres, FANCG perhaps downstream enhancer
+    "FANCE", "SLC46A1", "GPI",    # FANCE, SLC46A1, GPI all expres.
+    "RPS26", "PALB2", "MTRR",     # RPS26, PALB2, MTRR all expres.
+    "BRCA1"                       # BRCA1 expres.
   )
 selec <- "KIT"
 
@@ -426,22 +426,13 @@ allGO <- purrr::map_dfr(
       )
     }
   )
-
-# postGO <- clusterProfiler::enrichGO(
-#     gene = curGenes,
-#     keyType = "ENTREZID", # "GENENAME",
-#     ont = curOnt,
-#     pAdjustMethod = "BH",
-#     pvalueCutoff = 1,
-#     qvalueCutoff = 1,
-#     OrgDb = orgDb,
-#     universe = entUniv,
-#     minGSSize = 0,
-#     maxGSSize = Inf,
-#     pool = FALSE
-#   )
-postGO@result
 ```
 
+```{r}
+sigCutOff = 0.01
+allGO %>%
+  dplyr::filter(qvalue <= sigCutOff) %>%
+  dplyr::arrange(qvalue)
+```
 
 
