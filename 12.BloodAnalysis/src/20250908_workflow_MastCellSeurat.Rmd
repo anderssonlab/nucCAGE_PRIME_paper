@@ -1,0 +1,104 @@
+---
+title: "20250908_workflow_MastCellSeurat"
+output: html_document
+date: "2025-09-09"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## [0.0.] Load necessary packages
+#### Analysis initialised with Seurat package version 4.3.0.1
+```{r message=FALSE}
+base::library(tidyverse)
+base::library(magrittr)
+base::library(ggraph)
+base::library(Seurat)
+
+utils::packageVersion('Seurat') #4.3.0.1
+```
+
+## [0.1.] Save & load environment
+```{r}
+# base::save.image(
+#   file = base::paste0(
+#         here::here("12.BloodAnalysis/data/"),
+#         "20250908_Seurat.RData"
+#       ),
+#     compress = TRUE
+#   )
+```
+
+```{r}
+base::load(
+  file = base::paste0(
+      here::here("12.BloodAnalysis/data/"),
+      "20250908_Seurat.RData"
+    )
+  )
+```
+
+## [0.2.] Read in cellranger data
+#### Lin(-) c-Kit(+) 33,538 genes x 7,336 cells
+```{r}
+LincKit_mat <- Seurat::Read10X(
+  data.dir = base::paste0(
+      here::here("12.BloodAnalysis/data/GSE184351/"),
+      "GSM5584896_Sample1_P15054_filtered_feature_bc_matrix"
+    )
+  )
+```
+
+#### Lin(-) CD34(+) c-Kit(+) 36,601 genes x 6,794,880 cells
+```{r}
+LinCD34cKit_mat <- Seurat::Read10X(
+  data.dir = base::paste0(
+      here::here("12.BloodAnalysis/data/GSE184351/"),
+      "GSM5584897_Sample2_P20409_1003-4_filtered_feature_bc_matrix"
+    )
+  )
+```
+
+# [1.] Seurat workflow -------------------------
+
+## [1.0.] Generate Seurat object(s)
+```{r}
+LincKit <- Seurat::CreateSeuratObject(
+    counts = LincKit_mat,
+    project = "Lin(-)cKit(+)",
+    names.field = 1, ## Initial identity for the cell is the barcode,
+    names.delim = "-",
+    assay = "RNA",
+    min.cells = 3,
+    min.features = 500
+  )
+```
+
+## [1.1.] Identify mitochondrial genes
+####  13 'MT-' genes in the dataset
+```{r}
+stringr::str_subset(
+    string = LincKit@assays$RNA@counts@Dimnames[[1]],
+    pattern = "^MT-|^mt-"
+  )
+
+LincKit[["percent.mt"]] <- Seurat::PercentageFeatureSet(
+    object = LincKit,
+    pattern = "^MT-|^mt-"
+  )
+```
+
+#### Evaluate
+```{r}
+LincKit@meta.data
+Seurat::VlnPlot(
+  object  = LincKit,
+  features = base::c(
+        "nFeature_RNA","nCount_RNA","percent.mt"
+        #"G2M.Score", "S.Score"
+      ),
+    ncol = 5
+  )
+```
+
