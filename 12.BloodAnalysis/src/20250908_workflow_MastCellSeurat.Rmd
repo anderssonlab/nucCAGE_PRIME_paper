@@ -60,7 +60,7 @@ LinCD34cKit_mat <- Seurat::Read10X(
   )
 ```
 
-# [1.] Seurat workflow -------------------------
+# [1.] Seurat filtering -------------------------
 
 ## [1.0.] Generate Seurat object(s)
 ```{r}
@@ -89,9 +89,23 @@ LincKit[["percent.mt"]] <- Seurat::PercentageFeatureSet(
   )
 ```
 
-#### Evaluate
+## [1.2.] Subset data
+```{r}
+LincKit <- base::subset(
+    x = LincKit,
+    subset = percent.mt < 5 & nFeature_RNA < 4000
+  )
+```
+
+#### Evaluation
+#### 7074 cells left specifically 'including' the 200 doublets identified by Wu C et al., 2022
 ```{r}
 LincKit@meta.data
+```
+
+
+## [1.3.] Violin plot for QC features
+```{r}
 Seurat::VlnPlot(
   object  = LincKit,
   features = base::c(
@@ -99,6 +113,113 @@ Seurat::VlnPlot(
         #"G2M.Score", "S.Score"
       ),
     ncol = 5
+  )
+```
+
+## [1.4.] Scatterplot number of features and mitochondrial reads per cell
+```{r}
+ggplot2::ggplot(
+      data = LincKit@meta.data,
+      mapping = aes(
+        x = nFeature_RNA,
+        y = percent.mt
+      )
+    ) +
+  ggrastr::geom_point_rast(
+      size = 0.1,
+      alpha = 0.05
+    ) +
+  # geom_density2d(
+  #     binwidth = 0.003
+  #   ) +
+  geom_vline(
+      xintercept = base::c(200,2500),
+      linetype = "dashed"
+    ) +
+  geom_hline(
+      yintercept = base::c(5,10),
+      linetype = "dashed"
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      panel.spacing = grid::unit(0.1,"line")
+    )
+```
+
+## [1.5.] Scatterplot number of features and number of counts oer cell
+```{r}
+ggplot2::ggplot(
+      data = LincKit@meta.data,
+      mapping = aes(
+        x = nCount_RNA,
+        y = nFeature_RNA
+      )
+    ) +
+  ggrastr::geom_point_rast(
+      size = 0.1,
+      alpha = 0.05
+    ) +
+  # geom_density2d(
+  #     binwidth = 0.003
+  #   ) +
+  geom_hline(
+      yintercept = base::c(1500),
+      linetype = "dashed"
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      panel.spacing = grid::unit(0.1,"line")
+    )
+```
+
+# [2.] Data processing -------------------------
+
+## [2.0.] Normalization
+#### the 'data' bucket of LincKit@assays$RNA@data
+```{r}
+LincKit <- Seurat::NormalizeData(
+    object = LincKit,
+    normalization.method = "LogNormalize",
+    scale.factor = 10000
+  )
+```
+
+## [2.1.] Find variable features
+```{r}
+LincKit <- Seurat::FindVariableFeatures(
+    object = LincKit,
+    selection.method = "vst",
+    nfeatures = 2000
+  )
+```
+
+#### Evaluations
+```{r}
+varFeat <- Seurat::VariableFeatures(
+    object = LincKit
+  )[1:10]
+  
+plot <- Seurat::VariableFeaturePlot(
+    object = LincKit
+  )
+Seurat::LabelPoints(
+    plot = plot,
+    points = varFeat,
+    repel = TRUE,
+    xnudge = 0,
+    ynudge = 0
+  )
+```
+
+## [2.2] Data scaling
+#### results are stored in 'LincKit@assays$RNA@scale.data', evaluate with LincKit@assays$RNA@scale.data[1:5,1:5]
+```{r}
+all.genes <- base::row.names(x = LincKit)
+LincKit <- Seurat::ScaleData(
+    object = LincKit,
+    features = all.genes
   )
 ```
 
