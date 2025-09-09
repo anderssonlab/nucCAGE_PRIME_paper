@@ -223,3 +223,71 @@ LincKit <- Seurat::ScaleData(
   )
 ```
 
+## [2.3] Perform PCA
+```{r}
+LincKit <- Seurat::RunPCA(
+  object = LincKit,
+  npcs = 50,
+  features = Seurat::VariableFeatures(
+      object = LincKit
+    )
+  )
+```
+
+#### Evaluate
+```{r}
+Seurat::DimPlot(
+    object = LincKit
+  )
+Seurat::ElbowPlot(
+    object = LincKit
+  )
+```
+
+## [2.3.] Compute nearest neighbour graph through PCA space
+```{r}
+LincKit <- Seurat::FindNeighbors(
+    object = LincKit,
+    reduction = "pca",
+    dims = 1:15
+  )
+base::debugonce(Seurat::FindClusters)
+LincKit <- Seurat::FindClusters(
+    object = LincKit,
+    resolution = 0.5,
+    algorithm = 4
+  )
+```
+
+```{r}
+ids <- RunLeiden(object = object, method = method, 
+            partition.type = "RBConfigurationVertexPartition", 
+            initial.membership = initial.membership, 
+            node.sizes = node.sizes, resolution.parameter = r, 
+            random.seed = random.seed, n.iter = n.iter)
+
+reticulate::py_module_available(module = "leidenalg")
+
+base::debugonce(reticulate::import_from_path)
+reticulate::import_from_path(module = "leidenalg", path = "/home/pbr316/.local/lib/python3.10/site-packages/")
+reticulate::py_last_error()
+reticulate:::py_module_import(module = "leidenalg", convert = convert)
+
+```
+
+```{r}
+path <- base::normalizePath(path)
+sys <- reticulate::import("sys", convert = FALSE)
+```
+
+
+```{python}
+sys$path$insert(0L, path)
+on.exit(sys$path$remove(path), add = TRUE)
+import(module, convert = convert)
+```
+
+```{r}
+reticulate::use_python(python = "/home/pbr316/.conda/envs/20220620_placenta", required = TRUE)
+```
+
