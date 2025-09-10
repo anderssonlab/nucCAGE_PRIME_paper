@@ -8,6 +8,8 @@ date: "2025-09-09"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# [0.] Prerequisites -------------------------
+
 ## [0.0.] Load necessary packages
 #### Analysis initialised with Seurat package version 4.3.0.1
 ```{r message=FALSE}
@@ -19,7 +21,19 @@ base::library(Seurat)
 utils::packageVersion('Seurat') #4.3.0.1
 ```
 
-## [0.1.] Save & load environment
+## [0.1.] Specify conda environment to use leidenalg module
+#### reticulate::use_python(python = "/home/pbr316/.conda/envs/20220620_placenta/bin/python3.8", required = TRUE)
+#### see https://www.reddit.com/r/bioinformatics/comments/1jbgjt7/how_to_correctly_install_leidenalg_for_seurat/
+```{r}
+reticulate::use_condaenv(
+    condaenv = "/home/pbr316/.conda/envs/20220620_placenta/",
+    conda = "auto",
+    required = TRUE
+  )
+reticulate::py_config()
+```
+
+## [0.2.] Save & load environment
 ```{r}
 # base::save.image(
 #   file = base::paste0(
@@ -39,7 +53,7 @@ base::load(
   )
 ```
 
-## [0.2.] Read in cellranger data
+## [0.3.] Read in cellranger data
 #### Lin(-) c-Kit(+) 33,538 genes x 7,336 cells
 ```{r}
 LincKit_mat <- Seurat::Read10X(
@@ -102,7 +116,6 @@ LincKit <- base::subset(
 ```{r}
 LincKit@meta.data
 ```
-
 
 ## [1.3.] Violin plot for QC features
 ```{r}
@@ -251,43 +264,12 @@ LincKit <- Seurat::FindNeighbors(
     reduction = "pca",
     dims = 1:15
   )
-base::debugonce(Seurat::FindClusters)
+# base::debugonce(Seurat::FindClusters)
 LincKit <- Seurat::FindClusters(
     object = LincKit,
     resolution = 0.5,
     algorithm = 4
   )
+
+dplyr::distinct(LincKit@meta.data, seurat_clusters)
 ```
-
-```{r}
-ids <- RunLeiden(object = object, method = method, 
-            partition.type = "RBConfigurationVertexPartition", 
-            initial.membership = initial.membership, 
-            node.sizes = node.sizes, resolution.parameter = r, 
-            random.seed = random.seed, n.iter = n.iter)
-
-reticulate::py_module_available(module = "leidenalg")
-
-base::debugonce(reticulate::import_from_path)
-reticulate::import_from_path(module = "leidenalg", path = "/home/pbr316/.local/lib/python3.10/site-packages/")
-reticulate::py_last_error()
-reticulate:::py_module_import(module = "leidenalg", convert = convert)
-
-```
-
-```{r}
-path <- base::normalizePath(path)
-sys <- reticulate::import("sys", convert = FALSE)
-```
-
-
-```{python}
-sys$path$insert(0L, path)
-on.exit(sys$path$remove(path), add = TRUE)
-import(module, convert = convert)
-```
-
-```{r}
-reticulate::use_python(python = "/home/pbr316/.conda/envs/20220620_placenta", required = TRUE)
-```
-
