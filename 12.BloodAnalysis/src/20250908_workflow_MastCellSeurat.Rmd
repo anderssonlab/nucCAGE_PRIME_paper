@@ -34,8 +34,9 @@ reticulate::use_condaenv(
 reticulate::py_config()
 ```
 
+## [0.2.] Identify doublets via Scrublet
+#### Use py$dbls to make the array availabel in R
 ```{python}
-# %matplotlib inline
 from IPython import get_ipython
 get_ipython().run_line_magic('matplotlib', 'inline')
 import scrublet as scr
@@ -59,16 +60,9 @@ doublet_scores, predicted_doublets = scrub.scrub_doublets(
     n_prin_comps = 30
   )
 len(predicted_doublets)
-np.where(predicted_doublets)[0] + 1
 len(np.where(predicted_doublets)[0])
+dbls = np.where(predicted_doublets)[0] + 1
 ```
-
-```{r}
-np <- import("numpy", convert = FALSE)
-reticulate::py_to_r(np.where(predicted_doublets)[0] + 1)
-(x <- np$reshape(np$arange(1, 25), c(4L, 3L, 2L)))
-```
-
 
 ## [0.2.] Save & load environment
 ```{r}
