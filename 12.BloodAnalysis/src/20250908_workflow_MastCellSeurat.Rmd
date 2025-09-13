@@ -35,7 +35,7 @@ reticulate::py_config()
 ```
 
 ## [0.2.] Identify doublets via Scrublet
-#### Use py$dbls to make the array availabel in R
+#### Use py$dbls and py$predicted_doublets to make the array availabel in R
 ```{python}
 from IPython import get_ipython
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -59,9 +59,11 @@ doublet_scores, predicted_doublets = scrub.scrub_doublets(
     min_gene_variability_pctl = 85,
     n_prin_comps = 30
   )
+predicted_doublets
 len(predicted_doublets)
 len(np.where(predicted_doublets)[0])
 dbls = np.where(predicted_doublets)[0] + 1
+dbls
 ```
 
 ## [0.2.] Save & load environment
@@ -107,7 +109,7 @@ LinCD34cKit_mat <- Seurat::Read10X(
 
 # [1.] Seurat filtering -------------------------
 
-## [1.0.] Generate Seurat object(s)
+## [1.0.] Generate Seurat object(s) & add doublets information
 ```{r}
 LincKit <- Seurat::CreateSeuratObject(
     counts = LincKit_mat,
@@ -118,6 +120,37 @@ LincKit <- Seurat::CreateSeuratObject(
     min.cells = 3,
     min.features = 500
   )
+```
+
+## Add doublet information
+#### Evaluate with first doublet barcode: 'AAAGATGCAACACCTA-1'
+```{r}
+LincKit_all <- Seurat::CreateSeuratObject(
+    counts = LincKit_mat,
+    project = "Lin(-)cKit(+)",
+    names.field = 1, ## Initial identity for the cell is the barcode,
+    names.delim = "-",
+    assay = "RNA",
+    min.cells = 0,
+    min.features = 0
+  )
+
+meta_all <- LincKit_all@meta.data %>%
+  dplyr::mutate(
+      dbl = py$predicted_doublets
+    ) %>%
+  tibble::rownames_to_column(var = "barcode") %>%
+  dplyr::select(barcode, dbl)
+  
+  
+LincKit[["dbl"]] <- LincKit@meta.data %>%
+  tibble::rownames_to_column(var = "barcode") %>% 
+  dplyr::left_join(
+      x = .,
+      y = meta_all,
+      by = "barcode"
+    ) %>%
+  dplyr::pull(dbl)
 ```
 
 ## [1.1.] Identify mitochondrial genes
@@ -166,12 +199,13 @@ ggplot2::ggplot(
       data = LincKit@meta.data,
       mapping = aes(
         x = nFeature_RNA,
-        y = percent.mt
+        y = percent.mt,
+        colour = dbl
       )
     ) +
   ggrastr::geom_point_rast(
       size = 0.1,
-      alpha = 0.05
+      alpha = 0.5
     ) +
   # geom_density2d(
   #     binwidth = 0.003
@@ -197,12 +231,13 @@ ggplot2::ggplot(
       data = LincKit@meta.data,
       mapping = aes(
         x = nCount_RNA,
-        y = nFeature_RNA
+        y = nFeature_RNA,
+        colour = dbl
       )
     ) +
   ggrastr::geom_point_rast(
       size = 0.1,
-      alpha = 0.05
+      alpha = 0.5
     ) +
   # geom_density2d(
   #     binwidth = 0.003
@@ -217,6 +252,8 @@ ggplot2::ggplot(
       panel.spacing = grid::unit(0.1,"line")
     )
 ```
+
+##<<bookmark>>
 
 # [2.] Data processing -------------------------
 
