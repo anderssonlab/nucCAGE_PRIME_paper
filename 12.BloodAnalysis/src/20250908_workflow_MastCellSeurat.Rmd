@@ -17,6 +17,7 @@ base::library(tidyverse)
 base::library(magrittr)
 base::library(ggraph)
 base::library(Seurat)
+base::library(reticulate)
 
 utils::packageVersion('Seurat') #4.3.0.1
 ```
@@ -32,6 +33,42 @@ reticulate::use_condaenv(
   )
 reticulate::py_config()
 ```
+
+```{python}
+# %matplotlib inline
+from IPython import get_ipython
+get_ipython().run_line_magic('matplotlib', 'inline')
+import scrublet as scr
+import scipy.io
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+
+input_dir = '/maps/projects/ralab/data/projects/nucleiCAGEproject/12.BloodAnalysis/data/GSE184351/GSM5584896_Sample1_P15054_filtered_feature_bc_matrix/'
+counts_matrix = scipy.io.mmread(input_dir + 'matrix.mtx').T.tocsc()
+genes = np.array(scr.load_genes(input_dir + 'features.tsv', delimiter='\t', column=2))
+
+print('Counts matrix shape: {} rows, {} columns'.format(counts_matrix.shape[0], counts_matrix.shape[1]))
+print('Number of genes in gene list: {}'.format(len(genes)))
+
+scrub = scr.Scrublet(counts_matrix , expected_doublet_rate = 0.041)
+doublet_scores, predicted_doublets = scrub.scrub_doublets(
+    min_counts = 2,
+    min_cells = 3,
+    min_gene_variability_pctl = 85,
+    n_prin_comps = 30
+  )
+len(predicted_doublets)
+np.where(predicted_doublets)[0] + 1
+len(np.where(predicted_doublets)[0])
+```
+
+```{r}
+np <- import("numpy", convert = FALSE)
+reticulate::py_to_r(np.where(predicted_doublets)[0] + 1)
+(x <- np$reshape(np$arange(1, 25), c(4L, 3L, 2L)))
+```
+
 
 ## [0.2.] Save & load environment
 ```{r}
