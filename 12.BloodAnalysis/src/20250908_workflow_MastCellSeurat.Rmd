@@ -306,7 +306,7 @@ LincKit <- Seurat::ScaleData(
 ```{r}
 LincKit <- Seurat::RunPCA(
   object = LincKit,
-  npcs = 50,
+  npcs = 5, #50
   features = Seurat::VariableFeatures(
       object = LincKit
     )
@@ -316,7 +316,8 @@ LincKit <- Seurat::RunPCA(
 #### Evaluate
 ```{r}
 Seurat::DimPlot(
-    object = LincKit
+    object = LincKit,
+    reduction = "pca"
   )
 Seurat::ElbowPlot(
     object = LincKit
@@ -330,7 +331,7 @@ Seurat::ElbowPlot(
 LincKit <- Seurat::FindNeighbors(
     object = LincKit,
     reduction = "pca",
-    dims = 1:15
+    dims = 1:5 #1:15
   )
 # base::debugonce(Seurat::FindClusters)
 LincKit <- Seurat::FindClusters(
@@ -348,12 +349,113 @@ LincKit <- Seurat::RunUMAP(
     object = LincKit,
     dims = 1:15
   )
+
+umaps <- dplyr::left_join(
+    x = LincKit@reductions$umap@cell.embeddings %>% 
+      tibble::as_tibble(rownames = "cell"),
+    y = LincKit@meta.data %>%
+      tibble::as_tibble(rownames = "cell"),
+    by = "cell"
+  )
 ```
 
+#### TPSAB1 best MAst cell marker for this setup
 ```{r}
 Seurat::DimPlot(
     object = LincKit,
     reduction = "umap"
   )
+Seurat::FeaturePlot(
+    object = LincKit,
+    features = base::c("KIT", "IL1RL1", "HDC", "TPSAB1", "TPSB2", "FCER1A", "CA1", "HBB","KLF1")
+  )
+Seurat::FeaturePlot(
+    object = LincKit,
+    features = base::c("TPSAB1")
+  )
+```
+
+```{r}
+coef = 0.3
+cols <- base::c(
+  grDevices::colorRampPalette(
+      base::c("white","grey50")
+    )(coef*100),
+  grDevices::colorRampPalette(
+      base::c("grey50","black"),
+      bias=2
+    )((1-coef)*100)
+  )
+
+labels <- umaps %>%
+  dplyr::group_by(seurat_clusters) %>%
+  dplyr::summarise(
+      x = base::mean(UMAP_1),
+      y = base::mean(UMAP_2)
+    )
+
+ggplot2::ggplot(
+      data = umaps,
+      mapping = aes(
+        x = UMAP_1,
+        y = UMAP_2,
+        color = dbl, # percent.mt, # nFeature_RNA, # nCount_RNA,
+        fill = dbl, # percent.mt # nFeature_RNA # nCount_RNA
+        size = base::ifelse(dbl == TRUE, 8, 1)
+      )
+    ) +
+  ggrastr::geom_point_rast(
+      # size =  0.1,
+      alpha = 0.1
+    ) +
+  # geom_label(
+  #     data = labels,
+  #     mapping = aes(
+  #         x = x,
+  #         y = y,
+  #         label = seurat_clusters
+  #       ),
+  #     colour = "black",
+  #     fill = "white",
+  #     size = 4,
+  #     fontface = "bold.italic"
+  #   ) +
+  # geom_density2d(
+  #     binwidth = 0.01
+  #   ) +
+  scale_x_continuous(
+      name = "umap 1"
+    ) +
+  scale_y_continuous(
+      name = "umap 2"
+    ) +
+  # scale_colour_gradientn(
+  #     colours = cols
+  #   ) +
+  # scale_fill_gradientn(
+  #     colours = cols
+  #   ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      panel.spacing = grid::unit(0.1, "lines")
+    ) # +
+  # guides(
+  #   fill = "none",
+  #   colour = guide_colourbar(
+  #       label.position = "right",
+  #       title = NULL,
+  #       title.position = "left",
+  #       title.theme = element_text(
+  #           angle = 90,
+  #           hjust = 0.5
+  #         ),
+  #       ticks = T,
+  #       nbin = 100,
+  #       barheight = 8,
+  #       label = T,
+  #       barwidth = 0.5
+  #     )
+  #   )
 ```
 
