@@ -253,8 +253,6 @@ ggplot2::ggplot(
     )
 ```
 
-##<<bookmark>>
-
 # [2.] Data processing -------------------------
 
 ## [2.0.] Normalization
@@ -326,6 +324,8 @@ Seurat::ElbowPlot(
 ```
 
 ## [2.3.] Compute nearest neighbour graph through PCA space
+#### Leiden clustering based on leidenalg and igraph python modules
+#### see [0.1.] for coupling with conda enviornment including these modules
 ```{r}
 LincKit <- Seurat::FindNeighbors(
     object = LincKit,
@@ -336,8 +336,24 @@ LincKit <- Seurat::FindNeighbors(
 LincKit <- Seurat::FindClusters(
     object = LincKit,
     resolution = 0.5,
-    algorithm = 4
+    algorithm = 4 # Leiden based on 'leidenalg' module
   )
 
 dplyr::distinct(LincKit@meta.data, seurat_clusters)
 ```
+
+## [2.4] Embedd data via UMAP
+```{r}
+LincKit <- Seurat::RunUMAP(
+    object = LincKit,
+    dims = 1:15
+  )
+```
+
+```{r}
+Seurat::DimPlot(
+    object = LincKit,
+    reduction = "umap"
+  )
+```
+
