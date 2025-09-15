@@ -659,12 +659,20 @@ ggplot2::ggplot(
   #   )
 ```
 
-## [2.9.] Subsetting
+# [3.] Integ
+
+## [2.9.] Subsetting of initial matrics
 ```{r}
 clus_sel <- base::c(3,4,8,10,13)
 
-sel_bcs <- umaps %>%
+LincKit_sel_bcs <- umaps %>% # 2,836
   dplyr::filter(seurat_clusters %in% clus_sel) %>%
   dplyr::pull(cell)
+LinCD34cKit_sel_bcs <- LinCD34cKit@meta.data %>% #4,248
+  base::row.names()
+
+LincKit_mat_sel <- LincKit_mat[,LincKit_sel_bcs]
+LinCD34cKit_mat_sel <- LinCD34cKit_mat$`Gene Expression`[,LinCD34cKit_sel_bcs]
 ```
 
+## 
