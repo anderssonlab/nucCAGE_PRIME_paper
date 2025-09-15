@@ -119,8 +119,17 @@ LinCD34cKit_mat <- Seurat::Read10X(
 #### Results in 4377 cells from LinCD34cKit_mat$`Gene Expression`
 ```{r}
 LincKit <- Seurat::CreateSeuratObject(
-    counts = LinCD34cKit_mat$`Gene Expression`, # LincKit_mat,
+    counts = LincKit_mat,
     project = "Lin(-)cKit(+)",
+    names.field = 1, ## Initial identity for the cell is the barcode,
+    names.delim = "-",
+    assay = "RNA",
+    min.cells = 3,
+    min.features = 500
+  )
+LinCD34cKit <- Seurat::CreateSeuratObject(
+    counts = LinCD34cKit_mat$`Gene Expression`, # LincKit_mat,
+    project = "Lin(-)CD34(+)cKit(+)",
     names.field = 1, ## Initial identity for the cell is the barcode,
     names.delim = "-",
     assay = "RNA",
@@ -132,54 +141,69 @@ LincKit <- Seurat::CreateSeuratObject(
 ## Add doublet information
 #### Evaluate with first doublet barcode: 'AAAGATGCAACACCTA-1'
 ```{r}
-LincKit_all <- Seurat::CreateSeuratObject(
-    counts = LincKit_mat,
-    project = "Lin(-)cKit(+)",
-    names.field = 1, ## Initial identity for the cell is the barcode,
-    names.delim = "-",
-    assay = "RNA",
-    min.cells = 0,
-    min.features = 0
-  )
-
-meta_all <- LincKit_all@meta.data %>%
-  dplyr::mutate(
-      dbl = py$predicted_doublets
-    ) %>%
-  tibble::rownames_to_column(var = "barcode") %>%
-  dplyr::select(barcode, dbl)
-  
-  
-LincKit[["dbl"]] <- LincKit@meta.data %>%
-  tibble::rownames_to_column(var = "barcode") %>% 
-  dplyr::left_join(
-      x = .,
-      y = meta_all,
-      by = "barcode"
-    ) %>%
-  dplyr::pull(dbl)
+# LincKit_all <- Seurat::CreateSeuratObject(
+#     counts = LincKit_mat,
+#     project = "Lin(-)cKit(+)",
+#     names.field = 1, ## Initial identity for the cell is the barcode,
+#     names.delim = "-",
+#     assay = "RNA",
+#     min.cells = 0,
+#     min.features = 0
+#   )
+# 
+# meta_all <- LincKit_all@meta.data %>%
+#   dplyr::mutate(
+#       dbl = py$predicted_doublets
+#     ) %>%
+#   tibble::rownames_to_column(var = "barcode") %>%
+#   dplyr::select(barcode, dbl)
+#   
+#   
+# LincKit[["dbl"]] <- LincKit@meta.data %>%
+#   tibble::rownames_to_column(var = "barcode") %>% 
+#   dplyr::left_join(
+#       x = .,
+#       y = meta_all,
+#       by = "barcode"
+#     ) %>%
+#   dplyr::pull(dbl)
 ```
 
 ## [1.1.] Identify mitochondrial genes
 ####  13 'MT-' genes in the dataset
 ```{r}
-stringr::str_subset(
-    string = LincKit@assays$RNA@counts@Dimnames[[1]],
-    pattern = "^MT-|^mt-"
+assertthat::are_equal(
+  x = stringr::str_subset(
+        string = LincKit@assays$RNA@counts@Dimnames[[1]],
+        pattern = "^MT-|^mt-"
+      ) %>%
+    base::sort(),
+  y = stringr::str_subset(
+        string = LinCD34cKit@assays$RNA@counts@Dimnames[[1]],
+        pattern = "^MT-|^mt-"
+      ) %>%
+    base::sort()
   )
 
 LincKit[["percent.mt"]] <- Seurat::PercentageFeatureSet(
     object = LincKit,
     pattern = "^MT-|^mt-"
   )
+LinCD34cKit[["percent.mt"]] <- Seurat::PercentageFeatureSet(
+    object = LinCD34cKit,
+    pattern = "^MT-|^mt-"
+  )
 ```
 
 ## [1.2.] Subset data
-#### Results in 4248 cells from LinCD34cKit_mat$`Gene Expression`
+#### Results in 7074 cells from LincKit_mat and 4248 cells from LinCD34cKit_mat$`Gene Expression`
 ```{r}
 LincKit <- base::subset(
     x = LincKit,
-    # subset = percent.mt < 5 & nFeature_RNA < 4000
+    subset = percent.mt < 5 & nFeature_RNA < 4000
+  )
+LinCD34cKit <- base::subset(
+    x = LinCD34cKit,
     subset = percent.mt < 6 & nFeature_RNA < 6000
   )
 ```
@@ -188,12 +212,21 @@ LincKit <- base::subset(
 #### 7074 cells left specifically 'including' the 200 doublets identified by Wu C et al., 2022
 ```{r}
 LincKit@meta.data
+LinCD34cKit@meta.data
 ```
 
 ## [1.3.] Violin plot for QC features
 ```{r}
 Seurat::VlnPlot(
   object  = LincKit,
+  features = base::c(
+        "nFeature_RNA","nCount_RNA","percent.mt"
+        #"G2M.Score", "S.Score"
+      ),
+    ncol = 5
+  )
+Seurat::VlnPlot(
+  object  = LinCD34cKit,
   features = base::c(
         "nFeature_RNA","nCount_RNA","percent.mt"
         #"G2M.Score", "S.Score"
@@ -272,6 +305,11 @@ LincKit <- Seurat::NormalizeData(
     normalization.method = "LogNormalize",
     scale.factor = 10000
   )
+LinCD34cKit <- Seurat::NormalizeData(
+    object = LinCD34cKit,
+    normalization.method = "LogNormalize",
+    scale.factor = 10000
+  )
 ```
 
 ## [2.1.] Find variable features
@@ -281,20 +319,39 @@ LincKit <- Seurat::FindVariableFeatures(
     selection.method = "vst",
     nfeatures = 2000
   )
+LinCD34cKit <- Seurat::FindVariableFeatures(
+    object = LinCD34cKit,
+    selection.method = "vst",
+    nfeatures = 2000
+  )
 ```
 
 #### Evaluations
 ```{r}
-varFeat <- Seurat::VariableFeatures(
+varFeat_LincKit <- Seurat::VariableFeatures(
     object = LincKit
   )[1:10]
-  
-plot <- Seurat::VariableFeaturePlot(
+plot_LincKit <- Seurat::VariableFeaturePlot(
     object = LincKit
   )
 Seurat::LabelPoints(
-    plot = plot,
-    points = varFeat,
+    plot = plot_LincKit,
+    points = varFeat_LincKit,
+    repel = TRUE,
+    xnudge = 0,
+    ynudge = 0
+  )
+
+varFeat_LinCD34cKit <- Seurat::VariableFeatures(
+    object = LincKit
+  )[1:10]
+  
+plot_LinCD34cKit <- Seurat::VariableFeaturePlot(
+    object = LinCD34cKit
+  )
+Seurat::LabelPoints(
+    plot = plot_LinCD34cKit,
+    points = varFeat_LinCD34cKit,
     repel = TRUE,
     xnudge = 0,
     ynudge = 0
@@ -304,10 +361,16 @@ Seurat::LabelPoints(
 ## [2.2] Data scaling
 #### results are stored in 'LincKit@assays$RNA@scale.data', evaluate with LincKit@assays$RNA@scale.data[1:5,1:5]
 ```{r}
-all.genes <- base::row.names(x = LincKit)
+all_genes_LincKit <- base::row.names(x = LincKit)
 LincKit <- Seurat::ScaleData(
     object = LincKit,
     features = all.genes
+  )
+
+all_genes_LinCD34cKit <- base::row.names(x = LinCD34cKit)
+LinCD34cKit <- Seurat::ScaleData(
+    object = LinCD34cKit,
+    features = all_genes_LinCD34cKit
   )
 ```
 
@@ -318,6 +381,13 @@ LincKit <- Seurat::RunPCA(
   npcs = 50,
   features = Seurat::VariableFeatures(
       object = LincKit
+    )
+  )
+LinCD34cKit <- Seurat::RunPCA(
+  object = LinCD34cKit,
+  npcs = 50,
+  features = Seurat::VariableFeatures(
+      object = LinCD34cKit
     )
   )
 ```
@@ -331,6 +401,14 @@ Seurat::DimPlot(
 Seurat::ElbowPlot(
     object = LincKit
   )
+
+Seurat::DimPlot(
+    object = LinCD34cKit,
+    reduction = "pca"
+  )
+Seurat::ElbowPlot(
+    object = LinCD34cKit
+  )
 ```
 
 ## [2.3.] Compute nearest neighbour graph through PCA space
@@ -342,14 +420,25 @@ LincKit <- Seurat::FindNeighbors(
     reduction = "pca",
     dims = 1:15
   )
+LinCD34cKit <- Seurat::FindNeighbors(
+    object = LinCD34cKit,
+    reduction = "pca",
+    dims = 1:15
+  )
+
 # base::debugonce(Seurat::FindClusters)
 LincKit <- Seurat::FindClusters(
     object = LincKit,
-    resolution = 0.9, # 0.5,
+    resolution = 0.5,
+    algorithm = 4 # Leiden based on 'leidenalg' module
+  )
+LinCD34cKit <- Seurat::FindClusters(
+    object = LinCD34cKit,
+    resolution = 0.9,
     algorithm = 4 # Leiden based on 'leidenalg' module
   )
 
-dplyr::distinct(LincKit@meta.data, seurat_clusters)
+# dplyr::distinct(LincKit@meta.data, seurat_clusters)
 ```
 
 ## [2.4] Embedd data via UMAP
@@ -358,16 +447,13 @@ LincKit <- Seurat::RunUMAP(
     object = LincKit,
     dims = 1:15
   )
-
-umaps <- dplyr::left_join(
-    x = LincKit@reductions$umap@cell.embeddings %>% 
-      tibble::as_tibble(rownames = "cell"),
-    y = LincKit@meta.data %>%
-      tibble::as_tibble(rownames = "cell"),
-    by = "cell"
+LinCD34cKit <- Seurat::RunUMAP(
+    object = LinCD34cKit,
+    dims = 1:15
   )
 ```
 
+## [2.5.] Evaluate data viastandard Seurat visualisations
 #### TPSAB1 best MAst cell marker for this setup
 ```{r}
 Seurat::DimPlot(
@@ -391,10 +477,33 @@ Seurat::FeaturePlot(
 
 Seurat::FeaturePlot(
     object = LincKit,
-    features = base::cz
+    features = base::c("CD34")
+  )
+Seurat::FeaturePlot(
+    object = LinCD34cKit,
+    features = base::c("CD34")
   )
 ```
 
+## [2.6.] Read out UMAP data
+```{r}
+umaps <- dplyr::left_join(
+    x = LincKit@reductions$umap@cell.embeddings %>% 
+      tibble::as_tibble(rownames = "cell"),
+    y = LincKit@meta.data %>%
+      tibble::as_tibble(rownames = "cell"),
+    by = "cell"
+  )
+
+labels <- umaps %>%
+  dplyr::group_by(seurat_clusters) %>%
+  dplyr::summarise(
+      x = base::mean(UMAP_1),
+      y = base::mean(UMAP_2)
+    )
+```
+
+## [2.7.]
 ```{r}
 coef = 0.3
 cols <- base::c(
@@ -406,13 +515,6 @@ cols <- base::c(
       bias=2
     )((1-coef)*100)
   )
-
-labels <- umaps %>%
-  dplyr::group_by(seurat_clusters) %>%
-  dplyr::summarise(
-      x = base::mean(UMAP_1),
-      y = base::mean(UMAP_2)
-    )
 
 ggplot2::ggplot(
       data = umaps,
@@ -477,5 +579,92 @@ ggplot2::ggplot(
   #       barwidth = 0.5
   #     )
   #   )
+```
+
+## [2.8.]
+```{r}
+coef = 0.3
+cols <- base::c(
+  grDevices::colorRampPalette(
+      base::c("white","grey50")
+    )(coef*100),
+  grDevices::colorRampPalette(
+      base::c("grey50","black"),
+      bias=2
+    )((1-coef)*100)
+  )
+
+ggplot2::ggplot(
+      data = umaps,
+      mapping = aes(
+        x = UMAP_1,
+        y = UMAP_2,
+        color = percent.mt, # nFeature_RNA, # nCount_RNA, # dbl
+        fill = percent.mt # nFeature_RNA # nCount_RNA, # dbl
+        # size = base::ifelse(dbl == TRUE, 8, 1)
+      )
+    ) +
+  ggrastr::geom_point_rast(
+      size =  0.1,
+      alpha = 0.1
+    ) +
+  geom_label(
+      data = labels,
+      mapping = aes(
+          x = x,
+          y = y,
+          label = seurat_clusters
+        ),
+      colour = "black",
+      fill = "white",
+      size = 4,
+      fontface = "bold.italic"
+    ) +
+  # geom_density2d(
+  #     binwidth = 0.01
+  #   ) +
+  scale_x_continuous(
+      name = "umap 1"
+    ) +
+  scale_y_continuous(
+      name = "umap 2"
+    ) +
+  # scale_colour_gradientn(
+  #     colours = cols
+  #   ) +
+  # scale_fill_gradientn(
+  #     colours = cols
+  #   ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      panel.spacing = grid::unit(0.1, "lines")
+    ) # +
+  # guides(
+  #   fill = "none",
+  #   colour = guide_colourbar(
+  #       label.position = "right",
+  #       title = NULL,
+  #       title.position = "left",
+  #       title.theme = element_text(
+  #           angle = 90,
+  #           hjust = 0.5
+  #         ),
+  #       ticks = T,
+  #       nbin = 100,
+  #       barheight = 8,
+  #       label = T,
+  #       barwidth = 0.5
+  #     )
+  #   )
+```
+
+## [2.9.] Subsetting
+```{r}
+clus_sel <- base::c(3,4,8,10,13)
+
+sel_bcs <- umaps %>%
+  dplyr::filter(seurat_clusters %in% clus_sel) %>%
+  dplyr::pull(cell)
 ```
 
