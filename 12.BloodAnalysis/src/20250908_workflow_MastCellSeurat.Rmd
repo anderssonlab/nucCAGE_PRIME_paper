@@ -38,23 +38,29 @@ reticulate::py_config()
 #### Use py$dbls and py$predicted_doublets to make the array availabel in R
 ```{python}
 from IPython import get_ipython
-get_ipython().run_line_magic('matplotlib', 'inline')
+# get_ipython().run_line_magic('matplotlib', 'inline')
 import scrublet as scr
 import scipy.io
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+```
 
-input_dir = '/maps/projects/ralab/data/projects/nucleiCAGEproject/12.BloodAnalysis/data/GSE184351/GSM5584896_Sample1_P15054_filtered_feature_bc_matrix/'
+#### dimensions: 6794880 x 36602
+```{python}
+# input_dir = '/maps/projects/ralab/data/projects/nucleiCAGEproject/12.BloodAnalysis/data/GSE184351/GSM5584896_Sample1_P15054_filtered_feature_bc_matrix/'
+input_dir = '/maps/projects/ralab/data/projects/nucleiCAGEproject/12.BloodAnalysis/data/GSE184351/GSM5584897_Sample2_P20409_1003-4_filtered_feature_bc_matrix/'
 counts_matrix = scipy.io.mmread(input_dir + 'matrix.mtx').T.tocsc()
 genes = np.array(scr.load_genes(input_dir + 'features.tsv', delimiter='\t', column=2))
 
 print('Counts matrix shape: {} rows, {} columns'.format(counts_matrix.shape[0], counts_matrix.shape[1]))
 print('Number of genes in gene list: {}'.format(len(genes)))
+```
 
+```{python}
 scrub = scr.Scrublet(counts_matrix , expected_doublet_rate = 0.041)
 doublet_scores, predicted_doublets = scrub.scrub_doublets(
-    min_counts = 2,
+    min_counts = 2, # default: 3
     min_cells = 3,
     min_gene_variability_pctl = 85,
     n_prin_comps = 30
@@ -110,9 +116,10 @@ LinCD34cKit_mat <- Seurat::Read10X(
 # [1.] Seurat filtering -------------------------
 
 ## [1.0.] Generate Seurat object(s) & add doublets information
+#### Results in 4377 cells from LinCD34cKit_mat$`Gene Expression`
 ```{r}
 LincKit <- Seurat::CreateSeuratObject(
-    counts = LincKit_mat,
+    counts = LinCD34cKit_mat$`Gene Expression`, # LincKit_mat,
     project = "Lin(-)cKit(+)",
     names.field = 1, ## Initial identity for the cell is the barcode,
     names.delim = "-",
@@ -168,10 +175,12 @@ LincKit[["percent.mt"]] <- Seurat::PercentageFeatureSet(
 ```
 
 ## [1.2.] Subset data
+#### Results in 4248 cells from LinCD34cKit_mat$`Gene Expression`
 ```{r}
 LincKit <- base::subset(
     x = LincKit,
-    subset = percent.mt < 5 & nFeature_RNA < 4000
+    # subset = percent.mt < 5 & nFeature_RNA < 4000
+    subset = percent.mt < 6 & nFeature_RNA < 6000
   )
 ```
 
@@ -199,8 +208,8 @@ ggplot2::ggplot(
       data = LincKit@meta.data,
       mapping = aes(
         x = nFeature_RNA,
-        y = percent.mt,
-        colour = dbl
+        y = percent.mt
+        # colour = dbl
       )
     ) +
   ggrastr::geom_point_rast(
@@ -231,8 +240,8 @@ ggplot2::ggplot(
       data = LincKit@meta.data,
       mapping = aes(
         x = nCount_RNA,
-        y = nFeature_RNA,
-        colour = dbl
+        y = nFeature_RNA
+        # colour = dbl
       )
     ) +
   ggrastr::geom_point_rast(
@@ -306,7 +315,7 @@ LincKit <- Seurat::ScaleData(
 ```{r}
 LincKit <- Seurat::RunPCA(
   object = LincKit,
-  npcs = 5, #50
+  npcs = 50,
   features = Seurat::VariableFeatures(
       object = LincKit
     )
@@ -331,12 +340,12 @@ Seurat::ElbowPlot(
 LincKit <- Seurat::FindNeighbors(
     object = LincKit,
     reduction = "pca",
-    dims = 1:5 #1:15
+    dims = 1:15
   )
 # base::debugonce(Seurat::FindClusters)
 LincKit <- Seurat::FindClusters(
     object = LincKit,
-    resolution = 0.5,
+    resolution = 0.9, # 0.5,
     algorithm = 4 # Leiden based on 'leidenalg' module
   )
 
@@ -369,9 +378,20 @@ Seurat::FeaturePlot(
     object = LincKit,
     features = base::c("KIT", "IL1RL1", "HDC", "TPSAB1", "TPSB2", "FCER1A", "CA1", "HBB","KLF1")
   )
+#### Mast cells
 Seurat::FeaturePlot(
     object = LincKit,
-    features = base::c("TPSAB1")
+    features = base::c("TPSAB1", "KIT")
+  )
+#### Erythrocytes
+Seurat::FeaturePlot(
+    object = LincKit,
+    features = base::c("CA1", "KLF1", "EPOR")
+  )
+
+Seurat::FeaturePlot(
+    object = LincKit,
+    features = base::cz
   )
 ```
 
@@ -399,9 +419,9 @@ ggplot2::ggplot(
       mapping = aes(
         x = UMAP_1,
         y = UMAP_2,
-        color = dbl, # percent.mt, # nFeature_RNA, # nCount_RNA,
-        fill = dbl, # percent.mt # nFeature_RNA # nCount_RNA
-        size = base::ifelse(dbl == TRUE, 8, 1)
+        color = percent.mt, # nFeature_RNA, # nCount_RNA, # dbl
+        fill = percent.mt # nFeature_RNA # nCount_RNA, # dbl
+        # size = base::ifelse(dbl == TRUE, 8, 1)
       )
     ) +
   ggrastr::geom_point_rast(
