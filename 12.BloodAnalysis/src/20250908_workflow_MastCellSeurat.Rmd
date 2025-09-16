@@ -872,9 +872,9 @@ purrr::map(
   )
 ```
 
-## [3.10.] Integrate both datasets into 'Seurat integrated object'
+## [3.10.] Integrate both datasets into 'Seurat combined object'
 #### 2000 features in 'int_feat'
-#### evaluate with 'utils::str(sco)', 'sco@meta.data'
+#### Integrated dataset includes 2836 + 4248 = 7,084 cells
 ```{r}
 int_feat <- Seurat::SelectIntegrationFeatures(
     object.list = sobs
@@ -887,4 +887,78 @@ sco <- Seurat::IntegrateData(
     anchorset = int_anc
   )
 base::rm(int_anc, int_feat)
+sobs
+sco@meta.data
 ```
+
+## [3.11.] Scale data
+#### after 'Seurat::ScaleData()' the command 'Seurat::VariableFeatures(object = sco)' only shows the 2000 'sub.genes'/'int_feat'
+```{r}
+if(SeuratObject::DefaultAssay(sco) != "integrated"){
+    SeuratObject::DefaultAssay(sco) <- "integrated"
+  }
+
+sub.genes <- base::rownames(sco)
+sco <- Seurat::ScaleData(
+    object = sco,
+    verbose = TRUE,
+    features = sub.genes
+  )
+base::rm(sub.genes)
+```
+
+## [3.12.] Run PCA
+```{r}
+sco <- Seurat::RunPCA(
+    object = sco,
+    npcs = 50, ##default
+    verbose = TRUE
+  )
+```
+
+#### Evaluate
+```{r}
+Seurat::DimPlot(
+    object = sco,
+    reduction = "pca"
+  )
+Seurat::ElbowPlot(
+    object = sco,
+    ndims = 50
+  )
+```
+
+## [3.13.] Clustering
+```{r}
+sco <- Seurat::FindNeighbors(
+    object = sco,
+    reduction = "pca",
+    dims = 1:15
+  )
+sco <- Seurat::FindClusters(
+    object = sco,
+    resolution = 0.5,
+    algorithm = 4 # Leiden based on 'leidenalg' module
+  )
+```
+
+## [3.14.] Dimension reduction
+```{r}
+sco <- Seurat::RunUMAP(
+    object = sco,
+    dims = 1:15
+  )
+```
+
+#### Evaluate
+```{r}
+Seurat::DimPlot(
+    object = sco,
+    reduction = "umap"
+  )
+Seurat::FeaturePlot(
+    object = sco,
+    features = base::c("KLF1")
+  )
+```
+
