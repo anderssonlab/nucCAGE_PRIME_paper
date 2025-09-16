@@ -8,10 +8,14 @@ date: "2025-08-15"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
-base::library("org.Hs.eg.db")
-```
+# [0.] Prerequisites -------------------------
 
+## [0.0.] Load necessary packages
+```{r message=FALSE}
+base::library("org.Hs.eg.db")
+base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+```
 
 # [1.] Read in data -------------------------
 
@@ -54,6 +58,15 @@ pos <- purrr::map_dfr( # 1,186,879
 #### see [2.0.] in 'ldsc_plotting.Rmd'
 #### crucial information: ldsc_results/D61_score0.5.log 
 ```{r}
+# Load the data
+ldsc_score_ <- readr::read_tsv( # 3,577,860
+    file = base::paste0(
+      here::here("11.LDSC_FANTOM5/ldsc_files/"),
+      "combined_results.tsv"
+    )
+  )
+ldsc_score_$Trait<- base::sub(pattern = "_score[0-9.]+$", "", ldsc_score_$Trait) 
+
 sumstat_annot <- readr::read_tsv( # 12,098
     file = base::paste0(
       here::here("11.LDSC_FANTOM5/ldsc_files/"),
@@ -120,7 +133,7 @@ mrg <- dplyr::left_join(
 ```{r}
 dplyr::arrange(snps,dplyr::desc(Z))
 dplyr::arrange(mrg,dplyr::desc(Z))
-dplyr::distinct(mrg,N)
+# dplyr::distinct(mrg,N) # N not selected in [1.4.]
 
 GenomicRanges::makeGRangesFromDataFrame(mrg)
 ```
@@ -241,9 +254,10 @@ nG <- IRanges::nearest(
     subject = TSSs
   )
 
-TSSs[nG,]
+# TSSs[nG,]
 varPL[,"Gene_symbol"] <- TSSs[nG,]$Gene_symbol
 varPL[,"ENTREZID"] <- TSSs[nG,]$gene_id
+dplyr::arrange(varPL,dplyr::desc(PL))
 ```
 
 
@@ -263,17 +277,17 @@ selec <- base::c(
     "RPS26", "PALB2", "MTRR",     # RPS26, PALB2, MTRR all expres.
     "BRCA1"                       # BRCA1 expres.
   )
-selec <- "KIT"
-
+selec = "KIT"
+selec = "BRCA2"
 
 varPL %>%
   dplyr::mutate(
       pos = base::paste0(seqnames,":",start,"-",end)
     ) %>%
-  dplyr::filter(
-      # seqnames == "chr4" 
-      Gene_symbol %in% selec
-    ) %>% 
+  # dplyr::filter(
+  #     # seqnames == "chr4" 
+  #     Gene_symbol %in% selec
+  #   ) %>% 
   dplyr::select(
       pos,PL,var_pos,SNP,Z,L2,Gene_symbol
     ) %>% 
