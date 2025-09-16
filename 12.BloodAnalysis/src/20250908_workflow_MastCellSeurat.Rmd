@@ -726,3 +726,165 @@ purrr::map(
   )
 ```
 
+## [3.3.] Normalize data
+#### 'sobs[[1]]@assays$RNA@data' changes during normalization
+```{r}
+sobs <- purrr::map(
+    .x = sobs,
+    .f = Seurat::NormalizeData,
+    normalization.method = "LogNormalize",
+    scale.factor = 10000
+  )
+```
+
+## [3.4.] Find highly variable genes for clustering
+```{r}
+sobs <- purrr::map(
+    .x = sobs,
+    .f = Seurat::FindVariableFeatures,
+    selection.method = "vst",
+    nfeatures = 2000
+  )
+```
+
+#### Evaluate highly variable genes
+```{r}
+purrr::map_chr(sobs,~ .x@project.name)
+purrr::map(
+  .x = sobs,
+  .f = function(sob){
+    top10 <- Seurat::VariableFeatures(sob) %>%
+      utils::head(n = 10)
+    
+    Seurat::VariableFeaturePlot(sob) %>%
+      Seurat::LabelPoints(
+          plot = .,
+          points = top10,
+          repel = TRUE,
+          xnudge = 0,
+          ynudge = 0
+        )
+    }
+  )
+```
+
+## [3.5.] Scale data
+```{r}
+sobs <- purrr::map(
+  .x = sobs,
+  .f = function(sob){
+    all.genes <- base::rownames(sob)
+    return(
+      Seurat::ScaleData(
+          object = sob,
+          features = all.genes
+        )
+      )
+    }
+  )
+```
+
+## [3.6.] Dimension reduction - PCA
+#### purrr::map(.x = sobs,.f = Seurat::DimPlot,reduction = "pca")
+```{r}
+sobs <- purrr::map(
+  .x = sobs,
+  .f = function(s){
+    Seurat::RunPCA(
+      object = s,
+      npcs = 50, ##default
+      features = Seurat::VariableFeatures(
+          object = s
+        )
+      )
+    }
+  )
+```
+
+#### Evaluate by plotting the first two PCs
+```{r}
+purrr::map(
+  .x = sobs,
+  .f = function(s){
+    Seurat::DimPlot(
+        object = s,
+        reduction = "pca"
+      )
+    }
+  )
+
+purrr::map(
+  .x = sobs,
+  .f = function(s){
+    Seurat::ElbowPlot(
+        object = s
+      )
+    }
+  )
+```
+
+## [3.7.] Clustering & resolution optimisation
+```{r}
+sobs <- purrr::map(
+    .x = sobs,
+    .f = Seurat::FindNeighbors,
+    reduction = "pca",
+    dims = 1:15
+  )
+```
+
+
+## [3.8.] Identify clusters
+```{r}
+base::names(sobs) <- base::c("LincKit","LinCD34cKit")
+sobs[["LincKit"]] <- Seurat::FindClusters(
+    object = sobs[["LincKit"]],
+    resolution = 0.5,
+    algorithm = 4
+  )
+sobs[["LinCD34cKit"]] <- Seurat::FindClusters(
+    object = sobs[["LinCD34cKit"]],
+    resolution = 0.5,#0.9,
+    algorithm = 4
+  )
+```
+
+## [3.9.] Run UMAP
+```{r}
+sobs <- purrr::map(
+    .x = sobs,
+    .f = Seurat::RunUMAP,
+    dims = 1:15
+  )
+```
+
+#### visualization of UMAP
+```{r}
+purrr::map(
+    .x = sobs,
+    .f  = function(s){
+      base::print(s@project.name)
+      Seurat::DimPlot(
+        object = s,
+        reduction = "umap"
+      )
+    }
+  )
+```
+
+## [3.10.] Integrate both datasets into 'Seurat integrated object'
+#### 2000 features in 'int_feat'
+#### evaluate with 'utils::str(sco)', 'sco@meta.data'
+```{r}
+int_feat <- Seurat::SelectIntegrationFeatures(
+    object.list = sobs
+  )
+int_anc <- Seurat::FindIntegrationAnchors(
+    object.list = sobs,
+    anchor.features = int_feat
+  )
+sco <- Seurat::IntegrateData(
+    anchorset = int_anc
+  )
+base::rm(int_anc, int_feat)
+```
