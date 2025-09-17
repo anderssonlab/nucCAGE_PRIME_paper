@@ -31,16 +31,16 @@ doParallel::registerDoParallel(
     cores = 15
   )
 
-utils::installed.packages() %>%
-  tibble::as_tibble() %>% 
-  dplyr::filter(
-    stringr::str_detect(Package,"TxDb.Hsapiens")
-  )
+# utils::installed.packages() %>%
+#   tibble::as_tibble() %>% 
+#   dplyr::filter(
+#     stringr::str_detect(Package,"TxDb.Hsapiens")
+#   )
 base::library("TxDb.Hsapiens.UCSC.hg38.knownGene")
 
-sep <- .Platform$file.sep
-cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
-base::source(base::paste(cfr.extensions.dir, "normalize.R", sep = sep))
+# sep <- .Platform$file.sep
+# cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
+# base::source(base::paste(cfr.extensions.dir, "normalize.R", sep = sep))
 ```
 
 ## [0.2.] Helper function readRange()
@@ -103,7 +103,7 @@ fillGaps <- function(data){
         ) %>%
       dplyr::mutate(
         dplyr::across(
-          .cols = columns,
+          .cols = tidyselect::all_of(columns),
           .fns = function(x){
               tidyr::replace_na(x, 0)
             }
@@ -302,7 +302,7 @@ cols <- base::c(
 #   )
 ```
 
-## [1.3.] Identify bigwig files to be read
+## [1.3.] Identify K562 and GM12878 bigwig files to be read
 ```{r}
 fs <- base::list.files(
       path = here::here("trackHubFiles"),
@@ -313,7 +313,21 @@ fs <- base::list.files(
   # stringr::str_subset("K562") # K562-specific
 ```
 
-## [1.4.] Load HepG2-, HCT116-, A549-CTSS objects & adapt names
+## [1.4.] Identify FANTOM5 immune tracks (Fig6)
+```{r}
+facets_sel <- base::c(
+    "mast cell", "dendritic cell", "monocyte",
+    "T cell", "reticulocyte"
+  )
+
+fs <- base::list.files(
+      path = here::here("0.External_resources/FANTOM5/pooled_bw"),
+      full.names = TRUE
+    ) %>%
+  stringr::str_subset(base::paste0(facets_sel,collapse = "|"))
+```
+
+## [1.5.] Load HepG2-, HCT116-, A549-CTSS objects & adapt names (Fig5)
 #### Evaluate with 'rsen = "A549"', 'SummarizedExperiment::colData(CTSSs.objects[[rsen]])'
 ```{r}
 CTSSs.objects_ <- base::list.files(
@@ -346,7 +360,7 @@ base::names(CTSSs.objects) <- stringr::str_replace(
   )
 ```
 
-## [1.5.] Add the corresponding GM12878 and K562 poolSub data to CTSSs.objects of [1.4.]
+## [1.6.] Add the corresponding GM12878 and K562 poolSub data to CTSSs.objects of [1.5.] (Fig5)
 #### Evaluate with SummarizedExperiment::colData(K562.CTSSs.sub), SummarizedExperiment::assay(K562.CTSSs.sub, i = "counts.noSingletons")
 ```{r}
 K562.CTSSs <- base::readRDS(
@@ -469,7 +483,7 @@ setdiff(
   )
 ```
 
-## [1.6.] Load prepared 'all CTSS' - objects for GM12878 and K562
+## [1.7.] Load prepared 'all CTSS' - objects for GM12878 & K562
 #### Evaluate with 'SummarizedExperiment::colData(GM12878.CTSSs.sub)' & 'SummarizedExperiment::assay(GM12878.CTSSs.sub, "counts")'
 ```{r}
 GM12878.CTSSs <- base::readRDS(
@@ -518,7 +532,7 @@ K562.CTSSs.sub <- S4Vectors::subset(
   )
 ```
 
-## [1.7.] Subset for other samples of interest, e.g., 5M, Triptolide or GROcap
+## [1.8.] Subset for other samples of interest, e.g., 5M, Triptolide or GROcap
 ```{r}
 # ##GM12878 5M and 500k samples
 # ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
@@ -546,7 +560,7 @@ K562.CTSSs.sub <- S4Vectors::subset(
 #   dplyr::pull(ID)
 ```
 
-## [1.8.] Write out bigWig files
+## [1.9.] Write out bigWig files
 ```{r}
 samples = base::rownames(
     SummarizedExperiment::colData(GM12878.CTSSs.sub)
@@ -595,7 +609,7 @@ purrr::map(
   )
 ```
 
-## [1.9.] TMM normalise data
+## [1.10.] TMM normalise data
 ```{r}
 # base::debugonce(edgeR::calcNormFactors)
 # facs <- edgeR::calcNormFactors(
@@ -645,7 +659,7 @@ purrr::map(
 #   }
 ```
 
-## [1.10.] Load tmm.CTSSs object
+## [1.11.] Load tmm.CTSSs object
 #### see [1.15.2.] in "1.1.CTSSs.processing.Rmd" for more info
 ```{r}
 # fn <- base::list.files(
@@ -657,7 +671,7 @@ purrr::map(
 # tmm.CTSSs <- base::readRDS(file = fn)
 ```
 
-## [1.11.] Read in CRISPR-gRNA locations
+## [1.12.] Read in CRISPR-gRNA locations
 ```{r}
 dir = "/projects/ralab/people/pbr316/20221208_scCAGE/resources/"
 crispr <- readr::read_delim(
@@ -693,7 +707,7 @@ crispr_data <- crispr %>%
 
 # [2.] Prepare coordinate objects -------------------------
 
-## [2.0.] Get genomic region from coordinates
+## [2.0.] Define coordinates
 #### suggested region "chr8:144,407,529-144,416,261", "chr10:110,291,360-110,366,023", 
 #### wider area: "chrX:48,670,569-48,746,869" with enh1: "chrX:48,676,170-48,676,946" and enh2: "chrX:48,737,065-48,737,528"
 #### enhancers - "chr9:41358750-41358940", "chr9:41,356,277-41,359,588", "chr8:134563800-134564100", "chr8:134,563,186-134,566,375"
@@ -712,7 +726,7 @@ l_ <- "chr4:144,080,727-144,158,976"
 
 #### see [4.10.] in 10.3.Cell_line_vs_trait_enrichment.Rmd for 'chr22:37109513:37109512'
 
-### MCHC trait
+### MCHC trait (Fig5)
 #### Whole ABCA7 gene including "chr19:1050876-1050875": "chr19:1039521-1065670"
 #### Whole TMPRSS6 gene including "chr22:37109513:37109512": "chr22:37,065,000-37,110,700"
 ```{r}
@@ -723,7 +737,7 @@ l_ <- "chr22:37,065,000-37,110,700" # TMPRSS6
 l_ <- "chr22:37,109,199-37,109,898" # TMPRSS6 Primeloci
 ```
 
-### ApoB trait
+### ApoB trait (Fig5)
 #### Whole ApoB gene locus as control: "chr2:20,999,429-21,046,073"
 #### Whole ABO gene including "chr9:133274296:133274295" and "chr9:133263363:133263374": "chr9:133,250,000-133,276,238"
 #### Whole LPL gene including: "chr8:19961929-19961928": "chr8:19,938,800-19,968,800"
@@ -746,6 +760,13 @@ l_ <- "chr15:58429996-58435030" # LIPCs PRIMEloci
 l_ <- "chr19:44,908,532-44,915,200" # APOC1
 ```
 
+### c-KIT & KLF6 (Fig6)
+```{r}
+l_ <- "chr4:54,360,000-55,036,000" # c-KIT
+l_ <- "chr10:3,700,000-4,146,000" # KLF6
+```
+
+## [2.1.] Get genomic region from coordinates
 ```{r}
 l <- stringr::str_replace_all(l_,",","")
 chr = stringr::str_replace(l,"^(chr.*):.*","\\1")
@@ -767,7 +788,7 @@ BiocGenerics::end(ran) <- BiocGenerics::end(ran) + extend
 GenomeInfoDb::seqlevelsStyle(ran) <- "UCSC"
 ```
 
-## [2.1.] Get genomic region from gene names
+## [2.2.] Get genomic region from gene names
 #### examples are SLC39A4, YLPM1, SMNDC1
 ```{r}
 # omr <- base::c(
@@ -791,7 +812,7 @@ GenomeInfoDb::seqlevelsStyle(ran) <- "UCSC"
 # GenomeInfoDb::seqlevels(ran)
 ```
 
-## [2.2.] Get genomic regions from GRanges input
+## [2.3.] Get genomic regions from GRanges input
 ```{r}
 # gr <- crispr %>%
 #   dplyr::filter(
@@ -812,7 +833,7 @@ GenomeInfoDb::seqlevelsStyle(ran) <- "UCSC"
 # ran <- myce38[i]
 ```
 
-## [2.3.] Extract coordinates
+## [2.4.] Extract coordinates
 ```{r}
 chrom <- GenomeInfoDb::seqnames(ran) %>%
   base::as.character()
@@ -1387,6 +1408,48 @@ for(ext in c("pdf", "png")){
     )
   }
 ```
+
+## [5.2.] Plot c-KIT & KLF6 (Fig6)
+```{r}
+plot <- cage_sel_ %>%
+  dplyr::mutate(
+    type = base::factor(
+        x = type,
+        levels = facets_sel,
+        ordered = TRUE
+      ),
+    score = dplyr::case_when(
+        strand == "minus" & type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ score,
+        strand == "minus" & type %in% base::c("500K_N","5M_N","500K_C") ~ score*200,
+        TRUE ~ score
+      )
+    ) %>%
+  .GlobalEnv$plotTracks(., ran) +
+    ggplot2::facet_wrap(
+        facets = . ~ type,
+        ncol = 1,
+        strip.position = "right",
+        scales = "free_y"
+      ) +
+    ggh4x::facetted_pos_scales(
+      y = base::list(
+        type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ scale_y_continuous(
+            limits = base::c(-3,3)
+          ),
+        type %in% base::c("500K_N","5M_N","500K_C") ~ scale_y_continuous(
+            limits = base::c(-300,300),
+            breaks = base::c(-200,0,200),
+            labels = base::c(-1,0,200)
+          )
+        )
+      )
+ggrastr::rasterise(
+    input = plot,
+    layers = "Bar",
+    dpi = 300
+  )
+```
+
 
 ## [6.] Genomic_landscape -------------------------
 

@@ -10,15 +10,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # [0.] Prerequisites -------------------------
 
-## [-1.0.] Install necessary packages
-```{r}
-# BiocManager::install(version = "3.16")
-# BiocManager::install("batchelor")
-# remotes::install_github("bnprks/BPCells/r")
-# devtools::install_github('cole-trapnell-lab/monocle3')
+## [0.0.] Install necessary packages
+```{r eval=FALSE}
+BiocManager::install(version = "3.16")
+BiocManager::install("batchelor")
+remotes::install_github("bnprks/BPCells/r")
+devtools::install_github('cole-trapnell-lab/monocle3')
 ```
 
-## [0.0.] Load necessary packages
+## [0.1.] Load necessary packages
 #### Analysis initialised with Seurat package version 4.3.0.1
 ```{r message=FALSE}
 base::library(tidyverse)
@@ -31,7 +31,7 @@ base::library(monocle)
 utils::packageVersion('Seurat') #4.3.0.1
 ```
 
-## [0.1.] Specify conda environment to use leidenalg module
+## [0.2.] Specify conda environment to use leidenalg module
 #### reticulate::use_python(python = "/home/pbr316/.conda/envs/20220620_placenta/bin/python3.8", required = TRUE)
 #### see https://www.reddit.com/r/bioinformatics/comments/1jbgjt7/how_to_correctly_install_leidenalg_for_seurat/
 ```{r}
@@ -43,7 +43,7 @@ reticulate::use_condaenv(
 reticulate::py_config()
 ```
 
-## [0.2.] Identify doublets via Scrublet
+## [0.3.] Identify doublets via Scrublet
 #### Use py$dbls and py$predicted_doublets to make the array availabel in R
 ```{python}
 from IPython import get_ipython
@@ -81,7 +81,7 @@ dbls = np.where(predicted_doublets)[0] + 1
 dbls
 ```
 
-## [0.3.] Save & load objects
+## [0.4.] Save & load objects
 ```{r}
 base::saveRDS(
     object = sco,
@@ -106,7 +106,7 @@ sco <- base::readRDS(
   )
 ```
 
-## [0.4.] Read in cellranger data
+## [0.5.] Read in cellranger data
 #### Lin(-) c-Kit(+) 33,538 genes x 7,336 cells
 ```{r}
 LincKit_mat <- Seurat::Read10X(
@@ -127,7 +127,7 @@ LinCD34cKit_mat <- Seurat::Read10X(
   )
 ```
 
-## [0.3.] Color palette
+## [0.6.] Color palette
 ```{r}
 pal <- base::c(
     "#3255A4", "#A4DBE8", "#8C8279",
