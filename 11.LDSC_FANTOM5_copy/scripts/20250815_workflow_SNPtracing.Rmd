@@ -174,7 +174,9 @@ utils::tail(mcPL)
 utils::tail(mrg)
 ```
 
-## [1.6.] Identify variants overlapping mast cell PRIMEloci
+# [2.] Mast cell PRIMEloci with genetic variants -------------------------
+
+## [2.0.] Identify variants overlapping mast cell PRIMEloci
 ```{r}
 mcPLgr <- GenomicRanges::makeGRangesFromDataFrame(mcPL)
 GenomeInfoDb::seqlevelsStyle(mcPLgr) <- "UCSC"
@@ -211,6 +213,7 @@ varPL <- dplyr::bind_cols(
   )
 ```
 
+## [2.1.] Assign nearest neighbouring genes
 #### CAGEfightR::assignGeneID(varPLgr,txdb)
 ```{r}
 varPLgr <- GenomicRanges::makeGRangesFromDataFrame(varPL)
@@ -260,7 +263,8 @@ varPL[,"ENTREZID"] <- TSSs[nG,]$gene_id
 dplyr::arrange(varPL,dplyr::desc(PL))
 ```
 
-
+## [2.2.] Subset & evaluate
+#### 'selec' object includes 'open targets' related to anemia
 #### super enhancer upstream of KLF6: chr10:3,704,497-4,144,825, chr10:3806827-3807227
 #### enhancer upstream of KIT: chr4:54635436-54635836, intronic enhancer in KIT: chr4:54667216-54667616
 #### intronic enhancer in SOX13
@@ -294,9 +298,34 @@ varPL %>%
   dplyr::arrange(dplyr::desc(PL))
 ```
 
-# [2.] GO term analysis -------------------------
+## [2.3.] Save & load varPL
+```{r}
+base::saveRDS(
+    object = varPL,
+    file = base::paste0(
+        here::here("11.LDSC_FANTOM5_copy/"),
+        base::format(base::Sys.time(),"%Y%m%d"),
+        "_varPL",
+        ".rds"
+      ),
+    compress = TRUE
+  )
+```
 
-## [2.0.] Identify mart
+```{r}
+varPL <- base::readRDS(
+  file  = base::list.files(
+        path = here::here("11.LDSC_FANTOM5_copy"),
+        full.names = TRUE
+      ) %>%
+    stringr::str_subset("rds") %>%
+    stringr::str_subset("varPL")
+  )
+```
+
+# [3.] GO term analysis -------------------------
+
+## [3.0.] Identify mart
 #### listMarts() -> listDatasets()
 ```{r}
 biomaRt::useMart(
@@ -312,7 +341,7 @@ GRCh38.p14.mart <- biomaRt::useMart(
   )
 ```
 
-## [2.1.] Retrieve data for all human genes
+## [3.1.] Retrieve data for all human genes
 #### dplyr::distinct(GRCh38.p14.bm,chromosome_name)
 ```{r}
 attr <- base::c(
@@ -333,7 +362,7 @@ GRCh38.p14.bm <- biomaRt::getBM(
   )
 ```
 
-## [2.2.] Retrieve Entrez-Ensembl-conversions
+## [3.2.] Retrieve Entrez-Ensembl-conversions
 ```{r}
 attr <- base::c(
     "ensembl_gene_id",
@@ -346,7 +375,7 @@ GRCh38.p14.EnsToEnt <- biomaRt::getBM(
   )
 ```
 
-## [2.3.] Data wrangling
+## [3.3.] Data wrangling
 ```{r}
 sel_chrom <- base::c(base::as.character(1:22),"MT","Y","X")
 
@@ -381,7 +410,7 @@ GRCh38.p14.bm.mod <- GRCh38.p14.bm %>%
   dplyr::arrange(chr,start)
 ```
 
-## [2.4.] Add entrezIds to BDGP6.28.bm.mod
+## [3.4.] Add entrezIds to BDGP6.28.bm.mod
 #### Evaluate with dplyr::filter(GRCh38.p14.bm.mod.ent, external_gene_name == "SCNN1D"), should be "6339"
 ```{r}
 GRCh38.p14.bm.mod.ent <- GRCh38.p14.EnsToEnt %>%
@@ -396,7 +425,7 @@ GRCh38.p14.bm.mod.ent <- GRCh38.p14.EnsToEnt %>%
     )
 ```
 
-## [2.5.] Read out Ids associated with protein coding genes
+## [3.5.] Read out Ids associated with protein coding genes
 ```{r}
 ensUniv <- GRCh38.p14.bm.mod.ent %>%
   dplyr::distinct(ensembl_gene_id) %>% # 20,096

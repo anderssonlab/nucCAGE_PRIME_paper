@@ -12,12 +12,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## [-1.0.] Install necessary packages
 ```{r}
-BiocManager::install(version = "3.16")
-BiocManager::install("batchelor")
-remotes::install_github("bnprks/BPCells/r")
-devtools::install_github('cole-trapnell-lab/monocle3')
+# BiocManager::install(version = "3.16")
+# BiocManager::install("batchelor")
+# remotes::install_github("bnprks/BPCells/r")
+# devtools::install_github('cole-trapnell-lab/monocle3')
 ```
-
 
 ## [0.0.] Load necessary packages
 #### Analysis initialised with Seurat package version 4.3.0.1
