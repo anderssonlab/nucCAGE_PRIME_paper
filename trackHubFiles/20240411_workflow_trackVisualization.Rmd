@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # [0.] Packages -------------------------
 
 ## [0.0.] Install necessary packages
+#### Maybe required: "base::detach(name = tidyverse, unload = TRUE)" & "utils::remove.packages("tidyverse")"
 ```{r eval=FALSE}
 BiocManager::install("AnnotationHub")
 BiocManager::install("remotes")
@@ -18,18 +19,27 @@ BiocManager::install("Bioconductor/RBGL")
 BiocManager::install("ggbio")
 devtools::install_github("thomasp85/patchwork")
 utils::install.packages("ggh4x")
+utils::install.packages("S7")
+utils::install.packages(pkgs = "tidyverse", lib = "/maps/projects/ralab/people/pbr316/bin/Rpackages")
 ```
+
+```{r}
+install.packages("Cairo") #, "cli", "digest", "ff", "FNN", "glue", "knitr", "matrixStats", "polyclip", "Rcpp", "RCurl", "RJSONIO", "rlang", "tinytex", "xfun", "XML", "yaml"))
+```
+
 
 ## [0.1.] Load necessary packages
 ```{r message=FALSE, warning=FALSE}
-base::library("tidyverse")
-base::library("AnnotationHub")
-base::library("parallel")
-base::library("foreach")
-base::library("doParallel")
-doParallel::registerDoParallel(
-    cores = 15
-  )
+base::library(S7)
+base::library("tidyverse", lib.loc = "/maps/projects/ralab/people/pbr316/bin/Rpackages")
+Biobase::package.version("ggplot2")
+# base::library("AnnotationHub")
+# base::library("parallel")
+# base::library("foreach")
+# base::library("doParallel")
+# doParallel::registerDoParallel(
+#     cores = 15
+#   )
 
 # utils::installed.packages() %>%
 #   tibble::as_tibble() %>% 
@@ -1413,41 +1423,102 @@ for(ext in c("pdf", "png")){
 ```{r}
 plot <- cage_sel_ %>%
   dplyr::mutate(
-    type = base::factor(
-        x = type,
+    sample = base::factor(
+        x = sample,
         levels = facets_sel,
         ordered = TRUE
-      ),
-    score = dplyr::case_when(
-        strand == "minus" & type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ score,
-        strand == "minus" & type %in% base::c("500K_N","5M_N","500K_C") ~ score*200,
-        TRUE ~ score
       )
+    # score = dplyr::case_when(
+    #     strand == "minus" & type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ score,
+    #     strand == "minus" & type %in% base::c("500K_N","5M_N","500K_C") ~ score*200,
+    #     TRUE ~ score
+    #   )
     ) %>%
   .GlobalEnv$plotTracks(., ran) +
     ggplot2::facet_wrap(
-        facets = . ~ type,
+        facets = . ~ sample,
         ncol = 1,
         strip.position = "right",
         scales = "free_y"
       ) +
-    ggh4x::facetted_pos_scales(
-      y = base::list(
-        type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ scale_y_continuous(
-            limits = base::c(-3,3)
-          ),
-        type %in% base::c("500K_N","5M_N","500K_C") ~ scale_y_continuous(
-            limits = base::c(-300,300),
-            breaks = base::c(-200,0,200),
-            labels = base::c(-1,0,200)
-          )
-        )
+    scale_y_continuous(
+        limits = base::c(-50,50),
+        breaks = base::seq(-50,50,10)
       )
+    # ggh4x::facetted_pos_scales(
+    #   y = base::list(
+    #     type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ scale_y_continuous(
+    #         limits = base::c(-3,3)
+    #       ),
+    #     type %in% base::c("500K_N","5M_N","500K_C") ~ scale_y_continuous(
+    #         limits = base::c(-300,300),
+    #         breaks = base::c(-200,0,200),
+    #         labels = base::c(-1,0,200)
+    #       )
+    #     )
+    #   )
 ggrastr::rasterise(
     input = plot,
     layers = "Bar",
     dpi = 300
   )
+```
+
+```{r}
+start_pos <- BiocGenerics::start(range)
+end_pos <- BiocGenerics::end(range)
+
+
+test <- cage_sel_ %>%
+  dplyr::mutate(
+    sample = base::factor(
+        x = sample,
+        levels = facets_sel,
+        ordered = TRUE
+      ),
+    start = base::as.double(start)
+    )
+  ggplot(
+        data = test,
+        mapping = aes(
+          x = start,
+          y = score
+          # colour = strand,
+          # linetype = strand
+        )
+      ) +
+    geom_bar()
+        stat = "identity"
+        # size = 0.5
+      ) +
+    ggplot2::scale_x_continuous(
+        limits = base::c(start_pos,end_pos),  
+        position = "top"
+      ) +
+    ggplot2::scale_color_manual(
+        limits = base::c("minus","plus"),
+        values = base::c("#FF6400","#632770"),
+        guide = "none"
+      ) +
+    ggplot2::scale_linetype_manual(
+        limits = base::c("minus","plus"),
+        breaks = base::c("minus","plus"),
+        values = base::c("solid","solid"),
+        guide = "none"
+      ) +
+    ggplot2::facet_wrap(
+        facets = . ~ sample,
+        ncol = 1,
+        strip.position = "right"
+      ) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(
+        # legend.position = "none",
+        axis.title.x = element_blank(),
+        panel.spacing = grid::unit(0.05,"lines"),
+        panel.grid.minor = element_blank(),
+        plot.margin = grid::unit(base::c(0,0,0,0),"cm")
+      )
 ```
 
 
@@ -1555,5 +1626,10 @@ base::print(
     )
   )
 grDevices::dev.off()
+```
+
+```{r}
+library(tidyverse)
+ggplot(data = mtcars, aes(x = wt, y = mpg)) + geom_point()
 ```
 
