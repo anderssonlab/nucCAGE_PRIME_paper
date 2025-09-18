@@ -11,7 +11,8 @@ knitr::opts_chunk$set(echo = TRUE)
 # [0.] Packages -------------------------
 
 ## [0.0.] Install necessary packages
-#### Maybe required: "base::detach(name = tidyverse, unload = TRUE)" & "utils::remove.packages("tidyverse")"
+#### Maybe required: "base::detach(name = tidyverse, unload = TRUE)", "utils::remove.packages("tidyverse")", "utils::remove.packages("ggplot2")"
+#### Lib locations: "/maps/projects/scarball/apps/Modules/software/R-packages/4.2.2", "/maps/projects/ralab/people/pbr316/bin/Rpackages"
 ```{r eval=FALSE}
 BiocManager::install("AnnotationHub")
 BiocManager::install("remotes")
@@ -19,20 +20,19 @@ BiocManager::install("Bioconductor/RBGL")
 BiocManager::install("ggbio")
 devtools::install_github("thomasp85/patchwork")
 utils::install.packages("ggh4x")
-utils::install.packages("S7")
-utils::install.packages(pkgs = "tidyverse", lib = "/maps/projects/ralab/people/pbr316/bin/Rpackages")
-```
 
-```{r}
-install.packages("Cairo") #, "cli", "digest", "ff", "FNN", "glue", "knitr", "matrixStats", "polyclip", "Rcpp", "RCurl", "RJSONIO", "rlang", "tinytex", "xfun", "XML", "yaml"))
+# utils::install.packages("xfun",dependencies = TRUE, INSTALL_opts = '--no-lock')
+# utils::install.packages("S7")
+# utils::install.packages(pkgs = "tidyverse", lib = "/maps/projects/ralab/people/pbr316/bin/Rpackages")
 ```
-
 
 ## [0.1.] Load necessary packages
+#### Evaluate with sessioninfo::session_info()
 ```{r message=FALSE, warning=FALSE}
-base::library(S7)
-base::library("tidyverse", lib.loc = "/maps/projects/ralab/people/pbr316/bin/Rpackages")
+base::library(tidyverse)
 Biobase::package.version("ggplot2")
+
+# base::library(tidyverse, lib.loc = "/maps/projects/ralab/people/pbr316/bin/Rpackages")
 # base::library("AnnotationHub")
 # base::library("parallel")
 # base::library("foreach")
@@ -1626,10 +1626,5 @@ base::print(
     )
   )
 grDevices::dev.off()
-```
-
-```{r}
-library(tidyverse)
-ggplot(data = mtcars, aes(x = wt, y = mpg)) + geom_point()
 ```
 
