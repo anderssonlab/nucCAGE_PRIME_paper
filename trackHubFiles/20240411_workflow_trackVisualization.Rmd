@@ -1443,7 +1443,7 @@ plot <- cage_sel_ %>%
       ) +
     scale_y_continuous(
         limits = base::c(-50,50),
-        breaks = base::seq(-50,50,10)
+        breaks = base::seq(-50,50,25)
       )
     # ggh4x::facetted_pos_scales(
     #   y = base::list(
@@ -1464,63 +1464,6 @@ ggrastr::rasterise(
   )
 ```
 
-```{r}
-start_pos <- BiocGenerics::start(range)
-end_pos <- BiocGenerics::end(range)
-
-
-test <- cage_sel_ %>%
-  dplyr::mutate(
-    sample = base::factor(
-        x = sample,
-        levels = facets_sel,
-        ordered = TRUE
-      ),
-    start = base::as.double(start)
-    )
-  ggplot(
-        data = test,
-        mapping = aes(
-          x = start,
-          y = score
-          # colour = strand,
-          # linetype = strand
-        )
-      ) +
-    geom_bar()
-        stat = "identity"
-        # size = 0.5
-      ) +
-    ggplot2::scale_x_continuous(
-        limits = base::c(start_pos,end_pos),  
-        position = "top"
-      ) +
-    ggplot2::scale_color_manual(
-        limits = base::c("minus","plus"),
-        values = base::c("#FF6400","#632770"),
-        guide = "none"
-      ) +
-    ggplot2::scale_linetype_manual(
-        limits = base::c("minus","plus"),
-        breaks = base::c("minus","plus"),
-        values = base::c("solid","solid"),
-        guide = "none"
-      ) +
-    ggplot2::facet_wrap(
-        facets = . ~ sample,
-        ncol = 1,
-        strip.position = "right"
-      ) +
-    ggplot2::theme_bw() +
-    ggplot2::theme(
-        # legend.position = "none",
-        axis.title.x = element_blank(),
-        panel.spacing = grid::unit(0.05,"lines"),
-        panel.grid.minor = element_blank(),
-        plot.margin = grid::unit(base::c(0,0,0,0),"cm")
-      )
-```
-
 
 ## [6.] Genomic_landscape -------------------------
 
@@ -1531,6 +1474,8 @@ txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 
 start_pos <- BiocGenerics::start(ran)
 end_pos <- BiocGenerics::end(ran)
+
+BiocManager::install("ggbio", version = '3.16')
 
 plot_land <- ggbio::autoplot(
       object = txdb,
