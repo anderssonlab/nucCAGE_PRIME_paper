@@ -1422,6 +1422,7 @@ for(ext in c("pdf", "png")){
   }
 ```
 
+## [5.3.] Plot c-KIT & KLF6 (Fig6)
 ```{r}
 varPL <- base::readRDS(
   file  = base::list.files(
@@ -1449,7 +1450,6 @@ sites_scores <- varPL %>%
     )
 ```
 
-## [5.2.] Plot c-KIT & KLF6 (Fig6)
 ```{r}
 minY = -500 # -50 # -500 # base::range(cage_sel_$score)[1]
 maxY = 500 # 50 # 500 # base::range(cage_sel_$score)[2]
