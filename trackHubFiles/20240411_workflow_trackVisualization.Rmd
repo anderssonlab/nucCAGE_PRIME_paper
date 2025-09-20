@@ -1445,11 +1445,10 @@ sites_scores <- varPL %>%
     )
 ```
 
-
 ## [5.2.] Plot c-KIT & KLF6 (Fig6)
 ```{r}
-minY = -100 # base::range(cage_sel_$score)[1]
-maxY = 100 # base::range(cage_sel_$score)[2]
+minY = -500 # base::range(cage_sel_$score)[1]
+maxY = 500 # base::range(cage_sel_$score)[2]
 
 coef = 0.75
 cols <- base::c(
@@ -1507,7 +1506,7 @@ for(ext in c("pdf", "png")){
       filename = base::paste0(
           here::here("trackHubFiles/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
-          "_cKIT",
+          "_KLF6",
           out,
           ".", ext
         ),

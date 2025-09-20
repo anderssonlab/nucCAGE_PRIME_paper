@@ -477,5 +477,3 @@ allGO %>%
   dplyr::filter(qvalue <= sigCutOff) %>%
   dplyr::arrange(qvalue)
 ```
-
-

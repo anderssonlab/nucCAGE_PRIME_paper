@@ -16,17 +16,23 @@ BiocManager::install(version = "3.16")
 BiocManager::install("batchelor")
 remotes::install_github("bnprks/BPCells/r")
 devtools::install_github('cole-trapnell-lab/monocle3')
+
+packageurl <- "http://cran.r-project.org/src/contrib/Archive/ggplot2/ggplot2_3.5.2.tar.gz"
+utils::install.packages(packageurl, repos=NULL, type="source")
+Biobase::package.version("ggplot2")
 ```
 
 ## [0.1.] Load necessary packages
 #### Analysis initialised with Seurat package version 4.3.0.1
 ```{r message=FALSE}
+base::library(ggplot2, lib.loc = "/maps/projects/ralab/people/pbr316/bin/Rpackages")
 base::library(tidyverse)
 base::library(magrittr)
 base::library(ggraph)
+library(spatstat.explore, lib.loc = "/maps/projects/scarball/apps/Modules/software/R-packages/4.2.2")
 base::library(Seurat)
 base::library(reticulate)
-base::library(monocle)
+# base::library(monocle)
 
 utils::packageVersion('Seurat') #4.3.0.1
 ```
@@ -1031,7 +1037,7 @@ cols <- base::c(
     )((1-coef)*100)
   )
 
-ggplot2::ggplot(
+plot <- ggplot2::ggplot(
       data = umaps,
       mapping = aes(
         x = UMAP_1,
@@ -1092,4 +1098,151 @@ ggplot2::ggplot(
   #       barwidth = 0.5
   #     )
   #   )
+ggrastr::rasterise(
+    input = plot,
+    layers = "Point",
+    dpi = 300
+  )
 ```
+
+# [4.] Plot marker gene expression -------------------------
+
+## [4.1.] Helper function preper()
+```{r}
+preper <- function(geneChos, container, slot = "data", assay = "integrated"){
+    
+  Seurat::DefaultAssay(object = container) = assay
+  cells.use <- base::colnames(x = container)
+  data.plot <- container@reductions$umap@cell.embeddings %>%
+    tibble::as_tibble(rownames = "id") %>%
+    dplyr::filter(id %in% cells.use)
+  
+  high.plot <- base::tryCatch(
+      { 
+        Seurat::FetchData(
+              object = container,
+              vars = tidyselect::all_of(geneChos),
+              cells = cells.use,
+              slot = slot
+            ) %>%
+          tibble::as_tibble(rownames = "id") %>%
+          dplyr::rename(.,gene = geneChos)
+        },
+      error = function(cond){
+          return(NULL)
+        },
+      warning = function(cond){
+        return(NULL)
+      }
+    )
+  
+  if(base::is.null(high.plot)){
+      return(base::invisible(NULL))
+    } else {
+      return(
+        dplyr::left_join(
+              x = data.plot,
+              y = high.plot,
+              by = "id"
+            ) %>%
+          dplyr::arrange(gene)
+        )
+    }
+  }
+```
+
+## [4.2.] Helper function plotOn()
+```{r}
+plotter <- function(comb, title, ran = NULL, leg = "right", coef = 0.5){
+    
+    xRange <- comb %$% base::range(UMAP_1)
+    yRange <- comb %$% base::range(UMAP_2)
+    xPos = xRange[1] +  (0.85*(base::abs(xRange[1])+xRange[2]))
+    yPos = yRange[2] - (0.95*(base::abs(yRange[1])+yRange[2]))
+    
+    ##Gene_expression_range
+    if(base::is.null(ran)){
+        rangE <- comb %$% base::range(gene)
+      } else {
+        rangE = ran
+      }
+    
+    ##Color_palette
+    cols <- base::c(
+        grDevices::colorRampPalette(
+            base::c("#e7f0fa", "#c9e2f6", "#95cbee", "#0099dc", "#4ab04a", "#ffd73e")
+          )(coef*100),
+        grDevices::colorRampPalette(
+          base::c("#eec73a", "#e29421", "#e29421", "#f05336","#ce472e"),
+          bias=2
+        )((1-coef)*100)
+      )
+    
+    ##Plotting
+    #ggtitle(title)
+    cur_plot <- ggplot2::ggplot(
+        data = comb,
+        mapping = aes(
+            x = UMAP_1,
+            y = UMAP_2,
+            colour = gene
+          )
+        ) +
+      ggrastr::geom_point_rast(
+          size = 0.25
+        ) +
+      scale_colour_gradientn(
+          colours = cols,
+          limits = base::c(rangE[1],rangE[2])
+        ) +
+      annotate(
+          geom = "text",
+          x = xPos,
+          y = yPos,
+          label = title,
+          colour = "black",
+          size = 4,
+          fontface = 4
+        ) +
+      theme_bw() +
+      theme(
+          plot.margin = grid::unit(base::c(0, 0, 0, 0), "cm"),
+          # plot.margin = unit(c(0,0.75,0,0.75), "pt"),
+          axis.title = element_blank(),
+          legend.position = leg,
+          # axis.text = element_text(
+          #   size = 6
+          # ),
+          aspect.ratio = 1
+        ) +
+      guides(
+        colour = guide_colourbar(
+          label.position = "right",
+          title = NULL,
+          title.position = "left",
+          title.theme = element_text(
+              angle = 90,
+              hjust = 0.5
+            ),
+          ticks=T,
+          nbin=100,
+          barheight=10,
+          label=T,
+          barwidth=0.5
+        )
+      )
+    
+    return(cur_plot)
+  }
+```
+
+#### 'Gene expression object'
+#### sco@assays$integrated@data %>% as_tibble(rownames = "id") %>% dplyr::filter(id == "KLF6")
+```{r}
+utils::str(sco)
+gene = "KLF6" # "KIT"
+geo <- .GlobalEnv$preper(gene,sco,"data","integrated")
+rangE <- base::range(geo$gene) 
+.GlobalEnv$plotter(geo,gene,rangE,"none")
+```
+
