@@ -13,7 +13,7 @@ utils::install.packages("tsne")
 ## [0.] Prerequsites -------------------------
 
 ## [0.0.] Load necesarray packages
-```{r}
+```{r message=FALSE}
 # base::library(CAGEfightR)
 # base::library(GenomicRanges)
 # base::library(readr)
@@ -42,6 +42,7 @@ txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 ```
 
 ## [0.1.] Load pooled cellFacets data (PL score > 0.75)
+#### 141 cellFacets of 700 donors
 ```{r}
 cellFacet.rse <- base::readRDS( # cellFacet.rse_1
   file = base::paste0(
@@ -990,12 +991,10 @@ sumstat_annot %>%
 ```{r}
 ldsc_score_ %>%
   dplyr::arrange(dplyr::desc(Prop._h2)) %>%
-  dplyr::summarise(
+  dplyr::reframe(
       ran = base::range(Prop._h2),
       ran_SNP = base::range(Prop._SNPs)
     )
-
-"anaemias"
 ```
 
 ## [2.1.] Add description to data
@@ -1212,7 +1211,8 @@ scaling_group <- function(df){
             max_enr = max_enr,
             min_enr = min_enr
           ),
-        Proportion_scaled = (Prop._SNPs - min_prop) / (max_prop - min_prop)
+        # Proportion_scaled = (Prop._SNPs - min_prop) / (max_prop - min_prop)
+        Proportion_scaled = (Prop._h2 - min_prop) / (max_prop - min_prop)
       )
     )
   }
@@ -1449,29 +1449,20 @@ df_sub <- ldsc_data %>%
   dplyr::arrange(dplyr::desc(Prop._h2))
 ```
 
-#### Evaluate
+#### Evaluation & normalization
 ```{r}
 dplyr::filter(ldsc_data, sample == "F5")
 dplyr::filter(df_sub, sample == "F5")
-```
 
-#### Normalization strategies and their evaluation
-```{r}
+base::range(ldsc_score_$Prop._SNPs)
+base::range(df_sub$Prop._SNPs)
+
+base::range(df_sub$Prop._h2)
+base::range(df_sub$Prop._h2)
+
 # ma <- base::max(df_sub$Prop._SNPs)
-# df_sub <- df_sub %>%
-#   dplyr::mutate(
-#       NormProp = Prop._SNPs/ma
-#     )
-# 
-# # ldsc_score_ %>%
-# #   dplyr::summarise(
-# #     ran = base::range(Prop._SNPs)
-# #   )
-# 
-# df_sub %>%
-#   dplyr::summarise(
-#       ranNP = base::range(NormProp)
-#     )
+# df_sub <- df_sub %>% dplyr::mutate(NormProp = Prop._SNPs/ma)
+# df_sub %>% dplyr::summarise(ranNP = base::range(NormProp))
 ```
 
 ```{r}
@@ -1485,9 +1476,9 @@ ggplot2::ggplot(
     ) +
   geom_tile(
       mapping = aes(
-          fill = Enrichment_scaled, 
-          height = Proportion_scaled, # NormProp, #Prop._h2 + 0.25, 
-          width  = Proportion_scaled # NormProp # Prop._h2 + 0.25
+          fill = Enrichment_scaled,
+          height = Proportion_scaled, # NormProp, # Prop._h2, # Prop._h2 + 0.25, # Prop._SNPs
+          width  = Proportion_scaled # NormProp # Prop._h2, # Prop._h2 + 0.25, # Prop._SNPs
         ),
       color = NA
     ) +
@@ -1535,8 +1526,11 @@ ggplot2::ggsave(
         base::format(base::Sys.Date(),"%Y%m%d"),
         "_heatmap",
         "_Immune",
-        "_NormalisedProportion",
-        "_ordered_v1",
+        # "_NormalisedProportion",
+        "_PropH2Scaled",
+        # "_unnormalized",
+        "_ordered",
+        "_v2",
         ".pdf"
       ),
     device = "pdf",
