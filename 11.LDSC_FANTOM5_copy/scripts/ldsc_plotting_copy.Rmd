@@ -995,6 +995,19 @@ ldsc_score_ %>%
       ran = base::range(Prop._h2),
       ran_SNP = base::range(Prop._SNPs)
     )
+
+ldsc_score_ %>%
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = Prop._SNPs
+      )
+    ) +
+  geom_density() +
+  theme_bw() +
+  theme(
+    aspect.ratio = 1
+  )
 ```
 
 ## [2.1.] Add description to data
@@ -1457,7 +1470,7 @@ dplyr::filter(df_sub, sample == "F5")
 base::range(ldsc_score_$Prop._SNPs)
 base::range(df_sub$Prop._SNPs)
 
-base::range(df_sub$Prop._h2)
+base::range(ldsc_score_$Prop._h2)
 base::range(df_sub$Prop._h2)
 
 # ma <- base::max(df_sub$Prop._SNPs)
