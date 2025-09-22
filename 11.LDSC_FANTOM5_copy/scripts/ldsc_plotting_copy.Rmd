@@ -1212,8 +1212,8 @@ scaling_group <- function(df){
   max_enr <- base::max(df$Enrichment, na.rm = TRUE)
   min_enr <- base::min(df$Enrichment, na.rm = TRUE)
   
-  max_prop <- base::max(df$Prop._SNPs, na.rm = TRUE)
-  min_prop <- base::min(df$Prop._SNPs, na.rm = TRUE)
+  max_prop <- base::max(df$Prop._h2, na.rm = TRUE)
+  min_prop <- base::min(df$Prop._h2, na.rm = TRUE)
   
   return(
     df %>%   
@@ -1249,6 +1249,65 @@ ldsc_data <- ldsc_score %>% # 592,140
   tidyr::unnest(cols = newData) %>%
   dplyr::ungroup()
 ```
+
+#### Global scaling of 'Prop._h2'
+```{r}
+rangG <- ldsc_score %>% # 592,140
+  dplyr::mutate(
+      Category = stringr::str_replace(Category, "(.*?)_.*$", "\\1")
+    ) %>%
+  dplyr::filter(
+      score == "0.5"
+    ) %>%
+  dplyr::pull(Prop._h2) %>%
+  base::range()
+
+scaling_individual <- function(Enrichment,max_enr,min_enr){
+  base::ifelse(
+      test = max_enr != min_enr,
+      yes = (Enrichment - min_enr) / (max_enr - min_enr),
+      no = 0
+    )
+  }
+
+scaling_group <- function(df){
+  max_enr <- base::max(df$Enrichment, na.rm = TRUE)
+  min_enr <- base::min(df$Enrichment, na.rm = TRUE)
+  
+  return(
+    df %>%   
+      dplyr::mutate(
+        Enrichment_scaled = purrr::map_dbl(
+            .x = Enrichment,
+            .f = scaling_individual,
+            max_enr = max_enr,
+            min_enr = min_enr
+          ),
+        Proportion_scaled = (Prop._h2 - rangG[1]) / (rangG[2] - rangG[1])
+      )
+    )
+  }
+
+ldsc_data <- ldsc_score %>% # 592,140
+  dplyr::mutate(
+      Category = stringr::str_replace(Category, "(.*?)_.*$", "\\1")
+    ) %>%
+  dplyr::filter(
+      score == "0.5"
+    ) %>%
+  dplyr::group_by(Trait) %>%
+  tidyr::nest() %>% 
+  dplyr::mutate(
+      newData = purrr::map(
+        .x = data,
+        .f = scaling_group
+      )
+    ) %>%
+  dplyr::select(-data) %>% 
+  tidyr::unnest(cols = newData) %>%
+  dplyr::ungroup()
+```
+
 
 ## [2.6.] Define groups of cellFacets to include into the visualization
 ```{r}
@@ -1540,10 +1599,10 @@ ggplot2::ggsave(
         "_heatmap",
         "_Immune",
         # "_NormalisedProportion",
-        "_PropH2Scaled",
+        "_PropH2ScaledGlobal",
         # "_unnormalized",
         "_ordered",
-        "_v2",
+        "_v4",
         ".pdf"
       ),
     device = "pdf",
