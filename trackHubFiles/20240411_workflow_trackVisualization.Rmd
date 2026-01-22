@@ -20,7 +20,10 @@ BiocManager::install("Bioconductor/RBGL")
 BiocManager::install("ggbio")
 devtools::install_github("thomasp85/patchwork")
 utils::install.packages("ggh4x")
-utils::install.packages("ggplot2", force = TRUE) # 4.0.1
+
+## Ensure R package 3.5.2 is installed
+utils::remove.packages("ggplot2")
+utils::install.packages("https://cran.r-project.org/src/contrib/Archive/ggplot2/ggplot2_3.5.2.tar.gz", type = "source")
 
 # utils::install.packages("xfun",dependencies = TRUE, INSTALL_opts = '--no-lock')
 # utils::install.packages("S7")
@@ -135,7 +138,7 @@ fillGaps <- function(data){
 ```
 
 ## [0.4.] Helper function plotTracks()
-#### Evaluate with 'data = cage_sel'
+#### Evaluate with 'data = cage_sel' and 'range = ran'
 ```{r}
 plotTracks <- function(data, range){
     start_pos <- BiocGenerics::start(range)
@@ -151,8 +154,8 @@ plotTracks <- function(data, range){
         )
       ) +
     ggplot2::geom_bar(
-        stat = "identity",
-        size = 0.5
+        stat = "identity"
+        # size = 0.5
       ) +
     ggplot2::scale_x_continuous(
         limits = base::c(start_pos,end_pos),  
