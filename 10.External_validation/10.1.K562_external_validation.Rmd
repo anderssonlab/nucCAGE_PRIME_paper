@@ -21,7 +21,6 @@ library(SummarizedExperiment)
 library(tibble)
 library(ggrepel)
 library(tidyr)
-library(ggpattern)
 
 theme_set(theme_bw(base_size = 10))
 
@@ -44,7 +43,7 @@ pooled.PRIMEloci.names <- c("K562_sld_C" = "PRIMEloci CAGE cells pooled",
                             "K562_sld_N" = "PRIMEloci CAGE nuclei pooled",
                             "K562_sld_10M_N" = "PRIMEloci CAGE nuclei 10M pooled")
 
-pooled.DL.file <- "../3.DivergentLoci/poolSub.k562.summitDLs.rmSingletons.rds"
+pooled.DL.file <- "../3.DivergentLoci/poolSub.k562.DLs.fantom5Style.rds"
 pooled.noise.file <- "../9.Noise/K562.poolSub.divnoise.csv"
 
 pooled.DL.names <- c("K562_C" = "Divergent loci CAGE cells",
@@ -256,24 +255,27 @@ FANTOM5.enhancers <- FANTOM5.enhancers[FANTOM5.enhancers$name %in% deframe(FANTO
 point.data[["FANTOM5 enhancers"]] <- FANTOM5.enhancers
 
 for (sample in c("K562_C","K562_N")) {
-  gr <- pooled.DLs[pooled.DLs$sample==sample]
-  gr <- gr[which(gr$score > deframe(pooled.noise.thresholds[,sample]))]
+  gr <- pooled.DLs[pooled.DLs$sample==sample & abs(pooled.DLs$directionality)<=0.8]
+  #gr <- gr[which(gr$score > deframe(pooled.noise.thresholds[,sample]))]
   point.data[[pooled.DL.names[sample]]] <- gr
+  
 
-  gr <- pooled.DLs[pooled.DLs$sample==sample & pooled.DLs$class=="distal"]
-  gr <- gr[which(gr$score > deframe(pooled.noise.thresholds[,sample]))]
+  gr <- pooled.DLs[pooled.DLs$sample==sample & pooled.DLs$class=="distal" & abs(pooled.DLs$directionality)<=0.8]
+  #gr <- gr[which(gr$score > deframe(pooled.noise.thresholds[,sample]))]
   point.data[[paste0(pooled.DL.names[sample]," distal")]] <- gr
+  
 
-  gr <- pooled.DLs[pooled.DLs$sample==sample & pooled.DLs$class=="proximal"]
-  gr <- gr[which(gr$score > deframe(pooled.noise.thresholds[,sample]))]
+  gr <- pooled.DLs[pooled.DLs$sample==sample & pooled.DLs$class=="proximal" & abs(pooled.DLs$directionality)<=0.8]
+  #gr <- gr[which(gr$score > deframe(pooled.noise.thresholds[,sample]))]
   point.data[[paste0(pooled.DL.names[sample]," proximal")]] <- gr
+
 }
 
 for (n in names(point.data)) {
   point.data[[n]] <- sort(point.data[[n]])
   seqlevels(point.data[[n]],pruning.mode="coarse") <- seqlevels(SNP.data)
   point.data[[n]] <- resize(point.data[[n]], width=resize.width, fix="center")
-  point.data[[n]] <- reduce(point.data[[n]],min.gapwidth=0)
+  point.data[[n]] <-  GenomicRanges::reduce(point.data[[n]],min.gapwidth=0)
 }
 
 point.data.assay <- names(point.data)
@@ -292,6 +294,31 @@ CRISPR.pos.data <- readRDS(CRISPR.pos.file)
 CRISPR.neg.data <- readRDS(CRISPR.neg.file)
 CRISPR.n <- length(CRISPR.pos.data)
 
+# add dc-tap-seq validations
+dc_tap <- read_tsv("/projects/ralab/people/mhf817/PL_dcTapSeq/media-3.tsv")
+
+dc_tap_hg38 <- dc_tap[,c(2:4,9:80)]
+colnames(dc_tap_hg38)[1:3] <- c("chr","start","end")
+dc_tap_hg38 <- makeGRangesFromDataFrame(dc_tap_hg38, keep.extra.columns = TRUE)
+
+dc.tap.enhancers.pos <- dc_tap_hg38[dc_tap_hg38$significant==TRUE & dc_tap_hg38$cell_type=="K562",]
+dc.tap.enhancers.neg <- dc_tap_hg38[dc_tap_hg38$significant==FALSE& dc_tap_hg38$cell_type=="K562",]
+
+
+mcols(dc.tap.enhancers.pos) <- NULL 
+mcols(dc.tap.enhancers.neg) <- NULL
+
+dc.tap.enhancers.pos <- unique(dc.tap.enhancers.pos)
+dc.tap.enhancers.neg <- unique(dc.tap.enhancers.neg)
+
+dc.tap.n <- length(dc.tap.enhancers.pos)
+
+# For some reason a lot of them overlap
+dc.tap.enhancers.neg <- subsetByOverlaps(
+    dc.tap.enhancers.neg,
+    dc.tap.enhancers.pos,
+    invert = TRUE
+)
 ```
 
 Point estimates
@@ -330,6 +357,9 @@ point.GWAS.df
 
 point.CRISPR.df <- point.enrichment.precision.recall(point.data, CRISPR.pos.data, CRISPR.neg.data, point.data.assay, point.data.loc)
 point.CRISPR.df
+
+point.dctap.df <- point.enrichment.precision.recall(point.data, dc.tap.enhancers.pos, dc.tap.enhancers.neg, point.data.assay, point.data.loc)
+point.dctap.df
 
 
 ```
@@ -651,6 +681,8 @@ pooled.PRIMEloci.GWAS.enrichment.recall.data <- enrichment.precision.recall(pool
 pooled.PRIMEloci.CRISPR.enrichment.recall.data <- enrichment.precision.recall(pooled.PRIMEloci, CRISPR.pos.data, CRISPR.neg.data, pooled.PRIMEloci.names)
 #PRIMEloci.CRISPR.enrichment.recall.data <- enrichment.precision.recall(PRIMEloci, CRISPR.pos.data, CRISPR.neg.data, PRIMEloci.names)
 
+pooled.PRIMEloci.dctap.enrichment.recall.data <- enrichment.precision.recall(pooled.PRIMEloci, dc.tap.enhancers.pos, dc.tap.enhancers.neg, pooled.PRIMEloci.names)
+
 ```
 
 
@@ -672,10 +704,16 @@ ggplot(pooled.PRIMEloci.GWAS.enrichment.recall.data, aes(recall, enrichment, col
   geom_point(data=point.GWAS.genome.df) + xlab(paste0("recall (n=",GWAS.n,")")) + scale_color_manual(values=col.scheme)
 ggsave(paste0("plots/K562_pooled_PRIMEloci_GWAS_enrichment_vs_recall_PIP_",GWAS.pip.thres,"_and_point_estimates_genome.pdf"),width=7,height=5)
 
-ggplot(pooled.PRIMEloci.CRISPR.enrichment.recall.data, aes(recall, precision, color=assay)) + geom_line(aes(group=sample)) +
+ggplot(pooled.PRIMEloci.CRISPR.enrichment.recall.data[pooled.PRIMEloci.CRISPR.enrichment.recall.data$score<=0.96,], aes(recall, precision, color=assay)) + geom_line(aes(group=sample)) +
   theme(aspect.ratio=1) +
   geom_point(data=point.CRISPR.genome.df) + xlab(paste0("recall (n=",CRISPR.n,")")) + scale_color_manual(values=col.scheme)
 ggsave(paste0("plots/K562_pooled_PRIMEloci_CRISPR_precision_vs_recall_and_point_estimates_genome.pdf"),width=7,height=5)
+
+point.dctap.genome.df <- subset(point.dctap.df, loc=="genome")
+ggplot(pooled.PRIMEloci.dctap.enrichment.recall.data, aes(recall, precision, color=assay)) + geom_line(aes(group=sample)) +
+  theme(aspect.ratio=1) +
+  geom_point(data=point.dctap.genome.df) + xlab(paste0("recall (n=",dc.tap.n,")")) + scale_color_manual(values=col.scheme)
+ggsave(paste0("plots/K562_pooled_PRIMEloci_dctap_precision_vs_recall_and_point_estimates_genome.pdf"),width=7,height=5)
 
 ```
 
@@ -757,7 +795,8 @@ gr_list[["eQTL.data"]] <- eQTL.data
 gr_list[["ClinVar.data"]] <- ClinVar.data
 gr_list[["CRISPR.data"]] <- CRISPR.pos.data
 gr_list[["CRISPR.neg.data"]] <- CRISPR.neg.data
-
+gr_list[["dcTap.pos.data"]] <- dc.tap.enhancers.pos
+gr_list[["dcTap.neg.data"]] <- dc.tap.enhancers.neg
 
 
 
@@ -805,7 +844,7 @@ create_upset_plot <- function(subset_name, gr_list, sets_to_include) {
 
 
 # Define sets to include for intersection analysis
-sets_to_include <-  names(gr_list) %in% c("PRIMEloci CAGE cells pooled", "PRIMEloci CAGE nuclei pooled","DHS")
+sets_to_include <-  names(gr_list) %in% c("PRIMEloci CAGE cells pooled", "PRIMEloci CAGE nuclei pooled","DHS","PINTS GRO/PRO-cap","K27ac","ENCODE cCRE","dREG PRO-seq","dREG qPRO-seq")
 
 # Generate plots for PRIMEloci/DHS focus
 s <- create_upset_plot("GWAS.data", gr_list, sets_to_include)
@@ -830,6 +869,16 @@ dev.off()
 
 s <- create_upset_plot("CRISPR.neg.data", gr_list, sets_to_include)
 pdf("plots/K562_PRIMEloci_CRISPR.neg_upset.pdf",height=6, width=8)
+s
+dev.off()
+
+s <- create_upset_plot("dcTap.pos.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIMEloci_dcTap.pos_upset.pdf",height=6, width=8)
+s
+dev.off()
+
+s <- create_upset_plot("dcTap.neg.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIMEloci_dcTap.neg_upset.pdf",height=6, width=8)
 s
 dev.off()
 
@@ -863,7 +912,15 @@ s
 dev.off()
 
 
+s <- create_upset_plot("dcTap.pos.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIMEloci_full_dcTap.pos_upset.pdf",height=6, width=8)
+s
+dev.off()
 
+s <- create_upset_plot("dcTap.neg.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIMEloci_full_dcTap.neg_upset.pdf",height=6, width=8)
+s
+dev.off()
 
 
 ```

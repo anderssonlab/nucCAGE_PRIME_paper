@@ -20,6 +20,7 @@ BiocManager::install("Bioconductor/RBGL")
 BiocManager::install("ggbio")
 devtools::install_github("thomasp85/patchwork")
 utils::install.packages("ggh4x")
+utils::install.packages("ggplot2", force = TRUE) # 4.0.1
 
 # utils::install.packages("xfun",dependencies = TRUE, INSTALL_opts = '--no-lock')
 # utils::install.packages("S7")
@@ -30,7 +31,7 @@ utils::install.packages("ggh4x")
 #### Evaluate with sessioninfo::session_info()
 ```{r message=FALSE, warning=FALSE}
 base::library(tidyverse)
-Biobase::package.version("ggplot2")
+utils::packageVersion("ggplot2") # 4.0.1
 
 # base::library(tidyverse, lib.loc = "/maps/projects/ralab/people/pbr316/bin/Rpackages")
 # base::library("AnnotationHub")
@@ -531,7 +532,7 @@ K562.CTSSs <- base::readRDS(
 ids <- SummarizedExperiment::colData(x = K562.CTSSs) %>%
   tibble::as_tibble() %>%
   dplyr::filter(
-      # pooled == "yes" &
+      pooled == "yes" & # Only pooled replicates for figure plots
       stringr::str_detect(ID, "Cap", negate = TRUE)
     ) %>%
   dplyr::pull(ID)
@@ -729,9 +730,9 @@ crispr_data <- crispr %>%
 #### GATA1 promoters: "chrX:48,786,301-48,788,293" & enhancer: "chrX:48,787,857-48,788,321"
 #### KLF2 promoter: "chr19:16,324,467-16,325,106"
 #### BCL2 promoter/PROMPTs: "chr18:63,317,868-63,320,926"
+#### "chr4:159,101,737-159,104,305", "chr4:144,080,727-144,158,976"
 ```{r}
-# l_ <- "chr4:159,101,737-159,104,305"
-l_ <- "chr4:144,080,727-144,158,976"
+l_ <- "chrX:48,786,301-48,788,293"
 ```
 
 #### see [4.10.] in 10.3.Cell_line_vs_trait_enrichment.Rmd for 'chr22:37109513:37109512'
@@ -862,6 +863,7 @@ end_pos <- BiocGenerics::end(ran)
 #### see [2.0.] in '20200721_workflow_DrosophilaCAGE.Rmd'
 ```{r}
 cage_sel_ <- .GlobalEnv$readRange(fs,ran)
+# dplyr::distinct(cage_sel_,sample)
 ```
 
 ## [3.2.] Summarise data
@@ -902,28 +904,29 @@ cage_sel <- cage_sel %>%
 ## [4.0.] Subset & convert scores from RangedSummarizedExperiment to tibble
 #### Evaluate samples "base::rownames(SummarizedExperiment::colData(GM12878.CTSSs.sub))"
 ```{r}
-# ovl <- IRanges::findOverlaps(
-#     query = ran,
-#     subject = GM12878.CTSSs.sub # K562.CTSSs.sub
-#   )
-# gr <- SummarizedExperiment::rowRanges(GM12878.CTSSs.sub)[ovl@to,] # K562.CTSSs.sub
-# 
-# crds <- gr %>% 
-#   base::as.data.frame() %>%
-#   tibble::as_tibble() %>%
-#   dplyr::mutate(
-#       start = pos,
-#       end = pos
-#     ) %>%
-#   dplyr::select(
-#       seqnames,start,end,strand
-#     )
-# 
-# scrs <- SummarizedExperiment::assay(GM12878.CTSSs.sub,"TPM")[ovl@to,] %>% # K562.CTSSs.sub
-#   base::as.matrix() %>%
-#   base::as.data.frame()
-# 
-# cage_sel_ <- dplyr::bind_cols(crds,scrs)
+object <- K562.CTSSs.sub # GM12878.CTSSs.sub # K562.CTSSs.sub
+ovl <- IRanges::findOverlaps(
+    query = ran,
+    subject = object
+  )
+gr <- SummarizedExperiment::rowRanges(object)[ovl@to,]
+
+crds <- gr %>%
+  base::as.data.frame() %>%
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+      start = pos,
+      end = pos
+    ) %>%
+  dplyr::select(
+      seqnames,start,end,strand
+    )
+
+scrs <- SummarizedExperiment::assay(object,"TPM")[ovl@to,] %>%
+  base::as.matrix() %>%
+  base::as.data.frame()
+
+cage_sel_ <- dplyr::bind_cols(crds,scrs)
 ```
 
 #### Evaluate with 'c = "HepG2"'
@@ -1027,43 +1030,44 @@ cage_sel_ <- dplyr::left_join(
 ```
 
 ## [4.1.] Summarise data
+#### Used with e.g., GM12878.CTSSs.sub, K562.CTSSs.sub
 #### Evaluate with 'dplyr::arrange(cage_sel,dplyr::desc(score))'
 #### Use 'TRUE ~ (20)*score' for GATA1 enhancer example
 ```{r}
-# regex_f = "(?<=C|N)\\d$" # ".*(.)$"
-# regex_s = "^(.*?)_(.*?)(\\d)?$" # "^(.*?)_(.*)(_)?(.)"
-# 
-# cage_sel <- cage_sel_ %>%
-#   tidyr::pivot_longer(
-#       cols = tidyselect::contains("_"),
-#       names_to = "sample",
-#       values_to = "score"
-#     ) %>%
-#   dplyr::mutate(
-#     replicate = stringr::str_extract(
-#         sample, regex_f
-#       ),
-#     replicate = dplyr::case_when(
-#         base::is.na(replicate) ~ "pool",
-#         TRUE ~ replicate
-#       ),
-#     type = stringr::str_replace(
-#           sample, regex_s, "\\2"
-#         ) %>%
-#       stringr::str_replace(
-#         .,"^(.*?)[_]$","\\1"
-#       )
-#     ) %>%
-#   dplyr::mutate(
-#     score = dplyr::case_when(
-#         strand == "-" ~ (-1)*score,
-#         TRUE ~ score
-#       ),
-#     strand = dplyr::case_when(
-#         strand == "+" ~ "plus",
-#         strand == "-" ~ "minus"
-#       )
-#     )
+regex_f = "(?<=C|N)\\d$" # ".*(.)$"
+regex_s = "^(.*?)_(.*?)(\\d)?$" # "^(.*?)_(.*)(_)?(.)"
+
+cage_sel <- cage_sel_ %>%
+  tidyr::pivot_longer(
+      cols = tidyselect::contains("_"),
+      names_to = "sample",
+      values_to = "score"
+    ) %>%
+  dplyr::mutate(
+    replicate = stringr::str_extract(
+        sample, regex_f
+      ),
+    replicate = dplyr::case_when(
+        base::is.na(replicate) ~ "pool",
+        TRUE ~ replicate
+      ),
+    type = stringr::str_replace(
+          sample, regex_s, "\\2"
+        ) %>%
+      stringr::str_replace(
+        .,"^(.*?)[_]$","\\1"
+      )
+    ) %>%
+  dplyr::mutate(
+    score = dplyr::case_when(
+        strand == "-" ~ (-1)*score,
+        TRUE ~ score
+      ),
+    strand = dplyr::case_when(
+        strand == "+" ~ "plus",
+        strand == "-" ~ "minus"
+      )
+    )
 ```
 
 ```{r}
@@ -1107,32 +1111,54 @@ insert <- tibble::tibble(
 cage_sel <- dplyr::bind_rows(cage_sel,insert)
 ```
 
+#### Evaluate with ins <- base::c("dendritic cell", "mast cell", "monocyte", "reticulocyte")
+```{r}
+cage_sel <- cage_sel_
+ins <- cage_sel %>% 
+  dplyr::distinct(sample) %>%
+  dplyr::pull(sample)
+
+ous <- facets_sel[!facets_sel %in% ins]
+
+insert <- tibble::tibble(
+    sample = ous,
+    seqnames = chrom,
+    start = start_pos,
+    end = end_pos,
+    strand = "plus",
+    score = base::as.double(0)
+  )
+
+cage_sel <- dplyr::bind_rows(cage_sel,insert)
+# dplyr::distinct(cage_sel,sample)
+```
+
 # [5.] Plot data -------------------------
 
 ## [5.0.] Plot genome tracks
 ```{r}
-# plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
-#   ggplot2::facet_wrap(
-#       facets = . ~ type + replicate,
-#       ncol = 1,
-#       strip.position = "right",
-#       scales = "free_y"
-#     ) +
-#   ggh4x::facetted_pos_scales(
-#     y = base::list(
-#       type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ scale_y_continuous(
-#           limits = base::c(-3,3)
-#         ),
-#       type %in% base::c("500K_N","5M_N","500K_C") ~ scale_y_continuous(
-#           limits = base::c(0,300)
-#         )
-#       )
-#     )
-# ggrastr::rasterise(
-#     input = plot,
-#     layers = "Bar",
-#     dpi = 300
-#   )
+plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
+  ggplot2::facet_wrap(
+      facets = . ~ type + replicate,
+      ncol = 1,
+      strip.position = "right",
+      scales = "free_y"
+    ) # +
+  # ggh4x::facetted_pos_scales(
+  #   y = base::list(
+  #     type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ scale_y_continuous(
+  #         limits = base::c(-3,3)
+  #       ),
+  #     type %in% base::c("500K_N","5M_N","500K_C") ~ scale_y_continuous(
+  #         limits = base::c(0,300)
+  #       )
+  #     )
+  #   )
+ggrastr::rasterise(
+    input = plot,
+    layers = "Bar",
+    dpi = 300
+  )
 ```
 
 ```{r}
@@ -1451,8 +1477,8 @@ sites_scores <- varPL %>%
 ```
 
 ```{r}
-minY = -500 # -50 # -500 # base::range(cage_sel_$score)[1]
-maxY = 500 # 50 # 500 # base::range(cage_sel_$score)[2]
+minY = -50 # -50 # -500 # base::range(cage_sel_$score)[1]
+maxY = 50 # 50 # 500 # base::range(cage_sel_$score)[2]
 
 coef = 0.75
 cols <- base::c(
@@ -1465,7 +1491,7 @@ cols <- base::c(
     )((1-coef)*100)
   )
 
-plot <- cage_sel_ %>%
+plot <- cage_sel %>%
   dplyr::mutate(
     sample = base::factor(
         x = sample,
@@ -1510,7 +1536,8 @@ for(ext in c("pdf", "png")){
       filename = base::paste0(
           here::here("trackHubFiles/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
-          "_KLF6",
+          # "_KLF6",
+          "_cKit",
           "_enhancer",
           out,
           ".", ext
@@ -1534,7 +1561,7 @@ txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 start_pos <- BiocGenerics::start(ran)
 end_pos <- BiocGenerics::end(ran)
 
-BiocManager::install("ggbio", version = '3.16')
+# BiocManager::install("ggbio", version = '3.16')
 
 plot_land <- ggbio::autoplot(
       object = txdb,
