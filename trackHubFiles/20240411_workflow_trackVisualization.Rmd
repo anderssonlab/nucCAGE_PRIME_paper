@@ -14,6 +14,21 @@ knitr::opts_chunk$set(echo = TRUE)
 #### Maybe required: "base::detach(name = tidyverse, unload = TRUE)", "utils::remove.packages("tidyverse")", "utils::remove.packages("ggplot2")"
 #### Lib locations: "/maps/projects/scarball/apps/Modules/software/R-packages/4.2.2", "/maps/projects/ralab/people/pbr316/bin/Rpackages"
 ```{r eval=FALSE}
+# tidyverse
+utils::install.packages(
+    pkgs = "tidyverse",
+    lib = "/maps/projects/ralab/people/pbr316/bin/Rpackages"
+  )
+
+## Ensure ggplot2 version 3.5.2 is installed
+utils::remove.packages("ggplot2")
+utils::install.packages(
+    "https://cran.r-project.org/src/contrib/Archive/ggplot2/ggplot2_3.5.2.tar.gz",
+    type = "source",
+    repos = NULL
+  )
+utils::packageVersion("ggplot2")
+
 BiocManager::install("AnnotationHub")
 BiocManager::install("remotes")
 BiocManager::install("Bioconductor/RBGL")
@@ -21,13 +36,12 @@ BiocManager::install("ggbio")
 devtools::install_github("thomasp85/patchwork")
 utils::install.packages("ggh4x")
 
-## Ensure R package 3.5.2 is installed
-utils::remove.packages("ggplot2")
-utils::install.packages("https://cran.r-project.org/src/contrib/Archive/ggplot2/ggplot2_3.5.2.tar.gz", type = "source")
-
-# utils::install.packages("xfun",dependencies = TRUE, INSTALL_opts = '--no-lock')
-# utils::install.packages("S7")
-# utils::install.packages(pkgs = "tidyverse", lib = "/maps/projects/ralab/people/pbr316/bin/Rpackages")
+utils::install.packages(
+    "xfun",
+    dependencies = TRUE,
+    INSTALL_opts = '--no-lock'
+  )
+utils::install.packages("S7")
 ```
 
 ## [0.1.] Load necessary packages
@@ -253,7 +267,7 @@ writeBw <- function(object, dir, replicates = "all", inputAssay = "counts", spli
  }
 ```
 
-## [1.] Prerequisites --------------------
+## [1.] Read in data --------------------
 
 ## [1.0.] Color palette
 ```{r}
@@ -303,7 +317,7 @@ cols <- base::c(
 #   ]
 ```
 
-## [1.2.] Build lookup table for colors
+## [1.2.] Build lookup table for colors associated with annotations
 #### 'col2rgb(cols3[1])[1:3,] %>% unname() %>% paste(collapse = ",")'
 ```{r}
 # annos <- base::unique(
@@ -316,7 +330,9 @@ cols <- base::c(
 #   )
 ```
 
-## [1.3.] Identify K562 and GM12878 bigwig files to be read
+## ---------------
+
+## [1.3.] Read in bigwig files - K562 and GM12878
 ```{r}
 fs <- base::list.files(
       path = here::here("trackHubFiles"),
@@ -327,7 +343,7 @@ fs <- base::list.files(
   # stringr::str_subset("K562") # K562-specific
 ```
 
-## [1.4.] Identify FANTOM5 immune tracks (Fig6)
+## [1.4.] Read in bigwig files - FANTOM5 immune tracks (Fig6)
 ```{r}
 facets_sel <- base::c(
     "mast cell", "dendritic cell", "monocyte",
@@ -341,7 +357,9 @@ fs <- base::list.files(
   stringr::str_subset(base::paste0(facets_sel,collapse = "|"))
 ```
 
-## [1.5.] Load HepG2-, HCT116-, A549-CTSS objects & adapt names (Fig5)
+## ---------------
+
+## [1.5.] Read in CTSSs - Load HepG2-, HCT116-, A549-CTSS objects & adapt names (Fig5)
 #### Evaluate with 'rsen = "A549"', 'SummarizedExperiment::colData(CTSSs.objects[[rsen]])'
 ```{r}
 CTSSs.objects_ <- base::list.files(
@@ -374,7 +392,7 @@ base::names(CTSSs.objects) <- stringr::str_replace(
   )
 ```
 
-## [1.6.] Add the corresponding GM12878 and K562 poolSub data to CTSSs.objects of [1.5.] (Fig5)
+## [1.6.] Read in CTSSs - Add the corresponding K562 poolSub data to CTSSs.objects of [1.5.] (Fig5)
 #### Evaluate with SummarizedExperiment::colData(K562.CTSSs.sub), SummarizedExperiment::assay(K562.CTSSs.sub, i = "counts.noSingletons")
 ```{r}
 K562.CTSSs <- base::readRDS(
@@ -438,6 +456,7 @@ tpm[(Matrix::rowSums(tpm) != 0),] # 8,810,502
 SummarizedExperiment::rowRanges(K562.CTSSs)[(Matrix::rowSums(tpm) != 0),] # 8,810,502
 ```
 
+## [1.7.] Read in CTSSs - Add the corresponding GM12878 poolSub data to CTSSs.objects of [1.5.] (Fig5)
 ```{r}
 GM12878.CTSSs <- base::readRDS(
   file = base::paste0(
@@ -497,7 +516,7 @@ setdiff(
   )
 ```
 
-## [1.7.] Load prepared 'all CTSS' - objects for GM12878 & K562
+## [1.8.] Read in CTSSs - Load prepared 'all CTSS' - objects for GM12878 & K562
 #### Evaluate with 'SummarizedExperiment::colData(GM12878.CTSSs.sub)' & 'SummarizedExperiment::assay(GM12878.CTSSs.sub, "counts")'
 ```{r}
 GM12878.CTSSs <- base::readRDS(
@@ -546,7 +565,7 @@ K562.CTSSs.sub <- S4Vectors::subset(
   )
 ```
 
-## [1.8.] Subset for other samples of interest, e.g., 5M, Triptolide or GROcap
+## [1.9.] Read in CTSSs - Subset for other samples of interest, e.g., 5M, Triptolide or GROcap
 ```{r}
 # ##GM12878 5M and 500k samples
 # ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
@@ -574,7 +593,7 @@ K562.CTSSs.sub <- S4Vectors::subset(
 #   dplyr::pull(ID)
 ```
 
-## [1.9.] Write out bigWig files
+## [1.10.] Write out bigWig files
 ```{r}
 samples = base::rownames(
     SummarizedExperiment::colData(GM12878.CTSSs.sub)
@@ -623,7 +642,7 @@ purrr::map(
   )
 ```
 
-## [1.10.] TMM normalise data
+## [1.11.] TMM normalise data
 ```{r}
 # base::debugonce(edgeR::calcNormFactors)
 # facs <- edgeR::calcNormFactors(
@@ -860,7 +879,7 @@ start_pos <- BiocGenerics::start(ran)
 end_pos <- BiocGenerics::end(ran)
 ```
 
-## [3.] CAGE_preparation_BigWig --------------------
+## [3.] CAGE preparation based on bigwigs --------------------
 
 ## [3.1.] Read in tpm scores in selected ranges
 #### see [2.0.] in '20200721_workflow_DrosophilaCAGE.Rmd'
@@ -902,7 +921,7 @@ cage_sel <- cage_sel %>%
     )
 ```
 
-## [4.] CAGE_preparation_CTSSs --------------------
+## [4.] CAGE preparation based on CTSSs --------------------
 
 ## [4.0.] Subset & convert scores from RangedSummarizedExperiment to tibble
 #### Evaluate samples "base::rownames(SummarizedExperiment::colData(GM12878.CTSSs.sub))"
