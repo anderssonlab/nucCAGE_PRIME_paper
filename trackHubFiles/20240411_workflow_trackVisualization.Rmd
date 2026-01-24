@@ -754,7 +754,7 @@ crispr_data <- crispr %>%
 #### BCL2 promoter/PROMPTs: "chr18:63,317,868-63,320,926"
 #### "chr4:159,101,737-159,104,305", "chr4:144,080,727-144,158,976"
 ```{r}
-l_ <- "chrX:48,786,301-48,788,293"
+l_ <- "chrX:48,787,857-48,788,321"
 ```
 
 #### see [4.10.] in 10.3.Cell_line_vs_trait_enrichment.Rmd for 'chr22:37109513:37109512'
@@ -1163,8 +1163,8 @@ plot <- .GlobalEnv$plotTracks(cage_sel, ran) +
   ggplot2::facet_wrap(
       facets = . ~ type + replicate,
       ncol = 1,
-      strip.position = "right",
-      scales = "free_y"
+      # scales = "free_y",
+      strip.position = "right"
     ) # +
   # ggh4x::facetted_pos_scales(
   #   y = base::list(
@@ -1181,6 +1181,65 @@ ggrastr::rasterise(
     layers = "Bar",
     dpi = 300
   )
+```
+
+#### Plot GATA1 enhancer: "chrX:48,787,857-48,788,321"
+```{r}
+plot <- cage_sel %>%
+  dplyr::mutate(
+    type = base::factor(
+        x = type,
+        levels = base::c("C","N","N_10M"),
+        ordered = TRUE
+      ),
+    score = dplyr::case_when(
+        strand == "plus" ~ score*10,
+        TRUE ~ score
+      )
+    ) %>%
+  .GlobalEnv$plotTracks(., ran) +
+    ggplot2::facet_wrap(
+        facets = . ~ type,
+        ncol = 1,
+        strip.position = "right"
+        # scales = "free_y"
+      ) +
+    ggh4x::facetted_pos_scales(
+      y = base::list(
+        type %in% base::c("C","N","N_10M") ~ scale_y_continuous(
+            limits = base::c(-7.5,7.5),
+            breaks = base::c(-5,0,5),
+            labels = base::c(-5,0,0.5)
+          )
+        )
+      )
+ggrastr::rasterise(
+    input = plot,
+    layers = "Bar",
+    dpi = 300
+  )
+```
+
+## Print data
+```{r eval=FALSE}
+for(ext in c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("trackHubFiles/plots/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_GATA1",
+          "_K562CTSSPool",
+          "_enhancer",
+          out,
+          ".", ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 2,
+      height = 4
+    )
+  }
 ```
 
 ```{r}
