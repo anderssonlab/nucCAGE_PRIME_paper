@@ -36,11 +36,12 @@ cds <- BiocGenerics::sort(cds)
 ## [1.1.] Overlap CDSs with background SNPs (9,913,974 unique autosomal SNP locations)
 #### Remove SNPs overlapping with CDSs
 ```{r}
+## Read in SNP.file
 SNP.data <- rtracklayer::import.bed( # 9.991.229
    con = base::paste0(
        here::here("0.External_resources/"),
        "all.bg.SNPs.hg38.baseline.v1.1.bed.sorted"
-     ) ## SNP.file
+     )
   )
 SNP.data <- BiocGenerics::sort(SNP.data)
 olap <- GenomicRanges::findOverlaps( ## 93.742
@@ -68,6 +69,12 @@ promoters <- IRanges::promoters(
 ## PRIMEloci, pooled replicates; evaluate with n = "K562_sld_C" # 4.049.578
 ```{r}
 resize.width = 200
+pooled.PRIMEloci.files <- base::c(
+    "K562_sld_C" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_C.bed"),
+    "K562_sld_N" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N.bed"),
+    "K562_sld_10M_N" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N_10M.bed")
+  )
+
 pooled.PRIMEloci <- base::lapply(
   X = base::names(pooled.PRIMEloci.files),
   FUN = function(n) {
@@ -314,11 +321,11 @@ for (n in base::names(dREG.files)) {
 ## [1.11.] Read in all pooled PRIMEloci files
 ```{r}
 PRIMEloci.thres = 0.75
-pooled.PRIMEloci.files <- base::c(
-    "K562_sld_C" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_C.bed"),
-    "K562_sld_N" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N.bed"),
-    "K562_sld_10M_N" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N_10M.bed")
-  )
+# pooled.PRIMEloci.files <- base::c(
+#     "K562_sld_C" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_C.bed"),
+#     "K562_sld_N" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N.bed"),
+#     "K562_sld_10M_N" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N_10M.bed")
+#   )
 pooled.PRIMEloci.names <- base::c(
     "K562_sld_C" = "PRIMEloci CAGE cells pooled",
     "K562_sld_N" = "PRIMEloci CAGE nuclei pooled",
