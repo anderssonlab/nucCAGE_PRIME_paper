@@ -2130,12 +2130,14 @@ ggplot2::ggplot(
       )
     ) +
   geom_line(
-    mapping = aes(
-        group = sample
-      )
+      mapping = aes(
+          group = sample
+        ),
+      size = 1
     ) +
   geom_point(
-      data = point.dctap.genome.df
+      data = point.dctap.genome.df,
+      size = 3
     ) +
   xlab(
     base::paste0(
@@ -2144,6 +2146,7 @@ ggplot2::ggplot(
   scale_color_manual(
       values = col.scheme
     ) +
+  theme_bw() +
   theme(
       aspect.ratio = 1
     )
@@ -2152,7 +2155,7 @@ ggplot2::ggplot(
 ```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
-        here::here("10.External_validation/plots/"),
+        here::here("10.External_validation/"),
         "K562_pooled_PRIMEloci_dctap_precision_vs_recall_and_point_estimates_genome.pdf"
       ),
     width = 7,
