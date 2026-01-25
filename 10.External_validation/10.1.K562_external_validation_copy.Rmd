@@ -717,6 +717,14 @@ point.CRISPR.df <- .GlobalEnv$point.enrichment.precision.recall(
     assay = point.data.assay,
     location = point.data.loc
   )
+
+point.dctap.df <- .GlobalEnv$point.enrichment.precision.recall(
+    data = point.data,
+    fg.data = dc.tap.enhancers.pos,
+    bg.data = dc.tap.enhancers.neg,
+    assay = point.data.assay,
+    location = point.data.loc
+  )
 ```
 
 ## [3.] Visualize ClinVar results -------------------------
@@ -766,7 +774,7 @@ ggplot2::ggplot(
 ```
 
 ## [3.2.] Printint plots
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -811,7 +819,7 @@ ggplot2::ggplot(
 ```
 
 ## [3.4.] Printint plots
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -864,7 +872,7 @@ ggplot2::ggplot(
 ```
 
 ## [3.7.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -917,7 +925,7 @@ ggplot2::ggplot(
 ```
 
 ## [3.10.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1005,7 +1013,7 @@ ggplot2::ggplot(
 ```
 
 ## [3.13.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1055,7 +1063,7 @@ ggplot2::ggplot(
 ```
 
 ## [4.3.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1104,7 +1112,7 @@ ggplot2::ggplot(
 ```
 
 ## [4.5.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1159,7 +1167,7 @@ ggplot2::ggplot(
 ```
 
 ## [4.8.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1212,7 +1220,7 @@ ggplot2::ggplot(
 ```
 
 ## [4.11.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1302,7 +1310,7 @@ ggplot2::ggplot(
 ```
 
 ## [4.14.] Plot using ggplot with adjusted spacing
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1352,7 +1360,7 @@ ggplot2::ggplot(
 ```
 
 ## [5.2.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
       here::here("10.External_validation/plots/"),
@@ -1400,7 +1408,7 @@ ggplot2::ggplot(
 ```
 
 ## [5.4.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1455,7 +1463,7 @@ ggplot2::ggplot(
 ```
 
 ## [5.7.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1507,7 +1515,7 @@ ggplot2::ggplot(
 ```
 
 ## [5.10.] Plot data
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1559,7 +1567,7 @@ ggplot2::ggplot(
 ```
 
 ## [6.2.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1605,7 +1613,7 @@ ggplot2::ggplot(
 ```
 
 ## [6.4.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1657,7 +1665,7 @@ ggplot2::ggplot(
 ```
 
 ## [6.7.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1706,7 +1714,7 @@ ggplot2::ggplot(
 ```
 
 ## [6.10.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1798,7 +1806,7 @@ ggplot2::ggplot(
 ```
 
 ## [6.13.] Plot data
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1911,7 +1919,14 @@ pooled.PRIMEloci.CRISPR.enrichment.recall.data <- .GlobalEnv$enrichment.precisio
     data = pooled.PRIMEloci, # PRIMEloci
     fg.data = CRISPR.pos.data,
     bg.data = CRISPR.neg.data,
-    assay = pooled.PRIMEloci.names #PRIMEloci.names
+    assay = pooled.PRIMEloci.names # PRIMEloci.names
+  )
+
+pooled.PRIMEloci.dctap.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIMEloci,
+    fg.data = dc.tap.enhancers.pos,
+    bg.data = dc.tap.enhancers.neg,
+    assay = pooled.PRIMEloci.names # PRIMEloci.names
   )
 ```
 
@@ -1950,7 +1965,7 @@ ggplot2::ggplot(
 ```
 
 ## [8.1.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1995,7 +2010,7 @@ ggplot2::ggplot(
 ```
 
 ## [8.3.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2042,7 +2057,7 @@ ggplot2::ggplot(
 ```
 
 ## [8.5.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2089,7 +2104,7 @@ ggplot2::ggplot(
 ```
 
 ## [8.7.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2101,7 +2116,52 @@ ggplot2::ggsave(
   )
 ```
 
-## [8.8.] Prepare data for running distal-proximal analysis again
+## [8.8.] Plot data
+```{r}
+point.dctap.genome.df <- base::subset(
+    x = point.dctap.df, loc == "genome"
+  )
+ggplot2::ggplot(
+    data = pooled.PRIMEloci.dctap.enrichment.recall.data,
+    mapping = aes(
+        x = recall,
+        y = precision,
+        color = assay
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  geom_point(
+      data = point.dctap.genome.df
+    ) +
+  xlab(
+    base::paste0(
+        "recall (n=",dc.tap.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  theme(
+      aspect.ratio = 1
+    )
+```
+## [8.9.] Print plot
+```{r eval=FALSE}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIMEloci_dctap_precision_vs_recall_and_point_estimates_genome.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [8.10.] Prepare data for running distal-proximal analysis again
 #### Specifically for distal
 ```{r}
 pooled.PRIMEloci.distal <- base::lapply(
@@ -2118,7 +2178,7 @@ pooled.PRIMEloci.proximal <- base::lapply(
   )
 ```
 
-## [8.9.] Run separate analysis for distal and proximal
+## [8.11.] Run separate analysis for distal and proximal
 ```{r}
 pooled.PRIMEloci.GWAS.enrichment.recall.data.distal <- .GlobalEnv$enrichment.precision.recall(
     data = pooled.PRIMEloci.distal,
@@ -2135,12 +2195,12 @@ pooled.PRIMEloci.GWAS.enrichment.recall.data.proximal <- .GlobalEnv$enrichment.p
   )
 ```
 
-## [8.10.] Subset data for plotting
+## [8.12.] Subset data for plotting
 ```{r}
 point.GWAS.genome.distal <- base::subset(point.GWAS.df, loc == "distal")
 ```
 
-## [8.11.] Plot data
+## [8.13.] Plot data
 ```{r}
 ggplot2::ggplot(
     data = pooled.PRIMEloci.GWAS.enrichment.recall.data.distal[
@@ -2172,8 +2232,8 @@ ggplot2::ggplot(
     )
 ```
 
-## [8.12.] Print plot
-```{r}
+## [8.14.] Print plot
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2185,12 +2245,12 @@ ggplot2::ggsave(
   )
 ```
 
-## [8.13.] Subset data for plotting
+## [8.15.] Subset data for plotting
 ```{r}
 point.GWAS.genome.proximal <- base::subset(point.GWAS.df, loc == "proximal")
 ```
 
-## [8.14.] Plot data
+## [8.16.] Plot data
 ```{r}
 ggplot2::ggplot(
     data = pooled.PRIMEloci.GWAS.enrichment.recall.data.proximal[
@@ -2222,8 +2282,8 @@ ggplot2::ggplot(
     )
 ```
 
-## [8.15.] Print plot
-```{r}
+## [8.17.] Print plot
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2260,7 +2320,7 @@ ggplot2::ggplot(
 ```
 
 ## [9.1.] Print data
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2294,7 +2354,7 @@ ggplot2::ggplot(
 ```
 
 ## [9.3.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2328,7 +2388,7 @@ ggplot2::ggplot(
 ```
 
 ## [9.5.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2364,7 +2424,7 @@ ggplot2::ggplot(
 ```
 
 ## [9.7.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2400,7 +2460,7 @@ ggplot2::ggplot(
 ```
 
 ## [9.9.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2434,7 +2494,7 @@ ggplot2::ggplot(
 ```
 
 ## [9.11.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2470,7 +2530,7 @@ ggplot2::ggplot(
 ```
 
 ## [9.13.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2504,7 +2564,7 @@ ggplot2::ggplot(
 ```
 
 ## [9.15.] Print data
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2526,6 +2586,8 @@ gr_list[["eQTL.data"]] <- eQTL.data
 gr_list[["ClinVar.data"]] <- ClinVar.data
 gr_list[["CRISPR.data"]] <- CRISPR.pos.data
 gr_list[["CRISPR.neg.data"]] <- CRISPR.neg.data
+gr_list[["dcTap.pos.data"]] <- dc.tap.enhancers.pos
+gr_list[["dcTap.neg.data"]] <- dc.tap.enhancers.neg
 ```
 
 ```{r}
@@ -2646,6 +2708,20 @@ dev.off()
 ```{r}
 s <- create_upset_plot("CRISPR.neg.data", gr_list, sets_to_include)
 pdf("plots/K562_PRIMEloci_full_CRISPR.neg_upset.pdf",height=6, width=8)
+s
+dev.off()
+```
+
+```{r}
+s <- create_upset_plot("dcTap.pos.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIMEloci_dcTap.pos_upset.pdf",height=6, width=8)
+s
+dev.off()
+```
+
+```{r}
+s <- create_upset_plot("dcTap.neg.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIMEloci_dcTap.neg_upset.pdf",height=6, width=8)
 s
 dev.off()
 ```
