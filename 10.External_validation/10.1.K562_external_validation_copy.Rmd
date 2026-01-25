@@ -65,7 +65,7 @@ promoters <- IRanges::promoters(
   )
 ```
 
-## [1.3.] Annotate identified PRIMElocis by txdb annotated promoters into proximal (overlapping with promoter) and distal
+## [1.3.] Annotate identified PRIMElocis by txdb annotated promoters into proximal (overlapping with promoter) or distal
 ## PRIMEloci, pooled replicates; evaluate with n = "K562_sld_C" # 4.049.578
 ```{r}
 resize.width = 200
@@ -105,7 +105,7 @@ pooled.PRIMEloci <- base::lapply(
 base::names(pooled.PRIMEloci) <- base::names(pooled.PRIMEloci.files)
 ```
 
-## [1.4.] Annotate identified Divergent loci by txdb annotated promoters into proximal (overlapping with promoter) and distal
+## [1.4.] Annotate identified Divergent loci by txdb annotated promoters into proximal (overlapping with promoter) or distal
 ```{r}
 pooled.DLs <- base::readRDS(
     file = base::paste0(
@@ -319,6 +319,7 @@ for (n in base::names(dREG.files)) {
 ```
 
 ## [1.11.] Read in all pooled PRIMEloci files
+#### see [1.3.] for øpooled.PRIMEloci.filesø object
 ```{r}
 PRIMEloci.thres = 0.75
 # pooled.PRIMEloci.files <- base::c(
@@ -583,6 +584,47 @@ CRISPR.neg.data <- base::readRDS(
     )
   )
 CRISPR.n <- base::length(CRISPR.pos.data)
+```
+
+## [1.19.] Read in DC-TAPseq data
+#### Add dc-tap-seq validations
+```{r}
+dc_tap <- readr::read_delim(
+    file = base::paste0(
+        here::here("0.External_resources/PL_dcTapSeq/"),
+        "media-3.tsv"
+      ),
+    delim = "\t"
+  )
+
+dc_tap_hg38 <- dc_tap[,base::c(2:4,9:80)]
+base::colnames(dc_tap_hg38)[1:3] <- base::c("chr","start","end")
+dc_tap_hg38 <- GenomicRanges::makeGRangesFromDataFrame(
+    df = dc_tap_hg38,
+    keep.extra.columns = TRUE
+  )
+
+dc.tap.enhancers.pos <- dc_tap_hg38[
+    dc_tap_hg38$significant == TRUE & dc_tap_hg38$cell_type == "K562",
+  ]
+dc.tap.enhancers.neg <- dc_tap_hg38[
+    dc_tap_hg38$significant == FALSE & dc_tap_hg38$cell_type == "K562",
+  ]
+
+S4Vectors::mcols(dc.tap.enhancers.pos) <- NULL 
+S4Vectors::mcols(dc.tap.enhancers.neg) <- NULL
+
+dc.tap.enhancers.pos <- base::unique(dc.tap.enhancers.pos) # 258 -> 223
+dc.tap.enhancers.neg <- base::unique(dc.tap.enhancers.neg) # 7217 -> 923
+
+dc.tap.n <- base::length(dc.tap.enhancers.pos)
+
+# For some reason a lot of them overlap
+dc.tap.enhancers.neg <- IRanges::subsetByOverlaps( # 923 -> 725
+    dc.tap.enhancers.neg,
+    dc.tap.enhancers.pos,
+    invert = TRUE
+  )
 ```
 
 # [2.] Calculate precision, enrichment and recall -------------------------
@@ -979,8 +1021,8 @@ ggplot2::ggsave(
 
 ## [4.1.] Plot eQTL point estimate results
 ```{r}
-point.eQTL.genome.df <- subset(point.eQTL.df, loc=="genome")
-point.eQTL.non.genome.df <- subset(point.eQTL.df, loc!="genome")
+point.eQTL.genome.df <- subset(point.eQTL.df, loc == "genome")
+point.eQTL.non.genome.df <- subset(point.eQTL.df, loc != "genome")
 ```
 
 ## [4.2.] Visualization
