@@ -51,13 +51,13 @@ compute_data_ave <- function(df_list) {
 
 ## [1.0.] Read in data
 ```{r}
-K562_C <- base::readRDS(
+K562_C <- base::readRDS( # 44,743
     file = base::paste0(
       here::here("7.Model_development/"),
       "K562_C_endres_v2_shap-subtnorm-plus-minus-gr.rds"
     )
   )
-K562_N <- base::readRDS(
+K562_N <- base::readRDS( # 116,199
   file = base::paste0(
     here::here("7.Model_development/"),
     "K562_N_endres_v2_shap-subtnorm-plus-minus-gr.rds"
@@ -66,18 +66,18 @@ K562_N <- base::readRDS(
 ```
 
 ```{r}
-K562_C$gr <- CAGEfightR::assignTxType(K562_C$gr, txdb)
-K562_N$gr <- CAGEfightR::assignTxType(K562_N$gr, txdb)
+K562_C$gr <- CAGEfightR::assignTxType(K562_C$gr, txdb) # 44,743
+K562_N$gr <- CAGEfightR::assignTxType(K562_N$gr, txdb) # 116,199
 ```
 
 ```{r}
-K562_C <- .GlobalEnv$granges_to_df(K562_C, txdb)
-K562_N <- .GlobalEnv$granges_to_df(K562_N, txdb)
+K562_C <- .GlobalEnv$granges_to_df(K562_C, txdb) # 44,743
+K562_N <- .GlobalEnv$granges_to_df(K562_N, txdb) # 116,199
 ```
 
 ```{r}
-data_ave_C <- .GlobalEnv$compute_data_ave(K562_C)
-data_ave_N <- .GlobalEnv$compute_data_ave(K562_N)
+data_ave_C <- .GlobalEnv$compute_data_ave(K562_C) # 401
+data_ave_N <- .GlobalEnv$compute_data_ave(K562_N) # 401
 ```
 
 ```{r}
@@ -142,7 +142,7 @@ data_ave_C <- dplyr::mutate(
     sample = "cells"
   )
 data_ave_N <- dplyr::mutate(
-    .data = data_ave_C,
+    .data = data_ave_N,
     sample = "nuclei"
   )
 
