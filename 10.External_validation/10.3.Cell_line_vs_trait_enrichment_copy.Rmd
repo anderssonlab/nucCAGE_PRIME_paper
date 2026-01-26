@@ -111,6 +111,36 @@ pooled.PRIMEloci <- base::lapply(
 base::names(pooled.PRIMEloci) <- base::names(pooled.PRIMEloci.files)
 ```
 
+#### Evaluate
+```{r}
+o <- base::sapply(pooled.PRIMEloci, length)
+tibble::tibble(
+      names = base::names(o),
+      values = o
+    ) %>%
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = names,
+        y = values
+      )
+    ) +
+  geom_bar(
+      stat = "identity"
+    ) +
+  theme_bw() +
+  theme(
+    aspect.ratio = 1,
+    axis.text.x = element_text(
+      angle = 90,
+      hjust = 1,
+      vjust = 0.5
+    ),
+    axis.title = element_blank()
+  )
+```
+
+
 ## [1.3.] Prepare non-subset PRIMEloci set
 #### Neither thresholded nor resized as in [1.2.]
 ```{r}
@@ -138,7 +168,7 @@ base::names(unfiltered.PRIMEloci) <- base::names(pooled.PRIMEloci.files)
 #### Read out traits associated with these intergenic GWAS
 ```{r}
 GWAS.pip.thres = 0.2
-GWAS.data <- readr::read_tsv( # 66.638
+GWAS.data_ <- readr::read_tsv( # 66.638
     file = base::paste0(
         here::here("0.External_resources/"),
         "UKBB_94traits_release1_pip01_clean_uniq_hg38.bed"
@@ -146,13 +176,13 @@ GWAS.data <- readr::read_tsv( # 66.638
     col_names = FALSE,
     show_col_types = FALSE
   )
-base::colnames(GWAS.data) <- base::c(
+base::colnames(GWAS.data_) <- base::c(
     "chr","start","end",
     "name","score","strand",
     "RS_id","trait","pip"
   )
 GWAS.data <- GenomicRanges::makeGRangesFromDataFrame( # 66.638
-    df = GWAS.data,
+    df = GWAS.data_,
     keep.extra.columns = TRUE,
     starts.in.df.are.0based = TRUE
   )
@@ -172,6 +202,9 @@ GWAS.data <- GWAS.data[-S4Vectors::queryHits(olap)] ## 28.182 / 28.068
 #### Read out traits based on the residual, filtered GWAS
 ```{r}
 traits <- base::unique(GWAS.data$trait) # 94
+
+# Evaluation
+dplyr::distinct(GWAS.data_,trait) # 94
 ```
 
 ## [1.5.] Overlap PRIMElocis with GWAS in a trait-specific manner to subset traits
@@ -242,19 +275,19 @@ trait.matrices <- base::lapply(
         )
       
       for (n in base::names(pooled.PRIMEloci)) {
-          pd <- unfiltered.PRIMEloci[[n]]
-          GWAS.olap <- IRanges::findOverlaps(
-              query = g,
-              subject = pd,
-              minoverlap = 1
+        pd <- unfiltered.PRIMEloci[[n]]
+        GWAS.olap <- IRanges::findOverlaps(
+            query = g,
+            subject = pd,
+            minoverlap = 1
+          )
+        m[base::unique(S4Vectors::queryHits(GWAS.olap)),n] <- base::as.numeric(
+          base::by(
+              data = pd$score[S4Vectors::subjectHits(GWAS.olap)],
+              INDICES = S4Vectors::queryHits(GWAS.olap),
+              FUN = base::max
             )
-          m[base::unique(S4Vectors::queryHits(GWAS.olap)),n] <- base::as.numeric(
-            base::by(
-                data = pd$score[S4Vectors::subjectHits(GWAS.olap)],
-                INDICES = S4Vectors::queryHits(GWAS.olap),
-                FUN = base::max
-              )
-            )
+          )
         }
       return(m)
     }
