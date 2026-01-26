@@ -41,14 +41,14 @@ SNP.data <- rtracklayer::import.bed( # 9.991.229
        "all.bg.SNPs.hg38.baseline.v1.1.bed.sorted"
      ) ## SNP.file
   )
-SNP.data <- BiocGenerics::sort(SNP.data)
-olap <- GenomicRanges::findOverlaps( ## 93.742
+SNP.data <- BiocGenerics::sort(SNP.data)  # 9.991.229
+olap <- GenomicRanges::findOverlaps( # 93.742 # 86.687 (2026_01_26)
     query = SNP.data,
     subject = cds,
     minoverlap = 1L
   )
 SNP.data$name <- NULL
-SNP.data <- base::unique( # 9.914.129
+SNP.data <- base::unique( # 9.914.129 # 9.919.913 (2026_01_26)
     SNP.data[-S4Vectors::queryHits(olap)]
   )
 # GenomeInfoDb::seqlevels(txdb, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
@@ -79,13 +79,13 @@ pooled.PRIMEloci <- base::lapply(
           file = pooled.PRIMEloci.files[n],
           show_col_types = FALSE
         )
-      
+      # Subset by threshold
       df <- df[base::which(df$score >= PRIMEloci.thres),] # 245.709
       gr <- GenomicRanges::makeGRangesFromDataFrame(df[,1:3])
       S4Vectors::mcols(gr)$score <- df$score
-      
       GenomeInfoDb::seqlevels(gr, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data) # 237.454
       
+      # Change region size to 200
       gr <- IRanges::resize(
           x = gr,
           width = resize.width,
