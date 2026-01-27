@@ -293,7 +293,7 @@ trait.matrices <- base::lapply(
     }
   )
 base::names(trait.matrices) <- filtered.traits
-# trait.matrices[[t]] with t = "MCV": 132
+# base::length(trait.matrices[[t]]) with t = "MCV": 132 # 1188
 ```
 
 ## [1.7.] Calculate GWAS enrichment & recall for every trait separately
@@ -439,7 +439,7 @@ ggplot2::ggplot(
 ```
 
 ## [2.2.] Print plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -620,7 +620,7 @@ base::names(per.trait.results) <- filtered.traits # focus.traits
 ```
 
 ## Save and read 'per.trait.results' object
-```{r}
+```{r eval=FALSE}
 base::saveRDS(
     object = per.trait.results,
     file = base::paste0(
@@ -809,7 +809,7 @@ ggplot2::ggplot(
 ```
 
 ## [3.6.] Print blood GWAS plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/"),
@@ -869,7 +869,7 @@ ggplot2::ggplot(
 ```
 
 ## [3.8.] Print hepatocyte / liver GWAS plot
-```{r}
+```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/"),
@@ -912,7 +912,7 @@ ggplot2::ggplot(
     ) +
   xlab(
     base::paste0(
-        "recall (n=", base::length(hep.GWAS.data$name), ")"
+        "recall (n=", base::length(immune.GWAS.data$name), ")"
       )
     ) +
   theme_bw() +
@@ -1185,17 +1185,17 @@ ggplot2::ggsave(
 ## [4.0.] Annotate GWAS hits as promoter (proximal) or enhancer (distal)
 ```{r}
 promoters <- IRanges::promoters(
-      x = txdb,
-      upstream = 500,
-      downstream = 500
-    )
+    x = txdb,
+    upstream = 500,
+    downstream = 500
+  )
 GWAS.data$type <- base::rep("distal",base::length(GWAS.data))
 olap <- IRanges::findOverlaps(
     query = GWAS.data,
     subject = promoters,
     minoverlap = 1
   )
-GWAS.data$type[S4Vectors::queryHits(olap)] <- "proximal" # 28,068
+GWAS.data$type[S4Vectors::queryHits(olap)] <- "proximal" # 28,068 # 28,182 (20260126)
 
 # GWAS.data %>%
 #   tibble::as_tibble() %>%
@@ -1205,7 +1205,7 @@ GWAS.data$type[S4Vectors::queryHits(olap)] <- "proximal" # 28,068
 
 ## [4.1.] Convert data
 ```{r}
-GWAS.df <- base::as.data.frame(GWAS.data) # 28,068
+GWAS.df <- base::as.data.frame(GWAS.data) # 28,068 # 28,182 (20260126)
 GWAS.df$name <- base::paste0(
     GenomeInfoDb::seqnames(GWAS.data),":",
     GenomicRanges::start(GWAS.data) + 1,":",
@@ -1214,9 +1214,10 @@ GWAS.df$name <- base::paste0(
   )
 ```
 
-## [4.2.] Overlap non-subset PRIMElocis with GWAS in a trait-specific manner to subset traits
+## [4.2.] Overlap non-subset PRIMElocis with GWAS in a trait-specific manner
 #### see [1.5.] above for previous instalment of 'trait.loci.olap' object generation
 #### difference to [1.5.] is that here overlaps are calculated with 'unfiltered.PRIMEloci'
+#### Evaluatre with 't = "MCV"'
 ```{r}
 trait.loci.olap <- base::sapply(
   X = traits,
@@ -1245,7 +1246,7 @@ trait.loci.olap <- base::sapply(
 # base::length(trait.loci.olap[["MCV"]]) # 724
 ```
 
-## [4.3.] Aggregate PRIMEloci-GWAS-overlaps into a matrix
+## [4.3.] Aggregate trait-specific PRIMEloci-GWAS-overlaps into a matrix
 #### Evaluate with 't = "MCHC"'
 ```{r}
 trait.matrices <- base::lapply(
@@ -1285,7 +1286,7 @@ trait.matrices <- base::lapply(
     return(m)
     }
   )
-base::names(trait.matrices) <- base::c(blood.traits,hep.traits,immune.traits) # 31
+base::names(trait.matrices) <- base::c(blood.traits,hep.traits,immune.traits) # 31 including MCHC & ApoB
 # utils::str(trait.matrices)
 ```
 
@@ -1402,11 +1403,12 @@ for (trait in base::c(blood.traits,hep.traits,immune.traits)) {
 ```{r}
 trait = "MCHC" # "MCHC" # "ApoB"
 m <- trait.matrices[[trait]] # MCHC: 143
+base::length(m) # 1,296
 
-ro <- stats::hclust(stats::dist(m))$order
+ro <- stats::hclust(stats::dist(m))$order # 144
 #co <- hclust(dist(t(m)))$order
   
-df <- base::data.frame( # MCHC: 1287
+df <- base::data.frame( # MCHC: 1287 # MCHC: 1,296 (20260127)
     score = base::as.numeric(m),
     cell.line = base::rep(base::colnames(m), each = base::nrow(m)),
     variant = base::rownames(m)
@@ -1419,7 +1421,7 @@ df$variant <- base::factor(
 # midpoint <- base::mean(df$score[df$score>0]) ## see [4.11]
 # # df$score[df$score==0] <- NA
 
-df <- base::merge( # MCHC: 1287 # ApoB: 1962
+df <- base::merge( # MCHC: 1287 # ApoB: 1962 # MCHC: 1296 (20260127)
       x = df,
       y = GWAS.df[,base::c("name","type")],
       by.x = "variant",
@@ -1430,7 +1432,7 @@ df <- base::merge( # MCHC: 1287 # ApoB: 1962
     )
 ```
 
-```{r}
+```{r eval=FALSE}
 base::saveRDS(
     object = df,
     file = base::paste0(
@@ -1444,7 +1446,7 @@ base::saveRDS(
   )
 ```
 
-```{r}
+```{r eval=FALSE}
 df <- base::readRDS(
   file = base::list.files(
         path = here::here("10.External_validation"),
