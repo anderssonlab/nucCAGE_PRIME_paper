@@ -1461,7 +1461,7 @@ df <- base::readRDS(
 #### For Apo use hep.traits coefficient = 0.6143635, see [4.11.]
 #### For MCHC use blood.traits coefficient = 0.6222139, see [4.11.]
 ```{r}
-coef = 0.6143635 # midpoint
+coef = 0.6222139 # midpoint
 REtype = "distal" # "distal" # "proximal"
 cols <- base::c(
   grDevices::colorRampPalette(
@@ -1473,7 +1473,7 @@ cols <- base::c(
   )
 
 df %>%
-  dplyr::filter(type == REtype) %>% # 119
+  dplyr::filter(type == REtype) %>% # distinct(variant): 120 (20260127) # 119 # MCHCdistal: 1080 (20260127)
   ggplot2::ggplot(
       data = .,
       mapping = aes(
