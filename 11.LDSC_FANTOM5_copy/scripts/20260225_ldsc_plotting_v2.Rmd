@@ -62,231 +62,238 @@ ldsc_score <- ldsc_score[ldsc_score$Category != "baseL2_0",] # 3,552,840
 ldsc_data <- ldsc_score[ldsc_score$score == "0.5",] # 592,140
 ```
 
-
+## [2.2.] Define trait combinations
+#### Kidney/Liver function
 ```{r}
-# Kidney/Liver function
-kidney_liver_traits <- c(
-  "Creatinine (enzymatic) in urine", "Albumin (g/L)", "Alkaline phosphatase (U/L)", 
-  "Alanine aminotransferase (U/L)", "Aspartate aminotransferase (U/L)", 
-  "Direct bilirubin (umol/L)", "Urea (mmol/L)", "Calcium (mmol/L)", "Cholesterol (mmol/L)", 
-  "Creatinine (umol/L)", "C-reactive protein (mg/L)", "Cystatin C (mg/L)", 
-  "Gamma glutamyltransferase (U/L)", "Glucose (mmol/L)", "Glycated haemoglobin (mmol/mol)", 
-  "HDL cholesterol (mmol/L)", "IGF-1 (nmol/L)", "LDL direct (mmol/L)", "Phosphate (mmol/L)", 
-  "SHBG (nmol/L)", "Total bilirubin (umol/L)", "Total protein (g/L)", "Triglycerides (mmol/L)", 
-  "Urate (umol/L)", "Vitamin D (nmol/L)", "Apoliprotein A (g/L)", "Albumin (g/L)"
-)
-
-# Body composition
-body_composition_traits <- c(
-  "Body mass index (BMI)", 
-  "Weight", 
-  "Waist circumference", 
-  "Whole body fat mass", 
-  "Whole body fat-free mass", 
-  "Whole body water mass",
-  "Basal metabolic rate",
-  "Impedance of whole body", 
-  #"Impedance of leg (right)", 
-  #"Impedance of leg (left)",
-  #"Impedance of arm (right)", 
-  #"Impedance of arm (left)", 
-  #"Leg fat percentage (right)", 
-  #"Leg fat mass (right)",
-  #"Leg fat-free mass (right)", 
-  #"Leg predicted mass (right)", 
-  #"Leg fat percentage (left)", 
-  #"Leg fat mass (left)",
-  #"Leg fat-free mass (left)", 
-  #"Leg predicted mass (left)", 
-  #"Arm fat percentage (right)", 
-  #"Arm fat mass (right)",
-  #"Arm fat-free mass (right)", 
-  #"Arm predicted mass (right)", 
-  #"Arm fat percentage (left)", 
-  #"Arm fat mass (left)",
-  #"Arm fat-free mass (left)", 
-  #"Arm predicted mass (left)", 
-  "Trunk fat percentage", 
-  "Trunk fat mass",
-  "Trunk fat-free mass", 
-  "Trunk predicted mass", 
-  "Sitting height",
-  "Standing height"
-)
-
-# Behavioral
-behavioral_traits <- c(
-  "Sleep duration", 
-  "Getting up in morning", 
-  "Morning/evening person (chronotype)", 
-  "Nap during day",
-  "Sleeplessness / insomnia", 
-  "Daytime dozing / sleeping (narcolepsy)",
-  #"Ever had prolonged feelings of sadness or depression",
-  "Ever thought that life not worth living", 
-  #"Felt very upset when reminded of stressful experience in past month", 
-  "Frequency of depressed mood in last 2 weeks",
-  "Recent feelings of depression", 
-  "Recent feelings of tiredness or low energy", 
-  "Frequency of unenthusiasm / disinterest in last 2 weeks", 
-  "Frequency of tenseness / restlessness in last 2 weeks",
-  "Frequency of tiredness / lethargy in last 2 weeks", 
-  #"Seen doctor (GP) for nerves, anxiety, tension or depression",
-  "Seen a psychiatrist for nerves, anxiety, tension or depression", 
-  "Able to confide", 
-  "Ever depressed for a whole week", 
-  "Ever unenthusiastic/disinterested for a whole week"
-  
-)
-
-
-
-# Heart measures
-heart_traits <- c(
-  "Pulse rate", "Diastolic blood pressure, automated reading", "Systolic blood pressure, automated reading",
-  "Diastolic blood pressure, manual reading", "Systolic blood pressure, manual reading", "ECG, heart rate"
-)
-
-# Eye measures
-eye_traits <- c(  "Spherical power (left)",
-  #"Spherical power (right)", 
-  "Cylindrical power (left)", 
-  "3mm weak meridian (left)", 
-  "6mm weak meridian (left)", 
-  #"6mm weak meridian (right)", 
-  #"3mm weak meridian (right)", 
-  #"3mm strong meridian angle (left)",
-  #"3mm strong meridian angle (right)",
-  "3mm cylindrical power (right)", 
-  "6mm cylindrical power (right)", 
-  #"6mm cylindrical power (left)", 
-  #"3mm cylindrical power (left)", 
-  "3mm strong meridian (right)", 
-  #"6mm strong meridian (right)", 
-  "6mm strong meridian (left)", 
-  #"3mm strong meridian (left)", 
-  #"6mm asymmetry index (left)",
-  "6mm asymmetry index (right)", 
-  #"3mm regularity index (right)", 
-  "Intra-ocular pressure, corneal-compensated (right)", 
-  "Intra-ocular pressure, Goldmann-correlated (right)", 
-  "Corneal hysteresis (right)", 
-  "Corneal resistance factor (right)" 
-  #"Intra-ocular pressure, corneal-compensated (left)", 
-  #"Intra-ocular pressure, Goldmann-correlated (left)", 
-  #"Corneal hysteresis (left)", 
-  #"Corneal resistance factor (left)"
-)
-
-# Blood traits
-blood_traits <- c("Lymphocyte count",
-                  "Platelet count",
-                  "Eosinophill count",
-                  "Mean corpuscular haemoglobin concentration",
-                  "Mean corpuscular volume",
-                  "Neutrophill percentage",
-                  "Monocyte count",
-                  "Reticulocyte count",
-                  "Red blood cell (erythrocyte) distribution width",
-                  "Platelet distribution width")
+kidney_liver_traits <- base::c(
+    "Creatinine (enzymatic) in urine",
+    "Albumin (g/L)",
+    "Alkaline phosphatase (U/L)", 
+    "Alanine aminotransferase (U/L)",
+    "Aspartate aminotransferase (U/L)",
+    "Direct bilirubin (umol/L)",
+    "Urea (mmol/L)",
+    "Calcium (mmol/L)",
+    "Cholesterol (mmol/L)", 
+    "Creatinine (umol/L)",
+    "C-reactive protein (mg/L)",
+    "Cystatin C (mg/L)", 
+    "Gamma glutamyltransferase (U/L)",
+    "Glucose (mmol/L)",
+    "Glycated haemoglobin (mmol/mol)", 
+    "HDL cholesterol (mmol/L)",
+    "IGF-1 (nmol/L)",
+    "LDL direct (mmol/L)",
+    "Phosphate (mmol/L)", 
+    "SHBG (nmol/L)",
+    "Total bilirubin (umol/L)",
+    "Total protein (g/L)",
+    "Triglycerides (mmol/L)", 
+    "Urate (umol/L)",
+    "Vitamin D (nmol/L)",
+    "Apoliprotein A (g/L)",
+    "Albumin (g/L)"
+  )
 ```
 
-
-
+#### Body composition
 ```{r}
-relevant_samples <- c(
-  # Neural / CNS
-  "astrocyte",
-  "brain",
-  "neuron",
-  #"spinal.cord",
-  
-  # Eye
-  "eye",
-  "lens.epithelial.cell",
-  "retinal.pigment.epithelial.cell",
-  #"corneal.epithelial.cell",
-  
-  # Heart / vasculature
-  "heart",
-  "cardiac.myocyte",
-  "cardiac.fibroblast",
-  "blood.vessel",
-  "blood.vessel.endothelial.cell",
-  "vascular.associated.smooth.muscle.cell",
-  #"endothelial.cell.of.hepatic.sinusoid",
-  #"endothelial.cell.of.lymphatic.vessel",
-  
-  # Muscle
-  "skeletal.muscle.cell",
-  #"skeletal.muscle.tissue",
-  
-  # Liver / fat / digestive
-  "liver",
-  "hepatocyte",
-  #"hepatic.stellate.cell",
-  "fat.cell",
-  "preadipocyte",
-  "acinar.cell",
-  "embryonic.pancreas",
-  "embryonic.kidney",
-  "kidney",
-  "kidney.epithelial.cell",
-  "small.intestine",
-  "large.intestine",
-  #"epithelial.cell.of.esophagus",
-  
-  # Connective / fibroblasts
-  "skin.fibroblast",
-  #"fibroblast.of.lymphatic.vessel",
-  "mesenchymal.cell",
-  #"stromal.cell",
-  #"tendon.cell",
-  
-  # Blood / immune cells
-  "cord.blood.derived",
-  "T.cell",
-  "neutrophil",
-  "monocyte",
-  "natural.killer.cell",
-  "lymphocyte.of.B.lineage",
-  "reticulocyte",
-  
-  # Reproductive / endocrine
-  "testis",
-  "thyroid.gland",
-  #"uterus",
-  
-  # Misc / less obvious
-  "ciliated.epithelial.cell"
-  #"keratocyte"
-  #"hair.follicle.cell",
-  #"tongue",
-  #"trabecular.meshwork.cell",
-  #"urothelial.cell",
-  #"smooth.muscle.cell.of.prostate",
-  #"smooth.muscle.cell.of.trachea",
-  #"fibroblast.of.choroid.plexus",
-  #"fibroblast.of.gingiva",
-  #"fibroblast.of.periodontium",
-  #"fibroblast.of.tunica.adventitia.of.artery",
-  #"gingival.epithelial.cell",
-  #"epithelial.cell.of.Malassez",
-  #"epithelial.cell.of.prostate",
-  #"sensory.epithelial.cell",
-  #"amniotic.epithelial.cell",
-  #"chondrocyte",
-  #"keratinocyte"
-)
-
-
-
-
+body_composition_traits <- base::c(
+    "Body mass index (BMI)",
+    "Weight",
+    "Waist circumference",
+    "Whole body fat mass",
+    "Whole body fat-free mass",
+    "Whole body water mass",
+    "Basal metabolic rate",
+    "Impedance of whole body",
+    #"Impedance of leg (right)", 
+    #"Impedance of leg (left)",
+    #"Impedance of arm (right)", 
+    #"Impedance of arm (left)", 
+    #"Leg fat percentage (right)", 
+    #"Leg fat mass (right)",
+    #"Leg fat-free mass (right)", 
+    #"Leg predicted mass (right)", 
+    #"Leg fat percentage (left)", 
+    #"Leg fat mass (left)",
+    #"Leg fat-free mass (left)", 
+    #"Leg predicted mass (left)", 
+    #"Arm fat percentage (right)", 
+    #"Arm fat mass (right)",
+    #"Arm fat-free mass (right)", 
+    #"Arm predicted mass (right)", 
+    #"Arm fat percentage (left)", 
+    #"Arm fat mass (left)",
+    #"Arm fat-free mass (left)", 
+    #"Arm predicted mass (left)", 
+    "Trunk fat percentage",
+    "Trunk fat mass",
+    "Trunk fat-free mass",
+    "Trunk predicted mass",
+    "Sitting height",
+    "Standing height"
+  )
 ```
 
+#### Behaviour-related traits
+```{r}
+behavioral_traits <- base::c(
+    "Sleep duration", 
+    "Getting up in morning", 
+    "Morning/evening person (chronotype)", 
+    "Nap during day",
+    "Sleeplessness / insomnia", 
+    "Daytime dozing / sleeping (narcolepsy)",
+    #"Ever had prolonged feelings of sadness or depression",
+    "Ever thought that life not worth living", 
+    #"Felt very upset when reminded of stressful experience in past month", 
+    "Frequency of depressed mood in last 2 weeks",
+    "Recent feelings of depression", 
+    "Recent feelings of tiredness or low energy", 
+    "Frequency of unenthusiasm / disinterest in last 2 weeks", 
+    "Frequency of tenseness / restlessness in last 2 weeks",
+    "Frequency of tiredness / lethargy in last 2 weeks", 
+    #"Seen doctor (GP) for nerves, anxiety, tension or depression",
+    "Seen a psychiatrist for nerves, anxiety, tension or depression", 
+    "Able to confide", 
+    "Ever depressed for a whole week", 
+    "Ever unenthusiastic/disinterested for a whole week"
+  )
+```
 
+#### Heart measures
+```{r}
+heart_traits <- base::c(
+    "Pulse rate",
+    "Diastolic blood pressure, automated reading",
+    "Systolic blood pressure, automated reading",
+    "Diastolic blood pressure, manual reading",
+    "Systolic blood pressure, manual reading",
+    "ECG, heart rate"
+  )
+```
 
+#### Eye measures
+```{r}
+eye_traits <- base::c(
+    "Spherical power (left)",
+    #"Spherical power (right)", 
+    "Cylindrical power (left)", 
+    "3mm weak meridian (left)", 
+    "6mm weak meridian (left)", 
+    #"6mm weak meridian (right)", 
+    #"3mm weak meridian (right)", 
+    #"3mm strong meridian angle (left)",
+    #"3mm strong meridian angle (right)",
+    "3mm cylindrical power (right)", 
+    "6mm cylindrical power (right)", 
+    #"6mm cylindrical power (left)", 
+    #"3mm cylindrical power (left)", 
+    "3mm strong meridian (right)", 
+    #"6mm strong meridian (right)", 
+    "6mm strong meridian (left)", 
+    #"3mm strong meridian (left)", 
+    #"6mm asymmetry index (left)",
+    "6mm asymmetry index (right)", 
+    #"3mm regularity index (right)", 
+    "Intra-ocular pressure, corneal-compensated (right)", 
+    "Intra-ocular pressure, Goldmann-correlated (right)", 
+    "Corneal hysteresis (right)", 
+    "Corneal resistance factor (right)" 
+    #"Intra-ocular pressure, corneal-compensated (left)", 
+    #"Intra-ocular pressure, Goldmann-correlated (left)", 
+    #"Corneal hysteresis (left)", 
+    #"Corneal resistance factor (left)"
+  )
+```
 
+#### Blood traits
+```{r}
+blood_traits <- base::c(
+    "Lymphocyte count",
+    "Platelet count",
+    "Eosinophill count",
+    "Mean corpuscular haemoglobin concentration",
+    "Mean corpuscular volume",
+    "Neutrophill percentage",
+    "Monocyte count",
+    "Reticulocyte count",
+    "Red blood cell (erythrocyte) distribution width",
+    "Platelet distribution width"
+  )
+```
+
+## [2.3.] Define FANTOM5 samples to be included
+```{r}
+relevant_samples <- base::c(
+    "astrocyte",                                # Neural / CNS
+    "brain",
+    "neuron",
+    #"spinal.cord",
+    "eye",                                      # Eye
+    "lens.epithelial.cell",
+    "retinal.pigment.epithelial.cell",
+    #"corneal.epithelial.cell",
+    "heart",                                    # Heart / vasculature
+    "cardiac.myocyte",
+    "cardiac.fibroblast",
+    "blood.vessel",
+    "blood.vessel.endothelial.cell",
+    "vascular.associated.smooth.muscle.cell",
+    #"endothelial.cell.of.hepatic.sinusoid",
+    #"endothelial.cell.of.lymphatic.vessel",
+    "skeletal.muscle.cell",                    # Muscle
+    #"skeletal.muscle.tissue",
+    "liver",                                   # Liver / fat / digestive
+    "hepatocyte",
+    #"hepatic.stellate.cell",
+    "fat.cell",
+    "preadipocyte",
+    "acinar.cell",
+    "embryonic.pancreas",
+    "embryonic.kidney",
+    "kidney",
+    "kidney.epithelial.cell",
+    "small.intestine",
+    "large.intestine",
+    #"epithelial.cell.of.esophagus",
+    "skin.fibroblast",                        # Connective / fibroblasts
+    #"fibroblast.of.lymphatic.vessel",
+    "mesenchymal.cell",
+    #"stromal.cell",
+    #"tendon.cell",
+    "cord.blood.derived",                     # Blood / immune cells
+    "T.cell",
+    "neutrophil",
+    "monocyte",
+    "natural.killer.cell",
+    "lymphocyte.of.B.lineage",
+    "reticulocyte",
+    "testis",                                # Reproductive / endocrine
+    "thyroid.gland",
+    #"uterus",
+    "ciliated.epithelial.cell"               # Misc / less obvious
+    #"keratocyte"
+    #"hair.follicle.cell",
+    #"tongue",
+    #"trabecular.meshwork.cell",
+    #"urothelial.cell",
+    #"smooth.muscle.cell.of.prostate",
+    #"smooth.muscle.cell.of.trachea",
+    #"fibroblast.of.choroid.plexus",
+    #"fibroblast.of.gingiva",
+    #"fibroblast.of.periodontium",
+    #"fibroblast.of.tunica.adventitia.of.artery",
+    #"gingival.epithelial.cell",
+    #"epithelial.cell.of.Malassez",
+    #"epithelial.cell.of.prostate",
+    #"sensory.epithelial.cell",
+    #"amniotic.epithelial.cell",
+    #"chondrocyte",
+    #"keratinocyte"
+  )
+```
 
 ```{r}
 # -------------------------------
