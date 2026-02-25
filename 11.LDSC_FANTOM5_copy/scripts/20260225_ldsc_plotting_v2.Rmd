@@ -1,43 +1,65 @@
 ---
-title: ''
-author: "Hjolli"
+title: "LDSC plotting v2"
 date: "2025-11-19"
 output: html_document
 ---
 
+## [0.] Prerequsites -------------------------
+
+## [0.0.] Load necesarray packages
+```{r message=FALSE}
+base::library(tidyverse)
+base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+```
+
+## [2.] LDSC analysis plots -------------------------
+
+## [2.0.] Read in main LDSC results
 ```{r}
-# Input file
-input_file <- "/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/combined_results.tsv"
-sumstat_file <- "/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/ukb31063_ldsc_sumstat_manifest_aws_sep2022.tsv"
-
 # Load the data
-ldsc_score <- read_tsv(input_file)
-ldsc_score$Trait<- sub("_score[0-9.]+$", "", ldsc_score$Trait) 
+ldsc_score_ <- readr::read_tsv( # 3,577,860
+    file = base::paste0(
+      here::here("11.LDSC_FANTOM5/ldsc_files/"),
+      "combined_results.tsv"
+    )
+  )
+ldsc_score_$Trait<- base::sub(pattern = "_score[0-9.]+$", "", ldsc_score_$Trait) 
 
-sumstat_annot <- read_tsv(sumstat_file)
-sumstat_annot <- filter(sumstat_annot, is_primary_gwas==TRUE & phenotype %in% unique(ldsc_score$Trait))
+sumstat_annot <- readr::read_tsv( # 12,098
+    file = base::paste0(
+      here::here("11.LDSC_FANTOM5/ldsc_files/"),
+      "ukb31063_ldsc_sumstat_manifest_aws_sep2022.tsv"
+    )
+  )
+sumstat_annot <- sumstat_annot %>% #4,170
+  dplyr::filter(
+      is_primary_gwas == TRUE &
+      phenotype %in% base::unique(ldsc_score_$Trait)
+    )
+```
 
-# Add description to data
+## [2.1.] Add description to data
+#### 25020 "unknown"  locations
+```{r}
 ldsc_score <- dplyr::left_join(
-  ldsc_score,
-  sumstat_annot %>% dplyr::select(phenotype, description),
-  by = c("Trait" = "phenotype")
-)
+    x = ldsc_score_,
+    y = dplyr::select(sumstat_annot, phenotype, description),
+    by = base::c("Trait" = "phenotype")
+  )
 
 ldsc_score <- ldsc_score %>%
-  mutate(loc = case_when(
-    grepl("distal", Category) ~ "distal",  
-    grepl("proximal", Category) ~ "proximal",  
-    TRUE ~ "unknown"  
-  ))
+  dplyr::mutate(
+      loc = stringr::str_extract(Category, "distal|proximal"),
+      loc = tidyr::replace_na(loc, "unknown")
+    )
 
-ldsc_score$score <- sub(".*_(\\d+\\.\\d+)L2_0$", "\\1", ldsc_score$Category)
+ldsc_score$score <- base::sub(".*_(\\d+\\.\\d+)L2_0$", "\\1", ldsc_score$Category)
 
-ldsc_score$sample <- sub("_.*", "", ldsc_score$Category)
+ldsc_score$sample <- base::sub("_.*", "", ldsc_score$Category)
 
-
-ldsc_score <- ldsc_score[ldsc_score$Category!="baseL2_0",]
-ldsc_data <- ldsc_score[ldsc_score$score=="0.5",]
+ldsc_score <- ldsc_score[ldsc_score$Category != "baseL2_0",] # 3,552,840
+ldsc_data <- ldsc_score[ldsc_score$score == "0.5",] # 592,140
 ```
 
 
