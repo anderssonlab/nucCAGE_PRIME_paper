@@ -1,3 +1,9 @@
+---
+title: "CTSS annnotating including NET-CAGE"
+date: "2026-02-25"
+output: html_document
+---
+
 ## [0.] Prerequsites -------------------------
 
 ## [0.0.] Load necesarray packages
@@ -133,17 +139,32 @@ calcAnnoCTSS <- function(data, txModels, uniqueCTSS = FALSE) {
   }
 ```
 
+## [0.5.] Read in metainfo
+```{r}
+meta <- readr::read_delim(
+    file = base::paste0(
+        here::here("0.External_resources/"),
+        "20260225_metainfo_GM12878libraries_v1.csv"
+      ),
+    delim = ";",
+    col_names = TRUE,
+    col_types = readr::cols(
+      .default = readr::col_character()
+    )
+  )
+```
+
 # [2.] GM12878 analysis -------------------------
 
 ## [2.0.] Read in datasets for GM12878
 #### see [1.10.] in "1.1.CTSSs.processing.Rmd"
 ```{r}
-GM12878.s.CTSSs <- base::readRDS(
-  file = base::paste0(
-      here::here("0.External_resources/NET_CAGE/"),
-      "repSub.combined.GM12878.CTSSs.rmSingletons.rds"
-    )
-  )
+# GM12878.s.CTSSs <- base::readRDS(
+#   file = base::paste0(
+#       here::here("0.External_resources/NET_CAGE/"),
+#       "repSub.combined.GM12878.CTSSs.rmSingletons.rds"
+#     )
+#   )
 GM12878.p.CTSSs <- base::readRDS(
     file = base::paste0(
       here::here("0.External_resources/NET_CAGE/"),
@@ -160,10 +181,8 @@ GM12878.ann.counts <- .GlobalEnv$calcAnnoCTSS(
     uniqueCTSS = FALSE # TRUE
   )
 
-GM12878.ann.fracs <- GM12878.ann.counts/colData(GM12878.p.CTSSs)$totalTags
+GM12878.ann.fracs <- GM12878.ann.counts/SummarizedExperiment::colData(GM12878.p.CTSSs)$totalTags
 ```
-
-
 
 ## [2.2.] Factor levels for genomic features & cell amounts
 ```{r}
@@ -172,13 +191,14 @@ feats <- base::c(
     "fiveUTR","CDS","exon",
     "intron","threeUTR","antisense"
   )
-amts <- base::c("500K","1M","5M","10M")
+amts <- base::c("50K","250K","500K","1M","5M","10M","20M")
 reps <- base::c("pool","1","2","3","4")
+scrs <- base::c("C","N","NET","trip","trip_ctrl","cap_align","groCap")
 
-sams <- base::c(
-    "500K_C","500K_N","1M_C",
-    "1M_N","5M_N","10M_N"
-  )
+# sams <- base::c(
+#     "500K_C","500K_N","1M_C",
+#     "1M_N","5M_N","10M_N"
+#   )
 ```
 
 ## [2.3.] Data wrangling - prepare plotting of fractions
@@ -186,37 +206,54 @@ sams <- base::c(
 GM12878.ann.fracs.m <- GM12878.ann.fracs %>%
   tibble::rownames_to_column("sample") %>%
   tidyr::pivot_longer(
-    cols = !sample,
-    names_to = "variable",
-    values_to = "value"
-  ) %>%
+      cols = !sample,
+      names_to = "variable",
+      values_to = "value"
+    ) %>%
+  dplyr::left_join(
+      x = ., y = meta, by = "sample"
+    ) %>%
+  # dplyr::mutate(
+  #     cell = stringr::str_replace(sample, "^(.*?)_.*$", "\\1"),
+  #     is_NET = stringr::str_detect(sample, "_NET_"),
+  #     
+  #     # NET samples
+  #     rep = ifelse(is_NET, sub("^.*_(\\d+)$", "\\1", sample), NA),
+  #     source = ifelse(is_NET, "NET", NA),
+  #     amount = ifelse(is_NET, "20M", NA),
+  #     
+  #     # classic samples
+  #     amount = ifelse(!is_NET, sub("^[^_]+_([^_]+)_.*$", "\\1", sample), amount),
+  #     type   = ifelse(!is_NET, sub("^[^_]+_[^_]+_(.*)$", "\\1", sample), NA),
+  #     source = ifelse(!is_NET, substr(type,1,1), source),
+  #     rep    = ifelse(!is_NET, substr(type,2,nchar(type)), rep)
+  #   ) %>%
+  # dplyr::select(-type, -is_NET) %>%
   mutate(
-    is_NET = grepl("_NET_", sample),
-    
-    cell = sub("^(.*?)_.*$", "\\1", sample),
-    
-    # NET samples
-    rep = ifelse(is_NET, sub("^.*_(\\d+)$", "\\1", sample), NA),
-    source = ifelse(is_NET, "NET", NA),
-    amount = ifelse(is_NET, "20M", NA),
-    
-    # classic samples
-    amount = ifelse(!is_NET, sub("^[^_]+_([^_]+)_.*$", "\\1", sample), amount),
-    type   = ifelse(!is_NET, sub("^[^_]+_[^_]+_(.*)$", "\\1", sample), NA),
-    source = ifelse(!is_NET, substr(type,1,1), source),
-    rep    = ifelse(!is_NET, substr(type,2,nchar(type)), rep)
-  ) %>%
-  dplyr::select(-type, -is_NET) %>%
-  mutate(
-    rep = factor(rep, levels = rev(reps), ordered = TRUE),
-    amount = factor(amount, levels = amts, ordered = TRUE),
-    source = factor(source, levels = c("C","N","NET"), ordered = TRUE),
-    variable = factor(variable, levels = rev(feats), ordered = TRUE)
-  )
+    rep = base::factor(
+        x = rep,
+        levels = base::rev(reps),
+        ordered = TRUE
+      ),
+    amount = base::factor(
+        x = amount,
+        levels = amts,
+        ordered = TRUE
+      ),
+    source = base::factor(
+        x = source,
+        levels = scrs,
+        ordered = TRUE
+      ),
+    variable = base::factor(
+        x = variable,
+        levels = base::rev(feats),
+        ordered = TRUE
+      )
+    )
 ```
 
-
-## [2.5.] Plotting of fractions
+## [2.4.] Plotting of fractions
 ```{r}
 ggplot2::ggplot(
     data = GM12878.ann.fracs.m,
@@ -246,4 +283,21 @@ ggplot2::ggplot(
       legend.title = element_blank(),
       legend.background = element_blank()
     )
+```
+
+## [2.5.] Print plot to file
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("0.External_resources/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_annFrac",
+        "_AllSamples_AllReplicates",
+        ".pdf"
+      ),
+    device = "pdf",
+    plot = ggplot2::last_plot(),
+    width = 5,
+    height = 8
+  )
 ```
