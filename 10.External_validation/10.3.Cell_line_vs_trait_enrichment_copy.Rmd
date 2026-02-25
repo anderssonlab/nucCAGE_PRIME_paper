@@ -237,7 +237,7 @@ trait.loci.olap <- base::sapply(
   )
 # trait.loci.olap[[t]]: 132
 
-trait.olap.count <- base::sapply(
+trait.olap.count <- base::sapply( # 94
   X = trait.loci.olap,
   FUN = function(x){
     base::length(
@@ -247,7 +247,7 @@ trait.olap.count <- base::sapply(
   )
 # trait.olap.count[t]: 132
 
-filtered.traits <- base::names( # 52
+filtered.traits <- base::names( # 52 # 53 (20260127)
     base::which(trait.olap.count >= 10)
   )
 ```
@@ -1473,7 +1473,7 @@ cols <- base::c(
   )
 
 df %>%
-  dplyr::filter(type == REtype) %>% # distinct(variant): 120 (20260127) # 119 # MCHCdistal: 1080 (20260127)
+  dplyr::filter(type == REtype) %>% # 119 # distinct(variant): 120 (20260127) # MCHCdistal: 1080 (20260127)
   ggplot2::ggplot(
       data = .,
       mapping = aes(
@@ -1763,24 +1763,27 @@ df %>%
 ```
 
 ## [4.13.] Acquire scores for all variants across metabolic / hep traits
+#### hep.GWAS.data included 5,005 GWAS hits across all traits irrespective of an overlap with PRIMEloci
+#### trait.matrices[hep.traits] includes 3,314 unique GWAS hits that overlap with PRIMEloci across all samples (e.g., K562_N, GM12878_C)
 ```{r}
-collection = hep.traits # coefficient = 0.6139217
-# collection = blood.traits # coefficient = 0.6222139 # 2.363
+# collection = hep.traits # coefficient = 0.6139217 # 0.6143635 (20260127)
+# hep.GWAS.data 5005
+collection = blood.traits # coefficient = 0.6222139 # 2.363
 
-comb <- base::do.call( # 3,869
+comb <- base::do.call( # hep: 3,869 # blood: 3,184 (20260127)
     what = base::rbind,
     args = trait.matrices[collection]
   )
 # base::dim(comb)
-sub <- comb[base::unique(base::rownames(comb)),] # 3,134
+sub <- comb[base::unique(base::rownames(comb)),] # 3,134 # hep: 3.148 (20260127) # blood: 2363 (20260127)
 # base::dim(sub)
 ro <- stats::hclust(stats::dist(sub))$order
       
-df <- base::data.frame( # 28,206
+df <- base::data.frame( # 28,206 # 28,332 (9*3,134, 20260127) # blood: 21,267 (9*2,363)
     score = base::as.numeric(sub),
     cell.line = base::rep(base::colnames(sub), each = base::nrow(sub)),
     variant = base::rownames(sub)
-  ) # 28,332 of 35,064
+  ) # 28,332 of 35,064 
 
 df$variant <- base::factor(
     x = df$variant,

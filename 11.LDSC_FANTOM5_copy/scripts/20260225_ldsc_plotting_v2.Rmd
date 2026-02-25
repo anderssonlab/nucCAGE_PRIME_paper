@@ -1,0 +1,820 @@
+---
+title: ''
+author: "Hjolli"
+date: "2025-11-19"
+output: html_document
+---
+
+```{r}
+# Input file
+input_file <- "/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/combined_results.tsv"
+sumstat_file <- "/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/ukb31063_ldsc_sumstat_manifest_aws_sep2022.tsv"
+
+# Load the data
+ldsc_score <- read_tsv(input_file)
+ldsc_score$Trait<- sub("_score[0-9.]+$", "", ldsc_score$Trait) 
+
+sumstat_annot <- read_tsv(sumstat_file)
+sumstat_annot <- filter(sumstat_annot, is_primary_gwas==TRUE & phenotype %in% unique(ldsc_score$Trait))
+
+# Add description to data
+ldsc_score <- dplyr::left_join(
+  ldsc_score,
+  sumstat_annot %>% dplyr::select(phenotype, description),
+  by = c("Trait" = "phenotype")
+)
+
+ldsc_score <- ldsc_score %>%
+  mutate(loc = case_when(
+    grepl("distal", Category) ~ "distal",  
+    grepl("proximal", Category) ~ "proximal",  
+    TRUE ~ "unknown"  
+  ))
+
+ldsc_score$score <- sub(".*_(\\d+\\.\\d+)L2_0$", "\\1", ldsc_score$Category)
+
+ldsc_score$sample <- sub("_.*", "", ldsc_score$Category)
+
+
+ldsc_score <- ldsc_score[ldsc_score$Category!="baseL2_0",]
+ldsc_data <- ldsc_score[ldsc_score$score=="0.5",]
+```
+
+
+```{r}
+# Kidney/Liver function
+kidney_liver_traits <- c(
+  "Creatinine (enzymatic) in urine", "Albumin (g/L)", "Alkaline phosphatase (U/L)", 
+  "Alanine aminotransferase (U/L)", "Aspartate aminotransferase (U/L)", 
+  "Direct bilirubin (umol/L)", "Urea (mmol/L)", "Calcium (mmol/L)", "Cholesterol (mmol/L)", 
+  "Creatinine (umol/L)", "C-reactive protein (mg/L)", "Cystatin C (mg/L)", 
+  "Gamma glutamyltransferase (U/L)", "Glucose (mmol/L)", "Glycated haemoglobin (mmol/mol)", 
+  "HDL cholesterol (mmol/L)", "IGF-1 (nmol/L)", "LDL direct (mmol/L)", "Phosphate (mmol/L)", 
+  "SHBG (nmol/L)", "Total bilirubin (umol/L)", "Total protein (g/L)", "Triglycerides (mmol/L)", 
+  "Urate (umol/L)", "Vitamin D (nmol/L)", "Apoliprotein A (g/L)", "Albumin (g/L)"
+)
+
+# Body composition
+body_composition_traits <- c(
+  "Body mass index (BMI)", 
+  "Weight", 
+  "Waist circumference", 
+  "Whole body fat mass", 
+  "Whole body fat-free mass", 
+  "Whole body water mass",
+  "Basal metabolic rate",
+  "Impedance of whole body", 
+  #"Impedance of leg (right)", 
+  #"Impedance of leg (left)",
+  #"Impedance of arm (right)", 
+  #"Impedance of arm (left)", 
+  #"Leg fat percentage (right)", 
+  #"Leg fat mass (right)",
+  #"Leg fat-free mass (right)", 
+  #"Leg predicted mass (right)", 
+  #"Leg fat percentage (left)", 
+  #"Leg fat mass (left)",
+  #"Leg fat-free mass (left)", 
+  #"Leg predicted mass (left)", 
+  #"Arm fat percentage (right)", 
+  #"Arm fat mass (right)",
+  #"Arm fat-free mass (right)", 
+  #"Arm predicted mass (right)", 
+  #"Arm fat percentage (left)", 
+  #"Arm fat mass (left)",
+  #"Arm fat-free mass (left)", 
+  #"Arm predicted mass (left)", 
+  "Trunk fat percentage", 
+  "Trunk fat mass",
+  "Trunk fat-free mass", 
+  "Trunk predicted mass", 
+  "Sitting height",
+  "Standing height"
+)
+
+# Behavioral
+behavioral_traits <- c(
+  "Sleep duration", 
+  "Getting up in morning", 
+  "Morning/evening person (chronotype)", 
+  "Nap during day",
+  "Sleeplessness / insomnia", 
+  "Daytime dozing / sleeping (narcolepsy)",
+  #"Ever had prolonged feelings of sadness or depression",
+  "Ever thought that life not worth living", 
+  #"Felt very upset when reminded of stressful experience in past month", 
+  "Frequency of depressed mood in last 2 weeks",
+  "Recent feelings of depression", 
+  "Recent feelings of tiredness or low energy", 
+  "Frequency of unenthusiasm / disinterest in last 2 weeks", 
+  "Frequency of tenseness / restlessness in last 2 weeks",
+  "Frequency of tiredness / lethargy in last 2 weeks", 
+  #"Seen doctor (GP) for nerves, anxiety, tension or depression",
+  "Seen a psychiatrist for nerves, anxiety, tension or depression", 
+  "Able to confide", 
+  "Ever depressed for a whole week", 
+  "Ever unenthusiastic/disinterested for a whole week"
+  
+)
+
+
+
+# Heart measures
+heart_traits <- c(
+  "Pulse rate", "Diastolic blood pressure, automated reading", "Systolic blood pressure, automated reading",
+  "Diastolic blood pressure, manual reading", "Systolic blood pressure, manual reading", "ECG, heart rate"
+)
+
+# Eye measures
+eye_traits <- c(  "Spherical power (left)",
+  #"Spherical power (right)", 
+  "Cylindrical power (left)", 
+  "3mm weak meridian (left)", 
+  "6mm weak meridian (left)", 
+  #"6mm weak meridian (right)", 
+  #"3mm weak meridian (right)", 
+  #"3mm strong meridian angle (left)",
+  #"3mm strong meridian angle (right)",
+  "3mm cylindrical power (right)", 
+  "6mm cylindrical power (right)", 
+  #"6mm cylindrical power (left)", 
+  #"3mm cylindrical power (left)", 
+  "3mm strong meridian (right)", 
+  #"6mm strong meridian (right)", 
+  "6mm strong meridian (left)", 
+  #"3mm strong meridian (left)", 
+  #"6mm asymmetry index (left)",
+  "6mm asymmetry index (right)", 
+  #"3mm regularity index (right)", 
+  "Intra-ocular pressure, corneal-compensated (right)", 
+  "Intra-ocular pressure, Goldmann-correlated (right)", 
+  "Corneal hysteresis (right)", 
+  "Corneal resistance factor (right)" 
+  #"Intra-ocular pressure, corneal-compensated (left)", 
+  #"Intra-ocular pressure, Goldmann-correlated (left)", 
+  #"Corneal hysteresis (left)", 
+  #"Corneal resistance factor (left)"
+)
+
+# Blood traits
+blood_traits <- c("Lymphocyte count",
+                  "Platelet count",
+                  "Eosinophill count",
+                  "Mean corpuscular haemoglobin concentration",
+                  "Mean corpuscular volume",
+                  "Neutrophill percentage",
+                  "Monocyte count",
+                  "Reticulocyte count",
+                  "Red blood cell (erythrocyte) distribution width",
+                  "Platelet distribution width")
+```
+
+
+
+```{r}
+relevant_samples <- c(
+  # Neural / CNS
+  "astrocyte",
+  "brain",
+  "neuron",
+  #"spinal.cord",
+  
+  # Eye
+  "eye",
+  "lens.epithelial.cell",
+  "retinal.pigment.epithelial.cell",
+  #"corneal.epithelial.cell",
+  
+  # Heart / vasculature
+  "heart",
+  "cardiac.myocyte",
+  "cardiac.fibroblast",
+  "blood.vessel",
+  "blood.vessel.endothelial.cell",
+  "vascular.associated.smooth.muscle.cell",
+  #"endothelial.cell.of.hepatic.sinusoid",
+  #"endothelial.cell.of.lymphatic.vessel",
+  
+  # Muscle
+  "skeletal.muscle.cell",
+  #"skeletal.muscle.tissue",
+  
+  # Liver / fat / digestive
+  "liver",
+  "hepatocyte",
+  #"hepatic.stellate.cell",
+  "fat.cell",
+  "preadipocyte",
+  "acinar.cell",
+  "embryonic.pancreas",
+  "embryonic.kidney",
+  "kidney",
+  "kidney.epithelial.cell",
+  "small.intestine",
+  "large.intestine",
+  #"epithelial.cell.of.esophagus",
+  
+  # Connective / fibroblasts
+  "skin.fibroblast",
+  #"fibroblast.of.lymphatic.vessel",
+  "mesenchymal.cell",
+  #"stromal.cell",
+  #"tendon.cell",
+  
+  # Blood / immune cells
+  "cord.blood.derived",
+  "T.cell",
+  "neutrophil",
+  "monocyte",
+  "natural.killer.cell",
+  "lymphocyte.of.B.lineage",
+  "reticulocyte",
+  
+  # Reproductive / endocrine
+  "testis",
+  "thyroid.gland",
+  #"uterus",
+  
+  # Misc / less obvious
+  "ciliated.epithelial.cell"
+  #"keratocyte"
+  #"hair.follicle.cell",
+  #"tongue",
+  #"trabecular.meshwork.cell",
+  #"urothelial.cell",
+  #"smooth.muscle.cell.of.prostate",
+  #"smooth.muscle.cell.of.trachea",
+  #"fibroblast.of.choroid.plexus",
+  #"fibroblast.of.gingiva",
+  #"fibroblast.of.periodontium",
+  #"fibroblast.of.tunica.adventitia.of.artery",
+  #"gingival.epithelial.cell",
+  #"epithelial.cell.of.Malassez",
+  #"epithelial.cell.of.prostate",
+  #"sensory.epithelial.cell",
+  #"amniotic.epithelial.cell",
+  #"chondrocyte",
+  #"keratinocyte"
+)
+
+
+
+
+```
+
+
+
+
+
+```{r}
+# -------------------------------
+# 1. Combine traits in order
+# -------------------------------
+all_traits <- c(
+  eye_traits, kidney_liver_traits, body_composition_traits,
+  behavioral_traits, heart_traits, blood_traits
+)
+
+# -------------------------------
+# 2. Filter data
+# -------------------------------
+df_sub <- ldsc_data %>%
+  filter(description %in% all_traits & sample %in% relevant_samples)
+
+# If using strict traits
+# df_sub <- df_sub %>% filter(description %in% strict_traits)
+
+# -------------------------------
+# 3. Handle negative Prop._h2
+# -------------------------------
+df_sub$Prop._h2[df_sub$Prop._h2 < 0] <- 0
+df_sub$Enrichment_p[df_sub$Prop._h2 < 0] <- 1
+df_sub$Enrichment[df_sub$Prop._h2 < 0] <- 5
+
+# -------------------------------
+# 4. Scale enrichment per trait
+# -------------------------------
+df_sub <- df_sub %>%
+  group_by(Trait) %>%
+  mutate(
+    Enrichment_scaled = if (max(Enrichment, na.rm = TRUE) != min(Enrichment, na.rm = TRUE)) {
+      (Enrichment - min(Enrichment, na.rm = TRUE)) /
+        (max(Enrichment, na.rm = TRUE) - min(Enrichment, na.rm = TRUE))
+    } else {
+      0
+    }
+  ) %>%
+  ungroup()
+
+m <- mean(df_sub$Enrichment_scaled, na.rm = TRUE)
+
+# -------------------------------
+# 5. Keep sample order on y-axis
+# -------------------------------
+df_sub$Category <- factor(df_sub$sample, levels = relevant_samples)
+
+# -------------------------------
+# 6. Create x-axis positions with gaps between trait groups
+# -------------------------------
+gap <- 1  # extra space between trait groups
+
+# Compute numeric x positions
+x_base <- seq_along(all_traits)
+group_sizes <- c(length(eye_traits), length(kidney_liver_traits),
+                 length(body_composition_traits), length(behavioral_traits),
+                 length(heart_traits), length(blood_traits))
+group_starts <- cumsum(c(1, group_sizes[-length(group_sizes)]))
+
+# Apply gaps
+x_map <- x_base
+for (i in seq_along(group_starts)[-1]) {
+  x_map[group_starts[i]:length(x_map)] <- x_map[group_starts[i]:length(x_map)] + gap * (i - 1)
+}
+
+# Map to df_sub
+df_sub$x_pos <- x_map[match(df_sub$description, all_traits)]
+
+# -------------------------------
+# 7. Top hits
+# -------------------------------
+top_hits <- df_sub %>%
+  group_by(description) %>%
+  slice_min(order_by = Enrichment_p, n = 3, with_ties = FALSE) %>%
+  ungroup()
+top_hits$x_pos <- df_sub$x_pos[match(top_hits$description, df_sub$description)]
+top_hits$y_pos <- df_sub$Category[match(top_hits$Category, df_sub$Category)]
+
+# -------------------------------
+# 8. Plot
+# -------------------------------
+p <- ggplot(df_sub, aes(x = x_pos, y = Category)) +
+  geom_tile(aes(fill = Enrichment_scaled, height = Prop._h2 + 0.4, width = Prop._h2 + 0.4),
+            color = NA) +
+  geom_tile(fill = NA, color = "black", width = 1, height = 1) +
+  geom_point(data = top_hits, aes(x = x_pos, y = Category),
+             shape = 8, size = 0.25, color = "black") +
+  scale_fill_gradient2(low = "#256866", mid = "#FFFFCC", high = "orange",
+                       midpoint = m, na.value = "grey50", name = "Enrichment") +
+  scale_x_continuous(breaks = x_map, labels = all_traits) +
+  labs(x = "Trait", y = "Category") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 3),
+        axis.text.y = element_text(size = 3),
+        legend.position = "right",
+        panel.grid = element_blank()) +
+  coord_fixed(ratio = 1)
+
+# -------------------------------
+# 9. Save
+# -------------------------------
+ggsave("/projects/ralab/people/mhf817/FANTOM5_LDSC_plots/allTraits_heatmap.Scaledenrichments.pdf",
+       p, height = 30, width = 10)
+
+```
+
+
+
+
+```{r}
+df_sub <- filter(ldsc_data,  description %in% kidney_liver_traits)
+cat <- df_sub$Category[df_sub$Enrichment_p<0.00005& df_sub$Prop._h2>0.1] #  & df_sub$Enrichment>20
+df_sub <- filter(df_sub, Category %in% cat)
+
+df_sub$Enrichment[df_sub$Enrichment<0] <- 0
+df_sub$Prop._h2[df_sub$Prop._h2<0] <- 0
+
+
+df_sub <- df_sub %>%
+  group_by(Trait) %>%
+  mutate(
+    Enrichment_scaled = if (max(Enrichment, na.rm = TRUE) != min(Enrichment, na.rm = TRUE)) {
+      (Enrichment - min(Enrichment, na.rm = TRUE)) /
+        (max(Enrichment, na.rm = TRUE) - min(Enrichment, na.rm = TRUE))
+    } else {
+      0
+    }
+  ) %>%
+  ungroup()
+
+m <- mean(df_sub$Enrichment_scaled)
+
+# Suppose your matrix for clustering is:
+mat <- xtabs(Enrichment_scaled ~ Category + description, data = df_sub)
+# Or if you already have a matrix form:
+# mat <- as.matrix(...)
+
+# Cluster rows (categories)
+row_hc <- hclust(dist(mat))
+row_order <- row_hc$labels[row_hc$order]
+
+# Cluster columns (traits)
+col_hc <- hclust(dist(t(mat)))
+col_order <- col_hc$labels[col_hc$order]
+
+# Reorder factors in the original df
+df_sub$Category <- factor(df_sub$Category, levels = row_order)
+df_sub$description <- factor(df_sub$description, levels = col_order)
+
+ p <- ggplot(df_sub, aes(x = description, y = Category)) +
+    geom_tile(aes(fill = Enrichment_scaled, 
+                  height = Prop._h2 + 0.4, 
+                  width  = Prop._h2 + 0.4),
+              color = NA) +
+    geom_tile(fill = NA, color = "black", width = 1, height = 1) +
+    scale_fill_gradient2(
+      low      = "#256866", 
+      mid      = "#FFFFCC", 
+      high     = "orange",
+      midpoint = m, 
+      na.value = "grey50", 
+      name     = "Enrichment"
+    ) +
+    labs(
+      x     = "Trait",
+      y     = "Category"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x     = element_text(angle = 45, hjust = 1,size=1),
+      axis.text.y     = element_text(size = 3),
+      legend.position = "right",
+      panel.grid      = element_blank()
+    ) +
+    coord_fixed(ratio = 1)
+
+ggsave("/projects/ralab/people/mhf817/FANTOM5_LDSC_plots/kidneyliver_heatmap.Scaledenrichments.pdf",p,height=30, width=10) 
+```
+
+
+
+
+```{r}
+df_sub <- filter(ldsc_data,  description %in% heart_traits)
+cat <- df_sub$Category[df_sub$Enrichment_p<0.00001 & df_sub$Prop._h2>0.15 & df_sub$Enrichment>0]
+df_sub <- filter(df_sub, Category %in% cat)
+
+df_sub <- df_sub %>%
+  group_by(Trait) %>%
+  mutate(
+    Enrichment_scaled = if (max(Enrichment, na.rm = TRUE) != min(Enrichment, na.rm = TRUE)) {
+      (Enrichment - min(Enrichment, na.rm = TRUE)) /
+        (max(Enrichment, na.rm = TRUE) - min(Enrichment, na.rm = TRUE))
+    } else {
+      0
+    }
+  ) %>%
+  ungroup()
+
+m <- mean(df_sub$Enrichment_scaled)
+ p <- ggplot(df_sub, aes(x = description, y = Category)) +
+    geom_tile(aes(fill = Enrichment_scaled, 
+                  height = Prop._h2 + 0.4, 
+                  width  = Prop._h2 + 0.4),
+              color = NA) +
+    geom_tile(fill = NA, color = "black", width = 1, height = 1) +
+    scale_fill_gradient2(
+      low      = "#256866", 
+      mid      = "#FFFFCC", 
+      high     = "orange",
+      midpoint = m, 
+      na.value = "grey50", 
+      name     = "Enrichment"
+    ) +
+    labs(
+      x     = "Trait",
+      y     = "Category"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x     = element_text(angle = 45, hjust = 1,size=5),
+      axis.text.y     = element_text(size = 5),
+      legend.position = "right",
+      panel.grid      = element_blank()
+    ) +
+    coord_fixed(ratio = 1)
+
+ggsave("/projects/ralab/people/mhf817/FANTOM5_LDSC_plots/heartTraits_heatmap.Scaledenrichments.pdf",p,height=30, width=10) 
+```
+
+
+
+
+```{r}
+df_sub <- filter(ldsc_data,  description %in% disease_traits)
+cat <- df_sub$Category[df_sub$Enrichment_p<0.0001 & df_sub$Prop._h2>0 & df_sub$Enrichment>0]
+df_sub <- filter(df_sub, Category %in% cat)
+
+df_sub <- df_sub %>%
+  group_by(Trait) %>%
+  mutate(
+    Enrichment_scaled = if (max(Enrichment, na.rm = TRUE) != min(Enrichment, na.rm = TRUE)) {
+      (Enrichment - min(Enrichment, na.rm = TRUE)) /
+        (max(Enrichment, na.rm = TRUE) - min(Enrichment, na.rm = TRUE))
+    } else {
+      0
+    }
+  ) %>%
+  ungroup()
+
+m <- mean(df_sub$Enrichment_scaled)
+ p <- ggplot(df_sub, aes(x = description, y = Category)) +
+    geom_tile(aes(fill = Enrichment_scaled, 
+                  height = Prop._h2 + 0.4, 
+                  width  = Prop._h2 + 0.4),
+              color = NA) +
+    geom_tile(fill = NA, color = "black", width = 1, height = 1) +
+    scale_fill_gradient2(
+      low      = "#256866", 
+      mid      = "#FFFFCC", 
+      high     = "orange",
+      midpoint = m, 
+      na.value = "grey50", 
+      name     = "Enrichment"
+    ) +
+    labs(
+      x     = "Trait",
+      y     = "Category"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x     = element_text(angle = 45, hjust = 1,size=3),
+      axis.text.y     = element_text(size = 3),
+      legend.position = "right",
+      panel.grid      = element_blank()
+    ) +
+    coord_fixed(ratio = 1)
+
+ggsave("/projects/ralab/people/mhf817/FANTOM5_LDSC_plots/disease_traits_heatmap.Scaledenrichments.pdf",p,height=30, width=10) 
+```
+
+
+
+
+
+```{r}
+df_sub <- filter(ldsc_data,  description %in% behavioral_traits)
+cat <- df_sub$Category[df_sub$Enrichment_p<0.0001 & df_sub$Prop._h2>0 & df_sub$Enrichment>0]
+df_sub <- filter(df_sub, Category %in% cat)
+
+df_sub <- df_sub %>%
+  group_by(Trait) %>%
+  mutate(
+    Enrichment_scaled = if (max(Enrichment, na.rm = TRUE) != min(Enrichment, na.rm = TRUE)) {
+      (Enrichment - min(Enrichment, na.rm = TRUE)) /
+        (max(Enrichment, na.rm = TRUE) - min(Enrichment, na.rm = TRUE))
+    } else {
+      0
+    }
+  ) %>%
+  ungroup()
+
+m <- mean(df_sub$Enrichment_scaled)
+ p <- ggplot(df_sub, aes(x = description, y = Category)) +
+    geom_tile(aes(fill = Enrichment_scaled, 
+                  height = Prop._h2 + 0.4, 
+                  width  = Prop._h2 + 0.4),
+              color = NA) +
+    geom_tile(fill = NA, color = "black", width = 1, height = 1) +
+    scale_fill_gradient2(
+      low      = "#256866", 
+      mid      = "#FFFFCC", 
+      high     = "orange",
+      midpoint = m, 
+      na.value = "grey50", 
+      name     = "Enrichment"
+    ) +
+    labs(
+      x     = "Trait",
+      y     = "Category"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x     = element_text(angle = 45, hjust = 1,size=3),
+      axis.text.y     = element_text(size = 3),
+      legend.position = "right",
+      panel.grid      = element_blank()
+    ) +
+    coord_fixed(ratio = 1)
+
+ggsave("/projects/ralab/people/mhf817/FANTOM5_LDSC_plots/behavioural_traits_heatmap.Scaledenrichments.pdf",p,height=30, width=10)
+```
+
+
+
+```{r}
+df_sub <- filter(ldsc_data,  description %in% body_composition_traits)
+cat <- df_sub$Category[df_sub$Enrichment_p<0.00000001 & df_sub$Prop._h2>0 & df_sub$Enrichment>0]
+df_sub <- filter(df_sub, Category %in% cat)
+
+df_sub <- df_sub %>%
+  group_by(Trait) %>%
+  mutate(
+    Enrichment_scaled = if (max(Enrichment, na.rm = TRUE) != min(Enrichment, na.rm = TRUE)) {
+      (Enrichment - min(Enrichment, na.rm = TRUE)) /
+        (max(Enrichment, na.rm = TRUE) - min(Enrichment, na.rm = TRUE))
+    } else {
+      0
+    }
+  ) %>%
+  ungroup()
+
+m <- mean(df_sub$Enrichment_scaled)
+ p <- ggplot(df_sub, aes(x = description, y = Category)) +
+    geom_tile(aes(fill = Enrichment_scaled, 
+                  height = Prop._h2 + 0.4, 
+                  width  = Prop._h2 + 0.4),
+              color = NA) +
+    geom_tile(fill = NA, color = "black", width = 1, height = 1) +
+    scale_fill_gradient2(
+      low      = "#256866", 
+      mid      = "#FFFFCC", 
+      high     = "orange",
+      midpoint = m, 
+      na.value = "grey50", 
+      name     = "Enrichment"
+    ) +
+    labs(
+      x     = "Trait",
+      y     = "Category"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x     = element_text(angle = 45, hjust = 1,size=3),
+      axis.text.y     = element_text(size = 3),
+      legend.position = "right",
+      panel.grid      = element_blank()
+    ) +
+    coord_fixed(ratio = 1)
+
+ggsave("/projects/ralab/people/mhf817/FANTOM5_LDSC_plots/BCT_heatmap.Scaledenrichments.pdf",p,height=30, width=10)
+```
+
+
+
+
+
+```{r}
+
+
+
+plot_top5_enrichment <- function(df, outdir = "sample_plots") {
+  
+  # Keep only the columns needed for plotting
+  df <- df[df$Enrichment_p<0.00005 & df$Prop._h2>0.1,]
+  df_clean <- df %>%
+    dplyr::select(sample, description, Enrichment, Enrichment_p) %>%
+    mutate(
+      sample       = as.character(sample),
+      description  = as.character(description),
+      Enrichment   = as.numeric(Enrichment),
+      Enrichment_p = as.numeric(Enrichment_p)
+    )
+  
+
+  
+  if (!dir.exists(outdir)) dir.create(outdir)
+  
+  samples <- unique(df_clean$sample)
+  
+  for (s in samples) {
+    
+    df_sub <- df_clean %>%
+      filter(sample == s) %>%               
+      arrange(desc(Enrichment)) %>%
+      dplyr::slice(1:5) %>%                        
+      mutate(
+        p_round = formatC(Enrichment_p, format="e", digits=2),
+        label   = paste0(description, "\n(p=", p_round, ")"),
+        description = factor(description, levels = description)
+      )
+    
+    p <- ggplot(df_sub, aes(x = description, y = Enrichment, fill = description)) +
+      geom_col(show.legend = FALSE) +
+      #geom_text(aes(label = p_round), vjust = -0.6, size = 3) +
+      labs(
+        title = paste("Top 5 Enrichments for", s),
+        x = "Description",
+        y = "Enrichment"
+      ) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    
+    ggsave(
+      file.path(outdir, paste0("top5_", s, ".pdf")),
+      plot = p, width = 20, height =20
+    )
+  }
+  
+  message("All plots generated successfully.")
+}
+
+
+plot_top5_enrichment(ldsc_data,outdir = "/maps/projects/ralab/people/mhf817/FANTOM5_LDSC_plots")
+```
+
+```{r}
+plot_top5_enrichment_logp <- function(df, outdir = "sample_plots") {
+  
+  # Filter based on p-value and heritability proportion
+  df <- df[df$Enrichment_p < 0.00005 & df$Prop._h2 > 0.1, ]
+  
+  df_clean <- df %>%
+    dplyr::select(sample, description, Enrichment_p) %>%
+    mutate(
+      sample       = as.character(sample),
+      description  = as.character(description),
+      Enrichment_p = as.numeric(Enrichment_p),
+      logp         = -log10(Enrichment_p)
+    )
+  
+  if (!dir.exists(outdir)) dir.create(outdir)
+  
+  samples <- unique(df_clean$sample)
+  
+  for (s in samples) {
+    
+    df_sub <- df_clean %>%
+      filter(sample == s) %>%
+      arrange(desc(logp)) %>%                  # top 5 by -log10(p)
+      dplyr::slice(1:5) %>%
+      mutate(
+        p_round = formatC(Enrichment_p, format="e", digits=2),
+        label   = paste0(description, "\n(p=", p_round, ")"),
+        description = factor(description, levels = description)
+      )
+    
+    p <- ggplot(df_sub, aes(x = description, y = logp, fill = description)) +
+      geom_col(show.legend = FALSE) +
+      labs(
+        title = paste("Top 5 -log10(p) for", s),
+        x = "Description",
+        y = "-log10(Enrichment_p)"
+      ) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    
+    ggsave(
+      file.path(outdir, paste0("top5_logp_", s, ".pdf")),
+      plot = p, width = 20, height = 20
+    )
+  }
+  
+  message("All -log10(p) plots generated successfully.")
+}
+
+# Example usage:
+plot_top5_enrichment_logp(ldsc_data, outdir = "/maps/projects/ralab/people/mhf817/FANTOM5_LDSC_plots")
+
+```
+
+
+
+
+```{r}
+df_sub <- filter(ldsc_data,  description %in% trai)
+cat <- df_sub$Category[df_sub$Enrichment_p<0.00000001 & df_sub$Prop._h2>0 & df_sub$Enrichment>0]
+
+
+df_sub <- df_sub %>%
+  group_by(Trait) %>%
+  mutate(
+    Enrichment_scaled = if (max(Enrichment, na.rm = TRUE) != min(Enrichment, na.rm = TRUE)) {
+      (Enrichment - min(Enrichment, na.rm = TRUE)) /
+        (max(Enrichment, na.rm = TRUE) - min(Enrichment, na.rm = TRUE))
+    } else {
+      0
+    }
+  ) %>%
+  ungroup()
+
+m <- mean(df_sub$Enrichment_scaled)
+ p <- ggplot(df_sub, aes(x = description, y = Category)) +
+    geom_tile(aes(fill = Enrichment_scaled, 
+                  height = Prop._h2 + 0.4, 
+                  width  = Prop._h2 + 0.4),
+              color = NA) +
+    geom_tile(fill = NA, color = "black", width = 1, height = 1) +
+    scale_fill_gradient2(
+      low      = "#256866", 
+      mid      = "#FFFFCC", 
+      high     = "orange",
+      midpoint = m, 
+      na.value = "grey50", 
+      name     = "Enrichment"
+    ) +
+    labs(
+      x     = "Trait",
+      y     = "Category"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x     = element_text(angle = 45, hjust = 1,size=3),
+      axis.text.y     = element_text(size = 3),
+      legend.position = "right",
+      panel.grid      = element_blank()
+    ) +
+    coord_fixed(ratio = 1)
+ggsave("/projects/ralab/people/mhf817/FANTOM5_LDSC_plots/selected_heatmap.Scaledenrichments.pdf",p,height=30, width=10)
+
+```
+
