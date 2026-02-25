@@ -295,37 +295,40 @@ relevant_samples <- base::c(
   )
 ```
 
+## [2.3.] Combine traits in order
 ```{r}
-# -------------------------------
-# 1. Combine traits in order
-# -------------------------------
-all_traits <- c(
-  eye_traits, kidney_liver_traits, body_composition_traits,
-  behavioral_traits, heart_traits, blood_traits
-)
+all_traits <- base::c(
+    eye_traits,
+    kidney_liver_traits,
+    body_composition_traits,
+    behavioral_traits,
+    heart_traits,
+    blood_traits
+  )
+```
 
-# -------------------------------
-# 2. Filter data
-# -------------------------------
+## [2.4.] Filter all data by selected traits & samples
+#### if one were to use strict_traits: 'df_sub <- df_sub %>% filter(description %in% strict_traits)'
+```{r}
 df_sub <- ldsc_data %>%
-  filter(description %in% all_traits & sample %in% relevant_samples)
+  dplyr::filter(
+      description %in% all_traits &
+      sample %in% relevant_samples
+    )
+```
 
-# If using strict traits
-# df_sub <- df_sub %>% filter(description %in% strict_traits)
-
-# -------------------------------
-# 3. Handle negative Prop._h2
-# -------------------------------
+## [2.5.] Handle negative Prop._h2
+```{r}
 df_sub$Prop._h2[df_sub$Prop._h2 < 0] <- 0
 df_sub$Enrichment_p[df_sub$Prop._h2 < 0] <- 1
 df_sub$Enrichment[df_sub$Prop._h2 < 0] <- 5
+```
 
-# -------------------------------
-# 4. Scale enrichment per trait
-# -------------------------------
+## [2.6.] Scale enrichment per trait
+```{r}
 df_sub <- df_sub %>%
-  group_by(Trait) %>%
-  mutate(
+  dplyr::group_by(Trait) %>%
+  dplyr::mutate(
     Enrichment_scaled = if (max(Enrichment, na.rm = TRUE) != min(Enrichment, na.rm = TRUE)) {
       (Enrichment - min(Enrichment, na.rm = TRUE)) /
         (max(Enrichment, na.rm = TRUE) - min(Enrichment, na.rm = TRUE))
@@ -336,72 +339,141 @@ df_sub <- df_sub %>%
   ungroup()
 
 m <- mean(df_sub$Enrichment_scaled, na.rm = TRUE)
+```
 
-# -------------------------------
-# 5. Keep sample order on y-axis
-# -------------------------------
-df_sub$Category <- factor(df_sub$sample, levels = relevant_samples)
+## [2.7.] Keep sample order on y-axis
+```{r}
+df_sub$Category <- base::factor(
+    x = df_sub$sample,
+    levels = relevant_samples
+  )
+```
 
-# -------------------------------
-# 6. Create x-axis positions with gaps between trait groups
-# -------------------------------
+## [2.8.] Create x-axis positions with gaps between trait groups
+```{r}
 gap <- 1  # extra space between trait groups
 
 # Compute numeric x positions
 x_base <- seq_along(all_traits)
-group_sizes <- c(length(eye_traits), length(kidney_liver_traits),
-                 length(body_composition_traits), length(behavioral_traits),
-                 length(heart_traits), length(blood_traits))
-group_starts <- cumsum(c(1, group_sizes[-length(group_sizes)]))
+group_sizes <- base::c(
+    base::length(eye_traits),
+    base::length(kidney_liver_traits),
+    base::length(body_composition_traits),
+    base::length(behavioral_traits),
+    base::length(heart_traits),
+    base::length(blood_traits)
+  )
+group_starts <- base::cumsum(
+  base::c(
+      1, group_sizes[-base::length(group_sizes)]
+    )
+  )
 
 # Apply gaps
 x_map <- x_base
-for (i in seq_along(group_starts)[-1]) {
-  x_map[group_starts[i]:length(x_map)] <- x_map[group_starts[i]:length(x_map)] + gap * (i - 1)
-}
+for (i in base::seq_along(group_starts)[-1]) {
+    x_map[group_starts[i]:base::length(x_map)] <- x_map[group_starts[i]:base::length(x_map)] + gap * (i - 1)
+  }
 
 # Map to df_sub
-df_sub$x_pos <- x_map[match(df_sub$description, all_traits)]
-
-# -------------------------------
-# 7. Top hits
-# -------------------------------
-top_hits <- df_sub %>%
-  group_by(description) %>%
-  slice_min(order_by = Enrichment_p, n = 3, with_ties = FALSE) %>%
-  ungroup()
-top_hits$x_pos <- df_sub$x_pos[match(top_hits$description, df_sub$description)]
-top_hits$y_pos <- df_sub$Category[match(top_hits$Category, df_sub$Category)]
-
-# -------------------------------
-# 8. Plot
-# -------------------------------
-p <- ggplot(df_sub, aes(x = x_pos, y = Category)) +
-  geom_tile(aes(fill = Enrichment_scaled, height = Prop._h2 + 0.4, width = Prop._h2 + 0.4),
-            color = NA) +
-  geom_tile(fill = NA, color = "black", width = 1, height = 1) +
-  geom_point(data = top_hits, aes(x = x_pos, y = Category),
-             shape = 8, size = 0.25, color = "black") +
-  scale_fill_gradient2(low = "#256866", mid = "#FFFFCC", high = "orange",
-                       midpoint = m, na.value = "grey50", name = "Enrichment") +
-  scale_x_continuous(breaks = x_map, labels = all_traits) +
-  labs(x = "Trait", y = "Category") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 3),
-        axis.text.y = element_text(size = 3),
-        legend.position = "right",
-        panel.grid = element_blank()) +
-  coord_fixed(ratio = 1)
-
-# -------------------------------
-# 9. Save
-# -------------------------------
-ggsave("/projects/ralab/people/mhf817/FANTOM5_LDSC_plots/allTraits_heatmap.Scaledenrichments.pdf",
-       p, height = 30, width = 10)
-
+df_sub$x_pos <- x_map[base::match(df_sub$description, all_traits)]
 ```
 
+## [2.9.] Top hits
+```{r}
+top_hits <- df_sub %>%
+  dplyr::group_by(description) %>%
+  dplyr::slice_min(
+      order_by = Enrichment_p,
+      n = 3,
+      with_ties = FALSE
+    ) %>%
+  dplyr::ungroup()
+top_hits$x_pos <- df_sub$x_pos[
+    base::match(top_hits$description, df_sub$description)
+  ]
+top_hits$y_pos <- df_sub$Category[
+    base::match(top_hits$Category, df_sub$Category)
+  ]
+```
 
+## [] Plot data
+```{r}
+ggplot2::ggplot(
+    data = df_sub,
+    mapping = aes(
+        x = x_pos,
+        y = Category
+      )
+    ) +
+  geom_tile(
+      mapping = aes(
+          fill = Enrichment_scaled,
+          height = Prop._h2 + 0.4,
+          width = Prop._h2 + 0.4
+        ),
+      color = NA
+    ) +
+  geom_tile(
+      fill = NA,
+      color = "black",
+      width = 1,
+      height = 1
+    ) +
+  geom_point(
+        data = top_hits,
+        aes(
+            x = x_pos,
+            y = Category
+          ),
+        shape = 8,
+        size = 0.25,
+        color = "black"
+      ) +
+  scale_fill_gradient2(
+      low = "#256866",
+      mid = "#FFFFCC",
+      high = "orange",
+      midpoint = m,
+      na.value = "grey50",
+      name = "Enrichment"
+    ) +
+  scale_x_continuous(
+      breaks = x_map,
+      labels = all_traits
+    ) +
+  labs(x = "Trait", y = "Category") +
+  theme_minimal() +
+  theme(
+      axis.text.x = element_text(
+          angle = 45,
+          hjust = 1,
+          size = 3
+        ),
+      axis.text.y = element_text(
+          size = 3
+        ),
+      legend.position = "right",
+      panel.grid = element_blank()
+    ) +
+  coord_fixed(
+      ratio = 1
+    )
+```
+
+## [] Print plot to file
+```{r}
+ggplot2::ggsave(
+    file = base::paste0(
+        here::here("11.LDSC_FANTOM5_copy/plots/"),
+        "allTraits_heatmap.Scaledenrichments.pdf"
+      ),
+    plot = ggplot2::last_plot(),
+    device = "pdf",
+    height = 30,
+    width = 10
+  )
+```
 
 
 ```{r}

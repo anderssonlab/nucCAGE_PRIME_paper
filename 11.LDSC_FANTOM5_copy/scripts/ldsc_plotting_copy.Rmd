@@ -1037,7 +1037,9 @@ ldsc_score <- ldsc_score[ldsc_score$Category != "baseL2_0",] # 3,552,840
 #### For cellFacets with over 100K regions
 ```{r}
 min_top_scores <- base::apply(
-  X = SummarizedExperiment::assay(cellFacet.rse, "qn.PL.score")[SummarizedExperiment::rowData(cellFacet.rse)$location == "distal",],
+  X = SummarizedExperiment::assay(cellFacet.rse, "qn.PL.score")[
+      SummarizedExperiment::rowData(cellFacet.rse)$location == "distal",
+    ],
   MARGIN = 2,
   FUN = function(x) {
     sorted_vals <- sort(x, decreasing = TRUE)
@@ -1053,8 +1055,26 @@ min_top_scores <- base::apply(
 ## [2.3.] Prepare description-sample combinations for plotting
 ```{r}
 sub <- tibble::tibble(
-    description = base::c("Reticulocyte count","Reticulocyte count","Monocyte count","Monocyte count","Basophill count","Basophill count","Urate (umol/L)","Urate (umol/L)"),
-    sample = base::c("reticulocyte", "F5", "monocyte", "F5", "mast.cell", "F5", "kidney", "F5")
+  description = base::c(
+      "Reticulocyte count",
+      "Reticulocyte count",
+      "Monocyte count",
+      "Monocyte count",
+      "Basophill count",
+      "Basophill count",
+      "Urate (umol/L)",
+      "Urate (umol/L)"
+    ),
+  sample = base::c(
+      "reticulocyte",
+      "F5",
+      "monocyte",
+      "F5",
+      "mast.cell",
+      "F5",
+      "kidney",
+      "F5"
+    )
   )
 ```
 
