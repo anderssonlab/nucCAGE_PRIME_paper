@@ -1,0 +1,249 @@
+## [0.] Prerequsites -------------------------
+
+## [0.0.] Load necesarray packages
+```{r message=FALSE}
+base::library(tidyverse)
+base::library(BiocParallel)
+```
+
+## [0.1.] Load CAGEfighR extensions
+```{r message=FALSE,results='hide'}
+sep <- .Platform$file.sep
+cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
+fs <- base::c(
+    "utils","support","cumulative",
+    "decompose","enhancers","noise",
+    "coverage","complexity","subsample",
+    "dispersion"
+  )
+
+purrr::map(
+  .x = fs,
+  .f = function(f){
+    base::source(
+      base::paste0(
+        cfr.extensions.dir, sep, f, ".R"
+        )
+      )
+    }
+  )
+```
+
+## [0.2.] Load annotations
+```{r message=FALSE}
+base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+```
+
+## [0.3.] Add custom color palette
+```{r}
+custom.col <- base::c(
+    "#FFDB6D","#C4961A","#F4EDCA",
+    "#D16103","#C3D7A4","#52854C",
+    "#4E84C4","#293352","grey"
+  )
+custom.col.ord <- base::c(
+    "#FFDB6D","#F4EDCA","#52854C",
+    "#4E84C4","#293352","#C3D7A4",
+    "#D16103","grey",   "#C4961A"
+  )
+cols3 <- base::c(
+    "#ED4938","#ADC607","#F4C10D",
+    "#333136","#161474","#7B3DBA",
+    "#03CEC2","#2AB348","#EDA838",
+    "#7297C7","#EB373C","#FFE45F"
+  )
+gm.pal <- base::c(
+    "#F5CE00","#E2AA00","#B68D00",
+    "#DF613F","#DF5643","#DD4425",
+    "#92B9C9","#76A5B6","#004352",
+    "#29A957","#008E37","#007A30",
+    "#4F5D5C","#444E4C","#3D4138",
+    "#AC97C2","#977FB4","#7D62A3"
+  )
+gm.pooled.pal <- base::c(
+    "#FF8D00","#FF4425","#00439B",
+    "#009072","#878784","#7D62D0"
+  )
+gm.full.pal <- base::c(
+    "#F5CE00","#E2AA00","#B68D00",
+    "#FF8D00","#DF613F","#DF5643",
+    "#DD4425","#FF4425","#92B9C9",
+    "#76A5B6","#004352","#00439B",
+    "#29A957","#008E37","#007A30",
+    "#009072","#4F5D5C","#444E4C",
+    "#3D4138","#878784","#AC97C2",
+    "#977FB4","#7D62A3","#7D62D0"
+  )
+k.full.pal <- base::c(
+    "#F5CE00","#E2AA00","#B68D00",
+    "#FF8D00","#DF613F","#DF5643",
+    "#DD4425","#FF4425","#92B9C9",
+    "#76A5B6","#004352","#00439B",
+    "#29A957","#008E37","#007A30",
+    "#4F5D5C"
+  )
+```
+
+## [0.4.] Add additional functions
+```{r}
+calcAnnoCTSS <- function(data, txModels, uniqueCTSS = FALSE) {
+    
+    annos <- CAGEfightR::assignTxType(
+        object = data,
+        txModels = txModels
+      )
+    
+    #Identify all txTypes
+    types <- base::unique(SummarizedExperiment::rowData(annos)$txType)
+    
+    # Initialize list to store total tags for each txType
+    totalTags_list <- base::vector("list", length = base::length(types))
+    
+    # Loop through each txType
+    for (i in base::seq_along(types)) {
+      
+        # Subset data based on current txType
+        current_subset <- S4Vectors::subset(annos, txType %in% types[i])
+        if(uniqueCTSS){
+          
+            # Calculate totalTags for current subset
+            current_subset <- Matrix::colSums(
+                SummarizedExperiment::assay(current_subset) > 0
+              ) 
+            totalTags_list[[i]] <- current_subset
+            
+          } else {
+            
+            # Calculate totalTags for current subset
+            current_subset <- SummarizedExperiment::colData(
+                CAGEfightR::calcTotalTags(current_subset)
+              )
+            totalTags_list[[i]] <- current_subset$totalTags
+            
+          }
+      }
+    
+    # Combine totalTags into a data frame
+    ann_counts <- base::as.data.frame(
+        base::do.call(base::cbind, totalTags_list)
+      )
+    base::colnames(ann_counts) <- types
+    return(ann_counts)
+  }
+```
+
+# [2.] GM12878 analysis -------------------------
+
+## [2.0.] Read in datasets for GM12878
+#### see [1.10.] in "1.1.CTSSs.processing.Rmd"
+```{r}
+GM12878.s.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("0.External_resources/NET_CAGE/"),
+      "repSub.combined.GM12878.CTSSs.rmSingletons.rds"
+    )
+  )
+GM12878.p.CTSSs <- base::readRDS(
+    file = base::paste0(
+      here::here("0.External_resources/NET_CAGE/"),
+      "poolSub.combined.GM12878.CTSSs.rmSingletons.rds"
+    )
+  )
+```
+
+## [2.1.] Quantify CTSS level annotations
+```{r}
+GM12878.ann.counts <- .GlobalEnv$calcAnnoCTSS(
+    data = GM12878.p.CTSSs,
+    txModels = txdb,
+    uniqueCTSS = FALSE # TRUE
+  )
+
+GM12878.ann.fracs <- GM12878.ann.counts/colData(GM12878.p.CTSSs)$totalTags
+```
+
+
+
+## [2.2.] Factor levels for genomic features & cell amounts
+```{r}
+feats <- base::c(
+    "intergenic","proximal","promoter",    
+    "fiveUTR","CDS","exon",
+    "intron","threeUTR","antisense"
+  )
+amts <- base::c("500K","1M","5M","10M")
+reps <- base::c("pool","1","2","3","4")
+
+sams <- base::c(
+    "500K_C","500K_N","1M_C",
+    "1M_N","5M_N","10M_N"
+  )
+```
+
+## [2.3.] Data wrangling - prepare plotting of fractions
+```{r}
+GM12878.ann.fracs.m <- GM12878.ann.fracs %>%
+  tibble::rownames_to_column("sample") %>%
+  tidyr::pivot_longer(
+    cols = !sample,
+    names_to = "variable",
+    values_to = "value"
+  ) %>%
+  mutate(
+    is_NET = grepl("_NET_", sample),
+    
+    cell = sub("^(.*?)_.*$", "\\1", sample),
+    
+    # NET samples
+    rep = ifelse(is_NET, sub("^.*_(\\d+)$", "\\1", sample), NA),
+    source = ifelse(is_NET, "NET", NA),
+    amount = ifelse(is_NET, "20M", NA),
+    
+    # classic samples
+    amount = ifelse(!is_NET, sub("^[^_]+_([^_]+)_.*$", "\\1", sample), amount),
+    type   = ifelse(!is_NET, sub("^[^_]+_[^_]+_(.*)$", "\\1", sample), NA),
+    source = ifelse(!is_NET, substr(type,1,1), source),
+    rep    = ifelse(!is_NET, substr(type,2,nchar(type)), rep)
+  ) %>%
+  dplyr::select(-type, -is_NET) %>%
+  mutate(
+    rep = factor(rep, levels = rev(reps), ordered = TRUE),
+    amount = factor(amount, levels = amts, ordered = TRUE),
+    source = factor(source, levels = c("C","N","NET"), ordered = TRUE),
+    variable = factor(variable, levels = rev(feats), ordered = TRUE)
+  )
+```
+
+
+## [2.5.] Plotting of fractions
+```{r}
+ggplot2::ggplot(
+    data = GM12878.ann.fracs.m,
+    mapping = aes(
+        x = value,
+        y = rep,
+        fill = variable
+      )
+    ) +
+  geom_col() +
+  facet_wrap(
+      facets = source ~ amount,
+      ncol = 1,
+      strip.position = "right",
+      axis.labels = "margins",
+      axes = "margins"
+    ) +
+  theme_bw() +
+  scale_fill_manual(
+      values = base::rev(custom.col.ord) #base::rev(custom.col)
+    ) +
+  theme(
+      axis.title = element_blank(),
+      panel.spacing = grid::unit(0.1,"lines"),
+      aspect.ratio = 1/6,
+      # legend.position = "none"
+      legend.title = element_blank(),
+      legend.background = element_blank()
+    )
+```
