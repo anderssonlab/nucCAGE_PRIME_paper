@@ -285,6 +285,42 @@ ggplot2::ggplot(
     )
 ```
 
+```{r}
+GM12878.ann.fracs.m %>%
+  dplyr::filter(
+      rep == "pool" &
+      source %in% base::c("C","N","NET")
+    ) %>% 
+  ggplot2::ggplot(
+      data = ,
+      mapping = aes(
+          x = value,
+          y = sample,
+          fill = variable
+        )
+      ) +
+    geom_col() +
+    # facet_wrap(
+    #     facets = source ~ amount,
+    #     ncol = 1,
+    #     strip.position = "right",
+    #     axis.labels = "margins",
+    #     axes = "margins"
+    #   ) +
+    theme_bw() +
+    scale_fill_manual(
+        values = base::rev(custom.col.ord) #base::rev(custom.col)
+      ) +
+    theme(
+        axis.title = element_blank(),
+        panel.spacing = grid::unit(0.1,"lines"),
+        aspect.ratio = 1/3,
+        legend.position = "none"
+        # legend.title = element_blank(),
+        # legend.background = element_blank()
+      )
+```
+
 ## [2.5.] Print plot to file
 ```{r}
 ggplot2::ggsave(
@@ -292,12 +328,12 @@ ggplot2::ggsave(
         here::here("0.External_resources/"),
         base::format(base::Sys.Date(),"%Y%m%d"),
         "_annFrac",
-        "_AllSamples_AllReplicates",
+        "_CNNETSamples_PoolReplicates",
         ".pdf"
       ),
     device = "pdf",
     plot = ggplot2::last_plot(),
-    width = 5,
-    height = 8
+    width = 8,
+    height = 3
   )
 ```
