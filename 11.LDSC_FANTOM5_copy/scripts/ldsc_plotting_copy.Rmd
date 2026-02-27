@@ -50,6 +50,8 @@ cellFacet.rse <- base::readRDS( # cellFacet.rse_1
       "cellFacet.rds"
     )
   )
+
+SummarizedExperiment::assay(x = cellFacet.rse, i = "qn.PL.score")
 ```
 
 ## [0.2.] Read in FANTOM5 predictions

@@ -799,7 +799,7 @@ l_ <- "chr4:54,360,000-55,036,000" # c-KIT
 l_ <- "chr4:54,526,583-54,789,294" # c-KIT
 l_ <- "chr4:54,635,119-54,635,915" # c-KIT enhancer
 
-l_ <- "chr10:3,700,000-4,146,000" # KLF6
+# l_ <- "chr10:3,700,000-4,146,000" # KLF6 # wider area
 l_ <- "chr10:3,715,630-3,960,899" # KLF6
 l_ <- "chr10:3,942,689-3,943,182" # KLF6 enhancer
 ```
@@ -1558,8 +1558,9 @@ sites_scores <- varPL %>%
 ```
 
 ```{r}
-minY = -50 # -50 # -500 # base::range(cage_sel_$score)[1]
-maxY = 50 # 50 # 500 # base::range(cage_sel_$score)[2]
+cage_sel <- cage_sel_
+minY = -500 # -50 # -500 # base::range(cage_sel_$score)[1]
+maxY = 500 # 50 # 500 # base::range(cage_sel_$score)[2]
 
 coef = 0.75
 cols <- base::c(
