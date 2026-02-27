@@ -118,7 +118,7 @@ snps <- readr::read_delim( # 1,096,648
 
 #### Read in anemia related SNPs across all 4 SNP sets
 ```{r}
-snps <- purrr::map_dfr(
+snps <- purrr::map_dfr( # 4,386,592 (=4*1,096,648)
   .x = snps_sel_,
   .f = function(f){
     SNPset <- stringr::str_replace(f, "^(.*?)\\.(.*)$", "\\1")
@@ -150,7 +150,6 @@ snps %>%
   distinct(SNP,A1,A2)
 ```
 
-
 ## [1.4.] Merge the data
 ```{r}
 mrg <- dplyr::left_join(
@@ -162,7 +161,7 @@ mrg <- dplyr::left_join(
       end = start
     ) %>% 
   dplyr::select(
-      chr,start, end, SNP, Z, L2
+      chr,start, end, SNPset, SNP, Z, L2
     ) %>%
   tidyr::drop_na()
   # dplyr::filter(
@@ -180,6 +179,9 @@ dplyr::arrange(mrg,dplyr::desc(Z))
 # dplyr::distinct(mrg,N) # N not selected in [1.4.]
 
 GenomicRanges::makeGRangesFromDataFrame(mrg)
+
+mrg %>%
+  dplyr::filter(SNP == "rs1000000")
 ```
 
 ## [1.5.] Read in mast cell PRIMEloci
@@ -233,7 +235,7 @@ fs <- base::list.files(
   stringr::str_subset(facets_sel) %>%
   stringr::str_subset("qn.PL.score0.5.bed")
 
-icPL <- purrr::map_dfr(
+icPL <- purrr::map_dfr( # 2,056,763
     .x = fs,
     .f = function(f){
       cell <- stringr::str_replace(f, "^(.*)/(.*?)_(.*)$", "\\2")
@@ -293,20 +295,20 @@ ovl_2 <- mrggr[S4Vectors::subjectHits(ovl)] %>%
       var_pos,SNP,Z,L2
     )
 
-varPL_mc <- dplyr::bind_cols(
+varPL_mc <- dplyr::bind_cols( # 346,340
     ovl_1, ovl_2
   )
 ```
 
 ```{r}
-icPLgr <- GenomicRanges::makeGRangesFromDataFrame(icPL)
+icPLgr <- GenomicRanges::makeGRangesFromDataFrame(icPL) # 2,056,763
 GenomeInfoDb::seqlevelsStyle(icPLgr) <- "UCSC"
 S4Vectors::mcols(icPLgr)[base::c("PL","cell","site")] <- icPL[,base::c("PL","cell","site")]
 icPLgr <- base::sort(icPLgr)
 
-mrggr <- GenomicRanges::makeGRangesFromDataFrame(mrg)
+mrggr <- GenomicRanges::makeGRangesFromDataFrame(mrg) # 4,284,612 
 GenomeInfoDb::seqlevelsStyle(mrggr) <- "UCSC"
-S4Vectors::mcols(mrggr)[base::c("SNP","Z","L2")] <- mrg[,base::c("SNP","Z","L2")]
+S4Vectors::mcols(mrggr)[base::c("SNP","SNPset","Z","L2")] <- mrg[,base::c("SNP","SNPset","Z","L2")]
 mrggr <- base::sort(mrggr)
 
 ovl <- IRanges::findOverlaps(
@@ -326,10 +328,10 @@ ovl_2 <- mrggr[S4Vectors::subjectHits(ovl)] %>%
       var_pos = base::paste(seqnames,start,sep = "_")
     ) %>% 
   dplyr::select(
-      var_pos,SNP,Z,L2
+      var_pos,SNP,SNPset,Z,L2
     )
 
-varPL <- dplyr::bind_cols(
+varPL <- dplyr::bind_cols( # 1,385,360
     ovl_1, ovl_2
   )
 ```
@@ -427,6 +429,7 @@ base::saveRDS(
         here::here("11.LDSC_FANTOM5_copy/"),
         base::format(base::Sys.time(),"%Y%m%d"),
         "_varPL",
+        "_AllImmuneCells","_4AnemiaTraits",
         ".rds"
       ),
     compress = TRUE

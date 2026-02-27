@@ -802,6 +802,7 @@ l_ <- "chr4:54,635,119-54,635,915" # c-KIT enhancer
 # l_ <- "chr10:3,700,000-4,146,000" # KLF6 # wider area
 l_ <- "chr10:3,715,630-3,960,899" # KLF6
 l_ <- "chr10:3,942,689-3,943,182" # KLF6 enhancer
+#l_ <- "chr10:3,740,001-3,740,401"
 ```
 
 ## [2.1.] Get genomic region from coordinates
@@ -1537,7 +1538,8 @@ varPL <- base::readRDS(
         full.names = TRUE
       ) %>%
     stringr::str_subset("rds") %>%
-    stringr::str_subset("varPL")
+    stringr::str_subset("varPL") %>%
+    stringr::str_subset("_AllImmuneCells")
   )
 ```
 
@@ -1549,18 +1551,22 @@ end_pos <- BiocGenerics::end(ran)
 
 sites_scores <- varPL %>%
   dplyr::filter(
-      seqnames == chr & start >= start_pos & end <= end_pos
+      seqnames == chr & start >= start_pos & end <= end_pos &
+      base::abs(Z) > 2
     ) %>%
-  dplyr::distinct(
-      seqnames,start,end,PL,
-      .keep_all = TRUE
+  dplyr::mutate(
+      sample = stringr::str_replace(cell, "\\.", " ")
     )
+  # dplyr::distinct(
+  #     seqnames,start,end,PL,
+  #     .keep_all = TRUE
+  #   )
 ```
 
 ```{r}
 cage_sel <- cage_sel_
-minY = -500 # -50 # -500 # base::range(cage_sel_$score)[1]
-maxY = 500 # 50 # 500 # base::range(cage_sel_$score)[2]
+minY = -50 # -50 # -500 # base::range(cage_sel_$score)[1]
+maxY = 50 # 50 # 500 # base::range(cage_sel_$score)[2]
 
 coef = 0.75
 cols <- base::c(
@@ -1594,6 +1600,12 @@ plot <- cage_sel %>%
       ymax = maxY,
       # fill = "grey",
       alpha = 0.5
+    ) +
+  facet_wrap(
+      facets = . ~ sample,
+      ncol = 1,
+      strip.position = "right",
+      scales = "fixed" #"fixed" "free_y"
     ) +
   scale_y_continuous(
       limits = base::c(minY,maxY),
