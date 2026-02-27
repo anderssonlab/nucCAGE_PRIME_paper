@@ -89,6 +89,15 @@ sumstat_annot %>%
     )
 ```
 
+#### Identify all four files
+```{r}
+snps_sel_ <- sumstat_annot %>%
+  dplyr::filter(
+      stringr::str_detect(phenotype,"D3_OTHERANAEMIA|D3_ANAEMIANAS|D61|D64")
+    ) %>%
+  dplyr::pull(ldsc_sumstat_file)
+```
+
 ## [1.3.] Read in anemia related SNPs
 #### Diagnoses - main ICD10: D61 Other aplastic anaemias
 ```{r}
@@ -106,6 +115,41 @@ snps <- readr::read_delim( # 1,096,648
     )
   )
 ```
+
+#### Read in anemia related SNPs across all 4 SNP sets
+```{r}
+snps <- purrr::map_dfr(
+  .x = snps_sel_,
+  .f = function(f){
+    SNPset <- stringr::str_replace(f, "^(.*?)\\.(.*)$", "\\1")
+    out <- readr::read_delim( # 1,096,648
+      file = base::paste0(
+          here::here("11.LDSC_FANTOM5/ldsc_files/"),
+          "sumstats/", f
+        ),
+      delim = "\t",
+      col_names = TRUE,
+      col_types = readr::cols(
+          .default = readr::col_character(),
+          N = readr::col_integer(),
+          Z = readr::col_double()
+        )
+      )
+    return(
+      out %>%
+        dplyr::mutate(
+          SNPset = SNPset
+        )
+      )
+    }
+  )
+```
+
+```{r}
+snps %>%
+  distinct(SNP,A1,A2)
+```
+
 
 ## [1.4.] Merge the data
 ```{r}
@@ -147,8 +191,7 @@ base::list.files(
     ) %>%
   stringr::str_subset("mast.cell")
 
-
-mcPL <- readr::read_delim(
+mcPL <- readr::read_delim( # 325,054
   file = base::paste0(
       here::here("0.External_resources/"),
       "FANTOM5_cellFacet_bedFiles/",
@@ -174,6 +217,48 @@ utils::tail(mcPL)
 utils::tail(mrg)
 ```
 
+## [1.5.] Read in PRIMEloci for all 5 immune effector cell types (20260227)
+```{r}
+facets_sel_ <- base::c(
+    "mast cell", "dendritic cell", "monocyte",
+    "T cell", "reticulocyte"
+  )
+facets_sel <- stringr::str_replace(facets_sel," ", ".") %>%
+  base::paste0(collapse = "|")
+
+fs <- base::list.files(
+      path = here::here("0.External_resources/FANTOM5_cellFacet_bedFiles"),
+      full.names = TRUE
+    ) %>%
+  stringr::str_subset(facets_sel) %>%
+  stringr::str_subset("qn.PL.score0.5.bed")
+
+icPL <- purrr::map_dfr(
+    .x = fs,
+    .f = function(f){
+      cell <- stringr::str_replace(f, "^(.*)/(.*?)_(.*)$", "\\2")
+      site <- stringr::str_replace(f, "^(.*)/(.*?)_(.*?)_(.*)$", "\\3")
+      out <- readr::read_delim(
+        file = f,
+        delim = "\t",
+        col_names = base::c("chr","start","end","PL"),
+        col_types = readr::cols(
+            .default = readr::col_integer(),
+            chr = readr::col_character(),
+            PL = readr::col_double()
+          )
+        )
+      return(
+        out %>%
+          dplyr::mutate(
+            cell = cell,
+            site = site
+          )
+      )
+    }
+  )
+```
+
 # [2.] Mast cell PRIMEloci with genetic variants -------------------------
 
 ## [2.0.] Identify variants overlapping mast cell PRIMEloci
@@ -197,6 +282,42 @@ ovl_1 <- mcPLgr[S4Vectors::queryHits(ovl)] %>%
   tibble::as_tibble() %>%
   dplyr::select(
       seqnames,start,end,PL
+    )
+
+ovl_2 <- mrggr[S4Vectors::subjectHits(ovl)] %>%
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+      var_pos = base::paste(seqnames,start,sep = "_")
+    ) %>% 
+  dplyr::select(
+      var_pos,SNP,Z,L2
+    )
+
+varPL_mc <- dplyr::bind_cols(
+    ovl_1, ovl_2
+  )
+```
+
+```{r}
+icPLgr <- GenomicRanges::makeGRangesFromDataFrame(icPL)
+GenomeInfoDb::seqlevelsStyle(icPLgr) <- "UCSC"
+S4Vectors::mcols(icPLgr)[base::c("PL","cell","site")] <- icPL[,base::c("PL","cell","site")]
+icPLgr <- base::sort(icPLgr)
+
+mrggr <- GenomicRanges::makeGRangesFromDataFrame(mrg)
+GenomeInfoDb::seqlevelsStyle(mrggr) <- "UCSC"
+S4Vectors::mcols(mrggr)[base::c("SNP","Z","L2")] <- mrg[,base::c("SNP","Z","L2")]
+mrggr <- base::sort(mrggr)
+
+ovl <- IRanges::findOverlaps(
+    query = icPLgr,
+    subject = mrggr
+  )
+
+ovl_1 <- icPLgr[S4Vectors::queryHits(ovl)] %>%
+  tibble::as_tibble() %>%
+  dplyr::select(
+      seqnames,start,end,PL,cell,site
     )
 
 ovl_2 <- mrggr[S4Vectors::subjectHits(ovl)] %>%
