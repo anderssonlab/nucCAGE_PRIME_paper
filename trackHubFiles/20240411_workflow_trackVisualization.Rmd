@@ -798,11 +798,19 @@ l_ <- "chr19:44,908,532-44,915,200" # APOC1
 l_ <- "chr4:54,360,000-55,036,000" # c-KIT
 l_ <- "chr4:54,526,583-54,789,294" # c-KIT
 l_ <- "chr4:54,635,119-54,635,915" # c-KIT enhancer
+# l_ <- "chr4:54,708,916-54,709,316" # (20260228)
 
 # l_ <- "chr10:3,700,000-4,146,000" # KLF6 # wider area
 l_ <- "chr10:3,715,630-3,960,899" # KLF6
 l_ <- "chr10:3,942,689-3,943,182" # KLF6 enhancer
-#l_ <- "chr10:3,740,001-3,740,401"
+#l_ <- "chr10:3,740,001-3,740,401" # (20260228)
+```
+
+```{r}
+l_ <- "chr9:127,737,317-127,779,666" # SH2D3C
+l_ <- "chr9:127776431-127776831"
+l_ <- "chr21:37,361,584-37,657,699" # DYRK1A
+l_ <- "chr21:37563548-37563948"
 ```
 
 ## [2.1.] Get genomic region from coordinates
@@ -1565,8 +1573,8 @@ sites_scores <- varPL %>%
 
 ```{r}
 cage_sel <- cage_sel_
-minY = -50 # -50 # -500 # base::range(cage_sel_$score)[1]
-maxY = 50 # 50 # 500 # base::range(cage_sel_$score)[2]
+minY = -20 # -50 # -500 # base::range(cage_sel_$score)[1]
+maxY = 20 # 50 # 500 # base::range(cage_sel_$score)[2]
 
 coef = 0.75
 cols <- base::c(
