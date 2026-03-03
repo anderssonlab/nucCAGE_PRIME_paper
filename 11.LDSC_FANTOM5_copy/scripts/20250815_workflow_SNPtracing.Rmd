@@ -238,7 +238,8 @@ fs <- base::list.files(
       full.names = TRUE
     ) %>%
   stringr::str_subset(facets_sel) %>%
-  stringr::str_subset("qn.PL.score0.5.bed")
+  # stringr::str_subset("qn.PL.score0.5.bed")
+  stringr::str_subset("TPM1")
 
 icPL <- purrr::map_dfr( # 2,056,763
     .x = fs,
@@ -349,6 +350,14 @@ varPL %>%
       Z > 2 & cell == "mast.cell" & SNPset != "D61" & site == "distal"
     ) %>%
   dplyr::arrange(dplyr::desc(PL))
+
+seqnames = "chr14"
+start_pos = 24517072
+end_pos = 24518972
+varPL %>%
+  dplyr::filter(
+      seqnames == chr & start >= start_pos & end <= end_pos
+    )
 ```
 
 ## [2.1.] Assign nearest neighbouring genes

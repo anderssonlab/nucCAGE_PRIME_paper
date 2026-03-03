@@ -799,6 +799,7 @@ l_ <- "chr4:54,360,000-55,036,000" # c-KIT
 l_ <- "chr4:54,526,583-54,789,294" # c-KIT
 l_ <- "chr4:54,635,119-54,635,915" # c-KIT enhancer
 # l_ <- "chr4:54,708,916-54,709,316" # (20260228)
+l_ <- "chr4:54542425-54542825" # c-KIT enhancer (20260303, deficiency anemia)
 
 # l_ <- "chr10:3,700,000-4,146,000" # KLF6 # wider area
 l_ <- "chr10:3,715,630-3,960,899" # KLF6
@@ -807,20 +808,28 @@ l_ <- "chr10:3,942,689-3,943,182" # KLF6 enhancer
 ```
 
 ```{r}
-l_ <- "chr9:127,737,317-127,779,666" # SH2D3C
-l_ <- "chr9:127776431-127776831"
-l_ <- "chr21:37,361,584-37,657,699" # DYRK1A
-l_ <- "chr21:37563548-37563948"
-l_ <- "chr1:6,219,522-6,361,546" # GPR153 (ACOT7)
-l_ <- "chr1:6301631-6302031"
-l_ <-  "chr3:100,679,296-100,760,074" # TFG
-l_ <- "chr3:100,702,114-100,702,514"
+# l_ <- "chr9:127,737,317-127,779,666" # SH2D3C
+# l_ <- "chr9:127776431-127776831"
+# l_ <- "chr21:37,361,584-37,657,699" # DYRK1A
+# l_ <- "chr21:37563548-37563948"
+
+# l_ <- "chr1:6,219,522-6,361,546" # GPR153 (ACOT7)
+# l_ <- "chr1:6301631-6302031"
+
+# l_ <-  "chr3:100,679,296-100,760,074" # TFG
+# l_ <- "chr3:100,702,114-100,702,514" # TFG enhancer
+# l_ <- "chr3:100,696,090-100,710,895" # TFG enhancer wider
+
 l_ <- "chr17:34,347,028-34,420,319" # CCL1
 l_ <- "chr17:34412487-34412887" # CCL1 enhancer
 l_ <- "chr17:34412487-34413427" # CCL1 enhancers
-l_ <- "chr11:75,064,852-75,174,910" # SLCO2B1 gene
-l_ <- "chr11:75,100,000-75,109,986"
-l_ <- "chr11:75103756-75104156" # SLCO2B1 enhancer
+
+l_ <- "chr11:75,075,603-75,209,784" # OR2AT4 gene wider
+l_ <- "chr11:75,100,000-75,109,986" # OR2AT4 gene
+l_ <- "chr11:75103056-75104456" # OR2AT4 enhancer
+
+l_ <- "chr14:24,497,494-24,526,450" # CMA1 gene
+l_ <- "chr14:24517772-24518172" # CMA1 enhancer
 ```
 
 ## [2.1.] Get genomic region from coordinates
@@ -835,7 +844,7 @@ out <- base::paste0("_",chr,"_",s,"_",e)
 ```
 
 ```{r}
-extend = 0
+extend = 1000 # 500
 ran <- GenomicRanges::GRanges(
     seqnames = chr,
     ranges = IRanges::IRanges(start = s, end = e)
@@ -902,9 +911,9 @@ end_pos <- BiocGenerics::end(ran)
 
 ## [3.1.] Read in tpm scores in selected ranges
 #### see [2.0.] in '20200721_workflow_DrosophilaCAGE.Rmd'
+#### Evaluate with 'dplyr::distinct(cage_sel_,sample)'
 ```{r}
 cage_sel_ <- .GlobalEnv$readRange(fs,ran)
-# dplyr::distinct(cage_sel_,sample)
 ```
 
 ## [3.2.] Summarise data
@@ -1561,6 +1570,7 @@ varPL <- base::readRDS(
   )
 ```
 
+#### 'dplyr::filter(varPL, Gene_symbol == "CMA1")'
 ```{r}
 chr <- GenomeInfoDb::seqnames(ran) %>%
   base::as.character()
@@ -1582,7 +1592,7 @@ sites_scores <- varPL %>%
 ```
 
 ```{r}
-cage_sel <- cage_sel_
+# cage_sel <- cage_sel_
 minY = -10 # -50 # -500 # base::range(cage_sel_$score)[1]
 maxY = 10 # 50 # 500 # base::range(cage_sel_$score)[2]
 
@@ -1619,12 +1629,12 @@ plot <- cage_sel %>%
       # fill = "grey",
       alpha = 0.5
     ) +
-  facet_wrap(
-      facets = . ~ sample,
-      ncol = 1,
-      strip.position = "right",
-      scales = "fixed" #"fixed" "free_y"
-    ) +
+  # facet_wrap(
+  #     facets = . ~ sample,
+  #     ncol = 1,
+  #     strip.position = "right",
+  #     scales = "fixed" #"fixed" "free_y"
+  #   ) +
   scale_y_continuous(
       limits = base::c(minY,maxY),
       breaks = base::seq(minY,maxY,(maxY-minY)/4)
@@ -1648,18 +1658,18 @@ for(ext in c("pdf", "png")){
       filename = base::paste0(
           here::here("trackHubFiles/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
-          # "_KLF6",
-          # "_cKit",
-          "_CCL1",
+          # "_KLF6", "_cKit", "_CCL1",
+          "_OR2AT4",
           # "_gene",
-          "_enhancers",
+          # "_geneWider",
+          "_enhancer",
           out,
           ".", ext
         ),
       plot = ggplot2::last_plot(),
       device = ext,
       dpi = 300,
-      width = 3.5, # 8, # 2.5,
+      width = 2.5, # 8, # 2.5,
       height = 4
     )
   }
