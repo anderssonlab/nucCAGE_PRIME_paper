@@ -401,6 +401,7 @@ varPL[,"ENTREZID"] <- TSSs[nG,]$gene_id
 dplyr::arrange(varPL,dplyr::desc(PL))
 ```
 
+#### mcs = "mast cell-specific"
 ```{r}
 varPL %>%
   # arrange(desc(Z)) %>%
@@ -408,6 +409,29 @@ varPL %>%
       Z > 2 & cell == "mast.cell" & SNPset != "D61" & site == "distal"
     ) %>%
   dplyr::arrange(dplyr::desc(PL))
+
+varPL %>%
+  dplyr::filter(
+      Z > 2 & SNPset != "D61" & site == "distal"
+    ) %>%
+  dplyr::group_by(seqnames,start,end,SNPset) %>%
+  tidyr::pivot_wider(
+      names_from = "cell",
+      values_from = "PL"
+    ) %>%
+  tidyr::replace_na(
+    replace = base::list(
+        dendritic.cell = 0,
+        mast.cell = 0,
+        monocyte = 0,
+        T.cell = 0,
+        reticulocyte = 0
+      )
+    ) %>%
+  dplyr::mutate(
+      mcs = mast.cell / (dendritic.cell + monocyte + T.cell + reticulocyte)
+    ) %>%
+  dplyr::arrange(dplyr::desc(mcs))
 ```
 
 ## [2.2.] Subset & evaluate

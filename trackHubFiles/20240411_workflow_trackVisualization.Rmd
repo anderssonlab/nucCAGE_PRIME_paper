@@ -811,6 +811,8 @@ l_ <- "chr9:127,737,317-127,779,666" # SH2D3C
 l_ <- "chr9:127776431-127776831"
 l_ <- "chr21:37,361,584-37,657,699" # DYRK1A
 l_ <- "chr21:37563548-37563948"
+l_ <- "chr1:6,219,522-6,361,546" # ACOT7
+l_ <- "chr1:6301631-6302031"
 ```
 
 ## [2.1.] Get genomic region from coordinates
@@ -1573,8 +1575,8 @@ sites_scores <- varPL %>%
 
 ```{r}
 cage_sel <- cage_sel_
-minY = -20 # -50 # -500 # base::range(cage_sel_$score)[1]
-maxY = 20 # 50 # 500 # base::range(cage_sel_$score)[2]
+minY = -5 # -50 # -500 # base::range(cage_sel_$score)[1]
+maxY = 5 # 50 # 500 # base::range(cage_sel_$score)[2]
 
 coef = 0.75
 cols <- base::c(
