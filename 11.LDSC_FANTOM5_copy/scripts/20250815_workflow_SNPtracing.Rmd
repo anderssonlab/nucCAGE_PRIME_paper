@@ -166,7 +166,7 @@ snps %>%
 
 ## [1.4.] Merge the data
 ```{r}
-mrg <- dplyr::left_join(
+mrg <- dplyr::left_join( # 9,640,377 (reduced by 229,455)
       x = snps,
       y = pos,
       by = "SNP"
@@ -175,7 +175,7 @@ mrg <- dplyr::left_join(
       end = start
     ) %>% 
   dplyr::select(
-      chr,start, end, SNPset, SNP, Z, L2
+      chr, start, end, SNPset, SNP, Z, L2
     ) %>%
   tidyr::drop_na()
   # dplyr::filter(
@@ -275,6 +275,7 @@ icPL <- purrr::map_dfr( # 2,056,763
     }
   )
 ```
+
 #### Evaluate
 ```{r}
 icPL %>%
@@ -288,48 +289,49 @@ icPL %>%
   dplyr::filter(
       seqnames == chr & start >= start_pos & end <= end_pos
     )
-
 ```
 
 # [2.] Mast cell PRIMEloci with genetic variants -------------------------
 
 ## [2.0.] Identify variants overlapping mast cell PRIMEloci
+#### __Deprecated__
 ```{r}
-mcPLgr <- GenomicRanges::makeGRangesFromDataFrame(mcPL)
-GenomeInfoDb::seqlevelsStyle(mcPLgr) <- "UCSC"
-S4Vectors::mcols(mcPLgr)[base::c("PL")] <- mcPL$PL
-mcPLgr <- base::sort(mcPLgr)
-
-mrggr <- GenomicRanges::makeGRangesFromDataFrame(mrg)
-GenomeInfoDb::seqlevelsStyle(mrggr) <- "UCSC"
-S4Vectors::mcols(mrggr)[base::c("SNP","Z","L2")] <- mrg[,base::c("SNP","Z","L2")]
-mrggr <- base::sort(mrggr)
-
-ovl <- IRanges::findOverlaps(
-    query = mcPLgr,
-    subject = mrggr
-  )
-
-ovl_1 <- mcPLgr[S4Vectors::queryHits(ovl)] %>%
-  tibble::as_tibble() %>%
-  dplyr::select(
-      seqnames,start,end,PL
-    )
-
-ovl_2 <- mrggr[S4Vectors::subjectHits(ovl)] %>%
-  tibble::as_tibble() %>%
-  dplyr::mutate(
-      var_pos = base::paste(seqnames,start,sep = "_")
-    ) %>% 
-  dplyr::select(
-      var_pos,SNP,Z,L2
-    )
-
-varPL_mc <- dplyr::bind_cols( # 346,340
-    ovl_1, ovl_2
-  )
+# mcPLgr <- GenomicRanges::makeGRangesFromDataFrame(mcPL)
+# GenomeInfoDb::seqlevelsStyle(mcPLgr) <- "UCSC"
+# S4Vectors::mcols(mcPLgr)[base::c("PL")] <- mcPL$PL
+# mcPLgr <- base::sort(mcPLgr)
+# 
+# mrggr <- GenomicRanges::makeGRangesFromDataFrame(mrg)
+# GenomeInfoDb::seqlevelsStyle(mrggr) <- "UCSC"
+# S4Vectors::mcols(mrggr)[base::c("SNP","Z","L2")] <- mrg[,base::c("SNP","Z","L2")]
+# mrggr <- base::sort(mrggr)
+# 
+# ovl <- IRanges::findOverlaps(
+#     query = mcPLgr,
+#     subject = mrggr
+#   )
+# 
+# ovl_1 <- mcPLgr[S4Vectors::queryHits(ovl)] %>%
+#   tibble::as_tibble() %>%
+#   dplyr::select(
+#       seqnames,start,end,PL
+#     )
+# 
+# ovl_2 <- mrggr[S4Vectors::subjectHits(ovl)] %>%
+#   tibble::as_tibble() %>%
+#   dplyr::mutate(
+#       var_pos = base::paste(seqnames,start,sep = "_")
+#     ) %>% 
+#   dplyr::select(
+#       var_pos,SNP,Z,L2
+#     )
+# 
+# varPL_mc <- dplyr::bind_cols( # 346,340
+#     ovl_1, ovl_2
+#   )
 ```
 
+#### (20260227)
 ```{r}
 icPLgr <- GenomicRanges::makeGRangesFromDataFrame(icPL) # 2,056,763
 GenomeInfoDb::seqlevelsStyle(icPLgr) <- "UCSC"
@@ -361,12 +363,12 @@ ovl_2 <- mrggr[S4Vectors::subjectHits(ovl)] %>%
       var_pos,SNP,SNPset,Z,L2
     )
 
-varPL <- dplyr::bind_cols( # 1,385,360
+varPL <- dplyr::bind_cols( # 1,385,360 (4 enriched anemias) # 3,117,060 (all 9 anemias)
     ovl_1, ovl_2
   )
 ```
 
-
+#### Evaluate
 ```{r}
 varPL %>%
   # arrange(desc(Z)) %>%
@@ -376,8 +378,12 @@ varPL %>%
   dplyr::arrange(dplyr::desc(PL))
 
 seqnames = "chr14"
-start_pos = 24517072
-end_pos = 24518972
+start_pos = 24517772-100
+end_pos = 24518172+100
+
+seqnames = "chr4"
+start_pos = 54542425-100
+end_pos = 54542825+100
 
 varPL %>%
   dplyr::filter(
@@ -529,6 +535,8 @@ varPL <- base::readRDS(
     stringr::str_subset("varPL")
   )
 ```
+
+## [2.4.] Save ()
 
 # [3.] GO term analysis -------------------------
 
