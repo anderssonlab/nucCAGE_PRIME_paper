@@ -431,7 +431,8 @@ varPL %>%
   dplyr::mutate(
       mcs = mast.cell / (dendritic.cell + monocyte + T.cell + reticulocyte)
     ) %>%
-  dplyr::arrange(dplyr::desc(mcs))
+  dplyr::arrange(dplyr::desc(mcs),dplyr::desc(mast.cell)) # %>%
+  # dplyr::filter(seqnames == "chr17")
 ```
 
 ## [2.2.] Subset & evaluate
