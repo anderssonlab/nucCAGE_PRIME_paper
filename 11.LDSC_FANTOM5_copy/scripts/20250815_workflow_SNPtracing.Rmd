@@ -282,9 +282,13 @@ icPL %>%
   dplyr::group_by(cell, site) %>%
   dplyr::summarise(N = dplyr::n())
 
-seqnames = "chr14"
-start_pos = 24517072
-end_pos = 24518972
+# seqnames = "chr14"
+# start_pos = 24517072
+# end_pos = 24518972
+seqnames = "chr15"
+start_pos = 67121091
+end_pos = 67121491
+
 icPL %>%
   dplyr::filter(
       seqnames == chr & start >= start_pos & end <= end_pos
@@ -536,7 +540,31 @@ varPL <- base::readRDS(
   )
 ```
 
-## [2.4.] Save ()
+## [2.4.] Save & load icPL
+```{r}
+base::saveRDS(
+    object = icPL,
+    file = base::paste0(
+        here::here("11.LDSC_FANTOM5_copy/"),
+        base::format(base::Sys.time(),"%Y%m%d"),
+        "_icPL",
+        "_AllImmuneCells",
+        ".rds"
+      ),
+    compress = TRUE
+  )
+```
+
+```{r}
+icPL <- base::readRDS(
+  file  = base::list.files(
+        path = here::here("11.LDSC_FANTOM5_copy"),
+        full.names = TRUE
+      ) %>%
+    stringr::str_subset("rds") %>%
+    stringr::str_subset("icPL")
+  )
+```
 
 # [3.] GO term analysis -------------------------
 

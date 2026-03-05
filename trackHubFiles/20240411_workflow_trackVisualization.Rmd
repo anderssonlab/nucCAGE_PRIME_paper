@@ -795,11 +795,11 @@ l_ <- "chr19:44,908,532-44,915,200" # APOC1
 
 ### c-KIT & KLF6 (Fig6)
 ```{r}
-l_ <- "chr4:54,360,000-55,036,000" # c-KIT
-l_ <- "chr4:54,526,583-54,789,294" # c-KIT
+l_ <- "chr4:54,360,000-55,036,000" # c-KIT gene wider
+l_ <- "chr4:54,538,000-54,760,000" # c-KIT gene
 l_ <- "chr4:54,635,119-54,635,915" # c-KIT enhancer
 # l_ <- "chr4:54,708,916-54,709,316" # (20260228)
-l_ <- "chr4:54542425-54542825" # c-KIT enhancer (20260303, deficiency anemia)
+l_ <- "chr4:54542425-54543225" # c-KIT enhancer (20260303, deficiency anemia)
 
 # l_ <- "chr10:3,700,000-4,146,000" # KLF6 # wider area
 l_ <- "chr10:3,715,630-3,960,899" # KLF6
@@ -807,6 +807,7 @@ l_ <- "chr10:3,942,689-3,943,182" # KLF6 enhancer
 #l_ <- "chr10:3,740,001-3,740,401" # (20260228)
 ```
 
+#### Examples (Fig6)
 ```{r}
 # l_ <- "chr9:127,737,317-127,779,666" # SH2D3C
 # l_ <- "chr9:127776431-127776831"
@@ -824,12 +825,18 @@ l_ <- "chr17:34,347,028-34,420,319" # CCL1
 l_ <- "chr17:34412487-34412887" # CCL1 enhancer
 l_ <- "chr17:34412487-34413427" # CCL1 enhancers
 
-l_ <- "chr11:75,075,603-75,209,784" # OR2AT4 gene wider
+l_ <- "chr11:75,075,603-75,209,784" # OR2AT4 / SLCO2B1 gene wider
 l_ <- "chr11:75,100,000-75,109,986" # OR2AT4 gene
 l_ <- "chr11:75103056-75104456" # OR2AT4 enhancer
 
 l_ <- "chr14:24,497,494-24,526,450" # CMA1 gene
 l_ <- "chr14:24517772-24518172" # CMA1 enhancer
+
+l_ <- "chr15:67,039,999-67,195,802" # SMAD3 gene
+l_ <- "chr15:67121091-67121491" # SMAD3 intronic enhancer
+
+l_ <- "chr10:8,052,466-8,075,704" # GATA3 gene
+l_ <- "chr10:8073007-8073407" # GATA3 intronic enhancer
 ```
 
 ## [2.1.] Get genomic region from coordinates
@@ -844,7 +851,7 @@ out <- base::paste0("_",chr,"_",s,"_",e)
 ```
 
 ```{r}
-extend = 1000 # 500
+extend = 0 # 500
 ran <- GenomicRanges::GRanges(
     seqnames = chr,
     ranges = IRanges::IRanges(start = s, end = e)
@@ -1161,7 +1168,8 @@ insert <- tibble::tibble(
 cage_sel <- dplyr::bind_rows(cage_sel,insert)
 ```
 
-#### Evaluate with ins <- base::c("dendritic cell", "mast cell", "monocyte", "reticulocyte")
+#### Evaluate with 'ins <- base::c("dendritic cell", "mast cell", "monocyte", "reticulocyte")'
+#### 'dplyr::distinct(cage_sel,sample)'
 ```{r}
 cage_sel <- cage_sel_
 ins <- cage_sel %>% 
@@ -1180,7 +1188,6 @@ insert <- tibble::tibble(
   )
 
 cage_sel <- dplyr::bind_rows(cage_sel,insert)
-# dplyr::distinct(cage_sel,sample)
 ```
 
 # [5.] Plot data -------------------------
@@ -1570,17 +1577,41 @@ varPL <- base::readRDS(
   )
 ```
 
+```{r}
+icPL <- base::readRDS(
+  file  = base::list.files(
+        path = here::here("11.LDSC_FANTOM5_copy"),
+        full.names = TRUE
+      ) %>%
+    stringr::str_subset("rds") %>%
+    stringr::str_subset("20260305_icPL")
+  )
+```
+
+#### Evaluate
+```{r}
+seqnames = "chr15"
+start_pos = 67121091
+end_pos = 67121491
+
+icPL %>%
+  dplyr::filter(
+      chr == seqnames & start >= start_pos & end <= end_pos
+    )
+```
+
 #### 'dplyr::filter(varPL, Gene_symbol == "CMA1")'
 ```{r}
-chr <- GenomeInfoDb::seqnames(ran) %>%
+seqnames <- GenomeInfoDb::seqnames(ran) %>%
   base::as.character()
 start_pos <- BiocGenerics::start(ran)
 end_pos <- BiocGenerics::end(ran)
 
-sites_scores <- varPL %>%
+sites_scores <- icPL %>% # varPL # icPL
   dplyr::filter(
-      seqnames == chr & start >= start_pos & end <= end_pos &
-      base::abs(Z) > 2
+      chr == seqnames & start >= start_pos & end <= end_pos &
+      PL >= 0.75
+      # base::abs(Z) > 2
     ) %>%
   dplyr::mutate(
       sample = stringr::str_replace(cell, "\\.", " ")
@@ -1593,8 +1624,8 @@ sites_scores <- varPL %>%
 
 ```{r}
 # cage_sel <- cage_sel_
-minY = -10 # -50 # -500 # base::range(cage_sel_$score)[1]
-maxY = 10 # 50 # 500 # base::range(cage_sel_$score)[2]
+minY = -50 # -50 # -500 # base::range(cage_sel_$score)[1]
+maxY = 50 # 50 # 500 # base::range(cage_sel_$score)[2]
 
 coef = 0.75
 cols <- base::c(
@@ -1658,18 +1689,18 @@ for(ext in c("pdf", "png")){
       filename = base::paste0(
           here::here("trackHubFiles/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
-          # "_KLF6", "_cKit", "_CCL1",
-          "_OR2AT4",
-          # "_gene",
+          # "_KLF6", "_cKit", "_CCL1", "_OR2AT4", "_CMA1",
+          "_SMAD3",
+          "_gene",
           # "_geneWider",
-          "_enhancer",
+          # "_enhancer",
           out,
           ".", ext
         ),
       plot = ggplot2::last_plot(),
       device = ext,
       dpi = 300,
-      width = 2.5, # 8, # 2.5,
+      width = 8, # 8, # 2.5,
       height = 4
     )
   }
