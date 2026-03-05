@@ -235,11 +235,21 @@ utils::tail(mrg)
 
 ## [1.5.] Read in PRIMEloci for all 5 immune effector cell types (20260227)
 ```{r}
+# facets_sel_ <- base::c(
+#     "mast cell", "dendritic cell", "monocyte",
+#     "T cell", "reticulocyte"
+#   )
 facets_sel_ <- base::c(
-    "mast cell", "dendritic cell", "monocyte",
-    "T cell", "reticulocyte"
+    "spinal cord", "internal male genitalia", "throat",
+    "tongue", "testis", "thyroid gland",
+    "blood vessel", "spleen", "thymus",
+    "meninx", "eye", "kidney",
+    "uterus", "lung", "large.intestine",
+    "small.intestine"
   )
-facets_sel <- stringr::str_replace(facets_sel," ", ".") %>%
+
+facets_sel <- stringr::str_replace_all(facets_sel_," ", ".") %>%
+  base::paste0("/",.,"_") %>%
   base::paste0(collapse = "|")
 
 fs <- base::list.files(
@@ -250,7 +260,7 @@ fs <- base::list.files(
   stringr::str_subset("qn.PL.score0.5.bed")
   # stringr::str_subset("TPM1")
 
-icPL <- purrr::map_dfr( # 2,056,763
+icPL <- purrr::map_dfr( # 2,056,763 (immune) # 2,772,597 (kidney)
     .x = fs,
     .f = function(f){
       cell <- stringr::str_replace(f, "^(.*)/(.*?)_(.*)$", "\\2")
@@ -548,7 +558,7 @@ base::saveRDS(
         here::here("11.LDSC_FANTOM5_copy/"),
         base::format(base::Sys.time(),"%Y%m%d"),
         "_icPL",
-        "_AllImmuneCells",
+        "_KidneyRelatedCells",
         ".rds"
       ),
     compress = TRUE
@@ -562,7 +572,8 @@ icPL <- base::readRDS(
         full.names = TRUE
       ) %>%
     stringr::str_subset("rds") %>%
-    stringr::str_subset("20260305_icPL")
+    stringr::str_subset("_KidneyRelatedCells")
+    # stringr::str_subset("20260305_icPL")
   )
 ```
 

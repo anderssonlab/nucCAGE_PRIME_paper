@@ -357,6 +357,29 @@ fs <- base::list.files(
   stringr::str_subset(base::paste0(facets_sel,collapse = "|"))
 ```
 
+#### FANTOM5 kidney-related tracks (Fig6)
+```{r}
+facets_sel_ <- base::c(
+    "spinal cord", "internal male genitalia", "throat",
+    "tongue", "testis", "thyroid gland",
+    "blood vessel", "spleen", "thymus",
+    "meninx", "eye", "kidney",
+    "uterus", "lung", "large.intestine",
+    "small.intestine"
+  )
+
+facets_sel <- facets_sel_ %>%
+  base::paste0("/",., "\\.") %>%
+  base::paste0(collapse = "|")
+
+fs <- base::list.files(
+      path = here::here("0.External_resources/FANTOM5/pooled_bw"),
+      full.names = TRUE
+    ) %>%
+  stringr::str_subset(facets_sel)
+  # stringr::str_subset("TPM1")
+```
+
 ## ---------------
 
 ## [1.5.] Read in CTSSs - Load HepG2-, HCT116-, A549-CTSS objects & adapt names (Fig5)
@@ -807,7 +830,7 @@ l_ <- "chr10:3,942,689-3,943,182" # KLF6 enhancer
 #l_ <- "chr10:3,740,001-3,740,401" # (20260228)
 ```
 
-#### Examples (Fig6)
+#### Examples immune (Fig6)
 ```{r}
 # l_ <- "chr9:127,737,317-127,779,666" # SH2D3C
 # l_ <- "chr9:127776431-127776831"
@@ -833,10 +856,16 @@ l_ <- "chr14:24,497,494-24,526,450" # CMA1 gene
 l_ <- "chr14:24517772-24518172" # CMA1 enhancer
 
 l_ <- "chr15:67,039,999-67,195,802" # SMAD3 gene
-l_ <- "chr15:67121091-67121491" # SMAD3 intronic enhancer
+l_ <- "chr15:67120991-67121491" # SMAD3 intronic enhancer
 
 l_ <- "chr10:8,052,466-8,075,704" # GATA3 gene
 l_ <- "chr10:8073007-8073407" # GATA3 intronic enhancer
+```
+
+#### Examples kidney-related (Fig6)
+```{r}
+l_ <- "chr10:117,166,998-118,047,656" # SLC18A2 gene
+l_ <- "chr10:117720703-117721303" # SLC18A2 enhancer
 ```
 
 ## [2.1.] Get genomic region from coordinates
@@ -1176,7 +1205,8 @@ ins <- cage_sel %>%
   dplyr::distinct(sample) %>%
   dplyr::pull(sample)
 
-ous <- facets_sel[!facets_sel %in% ins]
+# ous <- facets_sel[!facets_sel %in% ins]
+ous <- facets_sel_[!facets_sel_ %in% ins]
 
 insert <- tibble::tibble(
     sample = ous,
@@ -1584,48 +1614,46 @@ icPL <- base::readRDS(
         full.names = TRUE
       ) %>%
     stringr::str_subset("rds") %>%
-    stringr::str_subset("20260305_icPL")
+    stringr::str_subset("_KidneyRelatedCells")
+    # stringr::str_subset("20260305_icPL")
   )
 ```
 
 #### Evaluate
 ```{r}
-seqnames = "chr15"
+chrom = "chr15"
 start_pos = 67121091
 end_pos = 67121491
 
 icPL %>%
   dplyr::filter(
-      chr == seqnames & start >= start_pos & end <= end_pos
+      chr == chrom & start >= start_pos & end <= end_pos
     )
 ```
 
-#### 'dplyr::filter(varPL, Gene_symbol == "CMA1")'
+#### Evaluate with 'dplyr::filter(varPL, Gene_symbol == "CMA1")'
+#### 'dplyr::distinct(seqnames,start,end,PL,.keep_all = TRUE)'
 ```{r}
-seqnames <- GenomeInfoDb::seqnames(ran) %>%
+chrom <- GenomeInfoDb::seqnames(ran) %>%
   base::as.character()
 start_pos <- BiocGenerics::start(ran)
 end_pos <- BiocGenerics::end(ran)
 
 sites_scores <- icPL %>% # varPL # icPL
-  dplyr::filter(
-      chr == seqnames & start >= start_pos & end <= end_pos &
+  dplyr::filter(*
+      chr == chrom & start >= start_pos & end <= end_pos &
       PL >= 0.75
       # base::abs(Z) > 2
     ) %>%
   dplyr::mutate(
-      sample = stringr::str_replace(cell, "\\.", " ")
+      sample = stringr::str_replace_all(cell, "\\.", " ")
     )
-  # dplyr::distinct(
-  #     seqnames,start,end,PL,
-  #     .keep_all = TRUE
-  #   )
 ```
 
 ```{r}
 # cage_sel <- cage_sel_
-minY = -50 # -50 # -500 # base::range(cage_sel_$score)[1]
-maxY = 50 # 50 # 500 # base::range(cage_sel_$score)[2]
+minY = -10 # -50 # -500 # base::range(cage_sel_$score)[1]
+maxY = 10 # 50 # 500 # base::range(cage_sel_$score)[2]
 
 coef = 0.75
 cols <- base::c(
@@ -1642,7 +1670,7 @@ plot <- cage_sel %>%
   dplyr::mutate(
     sample = base::factor(
         x = sample,
-        levels = facets_sel,
+        levels = facets_sel_, # facets_sel
         ordered = TRUE
       )
     ) %>%
@@ -1689,10 +1717,10 @@ for(ext in c("pdf", "png")){
       filename = base::paste0(
           here::here("trackHubFiles/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
-          # "_KLF6", "_cKit", "_CCL1", "_OR2AT4", "_CMA1",
-          "_SMAD3",
-          "_gene",
-          # "_geneWider",
+          # "_KLF6", "_cKit", "_CCL1", "_OR2AT4", "_CMA1", "_SMAD3", "_GATA3",
+          "_SLC18A2",
+          # "_gene",
+          "_geneWider",
           # "_enhancer",
           out,
           ".", ext
@@ -1701,7 +1729,7 @@ for(ext in c("pdf", "png")){
       device = ext,
       dpi = 300,
       width = 8, # 8, # 2.5,
-      height = 4
+      height = 8 # 4 # 6 # 8
     )
   }
 ```
