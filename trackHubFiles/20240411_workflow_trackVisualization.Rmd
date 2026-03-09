@@ -864,8 +864,14 @@ l_ <- "chr10:8073007-8073407" # GATA3 intronic enhancer
 
 #### Examples kidney-related (Fig6)
 ```{r}
-l_ <- "chr10:117,166,998-118,047,656" # SLC18A2 gene
+l_ <- "chr10:117,166,998-118,047,656" # SLC18A2 / EMX2 gene
 l_ <- "chr10:117720703-117721303" # SLC18A2 enhancer
+
+l_ <- "chr2:113,171,623-113,282,700" # PAX8 gene
+l_ <- "chr2:113213742-113214142" # PAX8 enhancer
+
+l_ <- "chr2:54,448,250-54,680,036" # Cystatin C / SPTBN1 gene
+l_ <- "chr2:54559889-54560289" # Cystatin C / SPTBN1 enhancer
 ```
 
 ## [2.1.] Get genomic region from coordinates
@@ -1614,7 +1620,7 @@ icPL <- base::readRDS(
         full.names = TRUE
       ) %>%
     stringr::str_subset("rds") %>%
-    stringr::str_subset("_KidneyRelatedCells")
+    stringr::str_subset("_KidneyRelatedCells") # 2,772,597
     # stringr::str_subset("20260305_icPL")
   )
 ```
@@ -1640,7 +1646,7 @@ start_pos <- BiocGenerics::start(ran)
 end_pos <- BiocGenerics::end(ran)
 
 sites_scores <- icPL %>% # varPL # icPL
-  dplyr::filter(*
+  dplyr::filter(
       chr == chrom & start >= start_pos & end <= end_pos &
       PL >= 0.75
       # base::abs(Z) > 2
@@ -1718,9 +1724,10 @@ for(ext in c("pdf", "png")){
           here::here("trackHubFiles/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           # "_KLF6", "_cKit", "_CCL1", "_OR2AT4", "_CMA1", "_SMAD3", "_GATA3",
-          "_SLC18A2",
-          # "_gene",
-          "_geneWider",
+          # "_SLC18A2", "_PAX8",
+          "_SPTBN1",
+          "_gene",
+          # "_geneWider",
           # "_enhancer",
           out,
           ".", ext
