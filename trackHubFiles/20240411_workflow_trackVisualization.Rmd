@@ -350,9 +350,26 @@ facets_sel <- base::c(
     "T cell", "reticulocyte"
   )
 
-facets_sel <- base::c(facets_sel, "acute_myeloid_leukemia_\\(FAB_M6\\)", "neutrophil") # CD82 (20260311)
+# facets_sel <- base::c(facets_sel, "acute_myeloid_leukemia_\\(FAB_M6\\)", "neutrophil") # CD82 (20260311)
 
 fs <- base::list.files(
+      path = here::here("0.External_resources/FANTOM5/pooled_bw"),
+      full.names = TRUE
+    ) %>%
+  stringr::str_subset(base::paste0(facets_sel,collapse = "|"))
+```
+
+#### ACOT11 (Fig6)
+```{r}
+facets_sel <- base::c(
+    "B_lymphoblastoid", "Hep-2", "astrocyte",
+    "chronic_myelogenous_leukemia", "epitheloid_carcinoma", "kidney epithelial cell",
+    "mast cell", "mesenchymal cell", "monocyte",
+    "natural killer cell", "neuroblastoma", "skin fibroblast",
+    "small_cell_lung_carcinoma", "thymus", "vascular associated smooth muscle cell"
+  )
+
+fs <- base::list.files( # 30
       path = here::here("0.External_resources/FANTOM5/pooled_bw"),
       full.names = TRUE
     ) %>%
@@ -1218,6 +1235,7 @@ cage_sel <- dplyr::bind_rows(cage_sel,insert)
 
 #### Evaluate with 'ins <- base::c("dendritic cell", "mast cell", "monocyte", "reticulocyte")'
 #### 'dplyr::distinct(cage_sel,sample)'
+#### For individual samples 'insert <- tibble::tibble(sample = "reticulocyte",seqnames = chrom,start = start_pos,end = end_pos,strand = "plus",score = base::as.double(0))'
 ```{r}
 cage_sel <- cage_sel_
 ins <- cage_sel %>%
@@ -1229,14 +1247,6 @@ ous <- facets_sel[!facets_sel %in% ins]
 
 insert <- tibble::tibble(
     sample = ous,
-    seqnames = chrom,
-    start = start_pos,
-    end = end_pos,
-    strand = "plus",
-    score = base::as.double(0)
-  )
-insert <- tibble::tibble(
-    sample = "reticulocyte",
     seqnames = chrom,
     start = start_pos,
     end = end_pos,
@@ -1641,22 +1651,23 @@ icPL <- base::readRDS(
         full.names = TRUE
       ) %>%
     stringr::str_subset("rds") %>%
-    # stringr::str_subset("20260305_icPL_AllImmuneCells") # 2,056,763
+    stringr::str_subset("20260305_icPL_AllImmuneCells") # 2,056,763
     # stringr::str_subset("20260305_icPL_KidneyRelatedCells") # 2,772,597
-    stringr::str_subset("20260311_icPL_AllImuneNeutrophilFABM6") # 2,258,436 
+    # stringr::str_subset("20260311_icPL_AllImuneNeutrophilFABM6") # 2,258,436
+    # stringr::str_subset("20260311_icPL_ACOT11") # 3,762,040
   )
 ```
 
 #### Evaluate
 ```{r}
-chrom = "chr15"
-start_pos = 67121091
-end_pos = 67121491
-
-icPL %>%
-  dplyr::filter(
-      chr == chrom & start >= start_pos & end <= end_pos
-    )
+# chrom = "chr15"
+# start_pos = 67121091
+# end_pos = 67121491
+# 
+# icPL %>%
+#   dplyr::filter(
+#       chr == chrom & start >= start_pos & end <= end_pos
+#     )
 ```
 
 #### Evaluate with 'dplyr::filter(varPL, Gene_symbol == "CMA1")'
@@ -1673,27 +1684,34 @@ sites_scores <- icPL %>% # varPL # icPL
       PL >= 0.75
       # base::abs(Z) > 2
     ) %>%
-  dplyr::mutate(
-      cell = case_when(
-        cell == "acute.myeloid.leukemia.FAB.M6" ~ "acute_myeloid_leukemia_(FAB_M6)",
-        TRUE ~ cell
-      )
-    ) %>% 
+#   dplyr::mutate(
+#       cell = case_when(
+# #       cell == "acute.myeloid.leukemia.FAB.M6" ~ "acute_myeloid_leukemia_(FAB_M6)",
+#         cell == "B.lymphoblastoid" ~ "B_lymphoblastoid",
+#         cell == "chronic.myelogenous.leukemia" ~ "chronic_myelogenous_leukemia",
+#         cell == "epitheloid.carcinoma" ~ "epitheloid_carcinoma",
+#         cell == "Hep.2" ~ "Hep-2",
+#         cell == "kidney.epithelial.cell" ~ "kidney epithelial cell",
+#         cell == "mast.cell" ~ "mast cell",
+#         cell == "mesenchymal.cell" ~ "mesenchymal cell",
+#         cell == "natural.killer.cell" ~ "natural killer cell",
+#         cell == "skin.fibroblast" ~ "skin fibroblast",
+#         cell == "small.cell.lung.carcinoma" ~ "small_cell_lung_carcinoma",
+#         cell == "vascular.associated.smooth.muscle.cell" ~ "vascular associated smooth muscle cell",
+#         TRUE ~ cell
+#       )
+#     ) %>%
   dplyr::mutate(
       sample = stringr::str_replace_all(cell, "\\.", " ")
     )
 ```
 
+#### cage_sel <- cage_sel_
+#### facets_sel <- base::c("dendritic cell", "mast cell", "monocyte", "reticulocyte", "T cell", "neutrophil", "acute_myeloid_leukemia_(FAB_M6)")
 ```{r}
-# cage_sel <- cage_sel_
-facets_sel <- base::c(
-    "dendritic cell", "mast cell", "monocyte",
-    "reticulocyte", "T cell", "neutrophil",
-    "acute_myeloid_leukemia_(FAB_M6)"
-  )
-
-minY = -10 # -50 # -500 # base::range(cage_sel_$score)[1]
-maxY = 10 # 50 # 500 # base::range(cage_sel_$score)[2]
+cage_sel <- cage_sel_
+minY = -20 # -50 # -500 # base::range(cage_sel_$score)[1]
+maxY = 20 # 50 # 500 # base::range(cage_sel_$score)[2]
 
 coef = 0.75
 cols <- base::c(
@@ -1752,28 +1770,27 @@ ggrastr::rasterise(
 
 ## Print data
 ```{r eval=FALSE}
-for(ext in c("pdf", "png")){
-    ggplot2::ggsave(
-      filename = base::paste0(
-          here::here("trackHubFiles/plots/"),
-          base::format(base::Sys.time(), "%Y%m%d"),
-          # "_KLF6", "_cKit", "_CCL1", "_OR2AT4", "_CMA1", "_SMAD3", "_GATA3",
-          # "_SLC18A2", "_PAX8", "_SPTBN1",
-          # "_NCOR2", "_ACOT11",
-          "_CD82",
-          # "_gene",
-          # "_geneWider",
-          "_enhancer",
-          out,
-          ".", ext
-        ),
-      plot = ggplot2::last_plot(),
-      device = ext,
-      dpi = 300,
-      width = 2.5, # 8, # 2.5,
-      height = 4 # 4 # 8
-    )
-  }
+ext  = "pdf" # "png"
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("trackHubFiles/plots/"),
+        base::format(base::Sys.time(), "%Y%m%d"),
+        # "_KLF6", "_cKit", "_CCL1", "_OR2AT4", "_CMA1", "_SMAD3", "_GATA3",
+        # "_SLC18A2", "_PAX8", "_SPTBN1",
+        # "_NCOR2", "_ACOT11", "_CD82",
+        "_ACOT11",
+        # "_gene", "enhancer, "_geneWider", "_enhancerMore",
+        "_gene",
+        out,
+        "_v2",
+        ".", ext
+      ),
+    plot = ggplot2::last_plot(),
+    device = ext,
+    dpi = 300,
+    width = 8, # 8, # 2.5,
+    height = 4 # 4 # 8
+  )
 ```
 
 ## [6.] Genomic_landscape -------------------------
