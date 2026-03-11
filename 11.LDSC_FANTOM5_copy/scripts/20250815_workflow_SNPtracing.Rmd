@@ -252,12 +252,17 @@ utils::tail(mrg)
 #     "T cell", "reticulocyte", "neutrophil",
 #     "acute myeloid leukemia FAB M6"
 #   )
+# facets_sel_ <- base::c(
+#     "B.lymphoblastoid", "Hep.2", "astrocyte",
+#     "chronic.myelogenous.leukemia", "epitheloid.carcinoma", "kidney.epithelial.cell",
+#     "mast.cell", "mesenchymal.cell", "monocyte",
+#     "natural.killer.cell", "neuroblastoma", "skin.fibroblast",
+#     "small.cell.lung.carcinoma", "thymus", "vascular.associated.smooth.muscle.cell"
+#   )
 facets_sel_ <- base::c(
-    "B.lymphoblastoid", "Hep.2", "astrocyte",
-    "chronic.myelogenous.leukemia", "epitheloid.carcinoma", "kidney.epithelial.cell",
-    "mast.cell", "mesenchymal.cell", "monocyte",
-    "natural.killer.cell", "neuroblastoma", "skin.fibroblast",
-    "small.cell.lung.carcinoma", "thymus", "vascular.associated.smooth.muscle.cell"
+    "mast.cell", "dendritic.cell", "monocyte",
+    "T.cell", "reticulocyte", "cervical.cancer",
+    "placental.epithelial.cell", "uterus"
   )
 ```
 
@@ -278,7 +283,7 @@ fs <- base::list.files(
   # stringr::str_subset("TPM1")
 ```
 
-#### 2,056,763 (immune); 2,772,597 (kidney); 2,258,436 (Immune_Neutrophil_FABM6); 3,762,040 (ACOT11)
+#### 2,056,763 (immune); 2,772,597 (kidney); 2,258,436 (Immune_Neutrophil_FABM6); 3,762,040 (ACOT11); 2,381,852 (NCOR2)
 ```{r}
 icPL <- purrr::map_dfr(
     .x = fs,
@@ -580,7 +585,8 @@ base::saveRDS(
         "_icPL",
         # "_KidneyRelatedCells",
         # "_AllImuneNeutrophilFABM6",
-        "_ACOT11",
+        # "_ACOT11",
+        "_NCOR2",
         ".rds"
       ),
     compress = TRUE
@@ -597,7 +603,8 @@ icPL <- base::readRDS(
     # stringr::str_subset("20260305_icPL_AllImmuneCells")
     # stringr::str_subset("20260305_icPL_KidneyRelatedCells")
     # stringr::str_subset("20260311_icPL_AllImuneNeutrophilFABM6")
-    stringr::str_subset("20260311_icPL_ACOT11")
+    # stringr::str_subset("20260311_icPL_ACOT11")
+    stringr::str_subset("20260311_icPL_NCOR2")
   )
 ```
 
