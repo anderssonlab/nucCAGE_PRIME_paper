@@ -1235,6 +1235,14 @@ insert <- tibble::tibble(
     strand = "plus",
     score = base::as.double(0)
   )
+insert <- tibble::tibble(
+    sample = "reticulocyte",
+    seqnames = chrom,
+    start = start_pos,
+    end = end_pos,
+    strand = "plus",
+    score = base::as.double(0)
+  )
 
 cage_sel <- dplyr::bind_rows(cage_sel,insert)
 ```
@@ -1684,8 +1692,8 @@ facets_sel <- base::c(
     "acute_myeloid_leukemia_(FAB_M6)"
   )
 
-minY = -25 # -50 # -500 # base::range(cage_sel_$score)[1]
-maxY = 25 # 50 # 500 # base::range(cage_sel_$score)[2]
+minY = -10 # -50 # -500 # base::range(cage_sel_$score)[1]
+maxY = 10 # 50 # 500 # base::range(cage_sel_$score)[2]
 
 coef = 0.75
 cols <- base::c(
@@ -1753,16 +1761,16 @@ for(ext in c("pdf", "png")){
           # "_SLC18A2", "_PAX8", "_SPTBN1",
           # "_NCOR2", "_ACOT11",
           "_CD82",
-          "_gene",
+          # "_gene",
           # "_geneWider",
-          # "_enhancer",
+          "_enhancer",
           out,
           ".", ext
         ),
       plot = ggplot2::last_plot(),
       device = ext,
       dpi = 300,
-      width = 8, # 8, # 2.5,
+      width = 2.5, # 8, # 2.5,
       height = 4 # 4 # 8
     )
   }
