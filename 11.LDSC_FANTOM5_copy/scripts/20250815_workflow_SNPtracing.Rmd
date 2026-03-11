@@ -239,13 +239,18 @@ utils::tail(mrg)
 #     "mast cell", "dendritic cell", "monocyte",
 #     "T cell", "reticulocyte"
 #   )
+# facets_sel_ <- base::c(
+#     "spinal cord", "internal male genitalia", "throat",
+#     "tongue", "testis", "thyroid gland",
+#     "blood vessel", "spleen", "thymus",
+#     "meninx", "eye", "kidney",
+#     "uterus", "lung", "large.intestine",
+#     "small.intestine"
+#   )
 facets_sel_ <- base::c(
-    "spinal cord", "internal male genitalia", "throat",
-    "tongue", "testis", "thyroid gland",
-    "blood vessel", "spleen", "thymus",
-    "meninx", "eye", "kidney",
-    "uterus", "lung", "large.intestine",
-    "small.intestine"
+    "mast cell", "dendritic cell", "monocyte",
+    "T cell", "reticulocyte", "neutrophil",
+    "acute myeloid leukemia FAB M6"
   )
 
 facets_sel <- stringr::str_replace_all(facets_sel_," ", ".") %>%
@@ -260,7 +265,7 @@ fs <- base::list.files(
   stringr::str_subset("qn.PL.score0.5.bed")
   # stringr::str_subset("TPM1")
 
-icPL <- purrr::map_dfr( # 2,056,763 (immune) # 2,772,597 (kidney)
+icPL <- purrr::map_dfr( # 2,056,763 (immune) # 2,772,597 (kidney) # 2,258,436 (Immune_Neutrophil_FABM6)
     .x = fs,
     .f = function(f){
       cell <- stringr::str_replace(f, "^(.*)/(.*?)_(.*)$", "\\2")
@@ -558,7 +563,8 @@ base::saveRDS(
         here::here("11.LDSC_FANTOM5_copy/"),
         base::format(base::Sys.time(),"%Y%m%d"),
         "_icPL",
-        "_KidneyRelatedCells",
+        # "_KidneyRelatedCells",
+        "_AllImuneNeutrophilFABM6",
         ".rds"
       ),
     compress = TRUE
@@ -572,8 +578,9 @@ icPL <- base::readRDS(
         full.names = TRUE
       ) %>%
     stringr::str_subset("rds") %>%
-    stringr::str_subset("_KidneyRelatedCells")
-    # stringr::str_subset("20260305_icPL")
+    # stringr::str_subset("20260305_icPL_AllImmuneCells")
+    # stringr::str_subset("20260305_icPL_KidneyRelatedCells")
+    stringr::str_subset("20260311_icPL_AllImuneNeutrophilFABM6")
   )
 ```
 
