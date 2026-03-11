@@ -874,6 +874,14 @@ l_ <- "chr2:54,448,250-54,680,036" # Cystatin C / SPTBN1 gene
 l_ <- "chr2:54559889-54560289" # Cystatin C / SPTBN1 enhancer
 ```
 
+```{r}
+l_ <- "chr12:124,284,664-124,887,451" # NCOR2 gene
+l_ <- "chr12:124626205-124626605" # NCOR2 enhancer
+
+l_ <- "chr1:54,220,981-54,629,250" # ACOT11 gene
+l_ <- "chr1:54488214-54488614" # ACOT11 enhancer
+```
+
 ## [2.1.] Get genomic region from coordinates
 ```{r}
 l <- stringr::str_replace_all(l_,",","")
@@ -1211,8 +1219,8 @@ ins <- cage_sel %>%
   dplyr::distinct(sample) %>%
   dplyr::pull(sample)
 
-# ous <- facets_sel[!facets_sel %in% ins]
-ous <- facets_sel_[!facets_sel_ %in% ins]
+ous <- facets_sel[!facets_sel %in% ins]
+# ous <- facets_sel_[!facets_sel_ %in% ins]
 
 insert <- tibble::tibble(
     sample = ous,
@@ -1620,8 +1628,8 @@ icPL <- base::readRDS(
         full.names = TRUE
       ) %>%
     stringr::str_subset("rds") %>%
-    stringr::str_subset("_KidneyRelatedCells") # 2,772,597
-    # stringr::str_subset("20260305_icPL")
+    # stringr::str_subset("_KidneyRelatedCells") # 2,772,597
+    stringr::str_subset("20260305_icPL_AllImmuneCells") # 2,056,763
   )
 ```
 
@@ -1658,8 +1666,8 @@ sites_scores <- icPL %>% # varPL # icPL
 
 ```{r}
 # cage_sel <- cage_sel_
-minY = -10 # -50 # -500 # base::range(cage_sel_$score)[1]
-maxY = 10 # 50 # 500 # base::range(cage_sel_$score)[2]
+minY = -20 # -50 # -500 # base::range(cage_sel_$score)[1]
+maxY = 20 # 50 # 500 # base::range(cage_sel_$score)[2]
 
 coef = 0.75
 cols <- base::c(
@@ -1676,7 +1684,7 @@ plot <- cage_sel %>%
   dplyr::mutate(
     sample = base::factor(
         x = sample,
-        levels = facets_sel_, # facets_sel
+        levels = facets_sel, # facets_sel_ # facets_sel
         ordered = TRUE
       )
     ) %>%
@@ -1724,11 +1732,12 @@ for(ext in c("pdf", "png")){
           here::here("trackHubFiles/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           # "_KLF6", "_cKit", "_CCL1", "_OR2AT4", "_CMA1", "_SMAD3", "_GATA3",
-          # "_SLC18A2", "_PAX8",
-          "_SPTBN1",
+          # "_SLC18A2", "_PAX8", "_SPTBN1",
+          # "_NCOR2",
+          "_ACOT11",
           "_gene",
           # "_geneWider",
-          # "_enhancer",
+          "_enhancer",
           out,
           ".", ext
         ),
