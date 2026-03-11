@@ -359,17 +359,30 @@ fs <- base::list.files(
   stringr::str_subset(base::paste0(facets_sel,collapse = "|"))
 ```
 
-#### ACOT11 (Fig6)
+#### ACOT11, NCOR2, TRDMT1 (Fig6)
 ```{r}
+# facets_sel <- base::c(
+#     "B_lymphoblastoid", "Hep-2", "astrocyte",
+#     "chronic_myelogenous_leukemia", "epitheloid_carcinoma", "kidney epithelial cell",
+#     "mast cell", "mesenchymal cell", "monocyte",
+#     "natural killer cell", "neuroblastoma", "skin fibroblast",
+#     "small_cell_lung_carcinoma", "thymus", "vascular associated smooth muscle cell"
+#   )
+# facets_sel <- base::c(
+#     "mast cell", "dendritic cell", "monocyte",
+#     "T cell", "reticulocyte", "cervical_cancer",
+#     "placental epithelial cell", "uterus"
+#   )
 facets_sel <- base::c(
-    "B_lymphoblastoid", "Hep-2", "astrocyte",
-    "chronic_myelogenous_leukemia", "epitheloid_carcinoma", "kidney epithelial cell",
-    "mast cell", "mesenchymal cell", "monocyte",
-    "natural killer cell", "neuroblastoma", "skin fibroblast",
-    "small_cell_lung_carcinoma", "thymus", "vascular associated smooth muscle cell"
+    "mast cell", "dendritic cell", "monocyte",
+    "T cell", "reticulocyte", "hepatocyte",
+    "large intestine", "small intestine", "preadipocyte",
+    "liposarcoma", "fat cell", "hepatocellular_carcinoma",
+    "Hep-2", "liver", "hepatic stellate cell",
+    "endothelial cell of hepatic sinusoid"
   )
 
-fs <- base::list.files( # 30
+fs <- base::list.files( 
       path = here::here("0.External_resources/FANTOM5/pooled_bw"),
       full.names = TRUE
     ) %>%
@@ -902,6 +915,9 @@ l_ <- "chr1:54488214-54488614" # ACOT11 enhancer
 
 l_ <- "chr11:44,559,802-44,621,474" # CD82 gene
 l_ <- "chr11:44570516-44570916" # CD82 enhancer
+
+l_ <- "chr10:17,133,279-17,243,033" # TRDMT1 gene
+l_ <- "chr10:17212828-17213228" # TRDMT1 enhancer
 ```
 
 ## [2.1.] Get genomic region from coordinates
@@ -1651,10 +1667,12 @@ icPL <- base::readRDS(
         full.names = TRUE
       ) %>%
     stringr::str_subset("rds") %>%
-    stringr::str_subset("20260305_icPL_AllImmuneCells") # 2,056,763
+    # stringr::str_subset("20260305_icPL_AllImmuneCells") # 2,056,763
     # stringr::str_subset("20260305_icPL_KidneyRelatedCells") # 2,772,597
     # stringr::str_subset("20260311_icPL_AllImuneNeutrophilFABM6") # 2,258,436
     # stringr::str_subset("20260311_icPL_ACOT11") # 3,762,040
+    # stringr::str_subset("20260311_icPL_NCOR2") # 2,381,852
+    stringr::str_subset("20260311_icPL_TRDMT1") # 3,493,705
   )
 ```
 
@@ -1684,23 +1702,25 @@ sites_scores <- icPL %>% # varPL # icPL
       PL >= 0.75
       # base::abs(Z) > 2
     ) %>%
-#   dplyr::mutate(
-#       cell = case_when(
-# #       cell == "acute.myeloid.leukemia.FAB.M6" ~ "acute_myeloid_leukemia_(FAB_M6)",
-#         cell == "B.lymphoblastoid" ~ "B_lymphoblastoid",
-#         cell == "chronic.myelogenous.leukemia" ~ "chronic_myelogenous_leukemia",
-#         cell == "epitheloid.carcinoma" ~ "epitheloid_carcinoma",
-#         cell == "Hep.2" ~ "Hep-2",
-#         cell == "kidney.epithelial.cell" ~ "kidney epithelial cell",
-#         cell == "mast.cell" ~ "mast cell",
-#         cell == "mesenchymal.cell" ~ "mesenchymal cell",
-#         cell == "natural.killer.cell" ~ "natural killer cell",
-#         cell == "skin.fibroblast" ~ "skin fibroblast",
-#         cell == "small.cell.lung.carcinoma" ~ "small_cell_lung_carcinoma",
-#         cell == "vascular.associated.smooth.muscle.cell" ~ "vascular associated smooth muscle cell",
-#         TRUE ~ cell
-#       )
-#     ) %>%
+  dplyr::mutate(
+      cell = case_when(
+        # cell == "acute.myeloid.leukemia.FAB.M6" ~ "acute_myeloid_leukemia_(FAB_M6)",
+        # cell == "B.lymphoblastoid" ~ "B_lymphoblastoid",
+        # cell == "chronic.myelogenous.leukemia" ~ "chronic_myelogenous_leukemia",
+        # cell == "epitheloid.carcinoma" ~ "epitheloid_carcinoma",
+        # cell == "Hep.2" ~ "Hep-2",
+        # cell == "kidney.epithelial.cell" ~ "kidney epithelial cell",
+        # cell == "mast.cell" ~ "mast cell",
+        # cell == "mesenchymal.cell" ~ "mesenchymal cell",
+        # cell == "natural.killer.cell" ~ "natural killer cell",
+        # cell == "skin.fibroblast" ~ "skin fibroblast",
+        # cell == "small.cell.lung.carcinoma" ~ "small_cell_lung_carcinoma",
+        # cell == "vascular.associated.smooth.muscle.cell" ~ "vascular associated smooth muscle cell",
+        # cell == "cervical.cancer" ~ "cervical_cancer",
+        cell == "Hep.2" ~ "Hep-2",
+        TRUE ~ cell
+      )
+    ) %>%
   dplyr::mutate(
       sample = stringr::str_replace_all(cell, "\\.", " ")
     )
@@ -1709,9 +1729,8 @@ sites_scores <- icPL %>% # varPL # icPL
 #### cage_sel <- cage_sel_
 #### facets_sel <- base::c("dendritic cell", "mast cell", "monocyte", "reticulocyte", "T cell", "neutrophil", "acute_myeloid_leukemia_(FAB_M6)")
 ```{r}
-cage_sel <- cage_sel_
-minY = -20 # -50 # -500 # base::range(cage_sel_$score)[1]
-maxY = 20 # 50 # 500 # base::range(cage_sel_$score)[2]
+minY = -50 # -50 # -500 # base::range(cage_sel_$score)[1]
+maxY = 50 # 50 # 500 # base::range(cage_sel_$score)[2]
 
 coef = 0.75
 cols <- base::c(
@@ -1778,18 +1797,18 @@ ggplot2::ggsave(
         # "_KLF6", "_cKit", "_CCL1", "_OR2AT4", "_CMA1", "_SMAD3", "_GATA3",
         # "_SLC18A2", "_PAX8", "_SPTBN1",
         # "_NCOR2", "_ACOT11", "_CD82",
-        "_ACOT11",
-        # "_gene", "enhancer, "_geneWider", "_enhancerMore",
+        "_TRDMT1",
+        # "_gene", "_enhancer", "_geneWider", "_enhancerMore",
         "_gene",
         out,
-        "_v2",
+        # "_v1", "_v2",
         ".", ext
       ),
     plot = ggplot2::last_plot(),
     device = ext,
     dpi = 300,
     width = 8, # 8, # 2.5,
-    height = 4 # 4 # 8
+    height = 8 # 4 # 8
   )
 ```
 
