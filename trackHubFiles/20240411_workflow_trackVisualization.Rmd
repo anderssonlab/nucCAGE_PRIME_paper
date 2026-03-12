@@ -373,13 +373,17 @@ fs <- base::list.files(
 #     "T cell", "reticulocyte", "cervical_cancer",
 #     "placental epithelial cell", "uterus"
 #   )
+# facets_sel <- base::c(
+#     "mast cell", "dendritic cell", "monocyte",
+#     "T cell", "reticulocyte", "hepatocyte",
+#     "large intestine", "small intestine", "preadipocyte",
+#     "liposarcoma", "fat cell", "hepatocellular_carcinoma",
+#     "Hep-2", "liver", "hepatic stellate cell",
+#     "endothelial cell of hepatic sinusoid"
+#   )
 facets_sel <- base::c(
     "mast cell", "dendritic cell", "monocyte",
-    "T cell", "reticulocyte", "hepatocyte",
-    "large intestine", "small intestine", "preadipocyte",
-    "liposarcoma", "fat cell", "hepatocellular_carcinoma",
-    "Hep-2", "liver", "hepatic stellate cell",
-    "endothelial cell of hepatic sinusoid"
+    "T cell", "reticulocyte", "natural killer cell"
   )
 
 fs <- base::list.files( 
@@ -935,13 +939,13 @@ out <- base::paste0("_",chr,"_",s,"_",e)
 ```
 
 ```{r}
-extend = 0 # 500
+extend = 0 # 200 # 500
 ran <- GenomicRanges::GRanges(
     seqnames = chr,
     ranges = IRanges::IRanges(start = s, end = e)
   )
-BiocGenerics::start(ran) <- BiocGenerics::start(ran) - extend
-BiocGenerics::end(ran) <- BiocGenerics::end(ran) + extend
+BiocGenerics::start(ran) <- BiocGenerics::start(ran) - 500 # extend
+BiocGenerics::end(ran) <- BiocGenerics::end(ran) + 0 # extend
 GenomeInfoDb::seqlevelsStyle(ran) <- "UCSC"
 ```
 
@@ -1675,7 +1679,8 @@ icPL <- base::readRDS(
     # stringr::str_subset("20260311_icPL_AllImuneNeutrophilFABM6") # 2,258,436
     # stringr::str_subset("20260311_icPL_ACOT11") # 3,762,040
     # stringr::str_subset("20260311_icPL_NCOR2") # 2,381,852
-    stringr::str_subset("20260311_icPL_TRDMT1") # 3,493,705
+    # stringr::str_subset("20260311_icPL_TRDMT1") # 3,493,705
+    stringr::str_subset("20260312_icPL_IKFZ3") # 2,243,878
   )
 ```
 
@@ -1705,25 +1710,25 @@ sites_scores <- icPL %>% # varPL # icPL
       PL >= 0.75
       # base::abs(Z) > 2
     ) %>%
-  dplyr::mutate(
-      cell = case_when(
-        # cell == "acute.myeloid.leukemia.FAB.M6" ~ "acute_myeloid_leukemia_(FAB_M6)",
-        # cell == "B.lymphoblastoid" ~ "B_lymphoblastoid",
-        # cell == "chronic.myelogenous.leukemia" ~ "chronic_myelogenous_leukemia",
-        # cell == "epitheloid.carcinoma" ~ "epitheloid_carcinoma",
-        # cell == "Hep.2" ~ "Hep-2",
-        # cell == "kidney.epithelial.cell" ~ "kidney epithelial cell",
-        # cell == "mast.cell" ~ "mast cell",
-        # cell == "mesenchymal.cell" ~ "mesenchymal cell",
-        # cell == "natural.killer.cell" ~ "natural killer cell",
-        # cell == "skin.fibroblast" ~ "skin fibroblast",
-        # cell == "small.cell.lung.carcinoma" ~ "small_cell_lung_carcinoma",
-        # cell == "vascular.associated.smooth.muscle.cell" ~ "vascular associated smooth muscle cell",
-        # cell == "cervical.cancer" ~ "cervical_cancer",
-        cell == "Hep.2" ~ "Hep-2",
-        TRUE ~ cell
-      )
-    ) %>%
+  # dplyr::mutate(
+  #     cell = case_when(
+  #       cell == "acute.myeloid.leukemia.FAB.M6" ~ "acute_myeloid_leukemia_(FAB_M6)",
+  #       cell == "B.lymphoblastoid" ~ "B_lymphoblastoid",
+  #       cell == "chronic.myelogenous.leukemia" ~ "chronic_myelogenous_leukemia",
+  #       cell == "epitheloid.carcinoma" ~ "epitheloid_carcinoma",
+  #       cell == "Hep.2" ~ "Hep-2",
+  #       cell == "kidney.epithelial.cell" ~ "kidney epithelial cell",
+  #       cell == "mast.cell" ~ "mast cell",
+  #       cell == "mesenchymal.cell" ~ "mesenchymal cell",
+  #       cell == "natural.killer.cell" ~ "natural killer cell",
+  #       cell == "skin.fibroblast" ~ "skin fibroblast",
+  #       cell == "small.cell.lung.carcinoma" ~ "small_cell_lung_carcinoma",
+  #       cell == "vascular.associated.smooth.muscle.cell" ~ "vascular associated smooth muscle cell",
+  #       cell == "cervical.cancer" ~ "cervical_cancer",
+  #       cell == "Hep.2" ~ "Hep-2",
+  #       TRUE ~ cell
+  #     )
+  #   ) %>%
   dplyr::mutate(
       sample = stringr::str_replace_all(cell, "\\.", " ")
     )
@@ -1732,8 +1737,8 @@ sites_scores <- icPL %>% # varPL # icPL
 #### cage_sel <- cage_sel_
 #### facets_sel <- base::c("dendritic cell", "mast cell", "monocyte", "reticulocyte", "T cell", "neutrophil", "acute_myeloid_leukemia_(FAB_M6)")
 ```{r}
-minY = -50 # -50 # -500 # base::range(cage_sel_$score)[1]
-maxY = 50 # 50 # 500 # base::range(cage_sel_$score)[2]
+minY = -10 # -50 # -500 # base::range(cage_sel_$score)[1]
+maxY = 10 # 50 # 500 # base::range(cage_sel_$score)[2]
 
 coef = 0.75
 cols <- base::c(
@@ -1799,10 +1804,10 @@ ggplot2::ggsave(
         base::format(base::Sys.time(), "%Y%m%d"),
         # "_KLF6", "_cKit", "_CCL1", "_OR2AT4", "_CMA1", "_SMAD3", "_GATA3",
         # "_SLC18A2", "_PAX8", "_SPTBN1",
-        # "_NCOR2", "_ACOT11", "_CD82",
-        "_TRDMT1",
+        # "_NCOR2", "_ACOT11", "_CD82", "_TRDMT1"
+        "_IKFZ3",
         # "_gene", "_enhancer", "_geneWider", "_enhancerMore",
-        "_gene",
+        "_enhancer",
         out,
         # "_v1", "_v2",
         ".", ext
@@ -1810,8 +1815,8 @@ ggplot2::ggsave(
     plot = ggplot2::last_plot(),
     device = ext,
     dpi = 300,
-    width = 8, # 8, # 2.5,
-    height = 8 # 4 # 8
+    width = 2.5, # 8, # 2.5,
+    height = 4.8 # 4 # 8
   )
 ```
 
