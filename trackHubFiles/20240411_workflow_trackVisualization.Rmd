@@ -918,6 +918,9 @@ l_ <- "chr11:44570516-44570916" # CD82 enhancer
 
 l_ <- "chr10:17,133,279-17,243,033" # TRDMT1 gene
 l_ <- "chr10:17212828-17213228" # TRDMT1 enhancer
+
+l_ <- "chr17:39,751,261-39,885,067" # IKFZ3 gene
+l_ <- "chr17:39813772-39814172" # IKFZ3 enhancer
 ```
 
 ## [2.1.] Get genomic region from coordinates
