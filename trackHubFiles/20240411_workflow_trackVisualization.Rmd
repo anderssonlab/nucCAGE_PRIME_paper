@@ -350,8 +350,6 @@ facets_sel <- base::c(
     "T cell", "reticulocyte"
   )
 
-# facets_sel <- base::c(facets_sel, "acute_myeloid_leukemia_\\(FAB_M6\\)", "neutrophil") # CD82 (20260311)
-
 fs <- base::list.files(
       path = here::here("0.External_resources/FANTOM5/pooled_bw"),
       full.names = TRUE
@@ -359,7 +357,7 @@ fs <- base::list.files(
   stringr::str_subset(base::paste0(facets_sel,collapse = "|"))
 ```
 
-#### ACOT11, NCOR2, TRDMT1 (Fig6)
+#### ACOT11, NCOR2, TRDMT1, CD82 (Fig6)
 ```{r}
 # facets_sel <- base::c(
 #     "B_lymphoblastoid", "Hep-2", "astrocyte",
@@ -381,10 +379,15 @@ fs <- base::list.files(
 #     "Hep-2", "liver", "hepatic stellate cell",
 #     "endothelial cell of hepatic sinusoid"
 #   )
-facets_sel <- base::c(
-    "mast cell", "dendritic cell", "monocyte",
-    "T cell", "reticulocyte", "natural killer cell"
-  )
+# facets_sel <- base::c(
+#     "mast cell", "dendritic cell", "monocyte",
+#     "T cell", "reticulocyte", "natural killer cell"
+#   )
+# facets_sel <- base::c(
+#     "mast cell", "dendritic cell", "monocyte",
+#     "T cell", "reticulocyte", "acute_myeloid_leukemia_\\(FAB_M6\\)",
+#     "neutrophil"
+#   )
 
 fs <- base::list.files( 
       path = here::here("0.External_resources/FANTOM5/pooled_bw"),
@@ -889,6 +892,7 @@ l_ <- "chr11:75,100,000-75,109,986" # OR2AT4 gene
 l_ <- "chr11:75103056-75104456" # OR2AT4 enhancer
 
 l_ <- "chr14:24,497,494-24,526,450" # CMA1 gene
+l_ <- "chr14:24,423,851-24,585,580" # CMA1 gene wider (20260314)
 l_ <- "chr14:24517772-24518172" # CMA1 enhancer
 
 l_ <- "chr15:67,039,999-67,195,802" # SMAD3 gene
