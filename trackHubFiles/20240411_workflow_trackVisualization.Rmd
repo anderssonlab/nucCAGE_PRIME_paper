@@ -948,8 +948,8 @@ ran <- GenomicRanges::GRanges(
     seqnames = chr,
     ranges = IRanges::IRanges(start = s, end = e)
   )
-BiocGenerics::start(ran) <- BiocGenerics::start(ran) - 500 # extend
-BiocGenerics::end(ran) <- BiocGenerics::end(ran) + 0 # extend
+BiocGenerics::start(ran) <- BiocGenerics::start(ran) - extend
+BiocGenerics::end(ran) <- BiocGenerics::end(ran) + extend
 GenomeInfoDb::seqlevelsStyle(ran) <- "UCSC"
 ```
 
@@ -1678,13 +1678,13 @@ icPL <- base::readRDS(
         full.names = TRUE
       ) %>%
     stringr::str_subset("rds") %>%
-    # stringr::str_subset("20260305_icPL_AllImmuneCells") # 2,056,763
+    stringr::str_subset("20260305_icPL_AllImmuneCells") # 2,056,763
     # stringr::str_subset("20260305_icPL_KidneyRelatedCells") # 2,772,597
     # stringr::str_subset("20260311_icPL_AllImuneNeutrophilFABM6") # 2,258,436
     # stringr::str_subset("20260311_icPL_ACOT11") # 3,762,040
     # stringr::str_subset("20260311_icPL_NCOR2") # 2,381,852
     # stringr::str_subset("20260311_icPL_TRDMT1") # 3,493,705
-    stringr::str_subset("20260312_icPL_IKFZ3") # 2,243,878
+    # stringr::str_subset("20260312_icPL_IKFZ3") # 2,243,878
   )
 ```
 
@@ -1741,8 +1741,8 @@ sites_scores <- icPL %>% # varPL # icPL
 #### cage_sel <- cage_sel_
 #### facets_sel <- base::c("dendritic cell", "mast cell", "monocyte", "reticulocyte", "T cell", "neutrophil", "acute_myeloid_leukemia_(FAB_M6)")
 ```{r}
-minY = -10 # -50 # -500 # base::range(cage_sel_$score)[1]
-maxY = 10 # 50 # 500 # base::range(cage_sel_$score)[2]
+minY = -20 # -50 # -500 # base::range(cage_sel_$score)[1]
+maxY = 20 # 50 # 500 # base::range(cage_sel_$score)[2]
 
 coef = 0.75
 cols <- base::c(
@@ -1808,10 +1808,10 @@ ggplot2::ggsave(
         base::format(base::Sys.time(), "%Y%m%d"),
         # "_KLF6", "_cKit", "_CCL1", "_OR2AT4", "_CMA1", "_SMAD3", "_GATA3",
         # "_SLC18A2", "_PAX8", "_SPTBN1",
-        # "_NCOR2", "_ACOT11", "_CD82", "_TRDMT1"
-        "_IKFZ3",
+        # "_NCOR2", "_ACOT11", "_CD82", "_TRDMT1", "_IKFZ3",
+        "_CMA1",
         # "_gene", "_enhancer", "_geneWider", "_enhancerMore",
-        "_enhancer",
+        "_geneWider",
         out,
         # "_v1", "_v2",
         ".", ext
@@ -1819,8 +1819,8 @@ ggplot2::ggsave(
     plot = ggplot2::last_plot(),
     device = ext,
     dpi = 300,
-    width = 2.5, # 8, # 2.5,
-    height = 4.8 # 4 # 8
+    width = 8, # 8, # 2.5,
+    height = 4 # 4 # 8
   )
 ```
 
