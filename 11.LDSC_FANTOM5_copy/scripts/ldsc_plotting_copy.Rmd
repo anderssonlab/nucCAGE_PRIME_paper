@@ -1839,6 +1839,35 @@ blood_traits <- base::c(
   )
 ```
 
+#### Asthma traits
+```{r}
+asthma_traits <- base::c(
+    "Non-cancer illness code, self-reported: asthma",
+    "Doctor diagnosed asthma",
+    "Age asthma diagnosed by doctor",
+    "Recent medication for asthma",
+    "Age asthma diagnosed",
+    "Blood clot, DVT, bronchitis, emphysema, asthma, rhinitis, eczema, allergy diagnosed by doctor: Asthma",
+    "Childhood asthma (age<16)",
+    "Suggestive for eosinophilic asthma",
+    "Diagnoses - main ICD10: J46 Status asthmaticus"
+  )
+```
+
+#### Placenta traits
+```{r}
+placenta_traits <- base::c(
+    "Non-cancer illness code, self-reported: hypertension",
+    "Non-cancer illness code, self-reported: essential hypertension",
+    "Non-cancer illness code, self-reported: gestational hypertension/pre-eclampsia",
+    "Pregnancy hypertension",
+    "Diagnoses - main ICD10: I10 Essential (primary) hypertension",
+    "Diagnoses - main ICD10: O13 Gestational [pregnancy-induced] hypertension without significant proteinuria",
+    "Diagnoses - main ICD10: O14 Gestational [pregnancy-induced] hypertension with significant proteinuria",
+    "Diagnoses - main ICD10: O16 Unspecified maternal hypertension"
+  )
+```
+
 ## [3.1.] Define FANTOM5 samples to be included
 ```{r}
 relevant_samples <- base::c(
@@ -1887,7 +1916,9 @@ relevant_samples <- base::c(
     "reticulocyte",
     "testis",                                # Reproductive / endocrine
     "thyroid.gland",
-    #"uterus",
+    "cervical.cancer",
+    "placental.epithelial.cell",
+    "uterus",
     "ciliated.epithelial.cell"               # Misc / less obvious
     #"keratocyte"
     #"hair.follicle.cell",
@@ -1918,7 +1949,9 @@ all_traits <- base::c(
     body_composition_traits,
     behavioral_traits,
     heart_traits,
-    blood_traits
+    blood_traits,
+    asthma_traits,
+    placenta_traits
   )
 ```
 
