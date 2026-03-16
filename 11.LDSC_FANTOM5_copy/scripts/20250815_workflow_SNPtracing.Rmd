@@ -88,6 +88,20 @@ sumstat_annot %>%
       stringr::str_detect(description,"anaemia")
     )
 ```
+#### Evaluate presence of placenta & asthma traits (20260316)
+```{r}
+sumstat_annot %>%
+  dplyr::filter(
+      stringr::str_detect(description,"asthma")
+    ) %>%
+  dplyr::pull(description)
+
+sumstat_annot %>%
+  dplyr::filter(
+      stringr::str_detect(description,"hypertension")
+    ) %>%
+  dplyr::pull(description)
+```
 
 #### Identify all four files related to the enriched anemias
 ```{r}
