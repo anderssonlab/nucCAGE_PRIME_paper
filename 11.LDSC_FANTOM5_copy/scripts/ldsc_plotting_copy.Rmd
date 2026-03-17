@@ -1950,6 +1950,7 @@ relevant_samples <- base::c(
 all_traits <- base::c(
     eye_traits,
     kidney_liver_traits,
+    body_composition_traits,
     behavioral_traits,
     heart_traits,
     blood_traits
@@ -1960,7 +1961,7 @@ all_traits <- base::c(
 
 ## [3.3.] Heatmap for visualization of enrichment and proportion of heritability
 ```{r}
-df_sub <- ldsc_data %>% # 585,750
+df_sub <- ldsc_data %>% # 585,750 -> 3,010
   dplyr::filter(
       sample %in% relevant_samples &
       description %in% all_traits
@@ -2064,7 +2065,7 @@ ggplot2::ggsave(
         # "_PropH2ScaledGlobal",
         # "_unnormalized",
         "_ordered",
-        "_v4",
+        "_v5",
         ".pdf"
       ),
     device = "pdf",
