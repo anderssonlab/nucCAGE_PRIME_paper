@@ -51,7 +51,7 @@ cellFacet.rse <- base::readRDS( # cellFacet.rse_1
     )
   )
 
-SummarizedExperiment::assay(x = cellFacet.rse, i = "qn.PL.score")
+SummarizedExperiment::assay(x = cellFacet.rse, i = "qn.PL.score")[1:10,1:5]
 ```
 
 ## [0.2.] Read in FANTOM5 predictions
@@ -1252,13 +1252,16 @@ scaling_group <- function(df){
     )
   }
 
-ldsc_data <- ldsc_score %>% # 592,140
+ldsc_data <- ldsc_score %>% # 3,552,840 --> 592,140
   dplyr::mutate(
       Category = stringr::str_replace(Category, "(.*?)_.*$", "\\1")
     ) %>%
   dplyr::filter(
       score == "0.5"
     ) %>%
+  dplyr::group_by(sample,description) %>% ## <-- insert starts
+  dplyr::slice_max(Enrichment, n = 1) %>% # 585,750
+  dplyr::ungroup() %>%  ## <-- insert ends
   dplyr::group_by(Trait) %>%
   tidyr::nest() %>% 
   dplyr::mutate(
@@ -1647,7 +1650,7 @@ pr <- ldsc_score %>% # 3,552,840
       sample, description, Enrichment # Prop._h2
     ) %>%
   dplyr::group_by(sample,description) %>%
-  tidyr::pivot_wider(
+  tidyr::pivot_wider( # 585,892
       names_from = description,
       values_from = Enrichment, # Prop._h2,
       values_fn = base::mean
@@ -1916,11 +1919,11 @@ relevant_samples <- base::c(
     "lymphocyte.of.B.lineage",
     "reticulocyte",
     "testis",                                # Reproductive / endocrine
-    "thyroid.gland",
-    "cervical.cancer",
-    "placental.epithelial.cell",
-    "uterus",
-    "ciliated.epithelial.cell"               # Misc / less obvious
+    "thyroid.gland"
+    # "cervical.cancer",
+    # "placental.epithelial.cell",
+    # "uterus",
+    # "ciliated.epithelial.cell"               # Misc / less obvious
     #"keratocyte"
     #"hair.follicle.cell",
     #"tongue",
@@ -1947,18 +1950,17 @@ relevant_samples <- base::c(
 all_traits <- base::c(
     eye_traits,
     kidney_liver_traits,
-    body_composition_traits,
     behavioral_traits,
     heart_traits,
-    blood_traits,
-    asthma_traits,
-    placenta_traits
+    blood_traits
+    # asthma_traits,
+    # placenta_traits
   )
 ```
 
 ## [3.3.] Heatmap for visualization of enrichment and proportion of heritability
 ```{r}
-df_sub <- ldsc_data %>%
+df_sub <- ldsc_data %>% # 585,750
   dplyr::filter(
       sample %in% relevant_samples &
       description %in% all_traits
@@ -1976,6 +1978,13 @@ df_sub <- ldsc_data %>%
       )
     ) %>%
   dplyr::arrange(dplyr::desc(Prop._h2))
+```
+
+```{r}
+df_ns <- df_sub %>%
+  dplyr::filter(
+      Enrichment_p > 0.05
+    )
 ```
 
 ## [3.4.] Plot data
@@ -2002,6 +2011,14 @@ ggplot2::ggplot(
       width = 1,
       height = 1
     ) +
+  geom_point(
+      data = df_ns,
+      # mapping = aes(),
+      shape = 4,
+      size = 1,
+      color = "black",
+      alpha = 0.5
+    ) +
   scale_fill_gradient2(
       low = "#0000FF", # "#256866", 
       mid = "#FFFFFF", # "#FFFFCC", 
@@ -2023,6 +2040,7 @@ ggplot2::ggplot(
           vjust = 0.5,
           size = 8
         ),
+      # axis.text.x = element_blank(),
       axis.text.y = element_text(
           size = 8
         ),
@@ -2046,12 +2064,12 @@ ggplot2::ggsave(
         # "_PropH2ScaledGlobal",
         # "_unnormalized",
         "_ordered",
-        "_v2",
+        "_v4",
         ".pdf"
       ),
     device = "pdf",
     plot = ggplot2::last_plot(),
-    width = 16,
+    width = 15,
     height = 8
   )
 ```
@@ -2230,3 +2248,4 @@ ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/he
 
 ```
 
+  
