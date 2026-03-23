@@ -9,38 +9,16 @@ date: "2024-01-26"
 ## [0.0.] Load necesarray packages
 ```{r message=FALSE}
 base::library(tidyverse)
+base::library(PRIME)
 ```
 
-## [0.1.] Load CAGEfighR extensions
-```{r message=FALSE,results='hide'}
-sep <- .Platform$file.sep
-cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
-fs <- base::c(
-    "utils","support","cumulative",
-    "decompose","enhancers","noise",
-    "coverage","complexity","subsample",
-    "dispersion"
-  )
-
-purrr::map(
-  .x = fs,
-  .f = function(f){
-    base::source(
-      base::paste0(
-        cfr.extensions.dir, sep, f, ".R"
-        )
-      )
-    }
-  )
-```
-
-## [0.2.] Load annotations
+## [0.1.] Load annotations
 ```{r message=FALSE}
 base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 ```
 
-## [0.3.] Add custom color palette
+## [0.2.] Add custom color palette
 ```{r}
 cols3 <- base::c(
     "#ED4938","#ADC607","#F4C10D",
@@ -307,19 +285,19 @@ for(ext in base::c("pdf", "png")){
 ```{r}
 base::set.seed(1337)
 
-comp.K562.CTSSs <- .GlobalEnv$calcCTSSComplexity(
+comp.K562.CTSSs <- PRIME::calcCTSSComplexity(
     object = K562.CTSSs,
     step = 2e+6,
     minCTSSsupport = 1,
     CTSSunexpressed = 0
   )
-# comp.K562.s.CTSSs <- .GlobalEnv$calcCTSSComplexity(
+# comp.K562.s.CTSSs <- PRIME::calcCTSSComplexity(
 #     object = K562.s.CTSSs,
 #     step = 2e+6,
 #     minCTSSsupport = 1,
 #     CTSSunexpressed = 0
 #   )
-# comp.K562.p.CTSSs <- .GlobalEnv$calcCTSSComplexity(
+# comp.K562.p.CTSSs <- PRIME::calcCTSSComplexity(
 #     object = K562.p.CTSSs,
 #     step = 2e+6,
 #     minCTSSsupport = 1,
@@ -965,19 +943,19 @@ for(ext in base::c("pdf", "png")){
 ```{r}
 base::set.seed(1337)
 
-comp.GM12878.CTSSs <- .GlobalEnv$calcCTSSComplexity(
+comp.GM12878.CTSSs <- PRIME::calcCTSSComplexity(
     object = GM12878.CTSSs,
     step = 2e+6,
     minCTSSsupport = 1,
     CTSSunexpressed = 0
   )
-# comp.GM12878.s.CTSSs <- .GlobalEnv$calcCTSSComplexity(
+# comp.GM12878.s.CTSSs <- PRIME::calcCTSSComplexity(
 #     object = GM12878.s.CTSSs,
 #     step = 2e+6,
 #     minCTSSsupport = 1,
 #     CTSSunexpressed = 0
 #   )
-# comp.GM12878.p.CTSSs <- .GlobalEnv$calcCTSSComplexity(
+# comp.GM12878.p.CTSSs <- PRIME::calcCTSSComplexity(
 #     object = GM12878.p.CTSSs,
 #     step = 2e+6,
 #     minCTSSsupport = 1,

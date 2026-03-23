@@ -1,9 +1,8 @@
 ---
-title: "1.4.2.CTSSs.annFracs.Rmd"
+title: "CTSS annotations and fractions"
 output: html_document
 date: "2024-02-29"
 ---
-
 
 ```{r setup, include=FALSE} 
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
@@ -15,38 +14,16 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 ```{r message=FALSE}
 base::library(tidyverse)
 base::library(BiocParallel)
+base::library(PRIME)
 ```
 
-## [0.1.] Load CAGEfighR extensions
-```{r message=FALSE,results='hide'}
-sep <- .Platform$file.sep
-cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
-fs <- base::c(
-    "utils","support","cumulative",
-    "decompose","enhancers","noise",
-    "coverage","complexity","subsample",
-    "dispersion"
-  )
-
-purrr::map(
-  .x = fs,
-  .f = function(f){
-    base::source(
-      base::paste0(
-        cfr.extensions.dir, sep, f, ".R"
-        )
-      )
-    }
-  )
-```
-
-## [0.2.] Load annotations
+## [0.1.] Load annotations
 ```{r message=FALSE}
 base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 ```
 
-## [0.3.] Add custom color palette
+## [0.2.] Add custom color palette
 ```{r}
 custom.col <- base::c(
     "#FFDB6D","#C4961A","#F4EDCA",
@@ -96,132 +73,10 @@ k.full.pal <- base::c(
   )
 ```
 
-## [0.4.] Add additional functions
-```{r}
-calcAnnoCTSS <- function(data, txModels, uniqueCTSS = FALSE) {
-    
-    annos <- CAGEfightR::assignTxType(
-        object = data,
-        txModels = txModels
-      )
-    
-    #Identify all txTypes
-    types <- base::unique(SummarizedExperiment::rowData(annos)$txType)
-    
-    # Initialize list to store total tags for each txType
-    totalTags_list <- base::vector("list", length = base::length(types))
-    
-    # Loop through each txType
-    for (i in base::seq_along(types)) {
-      
-        # Subset data based on current txType
-        current_subset <- S4Vectors::subset(annos, txType %in% types[i])
-        if(uniqueCTSS){
-          
-            # Calculate totalTags for current subset
-            current_subset <- Matrix::colSums(
-                SummarizedExperiment::assay(current_subset) > 0
-              ) 
-            totalTags_list[[i]] <- current_subset
-            
-          } else {
-            
-            # Calculate totalTags for current subset
-            current_subset <- SummarizedExperiment::colData(
-                CAGEfightR::calcTotalTags(current_subset)
-              )
-            totalTags_list[[i]] <- current_subset$totalTags
-            
-          }
-      }
-    
-    # Combine totalTags into a data frame
-    ann_counts <- base::as.data.frame(
-        base::do.call(base::cbind, totalTags_list)
-      )
-    base::colnames(ann_counts) <- types
-    return(ann_counts)
-  }
-```
-
-## To be discarded
-```{r}
-# calc_anno_CTSS <- function(data, txModels) {
-#     
-#     data <- CAGEfightR::assignTxType(
-#         object = data,
-#         txModels = txModels
-#       )
-#     
-#     #Identify all txTypes
-#     types <- base::unique(SummarizedExperiment::rowData(data)$txType)
-#     
-#     # Initialize list to store total tags for each txType
-#     totalTags_list <- base::vector("list", length = base::length(types))
-#     
-#     # Loop through each txType
-#     for (i in base::seq_along(types)) {
-#       
-#         # Subset data based on current txType
-#         current_subset <- IRanges::subset(data, txType %in% types[i])
-#             
-#         # Calculate totalTags for current subset
-#         current_subset <- SummarizedExperiment::colData(
-#             CAGEfightR::calcTotalTags(current_subset)
-#           )
-#         totalTags_list[[i]] <- current_subset$totalTags
-#       }
-#     
-#     # Combine totalTags into a data frame
-#     ann_counts <- base::as.data.frame(
-#         base::do.call(base::cbind, totalTags_list)
-#       )
-#     base::colnames(ann_counts) <- types
-#     return(ann_counts)
-#   }
-```
-
-## To be discarded
-```{r}
-# calc_anno_uniqCTSS <- function(data, txModels) {
-#   
-#   data <- CAGEfightR::assignTxType(
-#         object = data,
-#         txModels = txModels
-#       )
-#     
-#     #Identify all txTypes
-#     types <- base::unique(SummarizedExperiment::rowData(data)$txType)
-#     
-#     # Initialize list to store total tags for each txType
-#     totalTags_list <- base::vector("list", length = base::length(types))
-#     
-#     # Loop through each txType
-#     for (i in seq_along(Types)) {
-#       
-#         # Subset data based on current txType
-#         current_subset <- IRanges::subset(data, txType %in% types[i])
-#         
-#         # Calculate totalTags for current subset
-#         current_subset <- Matrix::colSums(
-#             SummarizedExperiment::assay(current_subset) > 0
-#           ) 
-#         totalTags_list[[i]] <- current_subset
-#       }
-#     
-#     # Combine totalTags into a data frame
-#     ann_counts <- base::as.data.frame(
-#         base::do.call(base::cbind, totalTags_list)
-#       )
-#     base::colnames(ann_counts) <- types
-#     return(ann_counts)
-#   }
-```
-
 # [1.] K562 analysis -------------------------
 
 ## [1.0.] Read in datasets for K562 & GM12878
-#### see [1.10.] in "1.1.CTSSs.processing.Rmd"
+#### see [1.8.] in "1.1.CTSSs.processing.Rmd"
 ```{r}
 K562.s.CTSSs <- base::readRDS(
   file = base::paste0(
@@ -247,7 +102,7 @@ subset <- SummarizedExperiment::colData(K562.s.CTSSs) %>%
     )
 samples <- dplyr::pull(subset,sample)
 
-K562.ann.counts <- .GlobalEnv$calcAnnoCTSS(
+K562.ann.counts <- PRIME::calcAnnoCTSS(
     data = K562.s.CTSSs[,samples],
     txModels = txdb
   )
@@ -264,7 +119,7 @@ K562.ann.fracs <- K562.ann.counts/tags
 #   dplyr::filter(main == "yes")
 # samples <- dplyr::pull(subset,sample)
 # 
-# K562.ann.counts <- .GlobalEnv$calcAnnoCTSS(
+# K562.ann.counts <- PRIME::calcAnnoCTSS(
 #     data = K562.p.CTSSs[,samples],
 #     txModels = txdb,
 #     uniqueCTSS = FALSE # TRUE
@@ -598,7 +453,7 @@ for(ext in base::c("pdf", "png")){
 # [2.] GM12878 analysis -------------------------
 
 ## [2.0.] Read in datasets for GM12878
-#### see [1.10.] in "1.1.CTSSs.processing.Rmd"
+#### see [1.8.] in "1.1.CTSSs.processing.Rmd"
 ```{r}
 GM12878.s.CTSSs <- base::readRDS(
   file = base::paste0(
@@ -622,7 +477,7 @@ subset <- SummarizedExperiment::colData(GM12878.s.CTSSs) %>%
   dplyr::filter(main == "yes")
 samples <- dplyr::pull(subset,sample)
 
-GM12878.ann.counts <- .GlobalEnv$calcAnnoCTSS(
+GM12878.ann.counts <- PRIME::calcAnnoCTSS(
     data = GM12878.s.CTSSs[,samples],
     txModels = txdb,
     uniqueCTSS = FALSE # TRUE
@@ -640,7 +495,7 @@ GM12878.ann.fracs <- GM12878.ann.counts/tags
 #   dplyr::filter(main == "yes")
 # samples <- dplyr::pull(subset,sample)
 # 
-# GM12878.ann.counts <- .GlobalEnv$calcAnnoCTSS(
+# GM12878.ann.counts <- PRIME::calcAnnoCTSS(
 #     data = GM12878.p.CTSSs[,samples],
 #     txModels = txdb,
 #     uniqueCTSS = FALSE # TRUE

@@ -1,5 +1,5 @@
 ---
-title: "CTSS annnotating including NET-CAGE"
+title: "CTSS annnotations"
 date: "2026-02-25"
 output: html_document
 ---
@@ -10,38 +10,16 @@ output: html_document
 ```{r message=FALSE}
 base::library(tidyverse)
 base::library(BiocParallel)
+base::library(PRIME)
 ```
 
-## [0.1.] Load CAGEfighR extensions
-```{r message=FALSE,results='hide'}
-sep <- .Platform$file.sep
-cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
-fs <- base::c(
-    "utils","support","cumulative",
-    "decompose","enhancers","noise",
-    "coverage","complexity","subsample",
-    "dispersion"
-  )
-
-purrr::map(
-  .x = fs,
-  .f = function(f){
-    base::source(
-      base::paste0(
-        cfr.extensions.dir, sep, f, ".R"
-        )
-      )
-    }
-  )
-```
-
-## [0.2.] Load annotations
+## [0.1.] Load annotations
 ```{r message=FALSE}
 base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 ```
 
-## [0.3.] Add custom color palette
+## [0.2.] Add custom color palette
 ```{r}
 custom.col <- base::c(
     "#FFDB6D","#C4961A","#F4EDCA",
@@ -91,55 +69,7 @@ k.full.pal <- base::c(
   )
 ```
 
-## [0.4.] Add additional functions
-```{r}
-calcAnnoCTSS <- function(data, txModels, uniqueCTSS = FALSE) {
-    
-    annos <- CAGEfightR::assignTxType(
-        object = data,
-        txModels = txModels
-      )
-    
-    #Identify all txTypes
-    types <- base::unique(SummarizedExperiment::rowData(annos)$txType)
-    
-    # Initialize list to store total tags for each txType
-    totalTags_list <- base::vector("list", length = base::length(types))
-    
-    # Loop through each txType
-    for (i in base::seq_along(types)) {
-      
-        # Subset data based on current txType
-        current_subset <- S4Vectors::subset(annos, txType %in% types[i])
-        if(uniqueCTSS){
-          
-            # Calculate totalTags for current subset
-            current_subset <- Matrix::colSums(
-                SummarizedExperiment::assay(current_subset) > 0
-              ) 
-            totalTags_list[[i]] <- current_subset
-            
-          } else {
-            
-            # Calculate totalTags for current subset
-            current_subset <- SummarizedExperiment::colData(
-                CAGEfightR::calcTotalTags(current_subset)
-              )
-            totalTags_list[[i]] <- current_subset$totalTags
-            
-          }
-      }
-    
-    # Combine totalTags into a data frame
-    ann_counts <- base::as.data.frame(
-        base::do.call(base::cbind, totalTags_list)
-      )
-    base::colnames(ann_counts) <- types
-    return(ann_counts)
-  }
-```
-
-## [0.5.] Read in metainfo
+## [0.3.] Read in metainfo
 ```{r}
 meta <- readr::read_delim(
     file = base::paste0(
@@ -154,10 +84,12 @@ meta <- readr::read_delim(
   )
 ```
 
+
+
 # [2.] GM12878 analysis -------------------------
 
 ## [2.0.] Read in datasets for GM12878
-#### see [1.10.] in "1.1.CTSSs.processing.Rmd"
+#### see [1.8.] in "1.1.CTSSs.processing.Rmd"
 ```{r}
 # GM12878.s.CTSSs <- base::readRDS(
 #   file = base::paste0(
@@ -175,7 +107,7 @@ GM12878.p.CTSSs <- base::readRDS(
 
 ## [2.1.] Quantify CTSS level annotations
 ```{r}
-GM12878.ann.counts <- .GlobalEnv$calcAnnoCTSS(
+GM12878.ann.counts <- PRIME::calcAnnoCTSS(
     data = GM12878.p.CTSSs,
     txModels = txdb,
     uniqueCTSS = FALSE # TRUE

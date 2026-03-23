@@ -1,5 +1,5 @@
 ---
-title: "1.3Noise"
+title: "CTSS noise"
 output: html_document
 date: "2024-01-31"
 ---
@@ -9,39 +9,16 @@ date: "2024-01-31"
 ## [0.0.] Load necesarray packages
 ```{r message=FALSE}
 base::library(tidyverse)
+base::library(PRIME)
 ```
 
-## [0.1.] Load CAGEfighR extensions
-#### previous: base::setwd("/home/mhf817"), cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
-```{r message=FALSE,results='hide'}
-sep <- .Platform$file.sep
-cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
-fs <- base::c(
-    "utils","support","cumulative",
-    "decompose","enhancers","noise",
-    "coverage","complexity","subsample",
-    "dispersion"
-  )
-
-purrr::map(
-  .x = fs,
-  .f = function(f){
-    base::source(
-      base::paste0(
-        cfr.extensions.dir, sep, f, ".R"
-        )
-      )
-    }
-  )
-```
-
-## [0.2.] Load annotations
+## [0.1.] Load annotations
 ```{r message=FALSE}
 base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 ```
 
-## [0.3.] Add custom color palette
+## [0.2.] Add custom color palette
 ```{r}
 custom.col <- base::c(
     "#FFDB6D","#C4961A","#F4EDCA",
@@ -70,150 +47,7 @@ gm.full.pal <- base::c(
   )
 ```
 
-## [0.4.] cumulativeFraction function
-```{r}
-cumulativeFractions <- function(loci, ctss, max_dist = 1000, inputAssay = "counts") {
-    
-    g <- GenomicRanges::GRanges(
-        seqnames = GenomeInfoDb::seqnames(loci),
-        ranges = loci$thick,
-        strand = "*"
-      )
-    t <- methods::as(SummarizedExperiment::rowRanges(ctss), "GRanges")
-    
-    base::message("finding nearest loci...")
-    g_nearest <- IRanges::nearest(t, g)
-    
-    base::message("calculating distances...")
-    d <- base::rep(Inf, base::length(t))
-    non.na <- base::which(!base::is.na(g_nearest))
-    d[non.na] <- IRanges::distance(t[non.na], g[g_nearest[non.na]])
-    
-    base::message("calculating totalTags and unique Tags...")
-    ctss <- base::suppressWarnings(
-      CAGEfightR::calcTotalTags(
-          object = ctss,
-          inputAssay = "counts"
-        )
-      )
-    SummarizedExperiment::colData(ctss)$uniqTags <- Matrix::colSums(
-        SummarizedExperiment::assay(ctss,inputAssay="counts") > 0
-      )
-    
-    base::message("calculating cumulative fractions...")
-    focus <- base::which(d <= max_dist)
-    d <- d[focus]
-    ctss <- ctss[focus]
-    
-    o <- base::order(d)
-    d <- d[o]
-    
-    unique_loc_frac <- base::sapply(
-        X = base::colnames(ctss),
-        FUN = function(n) {
-          base::cat(".")
-          a <- base::as.numeric(
-              SummarizedExperiment::assay(ctss, inputAssay)[o, n]
-            )
-          a[a>0] <- 1
-          nz <- base::which(a > 0)
-          da <- d[nz]
-          a_sub <- a[nz]
-          return(
-            base::sapply(
-              X = base::seq(0, max_dist, by = 1),
-              FUN = function(i){base::sum(a_sub[da == i])}
-            )
-          )
-        }
-      )
-    base::cat("\n")
-    
-    fracs <- base::sapply(
-      X = base::colnames(ctss),
-      FUN = function(n) {
-        base::cat(".")
-        a <- base::as.numeric(
-            SummarizedExperiment::assay(ctss, inputAssay)[o, n]
-          )
-        nz <- base::which(a > 0)
-        da <- d[nz]
-        a_sub <- a[nz]
-        return(
-          base::sapply(
-              X = base::seq(0, max_dist, by = 1),
-              FUN = function(i){base::sum(a_sub[da == i])}
-            )
-          )
-        }
-      )
-    base::cat("\n")
-    
-    t <- methods::as(SummarizedExperiment::rowRanges(ctss), "GRanges")
-    
-    loc_fracs <- base::sapply(
-        X = base::colnames(ctss),
-        FUN = function(n) {
-          base::cat(".")
-          a <- base::as.numeric(
-              SummarizedExperiment::assay(ctss, inputAssay)[o, n]
-            )
-        nz <- t[base::which(a > 0)]
-        dist <- IRanges::distanceToNearest(g,nz)
-        dist <- base::as.data.frame(dist)[,3]
-        return(
-            base::sapply(
-              X = base::seq(0, max_dist, by = 1),
-              FUN = function(i){base::sum(dist==i)}
-            )
-          )
-        }
-      )
-    
-    unique_loc_frac <- base::sapply(
-        X = base::colnames(unique_loc_frac),
-        FUN = function(n){
-          base::cumsum(unique_loc_frac[, n] / ctss$uniqTags[n])
-        }
-      )
-    fracs <- base::sapply(
-      X = base::colnames(fracs),
-      FUN = function(n){
-          base::cumsum(fracs[, n] / ctss$totalTags[n])
-        }
-      )
-    loc_fracs <- base::sapply(
-      X = base::colnames(loc_fracs),
-      FUN = function(n){
-          base::cumsum(loc_fracs[, n] / base::length(g))
-        }
-      )
-    
-    ucumfrac <- base::cbind(
-      base::data.frame(
-          distance = base::seq(0, max_dist, by = 1),
-          unique_loc_frac
-        )
-      )
-    cumfrac <- base::cbind(
-      base::data.frame(
-          distance = base::seq(0, max_dist, by = 1),
-          fracs
-        )
-      )
-    locifrac <- base::cbind(
-      base::data.frame(
-          distance = base::seq(0, max_dist, by = 1),
-          loc_fracs
-        )
-      )
-    
-    fraclist <- base::list(cumfrac,ucumfrac,locifrac)
-    return(fraclist)
-  }
-```
-
-## [0.5.] dhsPlot() helper function
+## [0.3.] dhsPlot() helper function
 ```{r}
 dhsPlots <- function(data,pal){
   cur <- ggplot2::ggplot(
@@ -357,7 +191,7 @@ assertthat::assert_that(
 
 ## [1.3.] Calculate cumulative fractions as a function of the distance to DHSs
 ```{r}
-K562.cumFrac <- .GlobalEnv$cumulativeFractions(
+K562.cumFrac <- PRIME::cumulativeFractionsAroundLoci(
     loci = K562.dhs,
     ctss = K562.CTSSs.stand
   )
@@ -664,7 +498,7 @@ assertthat::assert_that(
 ## [2.2.] Calculate cumulative fractions as a function of the distance to DHSs
 #### see [1.2.] for 'K562.CTSSs.stand' object
 ```{r}
-K562.rDHS.cumFrac <- .GlobalEnv$cumulativeFractions(
+K562.rDHS.cumFrac <- PRIME::cumulativeFractionsAroundLoci(
     loci = rdhs,
     ctss = K562.CTSSs.stand
   )
@@ -850,7 +684,7 @@ assertthat::assert_that(
 #### 'GM12878.p.s.CTSSs' object used for pool-plots
 #### 'GM12878.pID.s.CTSSs' object used for replicate-plots
 ```{r}
-GM12878.cumFrac <- .GlobalEnv$cumulativeFractions(
+GM12878.cumFrac <- PRIME::cumulativeFractionsAroundLoci(
     loci = GM12878.dhs,
     ctss = GM12878.CTSSs.stand
   )
@@ -1147,7 +981,7 @@ assertthat::assert_that(
 #### 'GM12878.p.s.CTSSs' object used for pool-plots
 #### 'GM12878.pID.s.CTSSs' object used for replicate-plots
 ```{r}
-GM12878.rDHS.cumFrac <- .GlobalEnv$cumulativeFractions(
+GM12878.rDHS.cumFrac <- PRIME::cumulativeFractionsAroundLoci(
     loci = rdhs,
     ctss = GM12878.CTSSs.stand
   )
