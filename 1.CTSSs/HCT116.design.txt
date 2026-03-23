@@ -1,0 +1,5 @@
+"ID"	"bw_plus"	"bw_minus"	"cell_count"	"Cell.lines"	"Type"	"replicate"	"method"
+"1"	"HCT116_C1_2"	"/projects/ralab/data/CAGE/cellLinesCAGE/STAR_map/bw_files/HCT116_C1_2_STAR.plus.bw"	"/projects/ralab/data/CAGE/cellLinesCAGE/STAR_map/bw_files/HCT116_C1_2_STAR.minus.bw"	"2.5M"	"HCT116"	"C"	"C1_2"	"CAGE"
+"2"	"HCT116_C1_3"	"/projects/ralab/data/CAGE/cellLinesCAGE/STAR_map/bw_files/HCT116_C1_3_STAR.plus.bw"	"/projects/ralab/data/CAGE/cellLinesCAGE/STAR_map/bw_files/HCT116_C1_3_STAR.minus.bw"	"2.5M"	"HCT116"	"C"	"C1_3"	"CAGE"
+"3"	"HCT116_C2_2"	"/projects/ralab/data/CAGE/cellLinesCAGE/STAR_map/bw_files/HCT116_C2_2_STAR.plus.bw"	"/projects/ralab/data/CAGE/cellLinesCAGE/STAR_map/bw_files/HCT116_C2_2_STAR.minus.bw"	"2.5M"	"HCT116"	"C"	"C2_2"	"CAGE"
+"4"	"HCT116_C2_3"	"/projects/ralab/data/CAGE/cellLinesCAGE/STAR_map/bw_files/HCT116_C2_3_STAR.plus.bw"	"/projects/ralab/data/CAGE/cellLinesCAGE/STAR_map/bw_files/HCT116_C2_3_STAR.minus.bw"	"2.5M"	"HCT116"	"C"	"C2_3"	"CAGE"

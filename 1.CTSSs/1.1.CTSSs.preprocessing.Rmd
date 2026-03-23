@@ -24,7 +24,7 @@ BiocParallel::register(
 
 ## [0.2.] Set working directory
 ```{r eval=FALSE}
-#base::setwd("/maps/projects/ralab/data/projects/nucCAGE_PRIME_paper/1.CTSSs/")
+#base::setwd("/maps/projects/ralab/data/projects/nucCAGE_PRIME_paper/1.CTSSs")
 ```
 
 # [1.] Process K562 datasets -------------------------
@@ -68,6 +68,7 @@ k562.CTSSs <- CAGEfightR::quantifyCTSSs(
     minusStrand = bw_minus,
     design = design
   )
+k562.CTSSs <- CAGEfightR::calcTotalTags(k562.CTSSs)
 ```
 
 ## [1.4.] Visualize amount of tags across libraries
@@ -200,10 +201,17 @@ tmm.CTSSs <- PRIME::TPMnormalizeBySizeFactors(
 
 ## [1.10.] Write out the TMM normalized replicates as bigwig files
 ```{r}
+dir <- base::paste0(here::here("1.CTSSs/"),"bw_files_tmm/")
+if (!dir.exists(dir))
+  dir.create(dir)
+
+library(doParallel)
+registerDoParallel(cores = 10)
+
 PRIME::writeBw(
     object = tmm.CTSSs,
     replicates = base::rownames(SummarizedExperiment::colData(tmm.CTSSs)),
-    dir = base::paste0(here::here("1.CTSSs/"),"bw_files_tmm/")
+    dir
   )
 ```
 
@@ -229,6 +237,7 @@ fn <- base::list.files(
 
 tmm.CTSSs <- base::readRDS(file = fn)
 ```
+
 
 #Downstream needs modifying
 # [2.] Process GM12878 datasets -------------------------
@@ -275,7 +284,7 @@ GM12878.CTSSs <- CAGEfightR::quantifyCTSSs(
     minusStrand = bw_minus,
     design = design
   )
-
+GM12878.CTSSs <- CAGEfightR::calcTotalTags(GM12878.CTSSs)
 ```
 
 ## [2.4.] Visualize amount of tags across libraries
@@ -362,8 +371,8 @@ SummarizedExperiment::colData(GM12878.p.CTSSs)$pooled <- "yes"
 ```
 
 ```{r}
-GM12878.combined.CTSSs <- base::cbind(GM12878.p.CTSSs,GM12878.pID.CTSSs)
-GM12878.combined.CTSSs <- cagefightR::calcTotalTags(GM12878.combined.CTSSs)
+GM12878.combined.CTSSs <- BiocGenerics::cbind(GM12878.p.CTSSs,GM12878.pID.CTSSs)
+GM12878.combined.CTSSs <- CAGEfightR::calcTotalTags(GM12878.combined.CTSSs)
 ```
 
 ## [2.8.] Create two subsamples one to the min replicate depth and one to min pool depth and keep original
@@ -404,21 +413,21 @@ GM12878.combined.poolSub.CTSSs <- PRIME::rmSingletons(GM12878.combined.poolSub.C
 base::saveRDS(
     object = GM12878.combined.CTSSs,
     file = base::paste0(
-      here::here(),
+      here::here("1.CTSSs/"),
       "all.combined.GM12878.CTSSs.rds"
     )
   )
 base::saveRDS(
   object = GM12878.combined.repSub.CTSSs,
   file = base::paste0(
-      here::here(),
+      here::here("1.CTSSs/"),
       "repSub.combined.GM12878.CTSSs.rmSingletons.rds"
     )
   )
 base::saveRDS(
   object = GM12878.combined.poolSub.CTSSs,
   file = base::paste0(
-      here::here(),
+      here::here("1.CTSSs/"),
       "poolSub.combined.GM12878.CTSSs.rmSingletons.rds"
     )
   )
