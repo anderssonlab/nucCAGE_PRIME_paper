@@ -23,7 +23,6 @@ notuse
 .Rproj.user
 *.Rproj
 .Rhistory
-0.External_resources
 .ipynb_checkpoints
 *.svg
 *.fasta
