@@ -1,5 +1,5 @@
 ---
-title: "10.3.Cell_line_vs_trait_enrichment"
+title: "10.2. Cell line vs trait enrichment"
 output: html_document
 date: "2024-07-01"
 ---

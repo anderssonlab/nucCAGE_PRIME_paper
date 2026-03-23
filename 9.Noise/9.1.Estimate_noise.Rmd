@@ -1,5 +1,5 @@
 ---
-title: "9.1.Estimate_noise"
+title: "9.1. Estimate noise"
 output: html_document
 date: "2024-06-18"
 ---
