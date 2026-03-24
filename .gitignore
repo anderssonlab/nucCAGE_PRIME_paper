@@ -9,6 +9,8 @@
 liftOver
 *.RData
 *.rds
+*.log
+*.env
 *.png
 *.pdf
 *.jpg
