@@ -1,5 +1,5 @@
 ---
-title: "3.3. DL signatures"
+title: "3.4. DL signatures"
 output: html_document
 date: "2024-03-01"
 ---
@@ -8,7 +8,7 @@ date: "2024-03-01"
 
 ## [0.0.] Install necessary packages
 ```{r}
-utils::install.packages("ggbreak")
+#utils::install.packages("ggbreak")
 ```
 
 ## [0.1.] Load necessary packages
@@ -40,30 +40,6 @@ txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 # library(limma)
 # library(ggplot2)
 # library(stringr)
-```
-
-## [0.2.] Load CAGEfighR extensions
-## To be discarded
-```{r message=FALSE,results='hide'}
-# sep <- .Platform$file.sep
-# cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
-# fs <- base::c(
-#     "utils","support","cumulative",
-#     "decompose","enhancers","noise",
-#     "coverage","complexity","subsample",
-#     "dispersion"
-#   )
-# 
-# purrr::map(
-#   .x = fs,
-#   .f = function(f){
-#     base::source(
-#       base::paste0(
-#         cfr.extensions.dir, sep, f, ".R"
-#         )
-#       )
-#     }
-#   )
 ```
 
 ## [0.3.] Add custom color palettes

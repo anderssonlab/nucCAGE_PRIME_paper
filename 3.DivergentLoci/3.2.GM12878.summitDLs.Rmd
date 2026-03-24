@@ -1,5 +1,5 @@
 ---
-title: "3.1. GM12878 divergent loci calling"
+title: "3.2. GM12878 divergent loci calling"
 output: html_document
 date: "2024-11-27"
 ---
@@ -31,16 +31,6 @@ custom.col <- base::c(
   )
 ```
 
-## This is part of PRIME, no?
-
-## [0.5.] Helper function mergeLoci() & divergentLociTCsSummit()
-```{r}
-
-```
-
-```{r}
-
-```
 # [1.] Calling of divergent locis -------------------------
 
 #### Annotation of txType and overlaps with atac-seq regions
@@ -87,7 +77,7 @@ GM12878.DLs.rmS <- base::lapply(
       X = base::names(CTSSs.by.chr),
       FUN = function(chr) {
         base::message("\tCurrently processed chromosome:\t",chr)
-        .GlobalEnv$divergentLociTCsSummit(
+        PRIME::divergentLociTCsSummit(
             ctss = CTSSs.by.chr[[chr]],
             callingAssay = "counts.noSingletons"
           )
@@ -108,11 +98,11 @@ GM12878.DLs.rmS <- base::lapply(
 ## [1.2.] Save output
 #### "saveRDS(GM12878.DLs, "poolSub.GM12878.summitDLs.rds")"
 ```{r}
-# base::saveRDS(
-#     object = GM12878.DLs.rmS,
-#     file = base::paste0(
-#       here::here("3.DivergentLoci/"),
-#       "poolSub.GM12878.summitDLs.rmSingletons.rds"
-#     )
-#   )
+ base::saveRDS(
+     object = GM12878.DLs.rmS,
+     file = base::paste0(
+       here::here("3.DivergentLoci/"),
+       "poolSub.GM12878.summitDLs.rmSingletons.rds"
+     )
+   )
 ```

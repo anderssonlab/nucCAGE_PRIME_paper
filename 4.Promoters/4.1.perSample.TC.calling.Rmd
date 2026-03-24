@@ -9,22 +9,7 @@ date: "2024-03-05"
 ## [0.0.] Load necessary packages
 ```{r}
 library(CAGEfightR)
-
-#CAGEfighR extensions (Replace with library(PRIME))
-setwd("/home/mhf817")
-sep <- .Platform$file.sep
-cfr.extensions.dir <- "/home/mhf817/CAGEfightR_extensions"
-source(paste(cfr.extensions.dir, "utils.R", sep = sep))
-source(paste(cfr.extensions.dir, "support.R", sep = sep))
-source(paste(cfr.extensions.dir, "cumulative.R", sep = sep))
-source(paste(cfr.extensions.dir, "decompose.R", sep = sep))
-source(paste(cfr.extensions.dir, "enhancers.R", sep = sep))
-source(paste(cfr.extensions.dir, "noise.R", sep = sep))
-source(paste(cfr.extensions.dir, "coverage.R", sep = sep))
-source(paste(cfr.extensions.dir, "complexity.R", sep = sep))
-source(paste(cfr.extensions.dir, "subsample.R", sep = sep))
-source(paste(cfr.extensions.dir, "dispersion.R", sep = sep))
-
+library(PRIME)
 
 #Annotations
 library(TxDb.Hsapiens.UCSC.hg38.knownGene)
@@ -38,14 +23,14 @@ library(dplyr)
 
 ## [0.2.] Set working directory
 ```{r}
-base::setwd("/projects/ralab/data/projects/nucleiCAGEproject/4.Promoters/")
+#base::setwd("/projects/ralab/data/projects/nucleiCAGEproject/4.Promoters/")
 ```
 
 
 ## [0.3.] wrapper function for calling TCs per sample
 ```{r}
 #Function to create per sample clustering objects
-perSampleTCs<- function(ctss, inputAssay="counts") {
+perSampleTCs <- function(ctss, inputAssay="counts") {
   
   
   base::message(
@@ -162,7 +147,12 @@ k562.TCs$sample <- base::factor(
            "K562_pcr_align"))
 
 
-base::saveRDS(k562.TCs, file="repSub.TCs.k562.rds")
+base::saveRDS(k562.TCs,
+file = base::paste0(
+      here::here("4.Promoters/"),
+      "repSub.TCs.k562.rds"
+      )
+)
 ```
 
 # [2.] K562 pooled subsetted  -------------------------
@@ -231,7 +221,11 @@ k562.p.TCs$sample <- base::factor(
            "K562_pcr_align"))
 
 
-base::saveRDS(k562.p.TCs, file="poolSub.TCs.k562.rds")
+base::saveRDS(k562.p.TCs, 
+file=base::paste0(here::here("4.Promoters/"), 
+"poolSub.TCs.k562.rds"
+)
+)
 ```
 
 # [3.] GM12878 replicate subsetted  -------------------------
@@ -239,7 +233,7 @@ base::saveRDS(k562.p.TCs, file="poolSub.TCs.k562.rds")
 ## [3.0.] Load and resize GM12878 DNase regions
 ```{r}
 gm12878.dhs <- readr::read_delim(
-      file = base::paste0("../0.External_resources/E114-DNase.macs2.hg38.narrowPeak"),
+      file = base::paste0(here::here("0.External_resources/"),"E114-DNase.macs2.hg38.narrowPeak"),
       col_names = base::c("chr","start","end","rank"),
       col_types = readr::cols(
         .default = readr::col_integer(),
@@ -322,7 +316,10 @@ gm12878.TCs$sample <- base::factor(
   gm12878.TCs$sample)
 
 
-base::saveRDS(gm12878.TCs, file="repSub.TCs.GM12878.rds")
+base::saveRDS(gm12878.TCs, 
+file=base::paste0(here::here("4.Promoters/"), 
+"repSub.TCs.GM12878.rds") 
+)
 ```
 
 
@@ -331,7 +328,7 @@ base::saveRDS(gm12878.TCs, file="repSub.TCs.GM12878.rds")
 ## [4.1.] Read in gm12878 pool subsetted CTSSs
 ```{r}
 gm12878.p.CTSSs<- base::readRDS(
-    file = base::paste0("../1.CTSSs/poolSub.combined.GM12878.CTSSs.rmSingletons.rds")
+    file = base::paste0(here::here("1.CTSSs/"), "poolSub.combined.GM12878.CTSSs.rmSingletons.rds")
     )
 ```
 
@@ -387,7 +384,10 @@ gm12878.p.TCs$sample <- base::factor(
   gm12878.p.TCs$sample)
 
 
-base::saveRDS(gm12878.p.TCs, file="poolSub.TCs.GM12878.rds")
+base::saveRDS(gm12878.p.TCs, 
+file=base::paste0(here::here("4.Promoters/"), 
+"poolSub.TCs.GM12878.rds") 
+)
 ```
 
 

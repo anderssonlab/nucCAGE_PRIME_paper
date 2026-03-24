@@ -18,7 +18,7 @@ library(dplyr)
 
 ## [0.1.] Set working directory
 ```{r}
-setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/4.Promoters/")
+#setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/4.Promoters/")
 ```
 
 

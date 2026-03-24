@@ -68,7 +68,7 @@ GM12878.dhs <- GM12878.dhs %>%
 GM12878.dhs.s <- subsetByOverlaps(
   GM12878.dhs, rowRanges(GM12878.s.CTSSs))
 
-GM12878.dhs.s<- .GlobalEnv$quantifyClustersOlap(
+GM12878.dhs.s<- PRIME::quantifyClustersOlap(
   GM12878.s.CTSSs, GM12878.dhs.s, inputAssay="counts")
 ```
 
@@ -109,7 +109,7 @@ GM12878.p.CTSSs <- base::readRDS(
 GM12878.dhs.p <- subsetByOverlaps(
   GM12878.dhs, rowRanges(GM12878.p.CTSSs))
 
-GM12878.dhs.p <- .GlobalEnv$quantifyClustersOlap(
+GM12878.dhs.p <- PRIME::quantifyClustersOlap(
   GM12878.p.CTSSs, GM12878.dhs.p, inputAssay="counts")
 ```
 
@@ -175,7 +175,7 @@ k562.dhs <- k562.dhs %>%
 k562.dhs.s <- subsetByOverlaps(
   k562.dhs, rowRanges(k562.s.CTSSs))
 
-k562.dhs.s<- .GlobalEnv$quantifyClustersOlap(
+k562.dhs.s<- PRIME::quantifyClustersOlap(
   k562.s.CTSSs, k562.dhs.s, inputAssay="counts")
 ```
 
@@ -214,7 +214,7 @@ k562.p.CTSSs <- base::readRDS(
 k562.dhs.p <- subsetByOverlaps(
   k562.dhs, rowRanges(k562.p.CTSSs))
 
-k562.dhs.p <- .GlobalEnv$quantifyClustersOlap(
+k562.dhs.p <- PRIME::quantifyClustersOlap(
   k562.p.CTSSs, k562.dhs.p, inputAssay="counts")
 ```
 

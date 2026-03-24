@@ -1,24 +1,18 @@
 ---
-title: "3.1.2.DL.calling"
+title: "3.1. Divergent loci calling"
 output: html_document
 date: "2024-02-29"
 ---
 
-## To be discarded
-## [0.] New version of previous script
-## title: "3.1.GM12878_DL_calling.Rmd"
-## output: html_document
-## date: "2024-02-07"
-
-# Calling of divergent locis and annotation of txType and overlaps with atac-seq regions
+# Calling of divergent loci and annotation of txType and overlaps with atac-seq regions
 
 # [0.] Prerequisites -------------------------
 
 ## [0.1.] Load necessary packages
 ```{r message=FALSE, warning=FALSE}
 base::library("tidyverse")
+base::library("PRIME")
 # base::library("AnnotationHub")
-
 # base::library("parallel")
 # base::library("foreach")
 # base::library("doParallel")
@@ -27,36 +21,13 @@ base::library("tidyverse")
 #   )
 ```
 
-## [0.2.] Load CAGEfighR extensions
-```{r message=FALSE,results='hide'}
-sep <- .Platform$file.sep
-cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
-fs <- base::c(
-    "utils","support","cumulative",
-    "decompose","enhancers","noise",
-    "coverage","complexity","subsample",
-    "dispersion"
-  )
-
-purrr::map(
-  .x = fs,
-  .f = function(f){
-    base::source(
-      base::paste0(
-        cfr.extensions.dir, sep, f, ".R"
-        )
-      )
-    }
-  )
-```
-
-## [0.3.] Load annotations
+## [0.2.] Load annotations
 ```{r message=FALSE}
-# base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-# txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 ```
 
-## [0.4.] Add custom color palette
+## [0.3.] Add custom color palette
 ```{r}
 custom.col <- base::c(
     "#FFDB6D", "#C4961A", "#F4EDCA",
@@ -85,7 +56,12 @@ GM12878.s.CTSSs <- base::readRDS(
 
 ## [1.1.] Load GM12878 DHSs and reformat them
 ```{r}
-GM12878.dhs <- read.table("../0.External_resources/E116-DNase.macs2.hg38.narrowPeak")
+GM12878.dhs <- read.table(
+  file = base::paste0(
+        here::here("0.External_resources/"),
+        "E116-DNase.macs2.hg38.narrowPeak"
+        )
+  )
 colnames(GM12878.dhs) <- c("chr","start","end")
 GM12878.dhs <- GRanges(GM12878.dhs[,1:3])
 GM12878.dhs$thick <- IRanges(start=start(GM12878.dhs)+((end(GM12878.dhs)-start(GM12878.dhs))/2)) #Set center as thick
@@ -96,7 +72,7 @@ GM12878.dhs <- GM12878.dhs %>% swapRanges() %>% promoters(upstream=200, downstre
 #Call bidirectional clusters per sample using CTSS as starting point
 bpparam <- MulticoreParam(32)
 
-GM12878.DLs.CTSS <- bplapply(colnames(GM12878.s.CTSSs),function(x) divergentLociCTSS(GM12878.s.CTSSs[,x]), BPPARAM = bpparam)
+GM12878.DLs.CTSS <- bplapply(colnames(GM12878.s.CTSSs),function(x) PRIME::divergentLociCTSS(GM12878.s.CTSSs[,x]), BPPARAM = bpparam)
 
 
 olaps <- suppressWarnings(lapply(GM12878.DLs.CTSS, function(x) countOverlaps(x,GM12878.dhs))) #Count number of overlaps with DHSs for annotations
@@ -119,7 +95,12 @@ GM12878.DLs.CTSS$cell_nuclei[GM12878.DLs.CTSS$cell_nuclei=="_" & GM12878.DLs.CTS
 GM12878.DLs.CTSS$cell_nuclei[GM12878.DLs.CTSS$cell_nuclei=="i" ] <- "pooled_triptolide"
 GM12878.DLs.CTSS$cell_nuclei[GM12878.DLs.CTSS$cell_nuclei=="r" ] <- "pooled_Ctrl"
 
-saveRDS(GM12878.DLs.CTSS,"repSub.GM12878.DLs.CTSS.rds")
+saveRDS(GM12878.DLs.CTSS,
+file = base::paste0(
+        here::here("3.DivergentLoci/"),
+        "repSub.GM12878.DLs.CTSS.rds"
+        )
+)
 ```
 
 
@@ -130,7 +111,7 @@ saveRDS(GM12878.DLs.CTSS,"repSub.GM12878.DLs.CTSS.rds")
 #Call bidirectional clusters per sample using TCs as starting point
 bpparam <- MulticoreParam(32)
 
-GM12878.DLs.TCs <- bplapply(colnames(GM12878.s.CTSSs),function(x) divergentLociTCs(GM12878.s.CTSSs[,x]), BPPARAM = bpparam)
+GM12878.DLs.TCs <- bplapply(colnames(GM12878.s.CTSSs),function(x) PRIME::divergentLociTCs(GM12878.s.CTSSs[,x]), BPPARAM = bpparam)
 
 
 olaps <- lapply(GM12878.DLs.TCs, function(x) countOverlaps(x,GM12878.dhs)) #Count number of overlaps with DHSs for annotations
@@ -155,8 +136,12 @@ GM12878.DLs.TCs$cell_nuclei[GM12878.DLs.TCs$cell_nuclei=="_" & GM12878.DLs.TCs$c
 GM12878.DLs.TCs$cell_nuclei[GM12878.DLs.TCs$cell_nuclei=="i" ] <- "pooled_triptolide"
 GM12878.DLs.TCs$cell_nuclei[GM12878.DLs.TCs$cell_nuclei=="r" ] <- "pooled_Ctrl"
 
-saveRDS(GM12878.DLs.TCs,"repSub.GM12878.DLs.TCs.rds")
-
+saveRDS(GM12878.DLs.TCs,
+file = base::paste0(
+        here::here("3.DivergentLoci/"),
+        "repSub.GM12878.DLs.TCs.rds"
+        )
+)
 ```
 
 
@@ -167,14 +152,17 @@ saveRDS(GM12878.DLs.TCs,"repSub.GM12878.DLs.TCs.rds")
 
 ```{r}
 
-GM12878.s.CTSSs <- readRDS("../1.CTSSs/poolSub.combined.GM12878.CTSSs.rds")
-```
+GM12878.s.CTSSs <- readRDS(file = base::paste0(
+        here::here("1.CTSSs/"),
+        "poolSub.combined.GM12878.CTSSs.rds"
+  )
+  )```
 
 ```{r}
 #Call bidirectional clusters per sample using CTSS as starting point
 bpparam <- MulticoreParam(32)
 
-GM12878.DLs.CTSS <- bplapply(colnames(GM12878.s.CTSSs),function(x) divergentLociCTSS(GM12878.s.CTSSs[,x]), BPPARAM = bpparam)
+GM12878.DLs.CTSS <- bplapply(colnames(GM12878.s.CTSSs),function(x) PRIME::divergentLociCTSS(GM12878.s.CTSSs[,x]), BPPARAM = bpparam)
 
 
 olaps <- suppressWarnings(lapply(GM12878.DLs.CTSS, function(x) countOverlaps(x,GM12878.dhs))) #Count number of overlaps with DHSs for annotations
@@ -197,7 +185,12 @@ GM12878.DLs.CTSS$cell_nuclei[GM12878.DLs.CTSS$cell_nuclei=="_" & GM12878.DLs.CTS
 GM12878.DLs.CTSS$cell_nuclei[GM12878.DLs.CTSS$cell_nuclei=="i" ] <- "pooled_triptolide"
 GM12878.DLs.CTSS$cell_nuclei[GM12878.DLs.CTSS$cell_nuclei=="r" ] <- "pooled_Ctrl"
 
-saveRDS(GM12878.DLs.CTSS,"poolSub.GM12878.DLs.CTSS.rds")
+saveRDS(GM12878.DLs.CTSS,
+file = base::paste0(
+        here::here("3.DivergentLoci/"),
+        "poolSub.GM12878.DLs.CTSS.rds"
+        )
+)
 ```
 
 
@@ -208,7 +201,7 @@ saveRDS(GM12878.DLs.CTSS,"poolSub.GM12878.DLs.CTSS.rds")
 #Call bidirectional clusters per sample using TCs as starting point
 bpparam <- MulticoreParam(32)
 
-GM12878.DLs.TCs <- bplapply(colnames(GM12878.s.CTSSs),function(x) divergentLociTCs(GM12878.s.CTSSs[,x]), BPPARAM = bpparam)
+GM12878.DLs.TCs <- bplapply(colnames(GM12878.s.CTSSs),function(x) PRIME::divergentLociTCs(GM12878.s.CTSSs[,x]), BPPARAM = bpparam)
 
 
 olaps <- lapply(GM12878.DLs.TCs, function(x) countOverlaps(x,GM12878.dhs)) #Count number of overlaps with DHSs for annotations
@@ -233,8 +226,12 @@ GM12878.DLs.TCs$cell_nuclei[GM12878.DLs.TCs$cell_nuclei=="_" & GM12878.DLs.TCs$c
 GM12878.DLs.TCs$cell_nuclei[GM12878.DLs.TCs$cell_nuclei=="i" ] <- "pooled_triptolide"
 GM12878.DLs.TCs$cell_nuclei[GM12878.DLs.TCs$cell_nuclei=="r" ] <- "pooled_Ctrl"
 
-saveRDS(GM12878.DLs.TCs,"poolSub.GM12878.DLs.TCs.rds")
-
+saveRDS(GM12878.DLs.TCs,
+file = base::paste0(
+        here::here("3.DivergentLoci/"),
+        "poolSub.GM12878.DLs.TCs.rds"
+        )
+)
 ```
 
 
@@ -248,10 +245,18 @@ saveRDS(GM12878.DLs.TCs,"poolSub.GM12878.DLs.TCs.rds")
 #Same for k562
 ```{r}
 #K562
-k562.s.CTSSs <- readRDS("../1.CTSSs/repSub.combined.k562.CTSSs.rds")
+k562.s.CTSSs <- readRDS(file = base::paste0(
+        here::here("1.CTSSs/"),
+        "repSub.combined.k562.CTSSs.rds"
+        )
+)
 
 #Load in DHSs 
-k562.dhs <- read.table("../0.External_resources/E123-DNase.macs2.hg38.narrowPeak")
+k562.dhs <- read.table(file = base::paste0(
+        here::here("0.External_resources/"),
+        "E123-DNase.macs2.hg38.narrowPeak"
+        )
+)
 colnames(k562.dhs) <- c("chr","start","end")
 k562.dhs <- GRanges(k562.dhs[,1:3])
 k562.dhs$thick <- IRanges(start=start(k562.dhs)+((end(k562.dhs)-start(k562.dhs))/2))
@@ -267,7 +272,7 @@ k562.dhs <- k562.dhs %>% swapRanges() %>% promoters(upstream=200, downstream=200
 ```{r}
 #Call bidirectional clusters per sample using CTSS as starting point
 bpparam <- MulticoreParam(20)
-k562.DLs.CTSS <- bplapply(colnames(k562.s.CTSSs),function(x) divergentLociCTSS(k562.s.CTSSs[,x]), BPPARAM = bpparam)
+k562.DLs.CTSS <- bplapply(colnames(k562.s.CTSSs),function(x) PRIME::divergentLociCTSS(k562.s.CTSSs[,x]), BPPARAM = bpparam)
 
 olaps <- lapply(k562.DLs.CTSS, function(x) countOverlaps(x,k562.dhs)) #Count number of overlaps with DHSs for annotations
 k562.DLs.CTSS <- suppressWarnings(lapply(k562.DLs.CTSS, function(x) assignTxType(x,txModels=txdb))) #Assign txType as annotations for later
@@ -283,7 +288,7 @@ k562.DLs.CTSS$dhs.olap <- unlist(olaps)
 
 #Same of TCs
 bpparam <- MulticoreParam(20)
-k562.DLs.TCs <- bplapply(colnames(k562.s.CTSSs),function(x) divergentLociTCs(k562.s.CTSSs[,x]), BPPARAM = bpparam)
+k562.DLs.TCs <- bplapply(colnames(k562.s.CTSSs),function(x) PRIME::divergentLociTCs(k562.s.CTSSs[,x]), BPPARAM = bpparam)
 
 olaps <- lapply(k562.DLs.TCs, function(x) countOverlaps(x,k562.dhs)) #Count number of overlaps with DHSs for annotations
 k562.DLs.TCs <- suppressWarnings(lapply(k562.DLs.TCs, function(x) assignTxType(x,txModels=txdb))) #Assign txType as annotations for later
@@ -296,8 +301,16 @@ k562.DLs.TCs <- unlist(k562.DLs.TCs)
 k562.DLs.TCs$dhs.olap <- unlist(olaps)
 
 
-saveRDS(k562.DLs.CTSS,"repSub.k562.DLs.CTSS.rds")
-saveRDS(k562.DLs.TCs,"repSub.k562.DLs.TCs.rds")
+saveRDS(k562.DLs.CTSS,file = base::paste0(
+        here::here("3.DivergentLoci/"),
+        "repSub.k562.DLs.CTSS.rds"
+        )
+)
+saveRDS(k562.DLs.TCs,file = base::paste0(
+        here::here("3.DivergentLoci/"),
+        "repSub.k562.DLs.TCs.rds"
+        )
+)
 ```
 
 
@@ -307,10 +320,14 @@ saveRDS(k562.DLs.TCs,"repSub.k562.DLs.TCs.rds")
 
 ```{r}
 
-k562.s.CTSSs <- readRDS("../1.CTSSs/poolSub.combined.k562.CTSSs.rds")
+k562.s.CTSSs <- readRDS(file = base::paste0(
+        here::here("1.CTSSs/"),
+        "poolSub.combined.k562.CTSSs.rds"
+        )
+)
 #Call bidirectional clusters per sample using CTSS as starting point
 bpparam <- MulticoreParam(20)
-k562.DLs.CTSS <- bplapply(colnames(k562.s.CTSSs),function(x) divergentLociCTSS(k562.s.CTSSs[,x]), BPPARAM = bpparam)
+k562.DLs.CTSS <- bplapply(colnames(k562.s.CTSSs),function(x) PRIME::divergentLociCTSS(k562.s.CTSSs[,x]), BPPARAM = bpparam)
 
 olaps <- lapply(k562.DLs.CTSS, function(x) countOverlaps(x,k562.dhs)) #Count number of overlaps with DHSs for annotations
 k562.DLs.CTSS <- suppressWarnings(lapply(k562.DLs.CTSS, function(x) assignTxType(x,txModels=txdb))) #Assign txType as annotations for later
@@ -326,7 +343,7 @@ k562.DLs.CTSS$dhs.olap <- unlist(olaps)
 
 #Same of TCs
 bpparam <- MulticoreParam(20)
-k562.DLs.TCs <- bplapply(colnames(k562.s.CTSSs),function(x) divergentLociTCs(k562.s.CTSSs[,x]), BPPARAM = bpparam)
+k562.DLs.TCs <- bplapply(colnames(k562.s.CTSSs),function(x) PRIME::divergentLociTCs(k562.s.CTSSs[,x]), BPPARAM = bpparam)
 
 olaps <- lapply(k562.DLs.TCs, function(x) countOverlaps(x,k562.dhs)) #Count number of overlaps with DHSs for annotations
 k562.DLs.TCs <- suppressWarnings(lapply(k562.DLs.TCs, function(x) assignTxType(x,txModels=txdb))) #Assign txType as annotations for later
@@ -339,10 +356,16 @@ k562.DLs.TCs <- unlist(k562.DLs.TCs)
 k562.DLs.TCs$dhs.olap <- unlist(olaps)
 
 
-
-
-saveRDS(k562.DLs.CTSS,"poolSub.k562.DLs.CTSS.rds")
-saveRDS(k562.DLs.TCs,"poolSub.k562.DLs.TCs.rds")
+saveRDS(k562.DLs.CTSS,file = base::paste0(
+        here::here("3.DivergentLoci/"),
+        "poolSub.k562.DLs.CTSS.rds"
+        )
+)
+saveRDS(k562.DLs.TCs,file = base::paste0(
+        here::here("3.DivergentLoci/"),
+        "poolSub.k562.DLs.TCs.rds"
+        )
+)
 ```
 
 

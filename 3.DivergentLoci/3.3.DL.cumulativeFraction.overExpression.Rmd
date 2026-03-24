@@ -1,13 +1,8 @@
 ---
-title: "3.2. DL cumulative fractions vs expression"
+title: "3.3. DL cumulative fractions vs expression"
 output: html_document
 date: "2024-03-01"
 ---
-
-# [-1.] Markdown is an adaptation of the version from 2024-02-13
-# title: '3.2.DL cumulative fractions vs expression'
-# output: html_document
-# date: "2024-02-13"
 
 # [0.] Prerequisites -------------------------
 
@@ -15,6 +10,7 @@ date: "2024-03-01"
 ```{r message=FALSE, warning=FALSE}
 base::library("tidyverse")
 base::library("Seurat")
+base::library("PRIME")
 
 # base::library("BiocParallel")
 # BiocParallel::register(
@@ -395,7 +391,6 @@ dev.off()
 # [2.] GM12878 -------------------------
 
 ## [2.0.] Read in divergent loci from GM12878 CTSSs
-#### see [1.2.] in '3.DivergentLoci/3.1.5.GM12878.summitDLs.R(md)' for "poolSub.GM12878.summitDLs.rmSingletons.rds"
 ```{r}
 GM12878.DLs <- base::readRDS(
   file = base::paste0(
@@ -458,68 +453,6 @@ GM12878.DLs <- CAGEfightR::assignTxType(
     object = GM12878.DLs,
     txModels = txdb
   )
-```
-
-## To be discarded
-```{r}
-# GM12878.DLs.CTSS <- base::readRDS("repSub.GM12878.DLs.CTSS.rds")
-# GM12878.DLs.TCs <- base::readRDS("repSub.GM12878.DLs.TCs.rds")
-# 
-# GM12878.DLs.CTSS.p <- base::readRDS("poolSub.GM12878.DLs.CTSS.rds")
-# GM12878.DLs.TCs.p <- base::readRDS("poolSub.GM12878.DLs.TCs.rds")
-
-# GM12878 <- readRDS("../1.CTSSs/poolSub.combined.GM12878.CTSSs.rds")
-# main <- row.names(colData(GM12878))[colData(GM12878)$main=="yes"]
-```
-
-## [2.4.] Sum and accumulate 
-#### To be discarded
-```{r}
-# GM12878.DLs.df <- GM12878.DLs %>% # GM12878.DLs.CTSS
-#   base::as.data.frame(row.names = NULL)
-# # GM12878.DLs.df <- GM12878.DLs.df[GM12878.DLs.df$sample%in%main,] 
-# 
-# GM12878.DLs.summed <- GM12878.DLs.df %>%
-#   dplyr::group_by(sample,txType) %>%
-#   dplyr::count(score) %>%
-#   dplyr::mutate(
-#       pct = n/base::sum(n),
-#       cumsum = base::cumsum(pct),
-#       cumsumCounts = base::cumsum(n)
-#     )
-# 
-# GM12878.DLs.summed.sub = GM12878.DLs.df %>%
-#   dplyr::filter(score >= 2) %>%
-#   dplyr::group_by(sample,txType) %>%
-#   dplyr::count(score) %>%
-#   dplyr::mutate(
-#       pct = n/base::sum(n),
-#       cumsum = base::cumsum(pct),
-#       cumsumCounts = base::cumsum(n)
-#     )
-# 
-# GM12878.DLs.summed.sub.bidir = GM12878.DLs.df %>%
-#   dplyr::filter(
-#     score >= 2 & base::abs(directionality) <= 0.8) %>%
-#   dplyr::group_by(sample,txType) %>%
-#   dplyr::count(score) %>%
-#   dplyr::mutate(
-#       pct = n/base::sum(n),
-#       cumsum = base::cumsum(pct),
-#       cumsumCounts = base::cumsum(n)
-#     )
-# 
-# GM12878.DLs.summed.sub.bidir.olap = GM12878.DLs.df %>%
-#   dplyr::filter(
-#       score >= 2 & base::abs(directionality) <= 0.8 & dhs.olap >= 1
-#     ) %>%
-#   dplyr::group_by(sample,txType) %>%
-#   dplyr::count(score) %>%
-#    dplyr::mutate(
-#       pct = n/base::sum(n),
-#       cumsum = base::cumsum(pct),
-#       cumsumCounts = base::cumsum(n)
-#     )
 ```
 
 ## [2.4.] CAGE-dependent expression differences of DHSs and non-DHSs
