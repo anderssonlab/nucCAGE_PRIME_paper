@@ -1,0 +1,5 @@
+"ID"	"bw_plus"	"bw_minus"	"cell_count"	"Cell.lines"	"Type"	"replicate"	"method"
+"1"	"A549_C1"	"/projects/ralab/data/CAGE/cellLinesCAGE/STAR_map/bw_files/A549_C1_STAR.plus.bw"	"/projects/ralab/data/CAGE/cellLinesCAGE/STAR_map/bw_files/A549_C1_STAR.minus.bw"	"2.5M"	"A549"	"C"	"C1"	"CAGE"
+"2"	"A549_C3"	"/projects/ralab/data/CAGE/cellLinesCAGE/STAR_map/bw_files/A549_C3_STAR.plus.bw"	"/projects/ralab/data/CAGE/cellLinesCAGE/STAR_map/bw_files/A549_C3_STAR.minus.bw"	"2.5M"	"A549"	"C"	"C3"	"CAGE"
+"3"	"A549_N5"	"/projects/ralab/data/CAGE/cellLinesCAGE/STAR_map/bw_files/A549_N5_STAR.plus.bw"	"/projects/ralab/data/CAGE/cellLinesCAGE/STAR_map/bw_files/A549_N5_STAR.minus.bw"	"2.5M"	"A549"	"N"	"N5"	"CAGE"
+"4"	"A549_N6"	"/projects/ralab/data/CAGE/cellLinesCAGE/STAR_map/bw_files/A549_N6_STAR.plus.bw"	"/projects/ralab/data/CAGE/cellLinesCAGE/STAR_map/bw_files/A549_N6_STAR.minus.bw"	"2.5M"	"A549"	"N"	"N6"	"CAGE"
