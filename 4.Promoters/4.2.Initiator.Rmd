@@ -21,53 +21,18 @@ library(dplyr)
 #setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/4.Promoters/")
 ```
 
-
-## [0.2.] Initiator classification function (now part of PRIME)
-```{r}
-#Specialized funtions  (loaded with PRIME)
-initiatorScore <- function(object, bsg) {
-  # Ensure the input is of class GRanges or StitchedGPos
-  if (!inherits(object, c("GRanges", "StitchedGPos"))) {
-    stop("object must be of class GRanges or StitchedGPos")
-  }
-  
-  # Remove out-of-bound indices
-  idx <- GenomicRanges:::get_out_of_bound_index(object)
-  if (length(idx) > 0) {
-    object <- object[-idx]
-  }
-  
-  # Create promoters based on the class of object
-  if (class(object) == "GRanges") {
-    swapped_object <- swapRanges(object)
-    x <- promoters(swapped_object, upstream = 1, downstream = 1)
-  } else if (class(object)== "StitchedGPos") {
-    x <- promoters(object, upstream = 1, downstream = 1)
-  }
-    
-  # Get sequences
-  x$seq <- getSeq(bsg, x, as.character = TRUE)
-  
-  # Define INR categories
-  YC <- c("CC", "TC")
-  YR <- c("CA", "TA", "CG", "TG")
-  
-  # Assign INR category
-  x$INR <- "other"
-  x$INR[x$seq %in% YC] <- "YC"
-  x$INR[x$seq %in% YR] <- "YR"
-  
-  return(x)
-}
-```
-
 # [1.] K562 replicate subsetted  -------------------------
 
 ## [1.0.] Read in data run classification and create output
 ```{r}
-k562.TCs <- base::readRDS("./repSub.TCs.k562.rds")
-k562.TCs<- .GlobalEnv$initiatorScore(k562.TCs,Hsapiens)
-base::saveRDS(k562.TCs, file="./repSub.TCs.k562.rds")
+k562.TCs <- base::readRDS(
+  file=paste0(here::here("4.Promoters/"),
+  "repSub.TCs.k562.rds")
+)
+k562.TCs<- PRIME::initiatorScore(k562.TCs,Hsapiens)
+base::saveRDS(k562.TCs, 
+file=paste0(here::here("4.Promoters/"),
+  "repSub.TCs.k562.rds"))
 ```
 
 
@@ -75,9 +40,9 @@ base::saveRDS(k562.TCs, file="./repSub.TCs.k562.rds")
 
 ## [2.0.] Read in data run classification and create output
 ```{r}
-k562.p.TCs <- base::readRDS("./poolSub.TCs.k562.rds")
-k562.p.TCs<- .GlobalEnv$initiatorScore(k562.p.TCs[,-8],Hsapiens)
-base::saveRDS(k562.p.TCs, file="./poolSub.TCs.k562.rds")
+k562.p.TCs <- base::readRDS(file=paste0(here::here("4.Promoters/"),"poolSub.TCs.k562.rds"))
+k562.p.TCs <- PRIME::initiatorScore(k562.p.TCs[,-8],Hsapiens)
+base::saveRDS(k562.p.TCs, file=paste0(here::here("4.Promoters/"),"poolSub.TCs.k562.rds"))
 ```
 
 
@@ -85,9 +50,9 @@ base::saveRDS(k562.p.TCs, file="./poolSub.TCs.k562.rds")
 
 ## [3.0.] Read in data run classification and create output
 ```{r}
-gm12878.TCs <- base::readRDS("./repSub.TCs.GM12878.rds")
-gm12878.TCs<- .GlobalEnv$initiatorScore(gm12878.TCs,Hsapiens)
-base::saveRDS(gm12878.TCs, file="./repSub.TCs.GM12878.rds")
+gm12878.TCs <- base::readRDS(file=paste0(here::here("4.Promoters/"),"repSub.TCs.GM12878.rds"))
+gm12878.TCs <- PRIME::initiatorScore(gm12878.TCs,Hsapiens)
+base::saveRDS(gm12878.TCs, file=paste0(here::here("4.Promoters/"),"repSub.TCs.GM12878.rds"))
 ```
 
 
@@ -95,7 +60,7 @@ base::saveRDS(gm12878.TCs, file="./repSub.TCs.GM12878.rds")
 
 ## [4.0.] Read in data run classification and create output
 ```{r}
-gm12878.p.TCs <- base::readRDS("./poolSub.TCs.GM12878.rds")
-gm12878.p.TCs<- .GlobalEnv$initiatorScore(gm12878.p.TCs,Hsapiens)
-base::saveRDS(gm12878.p.TCs, file="./poolSub.TCs.GM12878.rds")
+gm12878.p.TCs <- base::readRDS(file=paste0(here::here("4.Promoters/"),"poolSub.TCs.GM12878.rds"))
+gm12878.p.TCs <- PRIME::initiatorScore(gm12878.p.TCs,Hsapiens)
+base::saveRDS(gm12878.p.TCs, file=paste0(here::here("4.Promoters/"),"poolSub.TCs.GM12878.rds"))
 ```
