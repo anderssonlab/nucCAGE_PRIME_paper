@@ -22,30 +22,7 @@ BiocParallel::register(
   )
 ```
 
-## [0.2.] Load CAGEfighR extensions
-```{r message=FALSE,results='hide'}
-sep <- .Platform$file.sep
-cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
-fs <- base::c(
-    "utils","support","cumulative",
-    "decompose","enhancers","noise",
-    "coverage","complexity","subsample",
-    "dispersion"
-  )
-
-purrr::map(
-  .x = fs,
-  .f = function(f){
-    base::source(
-      base::paste0(
-        cfr.extensions.dir, sep, f, ".R"
-        )
-      )
-    }
-  )
-```
-
-## [0.3.] Add custom color palette
+## [0.2.] Add custom color palette
 ```{r}
 custom.col <- base::c(
     "#FFDB6D", "#C4961A", "#F4EDCA",
@@ -53,6 +30,8 @@ custom.col <- base::c(
     "#4E84C4", "#293352","grey"
   )
 ```
+
+## This is part of PRIME, no?
 
 ## [0.5.] Helper function mergeLoci() & divergentLociTCsSummit()
 ```{r}
