@@ -10,19 +10,10 @@ date: "2024-07-01"
 ## [0.0.] Load necesarray packages
 ```{r message=FALSE}
 base::library(tidyverse)
+base::library(PRIME)
 base::library(BSgenome.Hsapiens.UCSC.hg38)
 base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
-```
-
-## Nonzero imported via DAPAR in PRIME. Can be removed.
-```{r}
-base::source(
-  file = base::paste0(
-      "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions/",
-      "utils.R"
-    )
-  )
 ```
 
 ## [0.1.] Register server cores / threads
@@ -47,59 +38,7 @@ k.full.pal <- base::c(
   )
 ```
 
-## [0.3.] Function for pooling replicates
-#### To be included in PRIME, when it can be removed.
-```{r}
-poolReplicates <- function(object, replicates, inputAssay="counts") {
-    
-    ## dimensions
-    assertthat::assert_that(
-        base::ncol(object) == base::length(replicates),
-        base::length(base::unique(replicates)) > 1
-      )
-
-    base::message("Calculating pooled counts...")
-    a <- base::do.call(
-        what = "cbind",
-        args = base::lapply(
-          X = base::unique(replicates),
-          FUN = function(b){
-            Matrix::rowSums(
-                SummarizedExperiment::assay(object,inputAssay)[,replicates==b,drop=FALSE]
-              )
-            }
-          )
-        )
-    a <- methods::as(a, "sparseMatrix")
-    base::colnames(a) <- base::unique(replicates)
-
-    base::message("Create a pasted design matrix...")
-    c <- base::do.call(
-      what = "rbind",
-      args = base::lapply(
-        X = base::unique(replicates),
-        FUN = function(b){ 
-          base::apply(
-              X = SummarizedExperiment::colData(object)[replicates==b,],
-              MARGIN = 2 ,
-              FUN = base::paste ,
-              collapse = ","
-            )
-          }
-        )
-      )
-
-    rse <- SummarizedExperiment::SummarizedExperiment(
-        assays = S4Vectors::SimpleList(counts = a),
-        rowRanges = SummarizedExperiment::rowRanges(object),
-        colData = base::as.data.frame(c)
-      )
-    rse <- CAGEfightR::calcTotalTags(rse)
-    return(rse)
-  }
-```
-
-## [0.4.] wrapper function for calling TCs per sample
+## [0.3.] wrapper function for calling TCs per sample
 #### Function to create per sample clustering objects.
 ```{r}
 perSampleTCs<- function(ctss, inputAssay="counts") {
@@ -121,114 +60,6 @@ perSampleTCs<- function(ctss, inputAssay="counts") {
     object$sample <- base::colnames(ctss)
     
     #Return TC as GRanges
-    return(object)
-  }
-```
-
-## [0.5.] wrapper function for calling TCs per sample
-#### To be included in PRIME, when it can be removed.
-```{r}
-initiatorScore <- function(object, bsg) {
-    # Ensure the input is of class GRanges or StitchedGPos
-    if (!base::inherits(object, base::c("GRanges", "StitchedGPos"))) {
-        base::stop("Object must be of class GRanges or StitchedGPos.")
-      }
-    
-    # Remove out-of-bound indices
-    idx <- GenomicRanges:::get_out_of_bound_index(object)
-    if (base::length(idx) > 0) {
-        object <- object[-idx]
-      }
-    
-    # Create promoters based on the class of object
-    if (base::class(object) == "GRanges") {
-      
-        swapped_object <- CAGEfightR::swapRanges(object)
-        x <- IRanges::promoters(swapped_object, upstream = 1, downstream = 1)
-        
-      } else {
-        
-        x <- IRanges::promoters(object, upstream = 1, downstream = 1)
-      }
-      
-    # Get sequences
-    x$seq <- BSgenome::getSeq(bsg, x, as.character = TRUE)
-    
-    # Define INR categories
-    YC <- base::c("CC", "TC")
-    YR <- base::c("CA", "TA", "CG", "TG")
-    
-    # Assign INR category
-    x$INR <- "other"
-    x$INR[x$seq %in% YC] <- "YC"
-    x$INR[x$seq %in% YR] <- "YR"
-    
-    return(x)
-  }
-```
-
-## [0.6.] Function for subsampling
-#### To be included in PRIME, when it can be removed.
-```{r}
-subsampleTarget <- function(object, inputAssay = "counts", target) {
-
-    assertthat::assert_that(
-        methods::is(object, "SummarizedExperiment"),
-        inputAssay %in% SummarizedExperiment::assayNames(object),
-        base::is.numeric(target),
-        target > 0
-      )
-    
-    a <- SummarizedExperiment::assay(object,inputAssay)
-    n <- base::ncol(a)
-    nz <- base::lapply(
-      X = 1:n,
-      FUN = function(i){
-          .GlobalEnv$nonzero(a[,i,drop=FALSE])[,1]
-        }
-      )
-    s <- Matrix::colSums(a)
-    d <- base::unlist(
-      base::lapply(
-        X = 1:n,
-        FUN = function(i){
-        if (s[i]<=target){
-              a[nz[[i]],i]
-            } else {
-              stats::rbinom(base::length(nz[[i]]),a[nz[[i]],i], target/s[i])
-            }
-          }
-        )
-      )
-    keep <- base::which(
-        base::sapply(nz,length)>0
-      )
-    
-    # Create a matrix to store the subsampled counts, ensuring all rows are retained
-    new_matrix <- Matrix::sparseMatrix(
-      i = base::unlist(nz),
-      j = base::unlist(
-        base::lapply(
-          X = keep,
-          FUN = function(i){
-              base::rep(i, base::length(nz[[i]]))
-            }
-          )
-        ),
-      x = d, 
-      dims = base::dim(a),  # Preserve the original dimensions
-      dimnames = base::list(
-          base::rownames(a),
-          base::colnames(a)[keep]
-        )
-      )
-    
-    # Replace the original assay with the new matrix
-    SummarizedExperiment::assay(object, inputAssay) <- new_matrix
-    
-    # Recalculate the total count of reads for each sample
-    object <- CAGEfightR::calcTotalTags(object)
-    
     return(object)
   }
 ```
@@ -312,7 +143,7 @@ K562.CTSSs <- K562.CTSSs %>%
   CAGEfightR::calcTPM() %>%
   CAGEfightR::calcPooled()
 
-K562.p.CTSSs <- .GlobalEnv$poolReplicates(
+K562.p.CTSSs <- PRIME::poolReplicates(
   object = K562.CTSSs,
   replicates = base::paste(
       SummarizedExperiment::colData(K562.CTSSs)$Cell.line,
@@ -329,7 +160,7 @@ K562.p.CTSSs <- CAGEfightR::calcTPM(K562.p.CTSSs)
 ```{r}
 min <- base::min(SummarizedExperiment::colData(K562.p.CTSSs)$totalTags)
 
-K562.p.s.CTSSs <- .GlobalEnv$subsampleTarget(
+K562.p.s.CTSSs <- PRIME::subsampleTarget(
     object = K562.p.CTSSs, target = min
   )
 ```
@@ -362,7 +193,7 @@ K562.TCs <- GenomicRanges::GRangesList(K562.TCs)
 
 K562.TCs <- BiocGenerics::unlist(K562.TCs)
 
-K562.TCs <- .GlobalEnv$initiatorScore(object = K562.TCs, bsg = Hsapiens)
+K562.TCs <- PRIME::initiatorScore(object = K562.TCs, bsg = Hsapiens)
 ```
 
 ## [1.9.] Plot classified initiator sequence
@@ -547,8 +378,7 @@ promoter_seqs_old %>%
 ```{r}
 ggplot2::ggsave(
   filename = base::paste0(
-        # here::here("4.Promoters/plots/"),
-        here::here(""),
+        here::here("4.Promoters/plots/"),
         base::format(base::Sys.time(), "%Y%m%d"),
         "_mappingComp",
         "_K562",
@@ -598,8 +428,7 @@ promoter_seqs_new %>%
 ```{r}
 ggplot2::ggsave(
     filename = base::paste0(
-        # here::here("4.Promoters/plots/"),
-        here::here(""),
+        here::here("4.Promoters/plots/"),
         base::format(base::Sys.time(), "%Y%m%d"),
         "_mappingComp",
         "_K562",
@@ -625,7 +454,7 @@ shifted_promoters_old <- promoters_old %>%
 
 shifted_promoters_old$thick <- IRanges::ranges(shifted_promoters_old)
 
-shifted_promoters_old <- .GlobalEnv$initiatorScore(
+shifted_promoters_old <- PRIME::initiatorScore(
     object = shifted_promoters_old, bsg = Hsapiens
   )
 shifted_promoters_old$sample <- base::paste(

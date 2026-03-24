@@ -96,7 +96,7 @@ K562.TCs %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.K562.nTCs.10Score",
           ".",ext
@@ -137,7 +137,7 @@ K562.TCs %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.K562.nTCs.dhs",
           ".",ext
@@ -178,7 +178,7 @@ K562.TCs %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.K562.TCs.expression.10Score",
           ".",ext
@@ -219,7 +219,7 @@ K562.TCs %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.K562.TCs.expression.dhs",
           ".",ext
@@ -260,7 +260,7 @@ K562.TCs %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.K562.promoter.shapeEntopy.10Score",
           ".",ext
@@ -300,7 +300,7 @@ K562.TCs %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.K562.promoter.IQR.10Score",
           ".",ext
@@ -341,7 +341,7 @@ K562.TCs %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.K562.promoter.initatorExpression.10Score",
           ".",ext
@@ -383,7 +383,7 @@ K562.TCs %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.K562.promoter.nInitiators.10Score",
           ".",ext
@@ -432,7 +432,7 @@ K562.comb.expr %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.K562.geneExpression",
           ".",ext
@@ -451,8 +451,8 @@ for(ext in base::c("pdf", "png")){
 ## [2.0.] Read in TC and gene level metrics
 ```{r}
 rm(K562.comb.expr,K562.cor.df,K562.TCs)
-base::load("./poolSub.K562.GeneLevel.RData")
-K562.TCs <- base::readRDS("poolSub.TCs.K562.rds")
+base::load(paste0(here::here("4.Promoters/"),"poolSub.K562.GeneLevel.RData"))
+K562.TCs <- base::readRDS(paste0(here::here("4.Promoters/"),"poolSub.TCs.K562.rds"))
 
 use <- base::c(
     "K562_C1","K562_C2","K562_C3","K562_C",
@@ -492,7 +492,7 @@ K562.TCs %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.K562.nTCs.10Score",
           ".",ext
@@ -533,7 +533,7 @@ K562.TCs %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.K562.nTCs.dhs",
           ".",ext
@@ -574,7 +574,7 @@ K562.TCs %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.K562.TCs.expression.10Score",
           ".",ext
@@ -615,7 +615,7 @@ K562.TCs %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.K562.TCs.expression.dhs",
           ".",ext
@@ -657,7 +657,7 @@ K562.TCs %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.K562.promoter.shapeEntopy.10Score",
           ".",ext
@@ -697,7 +697,7 @@ K562.TCs %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.K562.promoter.IQR.10Score",
           ".",ext
@@ -738,7 +738,7 @@ K562.TCs %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.K562.promoter.initatorExpression.10Score",
           ".",ext
@@ -780,7 +780,7 @@ K562.TCs %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.K562.promoter.nInitiators.10Score",
           ".",ext
@@ -831,7 +831,7 @@ K562.p.comb.expr %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.K562.geneExpression",
           ".",ext
@@ -1133,7 +1133,7 @@ ggplot2::ggplot(
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.GM12878.nTCs.dhs",
           "_alternative",
@@ -1205,7 +1205,7 @@ ggrastr::rasterise(
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.GM12878.TCs.expression.score10",
           "_alternative",
@@ -1278,7 +1278,7 @@ ggrastr::rasterise(
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.GM12878.TCs.expression.dhs",
           "_alternative",
@@ -1335,7 +1335,7 @@ GM12878.TCs.tbl %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.GM12878.promoter.shapeEntopy.10Score",
           ".",ext
@@ -1390,7 +1390,7 @@ GM12878.TCs.tbl %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.GM12878.promoter.IQR.10Score",
           ".",ext
@@ -1689,7 +1689,7 @@ ggrastr::rasterise(
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.GM12878.promoter.initatorExpression.score10",
           "_alternative",
@@ -1756,7 +1756,7 @@ GM12878.TCs.tbl %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.GM12878.promoter.nInitiators.score10",
           "_alternative",
@@ -1819,7 +1819,7 @@ GM12878.TCs %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.GM12878.promoter.initatorExpression.10Score.main",
           ".",ext
@@ -1882,7 +1882,7 @@ GM12878.TCs %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.GM12878.promoter.nInitiators.10Score.main",
           ".",ext
@@ -1936,7 +1936,7 @@ GM12878.comb.expr %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.GM12878.geneExpression",
           ".",ext
@@ -1980,7 +1980,7 @@ GM12878.comb.expr %>%
 ```{r}
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_repSub.GM12878.geneExpression.main",
           ".",ext
@@ -2044,7 +2044,7 @@ GM12878.TCs %>%
 
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.nTCs.10Score",
           ".",ext
@@ -2081,7 +2081,7 @@ GM12878.TCs %>%
 
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.nTCs.dhs",
           ".",ext
@@ -2119,7 +2119,7 @@ GM12878.TCs %>%
 
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.TCs.expression.10Score",
           ".",ext
@@ -2157,7 +2157,7 @@ GM12878.TCs %>%
 
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.TCs.expression.dhs",
           ".",ext
@@ -2198,7 +2198,7 @@ GM12878.TCs %>%
 
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.promoter.shapeEntopy.10Score",
           ".",ext
@@ -2237,7 +2237,7 @@ GM12878.TCs %>%
 
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.promoter.IQR.10Score",
           ".",ext
@@ -2274,7 +2274,7 @@ GM12878.TCs %>%
 
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.promoter.shapeEntopy.10Score.main",
           ".",ext
@@ -2310,7 +2310,7 @@ GM12878.TCs %>%
 
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.promoter.IQR.10Score.main",
           ".",ext
@@ -2354,7 +2354,7 @@ GM12878.TCs %>%
 
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.promoter.initatorExpression.10Score",
           ".",ext
@@ -2394,7 +2394,7 @@ GM12878.TCs %>%
 
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.promoter.nInitiators.10Score",
           ".",ext
@@ -2431,7 +2431,7 @@ GM12878.TCs %>%
 
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.promoter.initatorExpression.10Score.main",
           ".",ext
@@ -2471,7 +2471,7 @@ GM12878.TCs %>%
 
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.promoter.nInitiators.10Score.main",
           ".",ext
@@ -2522,7 +2522,7 @@ GM12878.p.comb.expr %>%
 
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.geneExpression",
           ".",ext
@@ -2564,7 +2564,7 @@ GM12878.p.comb.expr %>%
 
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
-      filename = base::paste0("./plots/",
+      filename = base::paste0(here::here("4.Promoters/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.geneExpression.main",
           ".",ext
