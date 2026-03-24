@@ -8,7 +8,6 @@
 *.bed
 liftOver
 *.RData
-*.txt*
 *.rds
 *.png
 *.pdf

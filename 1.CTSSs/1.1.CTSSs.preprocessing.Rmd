@@ -474,8 +474,8 @@ base::row.names(a549.design) <- a549.design$ID
 plus_files <- a549.design$bw_plus
 minus_files <- a549.design$bw_minus
 
-base::names(plus_files) <- base::rownames(design)
-base::names(minus_files) <- base::rownames(design)
+base::names(plus_files) <- base::rownames(a549.design)
+base::names(minus_files) <- base::rownames(a549.design)
 
 bw_plus <- rtracklayer::BigWigFileList(plus_files)
 bw_minus <- rtracklayer::BigWigFileList(minus_files)
@@ -495,8 +495,8 @@ base::row.names(hct.design) <- hct.design$ID
 plus_files <- hct.design$bw_plus
 minus_files <- hct.design$bw_minus
 
-base::names(plus_files) <- base::rownames(design)
-base::names(minus_files) <- base::rownames(design)
+base::names(plus_files) <- base::rownames(hct.design)
+base::names(minus_files) <- base::rownames(hct.design)
 
 bw_plus <- rtracklayer::BigWigFileList(plus_files)
 bw_minus <- rtracklayer::BigWigFileList(minus_files)
@@ -516,8 +516,8 @@ base::row.names(hep.design) <- hep.design$ID
 plus_files <- hep.design$bw_plus
 minus_files <- hep.design$bw_minus
 
-base::names(plus_files) <- base::rownames(design)
-base::names(minus_files) <- base::rownames(design)
+base::names(plus_files) <- base::rownames(hep.design)
+base::names(minus_files) <- base::rownames(hep.design)
 
 bw_plus <- rtracklayer::BigWigFileList(plus_files)
 bw_minus <- rtracklayer::BigWigFileList(minus_files)
@@ -532,7 +532,7 @@ hep.CTSSs <- hep.CTSSs %>% CAGEfightR::calcTPM() %>% CAGEfightR::calcPooled()
 
 ## [3.2.] Remove non standard chromosomes
 ```{r}
-keep <- GenomeInfoDb::seqlevels(hep.CTSSs)[1:23]
+keep <- GenomeInfoDb::seqlevels(hct.CTSSs)[1:23]
 
 a549.CTSSs <- GenomeInfoDb::keepSeqlevels(a549.CTSSs, keep, pruning.mode = "coarse")
 hct.CTSSs <- GenomeInfoDb::keepSeqlevels(hct.CTSSs, keep, pruning.mode = "coarse")
@@ -548,8 +548,17 @@ a549.p.CTSSs <- PRIME::poolReplicates(a549.CTSSs,
 
 a549.p.CTSSs <- CAGEfightR::calcTPM(a549.p.CTSSs)
 
-hct.p.CTSSs <- PRIME::poolReplicates(hct.CTSSs,
-                               replicates=colData(hct.CTSSs)$Type)
+dummy <- hct.CTSSs[,1]
+BiocGenerics::colnames(dummy) <- "dummy"
+for (i in base::seq_along(SummarizedExperiment::assays(dummy))) {
+    SummarizedExperiment::assays(dummy)[[i]][] <- 0
+}
+SummarizedExperiment::colData(dummy)[] <- 0
+hct.dummy.CTSSs <- BiocGenerics::cbind(hct.CTSSs, dummy)
+
+hct.p.CTSSs <- PRIME::poolReplicates(hct.dummy.CTSSs,
+                               replicates=colData(hct.dummy.CTSSs)$Type)
+hct.p.CTSSs <- hct.p.CTSSs[, BiocGenerics::colnames(hct.p.CTSSs) != "0"]
 
 hct.p.CTSSs <- CAGEfightR::calcTPM(hct.p.CTSSs)
 
@@ -603,8 +612,4 @@ base::saveRDS(
       "poolSub.HepG2.CTSSs.rmSingletons.rds"
     )
   )
-
-saveRDS(a549.p.s.CTSSs, "poolSub.A549.CTSSs.rmSingletons.rds")
-saveRDS(hct.p.s.CTSSs, "poolSub.HCT116.CTSSs.rmSingletons.rds")
-saveRDS(hep.p.s.CTSSs, "poolSub.HepG2.CTSSs.rmSingletons.rds")
 ```
