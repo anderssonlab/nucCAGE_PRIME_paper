@@ -962,7 +962,8 @@ for(ext in base::c("pdf", "png")){
 
 ## [4.0.] Read in predefined TCs and quantify gene level expression
 ```{r}
-GM12878.TCs <- base::readRDS("./poolSub.TCs.GM12878.rds")
+GM12878.TCs <- base::readRDS(
+  file=paste0(here::here("4.Promoters/"),"poolSub.TCs.GM12878.rds"))
 
 GM12878.TCs <- CAGEfightR::assignGeneID(GM12878.TCs,geneModels=txdb)
 
@@ -1005,6 +1006,6 @@ gm12878.cor.df <- data.frame(samp=unique(gm12878.comb.expr$sample), correlation=
 ```{r}
 gm12878.p.cor.df <- gm12878.cor.df
 gm12878.p.comb.expr <- gm12878.comb.expr
-save(gm12878.p.cor.df,gm12878.p.comb.expr,file="./poolSub.GM12878.GeneLevel.RData")
+save(gm12878.p.cor.df,gm12878.p.comb.expr,file=paste0(here::here("4.Promoters/"),"poolSub.GM12878.GeneLevel.RData"))
 ```
 
