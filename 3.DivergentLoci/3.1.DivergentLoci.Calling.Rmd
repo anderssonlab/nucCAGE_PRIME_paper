@@ -151,14 +151,12 @@ file = base::paste0(
 #Now for pooledSub
 
 ```{r}
-
 GM12878.s.CTSSs <- readRDS(file = base::paste0(
         here::here("1.CTSSs/"),
         "poolSub.combined.GM12878.CTSSs.rds"
   )
-  )```
+)
 
-```{r}
 #Call bidirectional clusters per sample using CTSS as starting point
 bpparam <- MulticoreParam(32)
 
