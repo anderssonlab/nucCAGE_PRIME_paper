@@ -1,0 +1,2252 @@
+---
+title: "FANTOM5 plotting"
+date: "2025-06-03"
+output: html_document
+---
+
+## [-1.0.] Install necessary packages
+```{r}
+utils::install.packages("factoextra")
+utils::install.packages("tsne")
+```
+
+## [0.] Prerequsites -------------------------
+
+## [0.0.] Load necesarray packages
+```{r message=FALSE}
+# base::library(CAGEfightR)
+# base::library(GenomicRanges)
+# base::library(readr)
+# base::library(rtracklayer)
+# base::library(parallel)
+# base::library(ggplot2)
+# base::library(GenomicFeatures)
+# base::library(SummarizedExperiment)
+# base::library(tibble)
+# base::library(ggrepel)
+# base::library(dplyr)
+# base::library(scales)
+# base::library(gridExtra)
+# base::library(BuenColors)
+# base::library(reshape2)
+# base::library(vegan)
+# base::library(RColorBrewer)
+# base::library(pheatmap)
+# base::library(dendsort)
+# base::library(tidyr)
+# base::library(patchwork)
+# base::library(ggdendro)
+base::library(tidyverse)
+base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+```
+
+## [0.1.] Load pooled cellFacets data (PL score > 0.75)
+#### 141 cellFacets of 700 donors
+```{r}
+cellFacet.rse <- base::readRDS( # cellFacet.rse_1
+  file = base::paste0(
+      here::here("11.LDSC_FANTOM5/ldsc_files/"),
+      "cellFacet.rds"
+    )
+  )
+
+SummarizedExperiment::assay(x = cellFacet.rse, i = "qn.PL.score")[1:10,1:5]
+```
+
+## [0.2.] Read in FANTOM5 predictions
+```{r}
+F5 <- rtracklayer::import.bed(
+  con = base::paste0(
+      here::here("0.External_resources/"),
+      "F5.hg38.enhancers.bed.gz"
+    )
+  )
+```
+
+## [0.3.] Define categories for all cellFacets
+```{r}
+# cell_type_categories <- base::c(
+#   "acute.lymphoblastic.leukemia.T.ALL" = "Cancer / Tumor",
+#   "heart" = "Muscle",
+#   "acute.myeloid.leukemia.FAB.M6" = "Cancer / Tumor",
+#   "embryonic.kidney" = "Stem / Progenitor",
+#   "hair.follicle.cell" = "Epithelial",
+#   "kidney" = "Epithelial",
+#   "melanoma" = "Cancer / Tumor",
+#   "giant.cell.carcinoma" = "Cancer / Tumor",
+#   "fibroblast.of.gingiva" = "Fibroblast/Connective",
+#   "T.cell" = "Immune",
+#   "fibroblast.of.choroid.plexus" = "Fibroblast/Connective",
+#   "cord.blood.derived" = "Stem / Progenitor",
+#   "preadipocyte" = "Fibroblast/Connective",
+#   "small.cell.lung.carcinoma" = "Cancer / Tumor",
+#   "gingival.epithelial.cell" = "Epithelial",
+#   "fibroblast.of.tunica.adventitia.of.artery" = "Fibroblast/Connective",
+#   "thyroid.carcinoma" = "Cancer / Tumor",
+#   "placental.epithelial.cell" = "Epithelial",
+#   "tendon.cell" = "Fibroblast/Connective",
+#   "Wilms.tumor" = "Cancer / Tumor",
+#   "carcinoid" = "Cancer / Tumor",
+#   "fat.cell" = "Fibroblast/Connective",
+#   "thymus" = "Immune",
+#   "neuroblastoma" = "Cancer / Tumor",
+#   "mesothelioma" = "Cancer / Tumor",
+#   "meninx" = "CNS/Neural",
+#   "eye" = "CNS/Neural",
+#   "clear.cell.carcinoma" = "Cancer / Tumor",
+#   "lung.adenocarcinoma" = "Cancer / Tumor",
+#   "schwannoma" = "CNS/Neural",
+#   "choriocarcinoma" = "Cancer / Tumor",
+#   "acute.myeloid.leukemia.FAB.M7" = "Cancer / Tumor",
+#   "endothelial.cell.of.hepatic.sinusoid" = "Endothelial",
+#   "small.intestine" = "Epithelial",
+#   "acute.myeloid.leukemia.FAB.M4eo" = "Cancer / Tumor",
+#   "smooth.muscle.cell.of.prostate" = "Muscle",
+#   "monocyte" = "Immune",
+#   "testicular.germ.cell.embryonal.carcinoma" = "Cancer / Tumor",
+#   "chondrocyte" = "Fibroblast/Connective",
+#   "teratocarcinoma" = "Cancer / Tumor",
+#   "urothelial.cell" = "Epithelial",
+#   "merkel.cell.carcinoma" = "Cancer / Tumor",
+#   "mammary.epithelial.cell" = "Epithelial",
+#   "retinal.pigment.epithelial.cell" = "Epithelial",
+#   "internal.male.genitalia" = "Other / Mixed",
+#   "breast.carcinoma" = "Cancer / Tumor",
+#   "hepatocellular.carcinoma" = "Cancer / Tumor",
+#   "blood.vessel" = "Endothelial",
+#   "colon.carcinoma" = "Cancer / Tumor",
+#   "mesothelial.cell" = "Epithelial",
+#   "epithelial.cell.of.esophagus" = "Epithelial",
+#   "oral.squamous.cell.carcinoma" = "Cancer / Tumor",
+#   "hepatocyte" = "Epithelial",
+#   "spinal.cord" = "CNS/Neural",
+#   "melanocyte" = "CNS/Neural",
+#   "neuron" = "CNS/Neural",
+#   "neuroectodermal.tumor" = "Cancer / Tumor",
+#   "spleen" = "Immune",
+#   "rhabdomyosarcoma" = "Cancer / Tumor",
+#   "medulloblastoma" = "Cancer / Tumor",
+#   "Hep.2" = "Cancer / Tumor",
+#   "lung" = "Epithelial",
+#   "epidermoid.carcinoma" = "Cancer / Tumor",
+#   "large.cell.lung.carcinoma" = "Cancer / Tumor",
+#   "testis" = "Other / Mixed",
+#   "enteric.smooth.muscle.cell" = "Muscle",
+#   "transitional.cell.carcinoma" = "Cancer / Tumor",
+#   "tongue" = "Epithelial",
+#   "cardiac.myocyte" = "Muscle",
+#   "myxofibrosarcoma" = "Cancer / Tumor",
+#   "endothelial.cell.of.lymphatic.vessel" = "Endothelial",
+#   "neuronal.stem.cell" = "Stem / Progenitor",
+#   "acute.myeloid.leukemia.FAB.M5" = "Cancer / Tumor",
+#   "leiomyoma" = "Cancer / Tumor",
+#   "ductal.cell.carcinoma" = "Cancer / Tumor",
+#   "keratinocyte" = "Epithelial",
+#   "myoblast" = "Muscle",
+#   "epithelioid.sarcoma" = "Cancer / Tumor",
+#   "osteosarcoma" = "Cancer / Tumor",
+#   "squamous.cell.lung.carcinoma" = "Cancer / Tumor",
+#   "brain" = "CNS/Neural",
+#   "bronchioalveolar.carcinoma" = "Cancer / Tumor",
+#   "acute.myeloid.leukemia.FAB.M4" = "Cancer / Tumor",
+#   "epithelial.cell.of.prostate" = "Epithelial",
+#   "fibroblast.of.lymphatic.vessel" = "Fibroblast/Connective",
+#   "amniotic.epithelial.cell" = "Epithelial",
+#   "liposarcoma" = "Cancer / Tumor",
+#   "epithelial.cell.of.Malassez" = "Epithelial",
+#   "hepatic.stellate.cell" = "Fibroblast/Connective",
+#   "corneal.epithelial.cell" = "Epithelial",
+#   "gastric.cancer" = "Cancer / Tumor",
+#   "squamous.cell.carcinoma" = "Cancer / Tumor",
+#   "liver" = "Epithelial",
+#   "stromal.cell" = "Fibroblast/Connective",
+#   "astrocyte" = "CNS/Neural",
+#   "cardiac.fibroblast" = "Fibroblast/Connective",
+#   "acute.lymphoblastic.leukemia.B.ALL" = "Cancer / Tumor",
+#   "thyroid.gland" = "Epithelial",
+#   "gastric.adenocarcinoma" = "Cancer / Tumor",
+#   "renal.cell.carcinoma" = "Cancer / Tumor",
+#   "lens.epithelial.cell" = "Epithelial",
+#   "dendritic.cell" = "Immune",
+#   "smooth.muscle.cell.of.trachea" = "Muscle",
+#   "macrophage" = "Immune",
+#   "pericyte.cell" = "Endothelial",
+#   "mast.cell" = "Immune",
+#   "gall.bladder.carcinoma" = "Cancer / Tumor",
+#   "skin.fibroblast" = "Fibroblast/Connective",
+#   "skeletal.muscle.cell" = "Muscle",
+#   "respiratory.epithelial.cell" = "Epithelial",
+#   "uterus" = "Epithelial",
+#   "trabecular.meshwork.cell" = "Fibroblast/Connective",
+#   "mesenchymal.cell" = "Fibroblast/Connective",
+#   "ciliated.epithelial.cell" = "Epithelial",
+#   "epitheloid.carcinoma" = "Cancer / Tumor",
+#   "sensory.epithelial.cell" = "Epithelial",
+#   "fibroblast.of.periodontium" = "Fibroblast/Connective",
+#   "bile.duct.carcinoma" = "Cancer / Tumor",
+#   "prostate.cancer" = "Cancer / Tumor",
+#   "neutrophil" = "Immune",
+#   "kidney.epithelial.cell" = "Epithelial",
+#   "glioblastoma" = "Cancer / Tumor",
+#   "lymphocyte.of.B.lineage" = "Immune",
+#   "chronic.myelogenous.leukemia" = "Cancer / Tumor",
+#   "acute.myeloid.leukemia.FAB.M2" = "Cancer / Tumor",
+#   "throat" = "Epithelial",
+#   "large.intestine" = "Epithelial",
+#   "osteoblast" = "Fibroblast/Connective",
+#   "serous.adenocarcinoma" = "Cancer / Tumor",
+#   "cervical.cancer" = "Cancer / Tumor",
+#   "Burkitts.lymphoma" = "Cancer / Tumor",
+#   "reticulocyte" = "Immune",
+#   "skeletal.muscle.tissue" = "Muscle",
+#   "natural.killer.cell" = "Immune",
+#   "signet.ring.carcinoma" = "Cancer / Tumor",
+#   "vascular.associated.smooth.muscle.cell" = "Muscle",
+#   "embryonic.pancreas" = "Stem / Progenitor",
+#   "acinar.cell" = "Epithelial",
+#   "blood.vessel.endothelial.cell" = "Endothelial",
+#   "keratocyte" = "Fibroblast/Connective",
+#   "B.lymphoblastoid" = "Immune"
+# )
+```
+
+## [1.] PCA & k means clustering -------------------------
+
+## [1.0.] Perform PCA
+```{r}
+SummarizedExperiment::colData(cellFacet.rse)
+mat <- SummarizedExperiment::assay(cellFacet.rse,"PL.score") %>%
+  base::replace(base::is.na(.), 0) %>%
+  base::as.matrix() %>%
+  base::t()
+mat[1:5,1:5]
+base::dim(mat)
+pr <- stats::prcomp(mat)
+utils::str(pr)
+```
+
+## [1.1.] Visualize PCA results
+```{r}
+factoextra::fviz_pca_ind(
+    pr,
+    col.ind = "cos2",
+    gradient.cols = base::c("#00AFBB", "#E7B800", "#FC4E07"),
+    repel = TRUE
+  )
+```
+
+## [1.2.] Visualize PCA results
+```{r}
+pr$x %>%
+  tibble::as_tibble(rownames = "var") %>%
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = PC1,
+        y = PC2,
+        label = base::ifelse(PC2  > 50, var, "")
+      )
+    ) +
+  geom_point() +
+  ggrepel::geom_text_repel(
+      box.padding = 0.5,
+      max.overlaps = Inf,
+      size = 2
+    ) +
+  scale_x_continuous(
+      limits = base::c(-700,700)
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [1.3.] PCA-dependent tSNE analysis
+```{r}
+tmat <- tsne::tsne(X = pr$x, initial_dims = 2)
+base::colnames(tmat) <- base::c("tsne_1","tsne_2")
+base::rownames(tmat) <- base::rownames(pr$x)
+```
+
+```{r}
+factoextra::fviz_nbclust(mat, kmeans, method = "wss")
+```
+
+## [1.4.] k means clustering
+```{r}
+kmat <- stats::kmeans(
+    x = mat,
+    centers = 7,
+    nstart = 25
+  )
+utils::str(kmat)
+```
+
+## [1.5.] Save 'kmat' object
+```{r}
+base::saveRDS(
+  object = kmat,
+  file = base::paste0(
+      here::here("11.LDSC_FANTOM5_copy/"),
+      base::format(base::Sys.Date(), "%Y%m%d"),
+      "_F5_clusters.rds"
+    )
+  )
+```
+
+## [1.6.] Data wrangling & combination
+```{r}
+f5cl <- tibble::tibble(
+    cat = base::names(kmat$cluster),
+    clus = kmat$cluster
+  )
+f5mat <- tmat %>%
+  tibble::as.tibble(
+      rownames = "cat"
+    ) %>%
+  dplyr::left_join(
+      x = ., y = f5cl, by = "cat"
+    ) %>%
+  dplyr::mutate(
+      clus = base::factor(
+        x = clus,
+        levels = 1:7,
+        ordered = TRUE
+      )
+    ) %>%
+  dplyr::arrange(clus)
+```
+
+## [1.6.] Data visualization
+```{r}
+ggplot2::ggplot(
+      data = f5mat,
+      mapping = aes(
+        x = tsne_1,
+        y = tsne_2,
+        colour = clus
+      )
+    ) +
+  geom_point() +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [1.] Data wrangling -------------------------
+
+## [1.0.] Add annotations
+```{r}
+SummarizedExperiment::rowData(cellFacet.rse)$location <- NA
+SummarizedExperiment::rowData(cellFacet.rse)$location[SummarizedExperiment::rowData(cellFacet.rse)$txType %in% base::c("promoter","proximal","fiveUTR")] <- "proximal"
+SummarizedExperiment::rowData(cellFacet.rse)$location[SummarizedExperiment::rowData(cellFacet.rse)$txType %in% base::c("intron","intergenic")] <- "distal"
+keep <- !base::is.na(SummarizedExperiment::rowData(cellFacet.rse)$location)
+cellFacet.rse <- cellFacet.rse[keep,]
+
+F5 <- CAGEfightR::assignTxType(
+    object = F5,
+    txModels = txdb
+  )
+F5$location[F5$txType %in% base::c("promoter","proximal","fiveUTR")] <- "proximal"
+F5$location[F5$txType %in% base::c("intron","intergenic")] <- "distal"
+```
+
+## [1.1.] Calculate support across cellFacets at PL score 0.5
+```{r}
+SummarizedExperiment::assay(cellFacet.rse, "qn.PL.score")[
+    base::is.na(SummarizedExperiment::assay(cellFacet.rse, "qn.PL.score"))
+  ] <- 0
+cellFacet.rse <- CAGEfightR::calcSupport(
+    object = cellFacet.rse,
+    inputAssay = "qn.PL.score",
+    unexpressed = 0.5,
+    outputColumn = "support0.5"
+  )
+cellFacet.rse <- CAGEfightR::calcSupport(
+    object = cellFacet.rse,
+    inputAssay = "qn.PL.score",
+    unexpressed = 0.75,
+    outputColumn = "support0.75"
+  )
+```
+
+## [1.2.] Calculate number of proximal and distal regions at PL score 0.5 and 0.75
+```{r}
+SummarizedExperiment::colData(cellFacet.rse)$distal0.5 <- base::colSums(
+  SummarizedExperiment::assay(
+      x = base::subset(cellFacet.rse,location == "distal"),
+      i = "qn.PL.score"
+    ) > 0.5
+  )
+SummarizedExperiment::colData(cellFacet.rse)$distal0.75 <- base::colSums(
+  SummarizedExperiment::assay(
+      x = base::subset(cellFacet.rse, location == "distal"),
+      i = "qn.PL.score"
+    ) > 0.75
+  )
+SummarizedExperiment::colData(cellFacet.rse)$proximal0.5 <- base::colSums(
+  SummarizedExperiment::assay(
+      x = base::subset(cellFacet.rse, location == "proximal"),
+      i = "qn.PL.score"
+    ) > 0.5
+  )
+SummarizedExperiment::colData(cellFacet.rse)$proximal0.75 <- base::colSums(
+  SummarizedExperiment::assay(
+      x = base::subset(cellFacet.rse, location == "proximal"),
+      i = "qn.PL.score"
+    ) > 0.75
+  )
+```
+
+## [1.2.] Calculate binary jaccard distance between cellFacets at PL score 0.5
+```{r}
+binary_mat <- SummarizedExperiment::assay(cellFacet.rse, "qn.PL.score") > 0.5
+
+jaccard_dist <- vegan::vegdist(
+    x = base::t(binary_mat),
+    method = "jaccard"
+  )
+jaccard_mat <- base::as.matrix(jaccard_dist)
+
+jaccard_sim <- 1 - jaccard_mat
+```
+
+## [1.3.] Selecting cellFacets for main figure
+#### __Deprecated__
+```{r}
+# main <- base::names(cell_type_categories)[cell_type_categories != "Cancer / Tumor"]
+# 
+# jaccard_sim_main <- jaccard_sim[
+#     base::row.names(jaccard_sim) %in% main,
+#     base::colnames(jaccard_sim) %in% main
+#   ]
+```
+
+## [1.4.] Cluster and sort
+```{r}
+hc <- stats::hclust(
+    stats::as.dist(1 - jaccard_sim),
+    method = "average"
+  )
+hc_sorted <- dendsort::dendsort(hc)
+
+# hc_main <- stats::hclust(
+#     stats::as.dist(1 - jaccard_sim_main),
+#     method = "average"
+#   )
+# hc_main_sorted <- dendsort::dendsort(hc_main)
+```
+
+## [2.] Descriptive plots -------------------------
+
+## [2.0.] Plot support across cellFacets at PL score 0.5
+#### ggsave("11.LDSC_FANTOM5/plots/support0.5.pdf", height=10,width=7)
+```{r}
+sps <- cellFacet.rse %>%
+  SummarizedExperiment::rowData() %>%
+  base::as.data.frame() %>%
+  tidyr::pivot_longer(
+      cols = base::c("support0.5", "support0.75"),
+      names_to = "support",
+      values_to = "qn.PL.score"
+    ) %>% 
+  dplyr::mutate(
+    location = base::factor(
+        x = location,
+        levels = base::c("proximal", "distal"),
+        ordered = TRUE
+      ),
+    support = base::factor(
+        x = support,
+        levels = base::c("support0.5", "support0.75"),
+        ordered = TRUE
+      )
+    )
+```
+
+```{r}
+ggplot2::ggplot(
+    data = sps,
+    mapping = aes(
+        x = qn.PL.score,
+        fill = location
+      )
+    )  +
+  geom_bar() +
+  scale_fill_manual(
+      values = base::c("proximal" = "#1b9e77", "distal" = "#d95f02")
+    ) +
+  facet_wrap(
+      facets = support ~ location,
+      # ncol = 1,
+      scales = "free"
+    )
+
+ggplot2::ggplot(
+    data = sps,
+    mapping = aes(
+        x = qn.PL.score,
+        # fill = location,
+        colour = location
+      )
+    )  +
+  # geom_bar() +
+  geom_density() +
+  scale_fill_manual(
+      values = base::c("proximal" = "#1b9e77", "distal" = "#d95f02")
+    ) +
+  facet_wrap(
+      # facets = support ~ location,
+      facets = . ~ support,
+      # ncol = 1,
+      scales = "free"
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [2.1.] Number of RE at PL score 0.5 clustered based on jaccard distance
+#### see [1.3.] above for 'hc_sorted' object
+#### Curated clusters: 1:29; 30:73; 74:85; 86:91; 92:107; 108:130; 131:141
+```{r}
+ordered_samples <- hc_sorted$labels[hc_sorted$order]
+
+# Filter colData to include only those in clustering
+df <- SummarizedExperiment::colData(cellFacet.rse) %>%
+  tibble::as_tibble() %>%
+  dplyr::filter(
+      sample %in% ordered_samples
+    )
+
+# Get dendrogram data
+dend <- stats::as.dendrogram(hc_sorted)
+dend_data <- ggdendro::dendro_data(dend)
+label_map <- stats::setNames(dend_data$labels$x, dend_data$labels$label)
+seg_data <- dend_data$segments
+
+# Reshape data to long format for plotting and assign dendrogram x positions
+df_long <- df %>%
+  tidyr::pivot_longer(
+      cols = base::c("distal0.5", "proximal0.5"),
+      names_to = "region_type",
+      values_to = "count"
+    ) %>%
+  dplyr::mutate(
+      region_type = base::factor(
+          x = region_type,
+          levels = base::c("proximal0.5", "distal0.5")
+        ),
+      x = label_map[as.character(sample)]
+    )
+```
+
+## [2.2.] Curate clusters manually based on hierachical clustering
+#### Wilms tumor - kidney cancer
+#### clus1: pancreas, fibroblasts, endothelial, bones, lung, liver, retina & cornea, epithelial, epidermis, smooth muscle
+#### clus2: kidney, colon, stomach, liver, fibroblast, epithelia, smooth & sceletal muscle, mesothelium, fat, thyroid, gums & mouth, epidermis, ovary, urinary tract, gall bladder cervics, lung, prostate, glia, nerves, pancreas, bones
+#### clus3: blood vessel, skeletal & smooth muscle, skin fibroblast,
+```{r}
+type <- "PPPPPPPPPPPPPPPCPPPPPCCPCPCCCPCPCPPPPPPPPPCCPPCCCCCCCCCCCCCCCCCCPCCCCCCPPPPCPPPPPPPPPCCCCCCPPPPPPPPPPPPPPPPCCCCPCCCCCCPCPPPPCPPPPPPPPPPPPPCPP"
+stringr::str_length(type)
+
+curclus <- tibble::tibble(
+    cat = hc_sorted$labels[hc_sorted$order],
+    comb = base::c(
+        base::rep("1_P",29-1+1),
+        base::rep("2_P",46-30+1),
+        base::rep("3_C",71-47+1),
+        base::rep("4_P",85-72+1),
+        base::rep("5_C",91-86+1),
+        base::rep("6_P",107-92+1),
+        base::rep("7_C",125-108+1),
+        base::rep("8_P",141-126+1)
+      )
+    ) %>%
+  tidyr::separate(
+      col = comb, into = base::c("clus","bio")
+    )
+
+# curclus <- tibble::tibble(
+#   cat = hc_sorted$labels[hc_sorted$order],
+#   clus = base::c(
+#       base::rep("1",26-1+1),
+#       base::rep("2",73-27+1),
+#       base::rep("3",91-74+1),
+#       # base::rep("3",82-74+1),
+#       # base::rep("4",91-83+1),
+#       base::rep("4",107-92+1),
+#       base::rep("5",125-108+1),
+#       base::rep("6",141-126+1)
+#     )
+#   )
+
+curmat <- tmat %>%
+  tibble::as_tibble(
+      rownames = "cat"
+    ) %>%
+  dplyr::left_join(
+      x = ., y = curclus, by = "cat"
+    ) %>%
+  dplyr::mutate(
+      cp = stringr::str_split_1(type,"")
+    )
+
+curpca <- pr$x %>%
+  tibble::as_tibble(rownames = "cat") %>%
+   dplyr::left_join(
+      x = ., y = curclus, by = "cat"
+    ) %>%
+  dplyr::mutate(
+      cp = stringr::str_split_1(type,"")
+    )
+```
+
+```{r}
+ggplot2::ggplot(
+      data = curmat,
+      mapping = aes(
+        x = tsne_1,
+        y = tsne_2,
+        colour = cp, #bio, #clus,
+        label = base::ifelse(clus == "4", cat, "")
+      )
+    ) +
+  geom_point(
+      size = 3,
+      alpha = 0.5
+    ) +
+  # scale_color_manual(
+  #     limits = base::as.character(1:8),
+  #     values = base::c("#588b8b", "#f94144" , "#f28f3b" ,"#95e214" ,"#2d3047" ,"#c86bfa", "#90be6d", "#ffb703")
+  #   ) +
+  scale_color_manual(
+      values = base::c("#2d3047" ,"#c86bfa", "#90be6d", "#ffb703")
+    ) +
+  # ggrepel::geom_text_repel(
+  #     box.padding = 0.5,
+  #     max.overlaps = Inf,
+  #     size = 2
+  #   ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("11.LDSC_FANTOM5_copy/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_tSNE",
+        # "_TumPhysClusters",
+        "_TumorPhysio",
+        ".pdf"
+      ),
+    device = "pdf",
+    plot = ggplot2::last_plot(),
+    width = 5,
+    height = 4
+  )
+```
+
+#### 1:6 clusters: base::c("#588b8b", "#f94144" , "#f28f3b" ,"#95e214" ,"#2d3047" ,"#c86bfa")
+```{r}
+ggplot2::ggplot(
+      data = curpca,
+      mapping = aes(
+        x = PC1,
+        y = PC2,
+        color = cp, #bio, #clus,
+        label = base::ifelse(clus == "4", cat, "")
+      )
+    ) +
+  geom_point(
+      size = 3,
+      alpha = 0.5
+    ) +
+  # ggrepel::geom_text_repel(
+  #     box.padding = 0.5,
+  #     max.overlaps = Inf,
+  #     size = 2
+  #   ) +
+  # scale_color_manual(
+  #     limits = base::as.character(1:8),
+  #     values = base::c("#588b8b", "#f94144" , "#f28f3b" ,"#95e214" ,"#2d3047" ,"#c86bfa", "#90be6d", "#ffb703")
+  #   ) +
+  scale_color_manual(
+      values = base::c("#2d3047" ,"#c86bfa")
+    ) +
+  # scale_x_continuous(
+  #     limits = base::c(-700,700)
+  #   ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("11.LDSC_FANTOM5_copy/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_PCA",
+        # "_TumPhysClusters",
+        "_TumorPhysio",
+        ".pdf"
+      ),
+    device = "pdf",
+    plot = ggplot2::last_plot(),
+    width = 5,
+    height = 4
+  )
+```
+
+## [2.1.] Combined plot
+#### ggsave("11.LDSC_FANTOM5/plots/nBarplot.pdf", combined_plot, width = 7, height = 15)
+```{r}
+bar_plot <- ggplot2::ggplot(
+    data = df_long,
+    mapping = aes(
+        x = x,
+        y = count,
+        fill = region_type
+      )
+    ) +
+  geom_bar(
+      stat = "identity", position = "dodge"
+    ) +
+  geom_hline(
+      yintercept = base::length(F5),
+      linetype = "dashed",
+      color = "darkred",
+      linewidth = 0.7
+    ) +
+  geom_hline(
+      yintercept = 100000,
+      linetype = "dashed",
+      color = "darkgrey",
+      linewidth = 0.7
+    ) +
+  scale_x_continuous(
+      breaks = df_long$x,
+      labels = df_long$sample
+    ) +
+  scale_fill_manual(
+      values = base::c("proximal0.5" = "#1b9e77", "distal0.5" = "#d95f02")
+    ) +
+  coord_flip() +
+  labs(
+      x = NULL,
+      y = "Region count",
+      fill = "Region Type"
+    ) +
+  theme_minimal() +
+  theme(
+      axis.text.y = element_text(size = 6, hjust = 1),
+      axis.title.y = element_blank(),
+      panel.grid.major.y = element_blank(),  # remove horizontal lines
+      panel.grid.minor.y = element_blank()   # just in case
+    )
+
+# Dendrogram plot 
+dend_plot <- ggplot2::ggplot(
+      data = seg_data,
+      mapping = aes(
+        x = x,
+        y = y,
+        xend = xend,
+        yend = yend
+      )
+    ) +
+  geom_segment() +
+  scale_y_reverse() +
+  coord_flip() +
+  theme_void() +
+  theme(
+      plot.margin = margin(r = -10)
+    )  # Reduce spacing to snugly align with barplot
+
+# Combine and plot
+library(patchwork)
+combined_plot <- dend_plot + bar_plot + patchwork::plot_layout(widths = c(2, 1))
+combined_plot
+```
+
+
+```{r}
+ggplot2::ggplot(
+    data = df_long,
+    mapping = aes(
+        x = x,
+        y = count,
+        fill = region_type
+      )
+    ) +
+  geom_bar(
+      stat = "identity", position = "dodge"
+    ) +
+  geom_hline(
+      yintercept = base::length(F5),
+      linetype = "dashed",
+      color = "darkred",
+      linewidth = 0.7
+    ) +
+  geom_hline(
+      yintercept = 100000,
+      linetype = "dashed",
+      color = "darkgrey",
+      linewidth = 0.7
+    ) +
+  scale_x_continuous(
+      breaks = df_long$x,
+      labels = df_long$sample
+    ) +
+  scale_fill_manual(
+      values = base::c("proximal0.5" = "#1b9e77", "distal0.5" = "#d95f02")
+    ) +
+  coord_flip() +
+  labs(
+      x = NULL,
+      y = "Region count",
+      fill = "Region Type"
+    ) +
+  theme_minimal() +
+  theme(
+      axis.text.y = element_text(size = 6, hjust = 1),
+      axis.title.y = element_blank(),
+      panel.grid.major.y = element_blank(),  # remove horizontal lines
+      panel.grid.minor.y = element_blank()   # just in case
+    )
+```
+
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("11.LDSC_FANTOM5_copy/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_nBarplot.pdf"
+      ),
+    device = "pdf",
+    plot = combined_plot,
+    width = 7,
+    height = 15
+  )
+
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("11.LDSC_FANTOM5_copy/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_dendogramOnly.pdf"
+      ),
+    device = "pdf",
+    plot = ggplot2::last_plot(),
+    width = 10,
+    height = 15
+  )
+```
+
+#### __Deprecated__
+```{r}
+# # Same for main figure
+# ordered_samples <- hc_main_sorted$labels[hc_main_sorted$order]
+# 
+# # Filter colData to include only those in clustering
+# df <- SummarizedExperiment::colData(cellFacet.rse) %>% 
+#   base::as.data.frame() %>%
+#   tibble::as_tibble() %>%
+#   dplyr::filter(sample %in% ordered_samples)
+# 
+# # Get dendrogram data
+# dend <- stats::as.dendrogram(hc_main_sorted)
+# dend_data <- ggdendro::dendro_data(dend)
+# label_map <- stats::setNames(dend_data$labels$x, dend_data$labels$label)
+# seg_data <- dend_data$segments
+# 
+# # Reshape data to long format for plotting and assign dendrogram x positions
+# df_long <- df %>%
+#   tidyr::pivot_longer(
+#       cols = base::c("distal0.5", "proximal0.5"),
+#       names_to = "region_type",
+#       values_to = "count"
+#     ) %>%
+#   dplyr::mutate(
+#       region_type = base::factor(
+#           x = region_type,
+#           levels = base::c("proximal0.5", "distal0.5"),
+#           ordered = TRUE
+#         ),
+#       x = label_map[base::as.character(sample)]
+#     )
+```
+
+#### __Deprecated__
+```{r}
+# # Bar plot 
+# bar_plot <- ggplot2::ggplot(
+#     data = df_long,
+#     mapping = aes(
+#         x = x,
+#         y = count,
+#         fill = region_type
+#       )
+#     ) +
+#   geom_bar(
+#       stat = "identity",
+#       position = "dodge"
+#     ) +
+#   geom_hline(
+#       yintercept = base::length(F5),
+#       linetype = "dashed",
+#       color = "darkred",
+#       linewidth = 0.7
+#     ) +
+#   geom_hline(
+#       yintercept = 100000,
+#       linetype = "dashed",
+#       color = "darkgrey",
+#       linewidth = 0.7
+#     ) +
+#   scale_fill_manual(
+#       values = base::c("proximal0.5" = "#1b9e77", "distal0.5" = "#d95f02")
+#     ) +
+#   scale_x_continuous(
+#       breaks = df_long$x,
+#       labels = df_long$sample
+#     ) +
+#   coord_flip() +
+#   labs(
+#       x = NULL,
+#       y = "Region count",
+#       fill = "Region Type"
+#     ) +
+#   theme_minimal() +
+#   theme(
+#         axis.text.y = element_text(size = 6, hjust = 1),
+#         axis.title.y = element_blank(),
+#       panel.grid.major.y = element_blank(),  # remove horizontal lines
+#       panel.grid.minor.y = element_blank()   # just in case
+#     )
+# 
+# # Dendrogram plot 
+# dend_plot <- ggplot2::ggplot(
+#       data = seg_data
+#     ) +
+#   geom_segment(
+#     mapping = aes(
+#         x = x,y = y, xend = xend, yend = yend)
+#     ) +
+#   scale_y_reverse() +
+#   coord_flip() +
+#   theme_void() +
+#   theme(
+#       plot.margin = margin(r = -10)
+#     )  # Reduce spacing to snugly align with barplot
+# 
+# # Combine and plot
+# combined_plot <- dend_plot + bar_plot + plot_layout(widths = c(1, 3))
+# combined_plot
+```
+
+## [2.] LDSC analysis plots -------------------------
+
+## [2.0.] Read in main LDSC results
+```{r}
+# Load the data
+ldsc_score_ <- readr::read_tsv( # 3,577,860
+    file = base::paste0(
+      here::here("11.LDSC_FANTOM5/ldsc_files/"),
+      "combined_results.tsv"
+    )
+  )
+ldsc_score_$Trait<- base::sub(pattern = "_score[0-9.]+$", "", ldsc_score_$Trait) 
+
+sumstat_annot <- readr::read_tsv( # 12,098
+    file = base::paste0(
+      here::here("11.LDSC_FANTOM5/ldsc_files/"),
+      "ukb31063_ldsc_sumstat_manifest_aws_sep2022.tsv"
+    )
+  )
+sumstat_annot <- sumstat_annot %>% #4,170
+  dplyr::filter(
+      is_primary_gwas == TRUE &
+      phenotype %in% base::unique(ldsc_score_$Trait)
+    )
+```
+
+#### D3_OTHERANAEMIA, D3_ANAEMIANAS, D61, D64
+```{r}
+sumstat_annot %>%
+  dplyr::filter(
+    stringr::str_detect(description,"anaemia")
+  )
+```
+
+#### Evaluate scaling
+```{r}
+ldsc_score_ %>%
+  dplyr::arrange(dplyr::desc(Prop._h2)) %>%
+  dplyr::reframe(
+      ran = base::range(Prop._h2),
+      ran_SNP = base::range(Prop._SNPs)
+    )
+
+ldsc_score_ %>%
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = Prop._SNPs
+      )
+    ) +
+  geom_density() +
+  theme_bw() +
+  theme(
+    aspect.ratio = 1
+  )
+```
+
+## [2.1.] Add description to data
+#### 25020 "unknown"  locations
+```{r}
+ldsc_score <- dplyr::left_join(
+    x = ldsc_score_,
+    y = dplyr::select(sumstat_annot, phenotype, description),
+    by = base::c("Trait" = "phenotype")
+  )
+
+ldsc_score <- ldsc_score %>%
+  dplyr::mutate(
+      loc = stringr::str_extract(Category, "distal|proximal"),
+      loc = tidyr::replace_na(loc, "unknown")
+    )
+
+ldsc_score$score <- base::sub(".*_(\\d+\\.\\d+)L2_0$", "\\1", ldsc_score$Category)
+
+ldsc_score$sample <- base::sub("_.*", "", ldsc_score$Category)
+
+ldsc_score <- ldsc_score[ldsc_score$Category != "baseL2_0",] # 3,552,840
+# ldsc_data <- ldsc_score[ldsc_score$score == "0.5",] # 592,140
+```
+
+## [2.2.] Read out minimum scores
+#### For cellFacets with over 100K regions
+```{r}
+min_top_scores <- base::apply(
+  X = SummarizedExperiment::assay(cellFacet.rse, "qn.PL.score")[
+      SummarizedExperiment::rowData(cellFacet.rse)$location == "distal",
+    ],
+  MARGIN = 2,
+  FUN = function(x) {
+    sorted_vals <- sort(x, decreasing = TRUE)
+    if (length(sorted_vals) < 100000) {
+        min(sorted_vals)  # If fewer than 100k rows, take the smallest of all
+      } else {
+        min(sorted_vals[1:100000])  # Min of top 100,000
+      }
+    }
+  )
+```
+
+## [2.3.] Prepare description-sample combinations for plotting
+```{r}
+sub <- tibble::tibble(
+  description = base::c(
+      "Reticulocyte count",
+      "Reticulocyte count",
+      "Monocyte count",
+      "Monocyte count",
+      "Basophill count",
+      "Basophill count",
+      "Urate (umol/L)",
+      "Urate (umol/L)"
+    ),
+  sample = base::c(
+      "reticulocyte",
+      "F5",
+      "monocyte",
+      "F5",
+      "mast.cell",
+      "F5",
+      "kidney",
+      "F5"
+    )
+  )
+```
+
+#### evaluate overlap: ldsc_score %>% dplyr::filter(sample %in%  ordered_samples[108:125]) %>% distinct(sample)
+```{r}
+des <- base::factor(
+      x = base::rep(trai,2),
+      levels = trai,
+      ordered = TRUE
+    ) %>%
+  base::sort()
+
+sps <- base::c(
+  base::rbind(
+      ordered_samples[108:125],
+      base::rep("F5",base::length(ordered_samples[108:125]))
+    )
+  )
+
+sub <- tibble::tibble(
+    description = des,
+    sample = sps
+  )
+```
+
+#### see [2.6.] further down for trai
+#### base::c("reticulocyte", "mast.cell")
+```{r}
+# cur_trai <- trai[4:17] # all plotted traits
+# cur_trai <- trai[5:17] # reticulocyte without # Nucleated red blood cell count
+cur_trai <- trai[27:30]
+des <- base::factor(
+      x = base::rep(cur_trai,2),
+      levels = cur_trai,
+      ordered = TRUE
+    ) %>%
+  base::sort()
+
+# ct <- "reticulocyte"
+ct <- "mast.cell"
+sps <- base::rep(base::c(ct,"F5"),base::length(cur_trai))
+
+sub <- tibble::tibble(
+    description = des,
+    sample = sps
+  )
+```
+
+## [2.3.] Prepare proportion of heritability and enrichment data for description-sample combinations
+```{r}
+thresh <- function(score, min_score){
+  # base::cat(score," ", min_score)
+  if (!base::is.na(min_score) && min_score > 0.5) {
+      threshold <- base::floor((min_score - 1e-8) * 20) / 20  # round down to nearest 0.05
+      base::as.numeric(base::as.character(score)) >= threshold
+    } else {
+      TRUE
+    }
+  }
+
+df <- dplyr::inner_join(
+    x = ldsc_score,
+    y = sub,
+    by = base::colnames(sub)
+  )
+
+f5sum <- df %>%
+  dplyr::filter(sample == "F5") %>%
+  dplyr::group_by(description) %>%
+  dplyr::summarize(
+      Prop._h2 = base::mean(Prop._h2, na.rm = TRUE),
+      Enrichment = base::mean(Enrichment, na.rm = TRUE),
+      Enrichment_p = base::min(Enrichment_p, na.rm = TRUE),
+      sample = "F5",
+      .groups = "drop"
+    )
+
+dfsum <- df %>%
+  dplyr::filter(sample != "F5") %>%
+  dplyr::group_by(description,sample) %>%
+  dplyr::mutate(
+      min_score = min_top_scores[sample],
+      fil_score = purrr::pmap_lgl(
+        .l = base::list(score, min_score),
+        .f = .GlobalEnv$thresh
+      )
+    ) %>%
+  dplyr::filter(fil_score == TRUE)
+
+comb <- dplyr::bind_rows(f5sum, dfsum)
+```
+
+## [2.4.] Visualize data
+```{r}
+ ggplot2::ggplot(
+    data = comb,
+    mapping = aes(
+        x = Prop._h2,
+        y = Enrichment,
+        color = sample,
+        size = (-1)*base::log10(Enrichment_p),
+        label = score
+      )
+    ) +
+  geom_point(
+      alpha = 0.5
+    ) +
+  ggrepel::geom_text_repel(
+      size = 3,
+      show.legend = FALSE
+    ) +
+  scale_color_manual(
+      values = base::c("#1f78b4" ,"#c86bfa", "#90be6d", "#ffb703", "#2d3047")
+    ) +
+  facet_wrap(
+      facets = ~ description
+      # nrow = 1
+    ) +
+  theme_bw() +
+  theme(
+      strip.text.x = element_text(size = 5),
+      aspect.ratio = 1,
+      panel.spacing = grid::unit(0.1, "lines")
+    )
+```
+
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("11.LDSC_FANTOM5_copy/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_enrichment_proportion",
+        "_mastcell",
+        ".pdf"
+      ),
+    device = "pdf",
+    plot = ggplot2::last_plot(),
+    width = 8,
+    height = 6
+  )
+```
+
+## [2.5.] Scale enrichment and prepare visualisation
+#### Subset data for PRIMEloci threshold of 0.5
+```{r}
+scaling_individual <- function(Enrichment,max_enr,min_enr){
+  base::ifelse(
+      test = max_enr != min_enr,
+      yes = (Enrichment - min_enr) / (max_enr - min_enr),
+      no = 0
+    )
+  }
+
+scaling_group <- function(df){
+  max_enr <- base::max(df$Enrichment, na.rm = TRUE)
+  min_enr <- base::min(df$Enrichment, na.rm = TRUE)
+  
+  max_prop <- base::max(df$Prop._h2, na.rm = TRUE)
+  min_prop <- base::min(df$Prop._h2, na.rm = TRUE)
+  
+  return(
+    df %>%   
+      dplyr::mutate(
+        Enrichment_scaled = purrr::map_dbl(
+            .x = Enrichment,
+            .f = scaling_individual,
+            max_enr = max_enr,
+            min_enr = min_enr
+          ),
+        # Proportion_scaled = (Prop._SNPs - min_prop) / (max_prop - min_prop)
+        Proportion_scaled = (Prop._h2 - min_prop) / (max_prop - min_prop)
+      )
+    )
+  }
+
+ldsc_data <- ldsc_score %>% # 3,552,840 --> 592,140
+  dplyr::mutate(
+      Category = stringr::str_replace(Category, "(.*?)_.*$", "\\1")
+    ) %>%
+  dplyr::filter(
+      score == "0.5"
+    ) %>%
+  dplyr::group_by(sample,description) %>% ## <-- insert starts
+  dplyr::slice_max(Enrichment, n = 1) %>% # 585,750
+  dplyr::ungroup() %>%  ## <-- insert ends
+  dplyr::group_by(Trait) %>%
+  tidyr::nest() %>% 
+  dplyr::mutate(
+      newData = purrr::map(
+        .x = data,
+        .f = scaling_group
+      )
+    ) %>%
+  dplyr::select(-data) %>% 
+  tidyr::unnest(cols = newData) %>%
+  dplyr::ungroup()
+```
+
+#### Global scaling of 'Prop._h2'
+#### __Deprecated__
+```{r}
+# rangG <- ldsc_score %>% # 592,140
+#   dplyr::mutate(
+#       Category = stringr::str_replace(Category, "(.*?)_.*$", "\\1")
+#     ) %>%
+#   dplyr::filter(
+#       score == "0.5"
+#     ) %>%
+#   dplyr::pull(Prop._h2) %>%
+#   base::range()
+# 
+# scaling_individual <- function(Enrichment,max_enr,min_enr){
+#   base::ifelse(
+#       test = max_enr != min_enr,
+#       yes = (Enrichment - min_enr) / (max_enr - min_enr),
+#       no = 0
+#     )
+#   }
+# 
+# scaling_group <- function(df){
+#   max_enr <- base::max(df$Enrichment, na.rm = TRUE)
+#   min_enr <- base::min(df$Enrichment, na.rm = TRUE)
+#   
+#   return(
+#     df %>%   
+#       dplyr::mutate(
+#         Enrichment_scaled = purrr::map_dbl(
+#             .x = Enrichment,
+#             .f = scaling_individual,
+#             max_enr = max_enr,
+#             min_enr = min_enr
+#           ),
+#         Proportion_scaled = (Prop._h2 - rangG[1]) / (rangG[2] - rangG[1])
+#       )
+#     )
+#   }
+# 
+# ldsc_data <- ldsc_score %>% # 592,140
+#   dplyr::mutate(
+#       Category = stringr::str_replace(Category, "(.*?)_.*$", "\\1")
+#     ) %>%
+#   dplyr::filter(
+#       score == "0.5"
+#     ) %>%
+#   dplyr::group_by(Trait) %>%
+#   tidyr::nest() %>% 
+#   dplyr::mutate(
+#       newData = purrr::map(
+#         .x = data,
+#         .f = scaling_group
+#       )
+#     ) %>%
+#   dplyr::select(-data) %>% 
+#   tidyr::unnest(cols = newData) %>%
+#   dplyr::ungroup()
+```
+
+
+## [2.6.] Define groups of cellFacets to include into the visualization
+```{r}
+# cat <- base::c(
+#     "B.lymphoblastoid", "blood.vessel.endothelial.cell", "brain",
+#     "F5", "kidney", "liver",
+#     "monocyte", "neutrophil", "reticulocyte",
+#     "skeletal.muscle.tissue", "spleen", "T.cell",
+#     "thymus"
+#   )
+
+# cat <- base::c(
+#     # Immune cells
+#     "B.lymphoblastoid", "cord.blood.derived", "dendritic.cell",
+#     "lymphocyte.of.B.lineage", "macrophage", "mast.cell",
+#     "monocyte", "natural.killer.cell", "neutrophil",
+#     "reticulocyte", "T.cell",
+#     # Immune-related tissues
+#     "spleen", "thymus", "blood.vessel", "blood.vessel.endothelial.cell",
+#     # Include FANTOM5 for comparison
+#     "F5"
+#   )
+
+# cat <- base::c(
+#     ordered_samples[108:125], "cord.blood.derived", "dendritic.cell",
+#     "mast.cell", "monocyte", "reticulocyte",
+#     "T.cell", "spleen", "thymus",
+#     "blood.vessel", "blood.vessel.endothelial.cell", "F5"
+#   )
+
+cat <- base::c(
+    "mast.cell", "dendritic.cell", "monocyte",
+    "T.cell", "reticulocyte", base::rev(ordered_samples[108:125]),
+    "F5"
+  )
+```
+
+## [2.7.] Define groups of traits to include into the visualization
+#### keywords for determined search: "inflam","haemorrhage","lymph","rheuma"
+#### 'sub' includes all relevant immune / disease traits, 'selec' includes a selected group of traits showing strong differences between samples
+```{r}
+# trai <- base::c(
+#     "Alanine aminotransferase (U/L)", "Albumin (g/L)", "Apoliprotein A (g/L)",
+#     "Aspartate aminotransferase (U/L)", "Body mass index (BMI)", "Creatinine (umol/L)",
+#     "Diastolic blood pressure, automated reading", "Eosinophill count",
+#     "Ever depressed for a whole week", "Getting up in morning", "High light scatter reticulocyte count",
+#     "Mean corpuscular volume", "Monocyte count", "Reticulocyte count",
+#     "SHBG (nmol/L)", "Urate (umol/L)", "White blood cell (leukocyte) count"
+#   )
+
+# trai <- base::c(
+#     "White blood cell (leukocyte) count", "Red blood cell (erythrocyte) count", "Haemoglobin concentration",
+#     "Mean corpuscular volume",
+#     "Mean corpuscular haemoglobin", "Mean corpuscular haemoglobin concentration",
+#     "Red blood cell (erythrocyte) distribution width",
+#     "Platelet count", "Mean platelet (thrombocyte) volume", "Platelet distribution width",
+#     "Lymphocyte count", "Monocyte count",
+#     "Neutrophill count",
+#     "Eosinophill count", "Basophill count",
+#     "Mean reticulocyte volume", "Mean sphered cell volume", "Immature reticulocyte fraction",
+#     "Reticulocyte count", "High light scatter reticulocyte count"
+#   )
+
+# sub <- base::c(
+#     2386:2391, 2393:2417, 2529:2530,
+#     3002:3016, 3020:3022, 3024:3033,
+#     3034:3192, 3292, 3453:3473,
+#     3512, 3514, 3516, 3521:3551,
+#     3708:3709, 3774:3775, 3986
+#   )
+# trai <- ldsc_score %>%
+#   dplyr::distinct(description) %>%
+#   dplyr::filter(
+#       dplyr::row_number() %in% sub
+#     ) %>%
+#   dplyr::pull(description)
+  
+selec <- base::c(
+    "White blood cell (leukocyte) count",
+    "Lymphocyte count",
+    "Lymphocyte percentage",
+    
+    "Mean corpuscular haemoglobin",
+    "Mean corpuscular haemoglobin concentration",
+    "Mean corpuscular volume",
+    "Mean sphered cell volume",
+    "Nucleated red blood cell count",
+    "Red blood cell (erythrocyte) count",
+    "Red blood cell (erythrocyte) distribution width",
+    "Reticulocyte count",
+    "Reticulocyte percentage",
+    "Mean reticulocyte volume",
+    "Immature reticulocyte fraction",
+    "High light scatter reticulocyte count",
+    "High light scatter reticulocyte percentage",
+    
+    "Mean platelet (thrombocyte) volume",
+    "Platelet count",
+    "Platelet crit",
+    "Platelet distribution width",
+    "Neutrophill count",
+    "Neutrophill percentage",
+    "Monocyte count",
+    "Monocyte percentage",
+    "Eosinophill count",
+    "Eosinophill percentage",
+   
+    "Other anaemias",
+    "Other and unspecified anaemias",
+    "Diagnoses - main ICD10: D61 Other aplastic anaemias",
+    "Diagnoses - main ICD10: D64 Other anaemias"
+    
+    # "Secondary polycythaemia",
+    # "Suggestive for eosinophilic asthma",
+    # "Thrombocytopenia, unspecified",
+    # 
+    # "Aortic aneurysm",
+    # "Diagnoses - main ICD10: I71 Aortic aneurysm and dissection",
+    # "Diagnoses - main ICD10: I77 Other disorders of arteries and arterioles",
+    # "Diagnoses - main ICD10: I78 Diseases of capillaries",
+    # 
+    # "Lymphomas",
+    # "Hodgkin lymphoma",
+    # "Diagnoses - main ICD10: C81 Hodgkin's disease",
+    # "Diagnoses - main ICD10: C91 Lymphoid leukaemia",
+    # "Lymphoid leukaemia",
+    # "Primary lymphoid and hematopoietic malignant neoplasms",
+    # "Multiple myeloma and malignant plasma cell neoplasms",
+    # "Secondary and unspecified malignant neoplasm of lymph nodes",
+    # "Diagnoses - main ICD10: C77 Secondary and unspecified malignant neoplasm of lymph nodes",
+    # "Underlying (primary) cause of death: ICD10: C90.0 Multiple myeloma",
+    # "Diagnoses - main ICD10: C90 Multiple myeloma and malignant plasma cell neoplasms",
+    # "Underlying (primary) cause of death: ICD10: C92.0 Acute myeloid leukaemia",
+    # 
+    # "Arterial embolism and thrombosis",
+    # "Diagnoses - main ICD10: I74 Arterial embolism and thrombosis",
+    # 
+    # "Crohns disease of large intestine",
+    # 
+    # "Bronchitis",
+    # "Certain infectious and parasitic diseases",
+    # "Diagnoses - main ICD10: A87 Viral meningitis",
+    # "Diagnoses - main ICD10: J22 Unspecified acute lower respiratory infection",
+    # "Diagnoses - main ICD10: J31 Chronic rhinitis, nasopharyngitis and pharyngitis",
+    # 
+    # "Diagnoses - main ICD10: J46 Status asthmaticus",
+    # "Diagnoses - main ICD10: M05 Seropositive rheumatoid arthritis",
+    # "Diagnoses - main ICD10: R59 Enlarged lymph nodes",
+    # 
+    # "Diagnoses - main ICD10: J33 Nasal polyp",
+    # 
+    # "Diagnoses - main ICD10: D16 Benign neoplasm of bone and articular cartilage",
+    # "Diagnoses - main ICD10: D24 Benign neoplasm of breast",
+    # "Diagnoses - main ICD10: C02 Malignant neoplasm of other and unspecified parts of tongue",
+    # "Diagnoses - main ICD10: C09 Malignant neoplasm of tonsil",
+    # "Diagnoses - main ICD10: C22 Malignant neoplasm of liver and intrahepatic bile ducts",
+    # "Diagnoses - main ICD10: C44 Other malignant neoplasms of skin",
+    # "Diagnoses - main ICD10: C45 Mesothelioma",
+    # "Diagnoses - main ICD10: D25 Leiomyoma of uterus",
+    # "Diagnoses - main ICD10: C53 Malignant neoplasm of cervix uteri",
+    # "Diagnoses - main ICD10: C67 Malignant neoplasm of bladder",
+    # "Secondary malignant neoplasm of respiratory and digestive organs",
+    # "Malignant neoplasm of stomach",
+    # "Malignant neoplasm of colon",
+    # "Diagnoses - main ICD10: C20 Malignant neoplasm of rectum",
+    # "Diagnoses - main ICD10: C69 Malignant neoplasm of eye and adnexa",
+    # "Diagnoses - main ICD10: C71 Malignant neoplasm of brain",
+    # "Malignant neoplasm of brain",
+    # "Malignant neoplasm of eye, brain and central nervous system",
+    # "Diagnoses - main ICD10: C73 Malignant neoplasm of thyroid gland",
+    # "Malignant neoplasm of endocrine gland",
+    # "Melignant neoplasm of mesothelium and soft tissue",
+    # "Malignant neoplasm of other connective and soft tissue"
+  )
+
+trai <- ldsc_score %>%
+  dplyr::distinct(description) %>%
+  dplyr::filter(
+      description %in% selec
+    ) %>%
+  dplyr::mutate(
+      description = base::factor(
+        x = description,
+        levels = selec,
+        ordered = TRUE
+      )
+    ) %>% 
+  dplyr::arrange(description) %>%
+  dplyr::pull(description)
+```
+
+## [2.8.] Heatmap for visualization of enrichment and proportion of heritability
+```{r}
+df_sub <- ldsc_data %>%
+  dplyr::filter(
+      Category %in% cat &
+      description %in% trai
+    ) %>%
+  dplyr::mutate(
+    Category = base::factor(
+        x = Category,
+        levels = base::rev(cat),
+        ordered = TRUE
+      ),
+      description = base::factor(
+        x = description,
+        levels = trai,
+        ordered = TRUE
+      )
+    ) %>%
+  dplyr::arrange(dplyr::desc(Prop._h2))
+```
+
+#### Evaluation & normalization
+```{r}
+dplyr::filter(ldsc_data, sample == "F5")
+dplyr::filter(df_sub, sample == "F5")
+
+base::range(ldsc_score_$Prop._SNPs)
+base::range(df_sub$Prop._SNPs)
+
+base::range(ldsc_score_$Prop._h2)
+base::range(df_sub$Prop._h2)
+
+# ma <- base::max(df_sub$Prop._SNPs)
+# df_sub <- df_sub %>% dplyr::mutate(NormProp = Prop._SNPs/ma)
+# df_sub %>% dplyr::summarise(ranNP = base::range(NormProp))
+```
+
+## [2.9.] Plot data
+```{r}
+m <- base::mean(df_sub$Enrichment_scaled)
+ggplot2::ggplot(
+    data = df_sub,
+    mapping = aes(
+        x = description,
+        y = Category
+      )
+    ) +
+  geom_tile(
+      mapping = aes(
+          fill = Enrichment_scaled,
+          height = Proportion_scaled, # NormProp, # Prop._h2, # Prop._h2 + 0.25, # Prop._SNPs
+          width  = Proportion_scaled # NormProp # Prop._h2, # Prop._h2 + 0.25, # Prop._SNPs
+        ),
+      color = NA
+    ) +
+  geom_tile(
+      fill = NA,
+      color = "black",
+      width = 1,
+      height = 1
+    ) +
+  scale_fill_gradient2(
+      low = "#0000FF", # "#256866", 
+      mid = "#FFFFFF", # "#FFFFCC", 
+      high = "#FF0000",  # "orange",
+      midpoint = m, 
+      na.value = "grey50", 
+      name = "Scaled Enrichment"
+    ) +
+  # labs(
+  #     x = "Trait",
+  #     y = "Category"
+  #   ) +
+  coord_fixed(ratio = 1) +
+  theme_bw() +
+  theme(
+      axis.text.x = element_text(
+          angle = 90,
+          hjust = 1,
+          vjust = 0.5,
+          size = 8
+        ),
+      axis.text.y = element_text(
+          size = 8
+        ),
+      # axis.text = element_blank(),
+      legend.position = "right",
+      axis.title = element_blank(),
+      panel.grid = element_blank()
+    )
+```
+
+## [2.10.] Print plot to file
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("11.LDSC_FANTOM5_copy/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_heatmap",
+        "_Immune",
+        # "_NormalisedProportion",
+        "_PropH2ScaledGlobal",
+        # "_unnormalized",
+        "_ordered",
+        "_v4",
+        ".pdf"
+      ),
+    device = "pdf",
+    plot = ggplot2::last_plot(),
+    width = 10,
+    height = 10
+  )
+```
+
+## [2.11.] Remove doublets
+#### Doublets are included, e.g., dplyr::filter(sample == "B.lymphoblastoid" & description == "Body mass index (BMI)")
+#### Solved by taking the average of the enrichment scores for duplicated sample-description combinations
+```{r}
+pr <- ldsc_score %>% # 3,552,840 
+  dplyr::filter(score == 0.5) %>% # 592,140
+  dplyr::select(
+      sample, description, Enrichment # Prop._h2
+    ) %>%
+  dplyr::group_by(sample,description) %>%
+  tidyr::pivot_wider( # 585,892
+      names_from = description,
+      values_from = Enrichment, # Prop._h2,
+      values_fn = base::mean
+    ) %>%
+  dplyr::ungroup() %>%
+  tibble::column_to_rownames(var = "sample") %>% 
+  base::as.matrix() %>%
+  stats::prcomp(.)
+```
+
+## Visualize PCA results
+```{r}
+pr$x %>%
+  tibble::as_tibble(rownames = "var") %>%
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = PC1,
+        y = PC2,
+        label = base::ifelse(PC2  > 50, var, "")
+      )
+    ) +
+  geom_point() +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [3.] Plotting additional trait-sample combinations -------------------------
+
+## [3.0.] Define trait combinations
+#### Kidney/Liver function
+```{r}
+kidney_liver_traits <- base::c(
+    "Creatinine (enzymatic) in urine",
+    "Albumin (g/L)",
+    "Alkaline phosphatase (U/L)", 
+    "Alanine aminotransferase (U/L)",
+    "Aspartate aminotransferase (U/L)",
+    "Direct bilirubin (umol/L)",
+    "Urea (mmol/L)",
+    "Calcium (mmol/L)",
+    "Cholesterol (mmol/L)", 
+    "Creatinine (umol/L)",
+    "C-reactive protein (mg/L)",
+    "Cystatin C (mg/L)", 
+    "Gamma glutamyltransferase (U/L)",
+    "Glucose (mmol/L)",
+    "Glycated haemoglobin (mmol/mol)", 
+    "HDL cholesterol (mmol/L)",
+    "IGF-1 (nmol/L)",
+    "LDL direct (mmol/L)",
+    "Phosphate (mmol/L)", 
+    "SHBG (nmol/L)",
+    "Total bilirubin (umol/L)",
+    "Total protein (g/L)",
+    "Triglycerides (mmol/L)", 
+    "Urate (umol/L)",
+    "Vitamin D (nmol/L)",
+    "Apoliprotein A (g/L)"
+  )
+```
+
+#### Body composition
+```{r}
+body_composition_traits <- base::c(
+    "Body mass index (BMI)",
+    "Weight",
+    "Waist circumference",
+    "Whole body fat mass",
+    "Whole body fat-free mass",
+    "Whole body water mass",
+    "Basal metabolic rate",
+    "Impedance of whole body",
+    #"Impedance of leg (right)", 
+    #"Impedance of leg (left)",
+    #"Impedance of arm (right)", 
+    #"Impedance of arm (left)", 
+    #"Leg fat percentage (right)", 
+    #"Leg fat mass (right)",
+    #"Leg fat-free mass (right)", 
+    #"Leg predicted mass (right)", 
+    #"Leg fat percentage (left)", 
+    #"Leg fat mass (left)",
+    #"Leg fat-free mass (left)", 
+    #"Leg predicted mass (left)", 
+    #"Arm fat percentage (right)", 
+    #"Arm fat mass (right)",
+    #"Arm fat-free mass (right)", 
+    #"Arm predicted mass (right)", 
+    #"Arm fat percentage (left)", 
+    #"Arm fat mass (left)",
+    #"Arm fat-free mass (left)", 
+    #"Arm predicted mass (left)", 
+    "Trunk fat percentage",
+    "Trunk fat mass",
+    "Trunk fat-free mass",
+    "Trunk predicted mass",
+    "Sitting height",
+    "Standing height"
+  )
+```
+
+#### Behaviour-related traits
+```{r}
+behavioral_traits <- base::c(
+    "Sleep duration", 
+    "Getting up in morning", 
+    "Morning/evening person (chronotype)", 
+    "Nap during day",
+    "Sleeplessness / insomnia", 
+    "Daytime dozing / sleeping (narcolepsy)",
+    #"Ever had prolonged feelings of sadness or depression",
+    "Ever thought that life not worth living", 
+    #"Felt very upset when reminded of stressful experience in past month", 
+    "Frequency of depressed mood in last 2 weeks",
+    "Recent feelings of depression", 
+    "Recent feelings of tiredness or low energy", 
+    "Frequency of unenthusiasm / disinterest in last 2 weeks", 
+    "Frequency of tenseness / restlessness in last 2 weeks",
+    "Frequency of tiredness / lethargy in last 2 weeks", 
+    #"Seen doctor (GP) for nerves, anxiety, tension or depression",
+    "Seen a psychiatrist for nerves, anxiety, tension or depression", 
+    "Able to confide", 
+    "Ever depressed for a whole week", 
+    "Ever unenthusiastic/disinterested for a whole week"
+  )
+```
+
+#### Heart measures
+```{r}
+heart_traits <- base::c(
+    "Pulse rate",
+    "Diastolic blood pressure, automated reading",
+    "Systolic blood pressure, automated reading",
+    "Diastolic blood pressure, manual reading",
+    "Systolic blood pressure, manual reading",
+    "ECG, heart rate"
+  )
+```
+
+#### Eye measures
+```{r}
+eye_traits <- base::c(
+    "Spherical power (left)",
+    #"Spherical power (right)", 
+    "Cylindrical power (left)", 
+    "3mm weak meridian (left)", 
+    "6mm weak meridian (left)", 
+    #"6mm weak meridian (right)", 
+    #"3mm weak meridian (right)", 
+    #"3mm strong meridian angle (left)",
+    #"3mm strong meridian angle (right)",
+    "3mm cylindrical power (right)", 
+    "6mm cylindrical power (right)", 
+    #"6mm cylindrical power (left)", 
+    #"3mm cylindrical power (left)", 
+    "3mm strong meridian (right)", 
+    #"6mm strong meridian (right)", 
+    "6mm strong meridian (left)", 
+    #"3mm strong meridian (left)", 
+    #"6mm asymmetry index (left)",
+    "6mm asymmetry index (right)", 
+    #"3mm regularity index (right)", 
+    "Intra-ocular pressure, corneal-compensated (right)", 
+    "Intra-ocular pressure, Goldmann-correlated (right)", 
+    "Corneal hysteresis (right)", 
+    "Corneal resistance factor (right)" 
+    #"Intra-ocular pressure, corneal-compensated (left)", 
+    #"Intra-ocular pressure, Goldmann-correlated (left)", 
+    #"Corneal hysteresis (left)", 
+    #"Corneal resistance factor (left)"
+  )
+```
+
+#### Blood traits
+```{r}
+blood_traits <- base::c(
+    "Lymphocyte count",
+    "Platelet count",
+    "Eosinophill count",
+    "Mean corpuscular haemoglobin concentration",
+    "Mean corpuscular volume",
+    "Neutrophill percentage",
+    "Monocyte count",
+    "Reticulocyte count",
+    "Red blood cell (erythrocyte) distribution width",
+    "Platelet distribution width"
+  )
+```
+
+#### Asthma traits
+```{r}
+asthma_traits <- base::c(
+    "Non-cancer illness code, self-reported: asthma",
+    "Doctor diagnosed asthma",
+    "Age asthma diagnosed by doctor",
+    "Recent medication for asthma",
+    "Age asthma diagnosed",
+    "Blood clot, DVT, bronchitis, emphysema, asthma, rhinitis, eczema, allergy diagnosed by doctor: Asthma",
+    "Childhood asthma (age<16)",
+    "Suggestive for eosinophilic asthma",
+    "Diagnoses - main ICD10: J46 Status asthmaticus"
+  )
+```
+
+#### Placenta traits
+```{r}
+placenta_traits <- base::c(
+    "Non-cancer illness code, self-reported: hypertension",
+    "Non-cancer illness code, self-reported: essential hypertension",
+    "Non-cancer illness code, self-reported: gestational hypertension/pre-eclampsia",
+    "Pregnancy hypertension",
+    "Diagnoses - main ICD10: I10 Essential (primary) hypertension",
+    "Diagnoses - main ICD10: O13 Gestational [pregnancy-induced] hypertension without significant proteinuria",
+    "Diagnoses - main ICD10: O14 Gestational [pregnancy-induced] hypertension with significant proteinuria",
+    "Diagnoses - main ICD10: O16 Unspecified maternal hypertension"
+  )
+```
+
+## [3.1.] Define FANTOM5 samples to be included
+```{r}
+relevant_samples <- base::c(
+    "astrocyte",                                # Neural / CNS
+    "brain",
+    "neuron",
+    #"spinal.cord",
+    "eye",                                      # Eye
+    "lens.epithelial.cell",
+    "retinal.pigment.epithelial.cell",
+    #"corneal.epithelial.cell",
+    "heart",                                    # Heart / vasculature
+    "cardiac.myocyte",
+    "cardiac.fibroblast",
+    "blood.vessel",
+    "blood.vessel.endothelial.cell",
+    "vascular.associated.smooth.muscle.cell",
+    #"endothelial.cell.of.hepatic.sinusoid",
+    #"endothelial.cell.of.lymphatic.vessel",
+    "skeletal.muscle.cell",                    # Muscle
+    #"skeletal.muscle.tissue",
+    "liver",                                   # Liver / fat / digestive
+    "hepatocyte",
+    #"hepatic.stellate.cell",
+    "fat.cell",
+    "preadipocyte",
+    "acinar.cell",
+    "embryonic.pancreas",
+    "embryonic.kidney",
+    "kidney",
+    "kidney.epithelial.cell",
+    "small.intestine",
+    "large.intestine",
+    #"epithelial.cell.of.esophagus",
+    "skin.fibroblast",                        # Connective / fibroblasts
+    #"fibroblast.of.lymphatic.vessel",
+    "mesenchymal.cell",
+    #"stromal.cell",
+    #"tendon.cell",
+    "cord.blood.derived",                     # Blood / immune cells
+    "T.cell",
+    "neutrophil",
+    "monocyte",
+    "natural.killer.cell",
+    "lymphocyte.of.B.lineage",
+    "reticulocyte",
+    "testis",                                # Reproductive / endocrine
+    "thyroid.gland"
+    # "cervical.cancer",
+    # "placental.epithelial.cell",
+    # "uterus",
+    # "ciliated.epithelial.cell"               # Misc / less obvious
+    #"keratocyte"
+    #"hair.follicle.cell",
+    #"tongue",
+    #"trabecular.meshwork.cell",
+    #"urothelial.cell",
+    #"smooth.muscle.cell.of.prostate",
+    #"smooth.muscle.cell.of.trachea",
+    #"fibroblast.of.choroid.plexus",
+    #"fibroblast.of.gingiva",
+    #"fibroblast.of.periodontium",
+    #"fibroblast.of.tunica.adventitia.of.artery",
+    #"gingival.epithelial.cell",
+    #"epithelial.cell.of.Malassez",
+    #"epithelial.cell.of.prostate",
+    #"sensory.epithelial.cell",
+    #"amniotic.epithelial.cell",
+    #"chondrocyte",
+    #"keratinocyte"
+  )
+```
+
+## [3.2.] Combine traits in order
+```{r}
+all_traits <- base::c(
+    eye_traits,
+    kidney_liver_traits,
+    body_composition_traits,
+    behavioral_traits,
+    heart_traits,
+    blood_traits
+    # asthma_traits,
+    # placenta_traits
+  )
+```
+
+## [3.3.] Heatmap for visualization of enrichment and proportion of heritability
+```{r}
+df_sub <- ldsc_data %>% # 585,750 -> 3,010
+  dplyr::filter(
+      sample %in% relevant_samples &
+      description %in% all_traits
+    ) %>%
+  dplyr::mutate(
+    sample = base::factor(
+        x = sample,
+        levels = relevant_samples,
+        ordered = TRUE
+      ),
+    description = base::factor(
+        x = description,
+        levels = all_traits,
+        ordered = TRUE
+      )
+    ) %>%
+  dplyr::arrange(dplyr::desc(Prop._h2))
+```
+
+```{r}
+df_ns <- df_sub %>%
+  dplyr::filter(
+      Enrichment_p > 0.05
+    )
+```
+
+## [3.4.] Plot data
+```{r}
+m <- base::mean(df_sub$Enrichment_scaled)
+ggplot2::ggplot(
+    data = df_sub,
+    mapping = aes(
+        x = description,
+        y = sample # Category
+      )
+    ) +
+  geom_tile(
+      mapping = aes(
+          fill = Enrichment_scaled,
+          height = Proportion_scaled, # NormProp, # Prop._h2, # Prop._h2 + 0.25, # Prop._SNPs
+          width  = Proportion_scaled # NormProp # Prop._h2, # Prop._h2 + 0.25, # Prop._SNPs
+        ),
+      color = NA
+    ) +
+  geom_tile(
+      fill = NA,
+      color = "black",
+      width = 1,
+      height = 1
+    ) +
+  geom_point(
+      data = df_ns,
+      # mapping = aes(),
+      shape = 4,
+      size = 1,
+      color = "black",
+      alpha = 0.5
+    ) +
+  scale_fill_gradient2(
+      low = "#0000FF", # "#256866", 
+      mid = "#FFFFFF", # "#FFFFCC", 
+      high = "#FF0000",  # "orange",
+      midpoint = m, 
+      na.value = "grey50", 
+      name = "Scaled Enrichment"
+    ) +
+  # labs(
+  #     x = "Trait",
+  #     y = "Category"
+  #   ) +
+  coord_fixed(ratio = 1) +
+  theme_bw() +
+  theme(
+      axis.text.x = element_text(
+          angle = 90,
+          hjust = 1,
+          vjust = 0.5,
+          size = 8
+        ),
+      # axis.text.x = element_blank(),
+      axis.text.y = element_text(
+          size = 8
+        ),
+      # axis.text = element_blank(),
+      legend.position = "right",
+      axis.title = element_blank(),
+      panel.grid = element_blank()
+    )
+```
+
+## [3.5.] Print plot to file
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("11.LDSC_FANTOM5_copy/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_heatmap",
+        "_AllTraits",
+        "_PropH2Scaled",
+        # "_NormalisedProportion",
+        # "_PropH2ScaledGlobal",
+        # "_unnormalized",
+        "_ordered",
+        "_v5",
+        ".pdf"
+      ),
+    device = "pdf",
+    plot = ggplot2::last_plot(),
+    width = 15,
+    height = 8
+  )
+```
+
+## [4.] Additional analyses -------------------------
+
+# Grouped dotplot for enrichments specifically in blood!
+```{r}
+blood_traits <- base::c(
+  #"White blood cell (leukocyte) count",
+  #"Red blood cell (erythrocyte) count",
+  #"Haemoglobin concentration",
+  "Mean corpuscular volume",
+  #"Mean corpuscular haemoglobin",
+  #"Mean corpuscular haemoglobin concentration",
+  "Red blood cell (erythrocyte) distribution width",
+  #"Platelet count",
+  #"Mean platelet (thrombocyte) volume",
+  #"Platelet distribution width",
+  "Lymphocyte count",
+  "Monocyte count",
+  #"Neutrophill count",
+  "Eosinophill count",
+  "Basophill count",
+  #"Mean reticulocyte volume",
+  #"Mean sphered cell volume",
+  #"Immature reticulocyte fraction",
+  #"High light scatter reticulocyte count",
+  "Reticulocyte count"
+)
+
+immune_relevant_celltypes <- base::c(
+  # Immune cells
+  "B.lymphoblastoid",
+  "cord.blood.derived",
+  "dendritic.cell",
+  "lymphocyte.of.B.lineage",
+  "macrophage",
+  "mast.cell",
+  "monocyte",
+  "natural.killer.cell",
+  "neutrophil",
+  "reticulocyte",
+  "T.cell",
+  # Immune-related tissues
+  "spleen",
+  "thymus",
+  "blood.vessel",
+  "blood.vessel.endothelial.cell",
+  # Include FANTOM5 for comparison
+  "F5"
+)
+
+df <- filter(ldsc_data, Category %in% immune_relevant_celltypes & description %in% blood_traits)
+
+
+
+df_top3plusF5 <- df %>%
+  group_by(description) %>%
+  # get top 3 cell types excluding F5_distal
+  filter(Category != "F5_distal") %>%
+  slice_max(order_by = Enrichment, n = 5, with_ties = FALSE) %>%
+  ungroup() %>%
+  bind_rows(
+    df %>%
+      filter(Category == "F5_distal")
+  ) %>%
+  distinct(description, Category, .keep_all = TRUE)
+
+
+ggplot(df_top3plusF5, aes(x = Enrichment, y = description, color = Category)) +
+  geom_point(size = 3, position = position_dodge(width = 0.5)) +
+  geom_errorbarh(aes(xmin = Enrichment - Enrichment_std_error,
+                     xmax = Enrichment + Enrichment_std_error),
+                 height = 0.2,
+                 position = position_dodge(width = 0.5)) +
+  scale_color_manual(values = brewer.pal(12, "Set3") %>% c(brewer.pal(8, "Dark2")[1:4])) +  # Combine palettes for 16 colors
+  theme_minimal() +
+  labs(x = "Enrichment", y = "Trait") +
+  theme(
+    strip.text = element_text(face = "bold"),
+    axis.text.y = element_text(size = 9),
+    panel.spacing = unit(1, "lines")
+  ) +
+  xlim(2.5,65)
+
+ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/blood.enrichments.pdf",height=10, width=10)
+```
+
+
+
+
+```{r}
+# ldsc_data <- ldsc_data %>%
+#   group_by(Trait) %>%
+#   mutate(
+#     Enrichment_scaled = if (max(Enrichment, na.rm = TRUE) != min(Enrichment, na.rm = TRUE)) {
+#       (Enrichment - min(Enrichment, na.rm = TRUE)) /
+#         (max(Enrichment, na.rm = TRUE) - min(Enrichment, na.rm = TRUE))
+#     } else {
+#       0
+#     }
+#   ) %>%
+#   ungroup()
+
+# Selected traits/cellFacets for figures
+cat <- c("B.lymphoblastoid_distal",
+         "blood.vessel.endothelial.cell_distal",
+         "brain_distal",
+         "F5_distal",
+         "kidney_distal",
+         "liver_distal",
+         "monocyte_distal",
+         "neutrophil_distal",
+         "reticulocyte_distal",
+         "skeletal.muscle.tissue_distal",
+         "spleen_distal",
+         "T.cell_distal",
+         "thymus_distal"
+  
+)
+
+
+trai <- c("Alanine aminotransferase (U/L)",
+          "Albumin (g/L)",
+          "Apoliprotein A (g/L)",
+          "Aspartate aminotransferase (U/L)",
+          "Body mass index (BMI)",
+          "Creatinine (umol/L)",
+          "Diastolic blood pressure, automated reading",
+          "Eosinophill count",
+          "Ever depressed for a whole week",
+          "Getting up in morning",
+          "High light scatter reticulocyte count",
+          "Mean corpuscular volume",
+          "Monocyte count",
+          "Reticulocyte count",
+          "SHBG (nmol/L)",
+          "Urate (umol/L)",
+          "White blood cell (leukocyte) count"
+  
+)
+
+#  Heatmap
+
+df_sub <- filter(ldsc_data, Category %in% cat & description %in% trai)
+m <- mean(df_sub$Enrichment_scaled)
+ p <- ggplot(df_sub, aes(x = description, y = Category)) +
+    geom_tile(aes(fill = Enrichment_scaled, 
+                  height = Prop._h2 + 0.4, 
+                  width  = Prop._h2 + 0.4),
+              color = NA) +
+    geom_tile(fill = NA, color = "black", width = 1, height = 1) +
+    scale_fill_gradient2(
+      low      = "#256866", 
+      mid      = "#FFFFCC", 
+      high     = "orange",
+      midpoint = m, 
+      na.value = "grey50", 
+      name     = "Enrichment"
+    ) +
+    labs(
+      x     = "Trait",
+      y     = "Category"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x     = element_text(angle = 45, hjust = 1),
+      axis.text.y     = element_text(size = 3),
+      legend.position = "right",
+      panel.grid      = element_blank()
+    ) +
+    coord_fixed(ratio = 1)
+
+ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/heatmap.Scaledenrichments.pdf",p,height=10, width=10)
+
+```
+
+  
