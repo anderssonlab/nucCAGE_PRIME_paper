@@ -1,5 +1,5 @@
 ---
-title: "4.4.promoterPlotting"
+title: "4.4. Promoter level plotting"
 output: html_document
 date: "2024-06-27"
 ---

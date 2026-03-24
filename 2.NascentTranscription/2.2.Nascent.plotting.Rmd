@@ -1,5 +1,5 @@
 ---
-title: "Plotting nascent enrichment in DHSs"
+title: "2.2. Plotting nascent enrichment in DHSs"
 output: html_document
 date: "2024-07-04"
 ---
@@ -8,8 +8,8 @@ date: "2024-07-04"
 
 ## [-1.0.] Install necessary packages
 ```{r}
-remotes::install_github("easystats/see")
-utils::install.packages("gghalves")
+#remotes::install_github("easystats/see")
+#utils::install.packages("gghalves")
 ```
 
 ## [0.0.] Load necessary packages
@@ -30,15 +30,21 @@ doParallel::registerDoParallel(
 #### Evaluate with 'SummarizedExperiment::colData(GM12878.dhs.p) %>% tibble::as_tibble(rownames = "type")'
 ```{r}
 GM12878.dhs.p <- base::readRDS(
-    file = "poolSub.DHSs.quantified.GM12878.rds"
+    file = base::paste0(
+        here::here("2.NascentTranscription/"),
+        "poolSub.DHSs.quantified.GM12878.rds"
   )
+)
 ```
 
 #### Rep subsetted used for gro-cap comparison
 ```{r eval=FALSE}
 # GM12878.dhs <- base::readRDS(
-#     file = "poolSub.DHSs.quantified.GM12878.rds"
+#file = base::paste0(
+#        here::here("2.NascentTranscription/"),
+#     "poolSub.DHSs.quantified.GM12878.rds"
 #   )
+#)
 ```
 
 ## [1.1.] Transform RangedSummarizedExperiment into a dataframe
@@ -312,7 +318,7 @@ ggrastr::rasterise(
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
-          here::here("2.Cellular_localization/plots/"),
+          here::here("2.NascentTranscription/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_trip.GM12878.DHSs.main",
           # "_trip500kCells.GM12878.DHSs.main",
@@ -444,7 +450,7 @@ gm12878.expr.df.p.m %>%
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
-          here::here("2.Cellular_localization/plots/"),
+          here::here("2.NascentTranscription/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_tripFC.GM12878.DHSs.main",
           # "_trip500kCells.GM12878.DHSs.main",
@@ -679,7 +685,7 @@ ggplot2::ggplot(
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
-          here::here("2.Cellular_localization/plots/"),
+          here::here("2.NascentTranscription/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_tripFC.GM12878.DHSs.main",
           # "_trip500kCells.GM12878.DHSs.main",
@@ -965,7 +971,7 @@ ggrastr::rasterise(
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
-          here::here("2.Cellular_localization/plots/"),
+          here::here("2.NascentTranscription/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_groCap.GM12878.DHSs.main",
           # "_groCap500kNuclei.GM12878.DHSs.main",
@@ -1092,7 +1098,7 @@ gm12878.expr.df.p.m %>%
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
-          here::here("2.Cellular_localization/plots/"),
+          here::here("2.NascentTranscription/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_groCap.GM12878.DHSs.main",
           # "_groCap500kCells.GM12878.DHSs.main",
@@ -1366,7 +1372,7 @@ ggplot2::ggplot(
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
-          here::here("2.Cellular_localization/plots/"),
+          here::here("2.NascentTranscription/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_groCap.GM12878.DHSs.main",
           # "_groCap500kCells.GM12878.DHSs.main",
