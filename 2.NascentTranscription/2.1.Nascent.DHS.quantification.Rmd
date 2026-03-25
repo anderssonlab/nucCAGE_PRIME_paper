@@ -15,7 +15,7 @@ base::library(PRIME)
 ## [0.1.] Annotations
 ```{r}
 base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-base::txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 ```
 
 

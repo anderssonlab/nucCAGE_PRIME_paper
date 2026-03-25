@@ -16,6 +16,7 @@ date: "2024-07-04"
 ```{r message=FALSE, warning=FALSE}
 base::library(CAGEfightR)
 base::library(tidyverse)
+base::library(ggrastr)
 base::library(magrittr)
 base::library(doParallel)
 base::library(foreach)
@@ -742,6 +743,7 @@ gm12878.expr.df.p %>%
 # proximal_trip500kcells: ) chr4:159,101,737-159,104,305 ) chr1:40161219-40161618 ) chr8:38918070-38918469
 ```{r}
 gm12878.expr.df.p.m %>%
+  dplyr::select(-GM12878_1M_trip) %>% ##RA edit Mar 25 2026
   dplyr::mutate(
       ratio = base::log2(value / GM12878_500K_C),
       intg = base::sqrt(ratio^2 + tripFC^2)

@@ -989,7 +989,7 @@ GM12878.rDHS.cumFrac <- PRIME::cumulativeFractionsAroundLoci(
 
 ```{r}
 base::saveRDS(
-  object = gm12878.rDHS.cumFrac,
+  object = GM12878.rDHS.cumFrac,
   file = base::paste0(
       here::here("1.CTSSs/"),
       base::format(base::Sys.time(), "%Y%m%d"),
