@@ -1970,7 +1970,7 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
-        "K562_pooled_PRIME_ClinVar_enrichment_vs_recall_and_point_estimates_genome.pdf",
+        "K562_pooled_PRIME_ClinVar_enrichment_vs_recall_and_point_estimates_genome.pdf"
       ),
     width = 7,
     height = 5,
