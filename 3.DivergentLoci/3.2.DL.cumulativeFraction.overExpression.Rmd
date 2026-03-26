@@ -283,7 +283,7 @@ GM12878.DLs %>%
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
-          here::here("3.DivergentLoci/plots.2/"),
+          here::here("3.DivergentLoci/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
           "_divergentDHS_expression",
@@ -503,7 +503,7 @@ GM12878.DLs %>%
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
-          here::here("3.DivergentLoci/plots.2/"),
+          here::here("3.DivergentLoci/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
           "_divergentDHS_numbers",
@@ -755,7 +755,7 @@ base::print(plot)
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
-          here::here("3.DivergentLoci/plots.2/"),
+          here::here("3.DivergentLoci/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
           "_divergentDHS_snATACseq_numbers",
@@ -836,7 +836,7 @@ base::print(plot_5MN)
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
-          here::here("3.DivergentLoci/plots.2/"),
+          here::here("3.DivergentLoci/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
           "_divergentDHS_snATACseq_1Mnuclei",
@@ -920,7 +920,7 @@ plots %>%
       .f = function(s, c, p){
         base::print(p)
         fn <- base::paste0(
-            here::here("3.DivergentLoci/plots.2/"),
+            here::here("3.DivergentLoci/plots/"),
             base::format(base::Sys.time(), "%Y%m%d"),
             "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
             "_divergentDHS_snATACseq",
