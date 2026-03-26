@@ -1,0 +1,250 @@
+---
+title: "3.1. divergent loci calling"
+output: html_document
+date: "2024-11-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# [0.] Prerequisites -------------------------
+
+## [0.1.] Load necessary packages
+```{r message=FALSE, warning=FALSE}
+base::library("tidyverse")
+base::library("PRIME")
+
+base::library("BiocParallel")
+BiocParallel::register(
+  BPPARAM = BiocParallel::MulticoreParam(
+      workers = 30
+    )
+  )
+```
+
+## [0.2.] Add custom color palette
+```{r}
+custom.col <- base::c(
+    "#FFDB6D", "#C4961A", "#F4EDCA",
+    "#D16103", "#C3D7A4", "#52854C",
+    "#4E84C4", "#293352","grey"
+  )
+```
+
+# [1.] Calling of divergent loci in GM12878 -------------------------
+
+## [1.0.] Load CTSSs
+```{r}
+GM12878.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "poolSub.combined.GM12878.CTSSs.rmSingletons.rds"
+    )
+  )
+```
+
+## [1.1.] Run divergentLociTCsSummit() and FANTOM5-style divergent loci calling across chosen samples
+```{r}
+main_samples <- base::c(
+    "GM12878_500K_C", "GM12878_1M_C", "GM12878_500K_N",
+    "GM12878_1M_N", "GM12878_5M_N", "GM12878_10M_N",
+    "GM12878_1M_trip", "GM12878_1M_ctrl", "GM12878_groCap_1"
+  )
+
+## Check that all selected samples are present in GM12878.CTSSs
+assertthat::are_equal(
+    main_samples,
+    base::colnames(GM12878.CTSSs)[base::colnames(GM12878.CTSSs) %in% main_samples]
+  )
+```
+
+```{r}
+GM12878.summitDLs.rmS <- base::lapply(
+  X = main_samples[1],
+  FUN = function(s) {
+    base::message("Currently processed sample:\t",s)
+    ## Split sample into chromosomes
+    CTSSs.by.chr <- base::split(
+        x = GM12878.CTSSs[,s],
+        f = GenomeInfoDb::seqnames(GM12878.CTSSs[,s])
+      )
+    ## Run divergentLociTCsSummit() across chromosomes
+    DLs.by.chr <- base::lapply(
+      X = base::names(CTSSs.by.chr),
+      FUN = function(chr) {
+        base::message("\tCurrently processed chromosome:\t",chr)
+        PRIME::divergentLociTCsSummit(
+            ctss = CTSSs.by.chr[[chr]],
+            callingAssay = "counts.noSingletons"
+          )
+        }
+      )
+    return(
+      ## Merge information for all chromosomes of one sample
+      base::suppressWarnings(
+        base::unlist(
+            methods::as(DLs.by.chr,"GRangesList")
+          )
+        )
+      )
+    }
+  )
+```
+
+## [1.2.] Save output
+```{r}
+ base::saveRDS(
+     object = GM12878.summitDLs.rmS,
+     file = base::paste0(
+       here::here("3.DivergentLoci/"),
+       "poolSub.GM12878.summitDLs.rmSingletons.rds"
+     )
+   )
+```
+
+
+```{r}
+GM12878.DLs.rmS <- base::lapply(
+  X = main_samples[1],
+  FUN = function(s) {
+    base::message("Currently processed sample:\t",s)
+    ## Split sample into chromosomes
+    CTSSs.by.chr <- base::split(
+        x = GM12878.CTSSs[,s],
+        f = GenomeInfoDb::seqnames(GM12878.CTSSs[,s])
+      )
+    ## Run divergentLociTCsSummit() across chromosomes
+    DLs.by.chr <- base::lapply(
+      X = base::names(CTSSs.by.chr),
+      FUN = function(chr) {
+        base::message("\tCurrently processed chromosome:\t",chr)
+        PRIME::divergentLoci(
+            ctss = CTSSs.by.chr[[chr]]
+          )
+        }
+      )
+    return(
+      ## Merge information for all chromosomes of one sample
+      base::suppressWarnings(
+        base::unlist(
+            methods::as(DLs.by.chr,"GRangesList")
+          )
+        )
+      )
+    }
+  )
+```
+
+## [1.2.] Save output
+```{r}
+ base::saveRDS(
+     object = GM12878.DLs.rmS,
+     file = base::paste0(
+       here::here("3.DivergentLoci/"),
+       "poolSub.GM12878.DLs.FANTOM5style.rds"
+     )
+   )
+```
+
+# [2.] Calling of divergent loci in K562 -------------------------
+
+## [2.0.] Load CTSSs
+```{r}
+K562.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "poolSub.combined.K562.CTSSs.rmSingletons.rds"
+    )
+  )
+```
+
+## [2.1.] Run divergentLociTCsSummit() and FANTOM5-style divergent loci calling across samples
+
+```{r}
+K562.summitDLs.rmS <- base::lapply(
+  X = main_samples[1],
+  FUN = function(s) {
+    base::message("Currently processed sample:\t",s)
+    ## Split sample into chromosomes
+    CTSSs.by.chr <- base::split(
+        x = K562.CTSSs[,s],
+        f = GenomeInfoDb::seqnames(K562.CTSSs[,s])
+      )
+    ## Run divergentLociTCsSummit() across chromosomes
+    DLs.by.chr <- base::lapply(
+      X = base::names(CTSSs.by.chr),
+      FUN = function(chr) {
+        base::message("\tCurrently processed chromosome:\t",chr)
+        PRIME::divergentLociTCsSummit(
+            ctss = CTSSs.by.chr[[chr]],
+            callingAssay = "counts.noSingletons"
+          )
+        }
+      )
+    return(
+      ## Merge information for all chromosomes of one sample
+      base::suppressWarnings(
+        base::unlist(
+            methods::as(DLs.by.chr,"GRangesList")
+          )
+        )
+      )
+    }
+  )
+```
+
+## [1.2.] Save output
+```{r}
+ base::saveRDS(
+     object = K562.summitDLs.rmS,
+     file = base::paste0(
+       here::here("3.DivergentLoci/"),
+       "poolSub.K562.summitDLs.rmSingletons.rds"
+     )
+   )
+```
+
+
+```{r}
+K562.DLs.rmS <- base::lapply(
+  X = main_samples[1],
+  FUN = function(s) {
+    base::message("Currently processed sample:\t",s)
+    ## Split sample into chromosomes
+    CTSSs.by.chr <- base::split(
+        x = K562.CTSSs[,s],
+        f = GenomeInfoDb::seqnames(K562.CTSSs[,s])
+      )
+    ## Run divergentLociTCsSummit() across chromosomes
+    DLs.by.chr <- base::lapply(
+      X = base::names(CTSSs.by.chr),
+      FUN = function(chr) {
+        base::message("\tCurrently processed chromosome:\t",chr)
+        PRIME::divergentLoci(
+            ctss = CTSSs.by.chr[[chr]]
+          )
+        }
+      )
+    return(
+      ## Merge information for all chromosomes of one sample
+      base::suppressWarnings(
+        base::unlist(
+            methods::as(DLs.by.chr,"GRangesList")
+          )
+        )
+      )
+    }
+  )
+```
+
+## [2.2.] Save output
+```{r}
+ base::saveRDS(
+     object = K562.DLs.rmS,
+     file = base::paste0(
+       here::here("3.DivergentLoci/"),
+       "poolSub.K562.DLs.FANTOM5style.rds"
+     )
+   )
+```

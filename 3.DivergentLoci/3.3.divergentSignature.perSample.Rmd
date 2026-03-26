@@ -1,0 +1,733 @@
+---
+title: "3.3. DL signatures"
+output: html_document
+date: "2024-03-01"
+---
+
+# [0.] Prerequisites -------------------------
+
+## [0.0.] Install necessary packages
+```{r}
+#utils::install.packages("ggbreak")
+```
+
+## [0.1.] Load necessary packages
+```{r message=FALSE, warning=FALSE}
+base::library("tidyverse")
+```
+
+## [0.2.] Load annotations
+```{r}
+base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+```
+
+## To be discarded
+```{r}
+# base::library("BiocParallel")
+# BiocParallel::register(
+#   BPPARAM = BiocParallel::MulticoreParam(
+#       workers = 30
+#     )
+#   )
+# 
+# #Packages for plotting
+# library(CAGEfightR)
+# library(epistack)
+# library(BiocParallel)
+# library(dplyr)
+# library(reshape2)
+# library(limma)
+# library(ggplot2)
+# library(stringr)
+```
+
+## [0.3.] Add custom color palettes
+```{r}
+custom.col <- base::c(
+    "#FFDB6D","#C4961A","#F4EDCA", 
+    "#D16103","#C3D7A4","#52854C",
+    "#4E84C4","#293352","grey"
+  )
+gm.pal <- base::c(
+    "#F5CE00","#E2AA00","#B68D00",
+    "#DF613F","#DF5643","#DD4425",
+    "#92B9C9","#76A5B6","#004352",
+    "#29A957","#008E37","#007A30",
+    "#4F5D5C","#444E4C","#3D4138",
+    "#AC97C2","#977FB4","#7D62A3"
+  )
+gm.pooled.pal <- base::c(
+    "#FF8D00","#00439B","#FF4425",
+    "#009072","#878784","#7D62D0",
+    "hotpink"
+  )
+gm.full.pal <- base::c(
+    "#F5CE00","#E2AA00","#B68D00",
+    "#FF8D00","#DF613F","#DF5643",
+    "#DD4425","#FF4425","#92B9C9",
+    "#76A5B6","#004352","#00439B",
+    "#29A957","#008E37","#007A30",
+    "#009072","#4F5D5C","#444E4C",
+    "#3D4138","#878784","#AC97C2",
+    "#977FB4","#7D62A3","#7D62D0"
+  )
+k.full.pal <- base::c(
+    "#F5CE00","#E2AA00","#B68D00",
+    "#FF8D00","#DF613F","#DF5643",
+    "#DD4425","#FF4425","#92B9C9",
+    "#76A5B6","#004352","#00439B",
+    "#29A957","#008E37","#007A30",
+    "#4F5D5C"
+  )
+```
+
+## [1.] GM12878 -------------------------
+
+## [1.0.] Read in divergent loci from GM12878 CTSSs
+#### see [1.2.] in '3.DivergentLoci/3.1.5.GM12878.summitDLs.Rmd' for "poolSub.GM12878.summitDLs.rmSingletons.rds"
+```{r}
+GM12878.DLs.CTSS <- base::readRDS(
+  file = base::paste0(
+      here::here("3.DivergentLoci/"),
+      "poolSub.GM12878.summitDLs.rmSingletons.rds"
+    )
+  )
+```
+
+## [2.1.] Subset samples for main_samples
+## see [2.9.] in '1.CTSSs/1.1.CTSSs.processing.Rmd' for "poolSub.combined.GM12878.CTSSs.rmSingletons.rds"
+```{r}
+main_samples <- base::c(
+    "GM12878_500K_C", "GM12878_1M_C", "GM12878_500K_N",
+    "GM12878_1M_N", "GM12878_5M_N", "GM12878_10M_N",
+    "GM12878_1M_trip", "GM12878_1M_ctrl", "GM12878_groCap_1"
+  )
+
+GM12878.DLs <- base::unlist(methods::as(GM12878.DLs.CTSS,"GRangesList"))
+# base::unique(GM12878.DLs$sample)
+GM12878.DLs <- GM12878.DLs[GM12878.DLs$sample %in% main_samples,] #1.875.808 vs 2.004.10
+# base::unique(GM12878.DLs$sample)
+```
+
+## [2.2.] Plot total amount of divergent loci
+#### Resulting plots stored in 'plots.2/repSub.GM12878.nDLs.CTSS.pdf'
+```{r}
+GM12878.DLs %>% # GM12878.DLs.CTSS
+  base::as.data.frame(row.names = NULL) %>%
+  dplyr::mutate(
+      sample = base::factor(
+        x = sample,
+        levels = base::rev(main_samples),
+        ordered = TRUE
+      )
+    ) %>% # dplyr::group_by(sample) %>% dplyr::summarise(num = dplyr::n())
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+          y = sample,
+          fill = sample
+        )
+      ) +
+    geom_bar() +
+    # scale_x_log10() +
+    # ggbreak::scale_x_break(
+    #     breaks = base::c(200500,1500000)
+    #   ) +
+    # scale_x_continuous(
+    #     limits = base::c(0,200500)
+    #   ) +
+    scale_fill_manual(
+        limits = main_samples[1:6],
+        values = gm.pooled.pal
+      ) +
+    labs(
+        title = "total DLs detected"
+      ) + 
+    theme_bw() +
+    theme(
+        aspect.ratio = 1,
+        axis.title.y = element_blank(),
+        legend.position = "none"
+      )
+```
+
+## [2.3.] Print plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("3.DivergentLoci/plots.2/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
+          "_totalAmount",
+          "_part2",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 5,
+      height = 5
+    )
+  }
+```
+
+## [2.4.] Plot subsetted divergent loci numbers
+#### Replotting the number of DLs with a cutoff at score >= 3 is meaningless as the minimum score is 4
+```{r}
+GM12878.DLs %>% # GM12878.DLs.CTSS
+  base::as.data.frame(row.names = NULL) %>%
+  dplyr::mutate(
+      sample = base::factor(
+        x = sample,
+        levels = base::rev(main_samples),
+        ordered = TRUE
+      )
+    ) %>%
+  dplyr::arrange(score)
+```
+
+#### Evaluate the range of all bidirectionality scores across samples
+```{r}
+GM12878.DLs %>% # GM12878.DLs.CTSS
+  base::as.data.frame(row.names = NULL) %>%
+  dplyr::mutate(
+      sample = base::factor(
+        x = sample,
+        levels = base::rev(main_samples),
+        ordered = TRUE
+      )
+    ) %>%
+  dplyr::reframe(r = base::range(bidirectionality))
+```
+
+#### Plot nDLs across bidirectionality scores
+```{r}
+GM12878.DLs %>%
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+      sample = base::factor(
+          x = sample,
+          levels = base::rev(main_samples),
+          ordered = TRUE
+        ),
+      absDir = base::abs(directionality)
+    ) %>% 
+  dplyr::group_by(sample) %>%
+  dplyr::arrange(absDir) %>%
+  dplyr::mutate(
+      rank = dplyr::row_number()
+    ) %>%
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+      x = absDir,
+      y = rank,
+      color = sample
+      )
+    ) +
+  geom_line() +
+  geom_vline(
+      xintercept = 0.8,
+      linetype = "dashed"
+    ) +
+  scale_y_log10() +
+  scale_color_manual(
+      breaks = main_samples[1:6],
+      values = gm.pooled.pal
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [2.5.] Print plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("3.DivergentLoci/plots/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
+          "_nDLs_absDirScores",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 5,
+      height = 5
+    )
+  }
+```
+
+## [2.6.] Plot nDLs at for all sites with bidirectionality score of <= 0.8
+```{r}
+GM12878.DLs %>% # GM12878.DLs.CTSS
+  as.data.frame(row.names = NULL) %>%
+  dplyr::filter(
+      base::abs(directionality) <= 0.8
+    ) %>%
+  dplyr::mutate(
+      sample = base::factor(
+        x = sample,
+        levels = base::rev(main_samples),
+        ordered = TRUE
+      )
+    ) %>% # dplyr::group_by(sample) %>% dplyr::summarise(num = dplyr::n())
+  ggplot(
+    data = .,
+    mapping = aes(
+        y = sample,
+        fill = sample
+      )
+    ) +
+  geom_bar() +
+  theme_bw() +
+  # scale_x_log10() +
+  scale_x_continuous(
+      limits = base::c(0,200500) # 200500 # 1536846
+    ) +
+  scale_fill_manual(
+      limits = main_samples[1:6],
+      values = gm.pooled.pal
+    ) +
+  labs(
+      title = "DLs detected directionality <= 0.8"
+    ) +
+  theme(
+      aspect.ratio = 1,
+      legend.position = "none"
+    )
+```
+
+## [2.7.] Print plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("3.DivergentLoci/plots/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
+          "_nDLs_dirCutOff08",
+          # "_part2",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 5,
+      height = 5
+    )
+  }
+```
+
+## [2.8.] Load GM12878 DHSs and reformat them
+```{r}
+GM12878.dhs <- readr::read_delim(
+    file = base::paste0(
+        here::here("0.External_resources/"),
+        "E116-DNase.macs2.hg38.narrowPeak"
+      ),
+    delim = "\t",
+    col_names = base::c("chr","start","end","rank"),
+    col_types = readr::cols(
+        .default = readr::col_integer(),
+        chr = readr::col_character(),
+        rank = readr::col_skip()
+      )
+    ) %>%
+  GenomicRanges::GRanges()
+
+GM12878.dhs$thick <- IRanges::IRanges(
+    start = IRanges::start(GM12878.dhs) + ((IRanges::end(GM12878.dhs) - IRanges::start(GM12878.dhs))/2)
+  )
+GM12878.dhs <- GM12878.dhs %>%
+  CAGEfightR::swapRanges() %>%
+  IRanges::promoters(
+      upstream = 200,
+      downstream = 200
+    )
+```
+
+## [2.9.] Identify DLs overlapping with DHSs and assign annotations
+#### see [0.2.] for laoding of annotations
+```{r}
+GM12878.DLs$dhs.olap <- IRanges::countOverlaps(
+    query = GM12878.DLs,
+    subject = GM12878.dhs
+  )
+GM12878.DLs <- CAGEfightR::assignTxType(
+    object = GM12878.DLs,
+    txModels = txdb
+  )
+```
+
+## [2.10.] Plot nDLs at for all sites overlapping DHSs with bidirectionality score of <= 0.8
+```{r}
+GM12878.DLs %>% # GM12878.DLs.CTSS
+  base::as.data.frame(row.names = NULL) %>%
+  dplyr::filter(
+      base::abs(directionality) <= 0.8 &
+      dhs.olap >= 1
+    ) %>%
+  dplyr::mutate(
+      sample = base::factor(
+        x = sample,
+        levels = base::rev(main_samples),
+        ordered = TRUE
+      )
+    ) %>% # dplyr::group_by(sample) %>% dplyr::summarise(num = dplyr::n())
+  ggplot(
+    data = .,
+    mapping = aes(
+        y = sample,
+        fill = sample
+      )
+    ) +
+  geom_bar() +
+  theme_bw() +
+  scale_x_continuous(
+      # trans = 'log10',
+      limits = base::c(0L,200500) #1536846
+    ) +
+  scale_fill_manual(
+    limits = main_samples[1:6],
+    values = gm.pooled.pal
+    ) +
+  labs(
+      title = "DLs overlapping DHSs with directionality <= 0.8"
+    ) +
+  theme(
+      aspect.ratio = 1,
+      legend.position = "none"
+    )
+```
+
+## [2.11.] Print plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("3.DivergentLoci/plots/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
+          "_nDLs_DhsOverlap_dirCutOff08",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 5,
+      height = 5
+    )
+  }
+```
+
+## [2.12.] Plot nDLs with DHS overlap across bidirectionality scores
+#### Upper limit: 1536846	from GM12878_10M_N
+```{r}
+GM12878.DLs %>%
+  tibble::as_tibble() %>%
+  dplyr::filter(
+      dhs.olap >= 1L
+    ) %>% 
+  dplyr::mutate(
+      absDir = base::abs(directionality)
+    ) %>% 
+  dplyr::group_by(sample) %>%
+  dplyr::arrange(absDir) %>%
+  dplyr::mutate(
+      sample = base::factor(
+          x = sample,
+          levels = base::rev(main_samples[1:6]),
+          ordered = TRUE
+        ),
+      rank = dplyr::row_number()
+    ) %>% # dplyr::summarise(ylim = base::max(rank))
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = absDir,
+        y = rank,
+        color = sample
+      )
+    ) +
+  geom_line() +
+  geom_vline(
+      xintercept = 0.8,
+      linetype = "dashed"
+    ) +
+  scale_y_continuous(
+      limits = base::c(1L,1536846),
+      trans = 'log10'
+    ) +
+  scale_color_manual(
+      limits = main_samples[1:6],
+      values = gm.pooled.pal
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [2.13.] Print plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("3.DivergentLoci/plots/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
+          "_nDLs_DhsOverlap_dirCutOff08_absDirScores",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 5,
+      height = 5
+    )
+  }
+```
+
+## [2.14.] Directionality signature over all regions
+#### "repSub.GM12878.bidirScore.CTSS.pdf"
+```{r}
+GM12878.DLs %>% # GM12878.DLs.CTSS
+  base::as.data.frame(row.names = NULL) %>%
+  dplyr::mutate(
+      sample = base::factor(
+        x = sample,
+        levels = main_samples[1:6],
+        ordered = TRUE
+      )
+    ) %>% 
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = directionality,
+        y = sample,
+        fill = sample
+      )
+    ) +
+  ggridges::geom_density_ridges(
+      scale = 3,
+      alpha = 0.8
+    ) +
+  theme_bw() +
+  labs(
+      title = "bidir score over all DLs"
+    ) +
+  scale_fill_manual(
+      breaks = main_samples[1:6],
+      values = gm.pooled.pal
+    ) +
+  theme(
+      aspect.ratio = 1,
+      legend.position = "none",
+      axis.title.y = element_blank()
+    )
+```
+
+## [2.15.] Print plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("3.DivergentLoci/plots/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
+          "_nDLs_dirScores",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 5,
+      height = 5
+    )
+  }
+```
+
+## [2.16.] Directionality signature across pooled samples separated by genomic features
+#### title = "bidir score over all DLs", fill="annotation"
+```{r}
+ GM12878.DLs %>% # GM12878.DLs.CTSS
+  base::as.data.frame(row.names = NULL) %>%
+  dplyr::mutate(
+      sample = base::factor(
+        x = sample,
+        levels = main_samples[1:6],
+        ordered = TRUE
+      )
+    ) %>% 
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = directionality,
+        y = sample,
+        fill = sample
+      )
+    ) +
+  # geom_histogram(bins = 25, position = "dodge") + 
+  ggridges::geom_density_ridges(
+      scale = 3,
+      alpha = 0.8
+    ) +
+  facet_wrap(
+      # scales = "free_y"
+      facets = . ~ txType,
+      nrow = 1
+    ) +
+  scale_fill_manual(
+      values = gm.pooled.pal
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1,
+      panel.spacing = grid::unit(0.1,"lines"),
+      legend.position = "none"
+    )
+```
+
+
+## [2.17.] Print plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("3.DivergentLoci/plots/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
+          "_nDLs_dirScores_genomicFeat",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 9,
+      height = 4
+    )
+  }
+```
+
+## [2.18.] Directionality signature over all regions
+
+```{r}
+GM12878.DLs %>% # GM12878.DLs.CTSS
+  base::as.data.frame(row.names = NULL) %>%
+  # dplyr::filter(
+  #     dhs.olap >= 1
+  #   ) %>%
+  dplyr::mutate(
+      dhs = dplyr::case_when(
+          dhs.olap >= 1 ~ "pos",
+          TRUE ~ "neg"
+        ),
+      sample = base::factor(
+        x = sample,
+        levels = main_samples[1:6],
+        ordered = TRUE
+      )
+    ) %>% 
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = directionality,
+        fill = dhs
+      )
+    ) +
+  geom_density(
+      alpha = 0.5
+    ) +
+  # geom_histogram(
+  #     bins = 25,
+  #     position = "dodge"
+  #   ) + 
+  facet_wrap(
+      scales = "free_y",
+      facets = . ~ sample
+    ) +
+  labs(title = "bidir score over all DLs", fill="DHS overlap") +
+  scale_fill_manual(
+      values = base::c("red","blue")
+    ) +
+  theme_bw()
+```
+
+```{r}
+ GM12878.DLs %>% # GM12878.DLs.CTSS
+  base::as.data.frame(row.names = NULL) %>%
+  dplyr::filter(
+      sample != "GM12878_10M_N"
+    ) %>% 
+  dplyr::mutate(
+      dhs = dplyr::case_when(
+          dhs.olap >= 1 ~ "pos",
+          TRUE ~ "neg"
+        ),
+      sample = base::factor(
+        x = sample,
+        levels = main_samples[1:6],
+        ordered = TRUE
+      )
+    ) %>% 
+  ggplot2::ggplot(
+    data = .,
+    mapping = aes(
+        x = directionality,
+        y = sample,
+        fill = dhs
+      )
+    ) +
+  # geom_histogram(bins = 25, position = "dodge") + 
+  ggridges::geom_density_ridges(
+      scale = 1,
+      alpha = 0.4
+    ) +
+  facet_wrap(
+      # scales = "free_y"
+      facets = . ~ txType,
+      nrow = 1
+    ) +
+  scale_x_continuous(
+      limits = base::c(-1,1)
+    ) +
+  scale_fill_manual(
+      breaks = base::c("neg","pos"),
+      values = base::c("red","blue")
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 3,
+      panel.spacing = grid::unit(0.1,"lines"),
+      legend.position = "none",
+      axis.title.y = element_blank()
+    )
+```
+
+
+## [2.19.] Print plot
+```{r}
+for(ext in base::c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("3.DivergentLoci/plots.2/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
+          "_nDLs_DhsOverlap_dirScores_genomicFeat",
+          "_v2",
+          ".",ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 9,
+      height = 4
+    )
+  }
+```
