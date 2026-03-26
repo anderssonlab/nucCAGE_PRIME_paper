@@ -49,10 +49,10 @@ subset <- SummarizedExperiment::colData(GM12878.s.CTSSs) %>%
   dplyr::filter(main == "yes")
 samples <- dplyr::pull(subset,sample)
 
-.GlobalEnv$writeBw(
+PRIME::writeBw(
     object = GM12878.s.CTSSs,
     replicates = samples,
-    dir = here::here("6.BamFingerprints/20240627_bw_files/"),
+    dir = here::here("6.BamFingerprints/20260326_bw_files/"),
     splitByStrand = FALSE,
     inputAssay = "counts.noSingletons"
   )
@@ -628,7 +628,7 @@ keep <- Matrix::rowSums(
 GM12878.s.CTSSs.mod <- GM12878.s.CTSSs[keep,samples]
 # SummarizedExperiment::assay(GM12878.s.CTSSs.mod,"counts.noSingletons")
 
-GM12878.finger <- .GlobalEnv$fingerPrint(
+GM12878.finger <- PRIME::fingerPrint(
     object = GM12878.s.CTSSs.mod,
     replicates = samples,
     inputAssay = "counts.noSingletons"

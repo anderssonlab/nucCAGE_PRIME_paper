@@ -60,7 +60,7 @@ gm.pal <- base::c(
 gm.pooled.pal <- base::c(
     "#FF8D00","#00439B","#FF4425",
     "#009072","#878784","#7D62D0",
-    "hotpink"
+    "hotpink", "cyan", "magenta"
   )
 gm.full.pal <- base::c(
     "#F5CE00","#E2AA00","#B68D00",
