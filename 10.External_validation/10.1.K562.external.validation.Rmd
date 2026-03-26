@@ -65,21 +65,21 @@ promoters <- IRanges::promoters(
   )
 ```
 
-## [1.3.] Annotate identified PRIMElocis by txdb annotated promoters into proximal (overlapping with promoter) or distal
-## PRIMEloci, pooled replicates; evaluate with n = "K562_sld_C" # 4.049.578
+## [1.3.] Annotate identified PRIME loci by txdb annotated promoters into proximal (overlapping with promoter) or distal
+## PRIME loci, pooled replicates; evaluate with n = "K562_sld_C" # 4.049.578
 ```{r}
 resize.width = 200
-pooled.PRIMEloci.files <- base::c(
+pooled.PRIME.files <- base::c(
     "K562_sld_C" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_C.bed"),
     "K562_sld_N" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N.bed"),
     "K562_sld_10M_N" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N_10M.bed")
   )
 
-pooled.PRIMEloci <- base::lapply(
-  X = base::names(pooled.PRIMEloci.files),
+pooled.PRIME <- base::lapply(
+  X = base::names(pooled.PRIME.files),
   FUN = function(n) {
       gr <- readr::read_tsv( # # 4.049.578
-          file = pooled.PRIMEloci.files[n],
+          file = pooled.PRIME.files[n],
           show_col_types = FALSE
         )
       score <- gr$score # # 4.049.578
@@ -102,7 +102,7 @@ pooled.PRIMEloci <- base::lapply(
       return(gr)
     }
   )
-base::names(pooled.PRIMEloci) <- base::names(pooled.PRIMEloci.files)
+base::names(pooled.PRIME) <- base::names(pooled.PRIME.files)
 ```
 
 ## [1.4.] Annotate identified Divergent loci by txdb annotated promoters into proximal (overlapping with promoter) or distal
@@ -110,7 +110,8 @@ base::names(pooled.PRIMEloci) <- base::names(pooled.PRIMEloci.files)
 pooled.DLs <- base::readRDS(
     file = base::paste0(
       here::here("3.DivergentLoci/"),
-      "poolSub.k562.summitDLs.rmSingletons.rds"
+      #"poolSub.k562.summitDLs.rmSingletons.rds"
+      "poolSub.K562.DLs.FANTOM5style.rds"
     )
   )
 if (base::is.list(pooled.DLs)) {
@@ -258,7 +259,8 @@ GWAS.n <- base::length(GWAS.data)
 ClinVar.data <- readr::read_tsv(
     file = base::paste0(
         here::here("0.External_resources/"),
-        "ClinVar_GRCh38_nonbenign_noncoding_SNV.tsv"
+        #"ClinVar_GRCh38_nonbenign_noncoding_SNV.tsv"
+        "clinvar/ClinVar_GRCh38_allCategories_noncoding_SNV.tsv"
       ),
     show_col_types = FALSE
   )
@@ -318,27 +320,22 @@ for (n in base::names(dREG.files)) {
   }
 ```
 
-## [1.11.] Read in all pooled PRIMEloci files
-#### see [1.3.] for øpooled.PRIMEloci.filesø object
+## [1.11.] Read in all pooled PRIME files
+#### see [1.3.] for øpooled.PRIME.filesø object
 ```{r}
-PRIMEloci.thres = 0.75
-# pooled.PRIMEloci.files <- base::c(
-#     "K562_sld_C" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_C.bed"),
-#     "K562_sld_N" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N.bed"),
-#     "K562_sld_10M_N" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N_10M.bed")
-#   )
-pooled.PRIMEloci.names <- base::c(
-    "K562_sld_C" = "PRIMEloci CAGE cells pooled",
-    "K562_sld_N" = "PRIMEloci CAGE nuclei pooled",
-    "K562_sld_10M_N" = "PRIMEloci CAGE nuclei 10M pooled"
+PRIME.thres = 0.75
+pooled.PRIME.names <- base::c(
+    "K562_sld_C" = "PRIME CAGE cells pooled",
+    "K562_sld_N" = "PRIME CAGE nuclei pooled",
+    "K562_sld_10M_N" = "PRIME CAGE nuclei 10M pooled"
   )
 
-for (n in base::names(pooled.PRIMEloci.files)) {
+for (n in base::names(pooled.PRIME.files)) {
     gr <- readr::read_tsv(
-        file = pooled.PRIMEloci.files[n],
+        file = pooled.PRIME.files[n],
         show_col_types = FALSE
       )
-    gr <- base::subset(gr, score >= PRIMEloci.thres)
+    gr <- base::subset(gr, score >= PRIME.thres)
     gr <- GenomicRanges::makeGRangesFromDataFrame(gr[,1:3])
     GenomeInfoDb::seqlevels(gr, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
     olap <- IRanges::findOverlaps(
@@ -348,9 +345,9 @@ for (n in base::names(pooled.PRIMEloci.files)) {
       )
     gr.proximal <- gr[base::unique(S4Vectors::queryHits(olap))]
     gr.distal <- gr[base::setdiff(1:base::length(gr), S4Vectors::queryHits(olap))]
-    point.data[[pooled.PRIMEloci.names[n]]] <- gr
-    point.data[[base::paste0(pooled.PRIMEloci.names[n]," distal")]] <- gr.distal
-    point.data[[base::paste0(pooled.PRIMEloci.names[n]," proximal")]] <- gr.proximal
+    point.data[[pooled.PRIME.names[n]]] <- gr
+    point.data[[base::paste0(pooled.PRIME.names[n]," distal")]] <- gr.distal
+    point.data[[base::paste0(pooled.PRIME.names[n]," proximal")]] <- gr.proximal
   }
 ```
 
@@ -443,7 +440,6 @@ point.data[["K27ac"]] <- k27ac
 ```
 
 ## [1.13.] Read in FANTOM5 data for point estimates
-#### Possible mistake in reading in the right FANTOM5 column
 ```{r}
 FANTOM5.id = "CNhs12334"
 
@@ -739,8 +735,8 @@ col.scheme <- stats::setNames(
   nm = base::c(
       "DHS","Divergent loci CAGE cells","Divergent loci CAGE nuclei",
       "dREG PRO-seq","dREG qPRO-seq","ENCODE cCRE",
-      "PINTS GRO/PRO-cap","PRIMEloci CAGE cells pooled","PRIMEloci CAGE nuclei pooled",
-      "K27ac", "K27ac DHS","PRIMEloci CAGE nuclei 10M pooled"
+      "PINTS GRO/PRO-cap","PRIME CAGE cells pooled","PRIME CAGE nuclei pooled",
+      "K27ac", "K27ac DHS","PRIME CAGE nuclei 10M pooled"
     )
   )
 ```
@@ -1894,39 +1890,39 @@ enrichment.precision.recall <- function(data, fg.data, bg.data, assay) {
 
 ## [7.1.] Apply helper function
 ```{r}
-pooled.PRIMEloci.ClinVar.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
-    data = pooled.PRIMEloci, # PRIMEloci
+pooled.PRIME.ClinVar.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIME, # PRIME
     fg.data = ClinVar.data,
     bg.data = SNP.data,
-    assay =  pooled.PRIMEloci.names # PRIMEloci.names
+    assay =  pooled.PRIME.names # PRIME.names
   )
 
-pooled.PRIMEloci.eQTL.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
-    data = pooled.PRIMEloci, # PRIMEloci
+pooled.PRIME.eQTL.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIME, # PRIME
     fg.data = eQTL.data,
     bg.data = SNP.data,
-    assay = pooled.PRIMEloci.names # PRIMEloci.names
+    assay = pooled.PRIME.names # PRIME.names
   )
 
-pooled.PRIMEloci.GWAS.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
-    data = pooled.PRIMEloci, # PRIMEloci
+pooled.PRIME.GWAS.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIME, # PRIME
     fg.data = GWAS.data,
     bg.data = SNP.data,
-    assay = pooled.PRIMEloci.names # PRIMEloci.names
+    assay = pooled.PRIME.names # PRIME.names
   )
 
-pooled.PRIMEloci.CRISPR.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
-    data = pooled.PRIMEloci, # PRIMEloci
+pooled.PRIME.CRISPR.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIME, # PRIME
     fg.data = CRISPR.pos.data,
     bg.data = CRISPR.neg.data,
-    assay = pooled.PRIMEloci.names # PRIMEloci.names
+    assay = pooled.PRIME.names # PRIME.names
   )
 
-pooled.PRIMEloci.dctap.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
-    data = pooled.PRIMEloci,
+pooled.PRIME.dctap.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIME,
     fg.data = dc.tap.enhancers.pos,
     bg.data = dc.tap.enhancers.neg,
-    assay = pooled.PRIMEloci.names # PRIMEloci.names
+    assay = pooled.PRIME.names # PRIME.names
   )
 ```
 
@@ -1935,8 +1931,8 @@ pooled.PRIMEloci.dctap.enrichment.recall.data <- .GlobalEnv$enrichment.precision
 ## [8.0.] Plot results
 ```{r}
 ggplot2::ggplot(
-    data = pooled.PRIMEloci.ClinVar.enrichment.recall.data[
-        pooled.PRIMEloci.CRISPR.enrichment.recall.data$recall > 0.01,
+    data = pooled.PRIME.ClinVar.enrichment.recall.data[
+        pooled.PRIME.CRISPR.enrichment.recall.data$recall > 0.01,
       ],
     mapping = aes(
         x = recall,
@@ -1969,7 +1965,7 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
-        "K562_pooled_PRIMEloci_ClinVar_enrichment_vs_recall_and_point_estimates_genome.pdf",
+        "K562_pooled_PRIME_ClinVar_enrichment_vs_recall_and_point_estimates_genome.pdf",
       ),
     width = 7,
     height = 5,
@@ -1980,8 +1976,8 @@ ggplot2::ggsave(
 ## [8.2.] Print plot
 ```{r}
 ggplot2::ggplot(
-    data = pooled.PRIMEloci.eQTL.enrichment.recall.data[
-        pooled.PRIMEloci.CRISPR.enrichment.recall.data$recall > 0.01,
+    data = pooled.PRIME.eQTL.enrichment.recall.data[
+        pooled.PRIME.CRISPR.enrichment.recall.data$recall > 0.01,
       ],
     mapping = aes(
         x = recall,
@@ -2014,7 +2010,7 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
-        "K562_pooled_PRIMEloci_eQTL_enrichment_vs_recall_PIP_",
+        "K562_pooled_PRIME_eQTL_enrichment_vs_recall_PIP_",
         eQTL.pip.thres,
         "_and_point_estimates_genome.pdf"
       ),
@@ -2027,8 +2023,8 @@ ggplot2::ggsave(
 ## [8.4.] Plot data
 ```{r}
 ggplot2::ggplot(
-    data = pooled.PRIMEloci.GWAS.enrichment.recall.data[
-        pooled.PRIMEloci.CRISPR.enrichment.recall.data$recall > 0.01,
+    data = pooled.PRIME.GWAS.enrichment.recall.data[
+        pooled.PRIME.CRISPR.enrichment.recall.data$recall > 0.01,
       ],
     mapping = aes(
         x = recall,
@@ -2061,7 +2057,7 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
-        "K562_pooled_PRIMEloci_GWAS_enrichment_vs_recall_PIP_",
+        "K562_pooled_PRIME_GWAS_enrichment_vs_recall_PIP_",
         GWAS.pip.thres,
         "_and_point_estimates_genome.pdf"
       ),
@@ -2074,8 +2070,8 @@ ggplot2::ggsave(
 ## [8.6.] Plot data
 ```{r}
 ggplot2::ggplot(
-    data = pooled.PRIMEloci.CRISPR.enrichment.recall.data[
-        pooled.PRIMEloci.CRISPR.enrichment.recall.data$recall > 0.01,
+    data = pooled.PRIME.CRISPR.enrichment.recall.data[
+        pooled.PRIME.CRISPR.enrichment.recall.data$recall > 0.01,
       ],
     mapping = aes(
         x = recall,
@@ -2108,7 +2104,7 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
-        "K562_pooled_PRIMEloci_CRISPR_precision_vs_recall_and_point_estimates_genome.pdf"
+        "K562_pooled_PRIME_CRISPR_precision_vs_recall_and_point_estimates_genome.pdf"
       ),
     width = 7,
     height = 5,
@@ -2122,7 +2118,7 @@ point.dctap.genome.df <- base::subset(
     x = point.dctap.df, loc == "genome"
   )
 ggplot2::ggplot(
-    data = pooled.PRIMEloci.dctap.enrichment.recall.data,
+    data = pooled.PRIME.dctap.enrichment.recall.data,
     mapping = aes(
         x = recall,
         y = precision,
@@ -2156,7 +2152,7 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/"),
-        "K562_pooled_PRIMEloci_dctap_precision_vs_recall_and_point_estimates_genome.pdf"
+        "K562_pooled_PRIME_dctap_precision_vs_recall_and_point_estimates_genome.pdf"
       ),
     width = 7,
     height = 5,
@@ -2167,14 +2163,14 @@ ggplot2::ggsave(
 ## [8.10.] Prepare data for running distal-proximal analysis again
 #### Specifically for distal
 ```{r}
-pooled.PRIMEloci.distal <- base::lapply(
-  X = pooled.PRIMEloci,
+pooled.PRIME.distal <- base::lapply(
+  X = pooled.PRIME,
   FUN = function(gr){
       gr[gr$class == "distal"]
     }
   )
-pooled.PRIMEloci.proximal <- base::lapply(
-  X = pooled.PRIMEloci,
+pooled.PRIME.proximal <- base::lapply(
+  X = pooled.PRIME,
   FUN = function(gr){
       gr[gr$class == "proximal"]
     }
@@ -2183,18 +2179,18 @@ pooled.PRIMEloci.proximal <- base::lapply(
 
 ## [8.11.] Run separate analysis for distal and proximal
 ```{r}
-pooled.PRIMEloci.GWAS.enrichment.recall.data.distal <- .GlobalEnv$enrichment.precision.recall(
-    data = pooled.PRIMEloci.distal,
+pooled.PRIME.GWAS.enrichment.recall.data.distal <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIME.distal,
     fg.data = GWAS.data,
     bg.data = SNP.data,
-    assay = pooled.PRIMEloci.names
+    assay = pooled.PRIME.names
   )
 
-pooled.PRIMEloci.GWAS.enrichment.recall.data.proximal <- .GlobalEnv$enrichment.precision.recall(
-    data = pooled.PRIMEloci.proximal,
+pooled.PRIME.GWAS.enrichment.recall.data.proximal <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIME.proximal,
     fg.data = GWAS.data,
     bg.data = SNP.data,
-    assay = pooled.PRIMEloci.names
+    assay = pooled.PRIME.names
   )
 ```
 
@@ -2206,8 +2202,8 @@ point.GWAS.genome.distal <- base::subset(point.GWAS.df, loc == "distal")
 ## [8.13.] Plot data
 ```{r}
 ggplot2::ggplot(
-    data = pooled.PRIMEloci.GWAS.enrichment.recall.data.distal[
-        pooled.PRIMEloci.GWAS.enrichment.recall.data.distal$recall > 0.001,
+    data = pooled.PRIME.GWAS.enrichment.recall.data.distal[
+        pooled.PRIME.GWAS.enrichment.recall.data.distal$recall > 0.001,
       ],
     mapping = aes(
         x = recall,
@@ -2240,7 +2236,7 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
-        "K562_pooled_PRIMEloci_GWAS_enrichment_vs_recall_and_point_estimates_distal.pdf"
+        "K562_pooled_PRIME_GWAS_enrichment_vs_recall_and_point_estimates_distal.pdf"
       ),
     width = 7,
     height = 5,
@@ -2256,8 +2252,8 @@ point.GWAS.genome.proximal <- base::subset(point.GWAS.df, loc == "proximal")
 ## [8.16.] Plot data
 ```{r}
 ggplot2::ggplot(
-    data = pooled.PRIMEloci.GWAS.enrichment.recall.data.proximal[
-        pooled.PRIMEloci.GWAS.enrichment.recall.data.proximal$recall > 0.001,
+    data = pooled.PRIME.GWAS.enrichment.recall.data.proximal[
+        pooled.PRIME.GWAS.enrichment.recall.data.proximal$recall > 0.001,
       ],
     mapping = aes(
         x = recall,
@@ -2290,7 +2286,7 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
-        "K562_pooled_PRIMEloci_GWAS_enrichment_vs_recall_and_point_estimates_proximal.pdf"
+        "K562_pooled_PRIME_GWAS_enrichment_vs_recall_and_point_estimates_proximal.pdf"
       ),
     width = 7,
     height = 5,
@@ -2304,7 +2300,7 @@ ggplot2::ggsave(
 ## [9.0.] Plot data
 ```{r}
 ggplot2::ggplot(
-  data = pooled.PRIMEloci.ClinVar.enrichment.recall.data,
+  data = pooled.PRIME.ClinVar.enrichment.recall.data,
   mapping = aes(
       x = score,
       y = enrichment,
@@ -2327,7 +2323,7 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
-        "K562_pooled_PRIMEloci_ClinVar_enrichment_vs_score.pdf"
+        "K562_pooled_PRIME_ClinVar_enrichment_vs_score.pdf"
       ),
     width = 7,
     height = 5,
@@ -2338,7 +2334,7 @@ ggplot2::ggsave(
 ## [9.2.] Plot data
 ```{r}
 ggplot2::ggplot(
-  data = pooled.PRIMEloci.ClinVar.enrichment.recall.data,
+  data = pooled.PRIME.ClinVar.enrichment.recall.data,
   mapping = aes(
       x = score,
       y = recall,
@@ -2361,7 +2357,7 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
-        "K562_pooled_PRIMEloci_ClinVar_recall_vs_score.pdf"
+        "K562_pooled_PRIME_ClinVar_recall_vs_score.pdf"
       ),
     width = 7,
     height = 5,
@@ -2372,7 +2368,7 @@ ggplot2::ggsave(
 ## [9.4.] Plot data
 ```{r}
 ggplot2::ggplot(
-    data = pooled.PRIMEloci.eQTL.enrichment.recall.data,
+    data = pooled.PRIME.eQTL.enrichment.recall.data,
     mapping = aes(
         x = score,
         y = enrichment,
@@ -2395,7 +2391,7 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
-        "K562_pooled_PRIMEloci_eQTL_enrichment_vs_score_PIP_",
+        "K562_pooled_PRIME_eQTL_enrichment_vs_score_PIP_",
         eQTL.pip.thres,
         ".pdf"
       ),
@@ -2408,7 +2404,7 @@ ggplot2::ggsave(
 ## [9.6.] Plot data
 ```{r}
 ggplot2::ggplot(
-  data = pooled.PRIMEloci.eQTL.enrichment.recall.data,
+  data = pooled.PRIME.eQTL.enrichment.recall.data,
   mapping = aes(
       x = score,
       y = recall,
@@ -2431,7 +2427,7 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
-        "K562_pooled_PRIMEloci_eQTL_recall_vs_score_PIP_",
+        "K562_pooled_PRIME_eQTL_recall_vs_score_PIP_",
         eQTL.pip.thres,
         ".pdf"
       ),
@@ -2444,7 +2440,7 @@ ggplot2::ggsave(
 ## [9.8.] Plot data
 ```{r}
 ggplot2::ggplot(
-  data = pooled.PRIMEloci.GWAS.enrichment.recall.data,
+  data = pooled.PRIME.GWAS.enrichment.recall.data,
   mapping = aes(
       x = score,
       y = enrichment,
@@ -2467,7 +2463,7 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
-        "K562_pooled_PRIMEloci_GWAS_enrichment_vs_score_PIP_",
+        "K562_pooled_PRIME_GWAS_enrichment_vs_score_PIP_",
         GWAS.pip.thres,
         ".pdf"
       ),
@@ -2480,7 +2476,7 @@ ggplot2::ggsave(
 ## [9.10.] Plot data
 ```{r}
 ggplot2::ggplot(
-  data = pooled.PRIMEloci.GWAS.enrichment.recall.data,
+  data = pooled.PRIME.GWAS.enrichment.recall.data,
   mapping = aes(
       x = score,
       y = recall,
@@ -2501,7 +2497,7 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
-        "K562_pooled_PRIMEloci_GWAS_recall_vs_score_PIP_",
+        "K562_pooled_PRIME_GWAS_recall_vs_score_PIP_",
         GWAS.pip.thres,
         ".pdf"
       ),
@@ -2514,7 +2510,7 @@ ggplot2::ggsave(
 ## [9.12.] Plot data 
 ```{r}
 ggplot2::ggplot(
-    data = pooled.PRIMEloci.CRISPR.enrichment.recall.data,
+    data = pooled.PRIME.CRISPR.enrichment.recall.data,
     mapping = aes(
         x = score,
         y = precision,
@@ -2537,7 +2533,7 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
-        "K562_pooled_PRIMEloci_CRISPR_precision_vs_score.pdf"
+        "K562_pooled_PRIME_CRISPR_precision_vs_score.pdf"
       ),
     width = 7,
     height = 5,
@@ -2548,7 +2544,7 @@ ggplot2::ggsave(
 ## [9.14.] Plot data 
 ```{r}
 ggplot2::ggplot(
-    data = pooled.PRIMEloci.CRISPR.enrichment.recall.data,
+    data = pooled.PRIME.CRISPR.enrichment.recall.data,
     mapping = aes(
         x = score,
         y = recall,
@@ -2571,7 +2567,7 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
-        "K562_pooled_PRIMEloci_CRISPR_recall_vs_score.pdf"
+        "K562_pooled_PRIME_CRISPR_recall_vs_score.pdf"
       ),
     width = 7,
     height = 5,
@@ -2636,41 +2632,41 @@ create_upset_plot <- function(subset_name, gr_list, sets_to_include) {
 
 ## Define sets to include for intersection analysis
 ```{r}
-sets_to_include <-  names(gr_list) %in% base::c("PRIMEloci CAGE cells pooled", "PRIMEloci CAGE nuclei pooled","DHS")
+sets_to_include <-  names(gr_list) %in% base::c("PRIME CAGE cells pooled", "PRIME CAGE nuclei pooled","DHS")
 ```
 
-## Generate plots for PRIMEloci/DHS focus
+## Generate plots for PRIME/DHS focus
 ```{r}
 s <- create_upset_plot("GWAS.data", gr_list, sets_to_include)
-pdf("plots/K562_PRIMEloci_GWAS_upset.pdf",height=6, width=8)
+pdf("plots/K562_PRIME_GWAS_upset.pdf",height=6, width=8)
 s
 dev.off()
 ```
 
 ```{r}
 s <- create_upset_plot("ClinVar.data", gr_list, sets_to_include)
-pdf("plots/K562_PRIMEloci_ClinVar_upset.pdf",height=6, width=8)
+pdf("plots/K562_PRIME_ClinVar_upset.pdf",height=6, width=8)
 s
 dev.off()
 ```
 
 ```{r}
 s <- create_upset_plot("eQTL.data", gr_list, sets_to_include)
-pdf("plots/K562_PRIMEloci_eQTL_upset.pdf",height=6, width=8)
+pdf("plots/K562_PRIME_eQTL_upset.pdf",height=6, width=8)
 s
 dev.off()
 ```
 
 ```{r}
 s <- create_upset_plot("CRISPR.data", gr_list, sets_to_include)
-pdf("plots/K562_PRIMEloci_CRISPR.pos_upset.pdf",height=6, width=8)
+pdf("plots/K562_PRIME_CRISPR.pos_upset.pdf",height=6, width=8)
 s
 dev.off()
 ```
 
 ```{r}
 s <- create_upset_plot("CRISPR.neg.data", gr_list, sets_to_include)
-pdf("plots/K562_PRIMEloci_CRISPR.neg_upset.pdf",height=6, width=8)
+pdf("plots/K562_PRIME_CRISPR.neg_upset.pdf",height=6, width=8)
 s
 dev.off()
 ```
@@ -2682,49 +2678,49 @@ sets_to_include <-  names(gr_list) %in% names(col.scheme)
 
 ```{r}
 s <- create_upset_plot("GWAS.data", gr_list, sets_to_include)
-pdf("plots/K562_PRIMEloci_full_GWAS_upset.pdf",height=6, width=8)
+pdf("plots/K562_PRIME_full_GWAS_upset.pdf",height=6, width=8)
 s
 dev.off()
 ```
 
 ```{r}
 s <- create_upset_plot("ClinVar.data", gr_list, sets_to_include)
-pdf("plots/K562_PRIMEloci_full_ClinVar_upset.pdf",height=6, width=8)
+pdf("plots/K562_PRIME_full_ClinVar_upset.pdf",height=6, width=8)
 s
 dev.off()
 ```
 
 ```{r}
 s <- create_upset_plot("eQTL.data", gr_list, sets_to_include)
-pdf("plots/K562_PRIMEloci_full_eQTL_upset.pdf",height=6, width=8)
+pdf("plots/K562_PRIME_full_eQTL_upset.pdf",height=6, width=8)
 s
 dev.off()
 ```
 
 ```{r}
 s <- create_upset_plot("CRISPR.data", gr_list, sets_to_include)
-pdf("plots/K562_PRIMEloci_full_CRISPR.pos_upset.pdf",height=6, width=8)
+pdf("plots/K562_PRIME_full_CRISPR.pos_upset.pdf",height=6, width=8)
 s
 dev.off()
 ```
 
 ```{r}
 s <- create_upset_plot("CRISPR.neg.data", gr_list, sets_to_include)
-pdf("plots/K562_PRIMEloci_full_CRISPR.neg_upset.pdf",height=6, width=8)
+pdf("plots/K562_PRIME_full_CRISPR.neg_upset.pdf",height=6, width=8)
 s
 dev.off()
 ```
 
 ```{r}
 s <- create_upset_plot("dcTap.pos.data", gr_list, sets_to_include)
-pdf("plots/K562_PRIMEloci_dcTap.pos_upset.pdf",height=6, width=8)
+pdf("plots/K562_PRIME_dcTap.pos_upset.pdf",height=6, width=8)
 s
 dev.off()
 ```
 
 ```{r}
 s <- create_upset_plot("dcTap.neg.data", gr_list, sets_to_include)
-pdf("plots/K562_PRIMEloci_dcTap.neg_upset.pdf",height=6, width=8)
+pdf("plots/K562_PRIME_dcTap.neg_upset.pdf",height=6, width=8)
 s
 dev.off()
 ```
