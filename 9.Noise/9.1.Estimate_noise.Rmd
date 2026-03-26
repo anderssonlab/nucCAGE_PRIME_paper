@@ -7,56 +7,32 @@ date: "2024-06-18"
 # Estimate noise levels across libraries
 
 ```{r}
-# setwd("/Users/fxc326/Documents/")
 # source("CAGEfightR_extensions/utils.R")
 # source("CAGEfightR_extensions/noise.R")
-# setwd("/Users/fxc326/Documents/nucCAGE/9.Noise")
 ```
 
 ## [0.0.] Load necessary packages
 ```{r message=FALSE}
 base::library(tidyverse)
+base::library(PRIME)
 base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-```
-
-## [0.1.] Load CAGEfighR extensions
-```{r message=FALSE,results='hide'}
-sep <- .Platform$file.sep
-cfr.extensions.dir <- "/projects/ralab/people/pbr316/scripts/CAGEfightR_extensions"
-fs <- base::c(
-    "utils","support","cumulative",
-    "decompose","enhancers","noise",
-    "coverage","complexity","subsample",
-    "dispersion"
-  )
-
-purrr::map(
-  .x = fs,
-  .f = function(f){
-    base::source(
-      base::paste0(
-        cfr.extensions.dir, sep, f, ".R"
-        )
-      )
-    }
-  )
 ```
 
 ```{r}
 
-files <- c("HepG2.poolSub" = "../1.CTSSs/poolSub.HepG2.CTSSs.rmSingletons.rds",
-           "A549.poolSub" = "../1.CTSSs/poolSub.A549.CTSSs.rmSingletons.rds",
-           "HCT116.poolSub" = "../1.CTSSs/poolSub.HCT116.CTSSs.rmSingletons.rds",
-           "K562.poolSub" = "../1.CTSSs/poolSub.combined.k562.CTSSs.rmSingletons.rds",
-           "K562.repSub" = "../1.CTSSs/repSub.combined.k562.CTSSs.rmSingletons.rds",
-           "GM12878.repSub" = "../1.CTSSs/repSub.combined.GM12878.CTSSs.rmSingletons.rds",
-           "GM12878.poolSub" = "../1.CTSSs/poolSub.combined.GM12878.CTSSs.rmSingletons.rds")
+files <- c("HepG2.poolSub" = paste0(here::here("1.CTSSs/"), "poolSub.HepG2.CTSSs.rmSingletons.rds"),
+           "A549.poolSub" = paste0(here::here("1.CTSSs/"), "poolSub.A549.CTSSs.rmSingletons.rds"),
+           "HCT116.poolSub" = paste0(here::here("1.CTSSs/"), "poolSub.HCT116.CTSSs.rmSingletons.rds"),
+           "K562.poolSub" = paste0(here::here("1.CTSSs/"), "poolSub.combined.k562.CTSSs.rmSingletons.rds"),
+           "K562.repSub" = paste0(here::here("1.CTSSs/"), "repSub.combined.k562.CTSSs.rmSingletons.rds"),
+           "GM12878.repSub" = paste0(here::here("1.CTSSs/"), "repSub.combined.GM12878.CTSSs.rmSingletons.rds"),
+           "GM12878.poolSub" = paste0(here::here("1.CTSSs/"), "poolSub.combined.GM12878.CTSSs.rmSingletons.rds"))
 
 CTSSs <- readRDS(files[1])
 
 ## uniquely mappable
-map.gr.plus <- import.bed("uniquely_mappable/tracks/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.plus.bed")
-map.gr.minus <- import.bed("uniquely_mappable/tracks/GRCh38_no_alt_analysis_set_GCA_000001405.15.73/GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.minus.bed")
+map.gr.plus <- import.bed(paste0(here::here("9.Noise/uniquely_mappable/tracks/"),"GRCh38_no_alt_analysis_set_GCA_000001405.15.73/GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.plus.bed"))
+map.gr.minus <- import.bed(paste0(here::here("9.Noise/uniquely_mappable/tracks/"),"GRCh38_no_alt_analysis_set_GCA_000001405.15.73/GRCh38_no_alt_analysis_set_GCA_000001405.15.73.uniquely.mappable.minus.bed"))
 
 seqlevels(map.gr.plus,pruning.mode="coarse") <- seqlevels(CTSSs)
 seqlevels(map.gr.minus,pruning.mode="coarse") <- seqlevels(CTSSs)
@@ -65,8 +41,8 @@ map.gr.plus <- trim(map.gr.plus)
 map.gr.minus <- trim(map.gr.minus)
 
 ## mask
-blacklist <- import.bed("../0.External_resources/ENCFF356LFX.bed")
-hotspots <- import.bed("../0.External_resources/hotspots_merged_ext_300.bed")
+blacklist <- import.bed(paste0(here::here("0.External_resources/"),"ENCFF356LFX.bed"))
+hotspots <- import.bed(paste0(here::here("0.External_resources/"),"hotspots_merged_ext_300.bed"))
 exons <- flank(unlist(exonsBy(TxDb.Hsapiens.UCSC.hg38.knownGene,"tx")),50,both=TRUE)
 mask <- reduce(c(blacklist,hotspots,exons))
 seqlevels(mask,pruning.mode="coarse") <- seqlevels(CTSSs)
@@ -401,7 +377,7 @@ noise <- purrr::map_dfr(
       s = stringr::str_extract(f,"repSub|poolSub|all")
       CTSSs <- base::readRDS(file = f)
       
-      raw <- .GlobalEnv$estimateNoise(
+      raw <- PRIME::estimateNoise(
           object = CTSSs,
           mask = mask,
           mappable = mappable,

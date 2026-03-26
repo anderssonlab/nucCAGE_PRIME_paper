@@ -4,7 +4,7 @@ output: html_document
 date: "2024-07-01"
 ---
 
-## Evaluation of PRIMEloci using fine-mapped GWAS variants
+## Evaluation of PRIME model using fine-mapped GWAS variants
 
 ## [0.0.] Load necessary packages
 ```{r warning=TRUE, message=TRUE}
@@ -54,13 +54,13 @@ SNP.data <- base::unique( # 9.914.129 # 9.919.913 (2026_01_26)
 # GenomeInfoDb::seqlevels(txdb, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
 ```
 
-## [1.2.] Subset PRIMEloci from pooled replicates by threshold
+## [1.2.] Subset PRIME loci from pooled replicates by threshold
 #### evaluate with  n = "K562_C" # 4,049,568
-#### "pooled.PRIMEloci[[n]]" # 32,407
+#### "pooled.PRIME[[n]]" # 32,407
 ```{r}
-PRIMEloci.thres = 0.75
+PRIME.thres = 0.75
 resize.width = 200
-pooled.PRIMEloci.files <- base::c(
+pooled.PRIME.files <- base::c(
     "A549_C" = here::here("8.Genomewide_prediction/A549_sld_on_PRIMEloci1.0_C.bed"),
     "A549_N" = here::here("8.Genomewide_prediction/A549_sld_on_PRIMEloci1.0_N.bed"),
     "GM12878_C" = here::here("8.Genomewide_prediction/GM12878_sld_on_PRIMEloci1.0_C_1M.bed"),
@@ -72,15 +72,15 @@ pooled.PRIMEloci.files <- base::c(
     "K562_N" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N.bed")
   )
 
-pooled.PRIMEloci <- base::lapply(
-  X = base::names(pooled.PRIMEloci.files),
+pooled.PRIME <- base::lapply(
+  X = base::names(pooled.PRIME.files),
   FUN = function(n) {
       df <- readr::read_tsv( # # 4.049.578
-          file = pooled.PRIMEloci.files[n],
+          file = pooled.PRIME.files[n],
           show_col_types = FALSE
         )
       # Subset by threshold
-      df <- df[base::which(df$score >= PRIMEloci.thres),] # 245.709
+      df <- df[base::which(df$score >= PRIME.thres),] # 245.709
       gr <- GenomicRanges::makeGRangesFromDataFrame(df[,1:3])
       S4Vectors::mcols(gr)$score <- df$score
       GenomeInfoDb::seqlevels(gr, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data) # 237.454
@@ -94,7 +94,7 @@ pooled.PRIMEloci <- base::lapply(
       
       # Merge (=reduce) ranges to combined ranges
       out <- IRanges::reduce(x = gr, with.revmap = TRUE)
-      # Transfer max PRIMEloci score fo reduced ranges
+      # Transfer max PRIME score fo reduced ranges
       S4Vectors::mcols(out)$score <- base::do.call(
           what = rbind,
           args = base::lapply(
@@ -108,12 +108,12 @@ pooled.PRIMEloci <- base::lapply(
       return(out)
     }
   )
-base::names(pooled.PRIMEloci) <- base::names(pooled.PRIMEloci.files)
+base::names(pooled.PRIME) <- base::names(pooled.PRIME.files)
 ```
 
 #### Evaluate
 ```{r}
-o <- base::sapply(pooled.PRIMEloci, length)
+o <- base::sapply(pooled.PRIME, length)
 tibble::tibble(
       names = base::names(o),
       values = o
@@ -141,14 +141,14 @@ tibble::tibble(
 ```
 
 
-## [1.3.] Prepare non-subset PRIMEloci set
+## [1.3.] Prepare non-subset PRIME set
 #### Neither thresholded nor resized as in [1.2.]
 ```{r}
-unfiltered.PRIMEloci <- base::lapply(
-    X = base::names(pooled.PRIMEloci.files),
+unfiltered.PRIME <- base::lapply(
+    X = base::names(pooled.PRIME.files),
     FUN = function(n) {
       gr <- readr::read_tsv( # # 4.049.578
-          file = pooled.PRIMEloci.files[n],
+          file = pooled.PRIME.files[n],
           show_col_types = FALSE
         )
       score <- gr$score
@@ -160,7 +160,7 @@ unfiltered.PRIMEloci <- base::lapply(
       return(gr)
     }
   )
-base::names(unfiltered.PRIMEloci) <- base::names(pooled.PRIMEloci.files)
+base::names(unfiltered.PRIME) <- base::names(pooled.PRIME.files)
 ```
 
 ## [1.4.] Read in, prepare and subset GWAS data to contain only intergenic GWAS
@@ -207,10 +207,10 @@ traits <- base::unique(GWAS.data$trait) # 94
 dplyr::distinct(GWAS.data_,trait) # 94
 ```
 
-## [1.5.] Overlap PRIMElocis with GWAS in a trait-specific manner to subset traits
+## [1.5.] Overlap PRIME loci with GWAS in a trait-specific manner to subset traits
 #### evaluate with t = "MCV", n = "K562_C", "x = trait.loci.olap[[t]]"
-## 'trait.loci.olap' includes all GWAS hits for a particular trait that overlaps with any of the PRIMElocis from any PRIMEloci dataset
-## 'trait.olap.count' summarises the overall overlaps of traits across all PRIMEloci datasets
+## 'trait.loci.olap' includes all GWAS hits for a particular trait that overlaps with any of the PRIME loci from any PRIME dataset
+## 'trait.olap.count' summarises the overall overlaps of traits across all PRIME datasets
 ```{r}
 trait.loci.olap <- base::sapply(
     X = traits,
@@ -220,9 +220,9 @@ trait.loci.olap <- base::sapply(
       base::unique( # 132
         base::unlist(
           base::lapply(
-            X = base::names(pooled.PRIMEloci),
+            X = base::names(pooled.PRIME),
             FUN = function(n) {
-              pd <- pooled.PRIMEloci[[n]] # "K562_C": 32.407
+              pd <- pooled.PRIME[[n]] # "K562_C": 32.407
               GWAS.olap <- GenomicRanges::findOverlaps( # 62
                   query = GWAS.data[ids,], # 856
                   subject = pd, # 32,407
@@ -252,7 +252,7 @@ filtered.traits <- base::names( # 52 # 53 (20260127)
   )
 ```
 
-## [1.6.] Aggregate PRIMEloci-GWAS-overlaps into a matrix
+## [1.6.] Aggregate PRIME-GWAS-overlaps into a matrix
 #### evaluate with t = "MCV", n = "K562_C", "trait.matrices[[t]]"
 ```{r}
 trait.matrices <- base::lapply(
@@ -269,13 +269,13 @@ trait.matrices <- base::lapply(
         )
       m <- base::matrix(
           data = 0,
-          ncol = base::length(pooled.PRIMEloci),
+          ncol = base::length(pooled.PRIME),
           nrow = base::length(g),
-          dimnames = base::list(name, base::names(pooled.PRIMEloci))
+          dimnames = base::list(name, base::names(pooled.PRIME))
         )
       
-      for (n in base::names(pooled.PRIMEloci)) {
-        pd <- unfiltered.PRIMEloci[[n]]
+      for (n in base::names(pooled.PRIME)) {
+        pd <- unfiltered.PRIME[[n]]
         GWAS.olap <- IRanges::findOverlaps(
             query = g,
             subject = pd,
@@ -302,11 +302,11 @@ base::names(trait.matrices) <- filtered.traits
 point.GWAS.df <- base::do.call(
           what = "rbind",
           args = base::lapply(
-            X = base::names(pooled.PRIMEloci),
+            X = base::names(pooled.PRIME),
             FUN = function(n) {
-              pd <- pooled.PRIMEloci[[n]] # 32,407
+              pd <- pooled.PRIME[[n]] # 32,407
               
-              ## Overlaps of all non-CDS SNPs with cell-specific PRIMEloci (see [1.1.])
+              ## Overlaps of all non-CDS SNPs with cell-specific PRIME (see [1.1.])
               bg.olap <- IRanges::findOverlaps( # 42,943
                   query = SNP.data,
                   subject = pd,
@@ -317,7 +317,7 @@ point.GWAS.df <- base::do.call(
                     S4Vectors::queryHits(bg.olap) # 42,943
                   )
                 )
-              ## Overlaps of intergenic, filtered GWAS with PRIMEloci (see [1.4.])
+              ## Overlaps of intergenic, filtered GWAS with PRIME (see [1.4.])
               GWAS.olap <- IRanges::findOverlaps( # 839
                   query = GWAS.data,
                   subject = pd,
@@ -509,7 +509,7 @@ for (trait in focus.traits) {
   #   filename = base::paste0(
   #         here::here("10.External_validation/plots/"),
   #         trait,
-  #         "_variant_PRIMEloci_score_vs_cell_line.pdf"
+  #         "_variant_PRIME_score_vs_cell_line.pdf"
   #       ),
   #     width = 5,
   #     height = 5,
@@ -522,7 +522,7 @@ for (trait in focus.traits) {
 
 ## [3.0.] Helper function for preparing enrichment-recall curves
 #### Evaluate with trait = "MCV", n = "K562_C", sco = 0.89
-#### 'data = unfiltered.PRIMEloci',  fg.data = GWAS.data[GWAS.data$trait == trait,], bg.data = SNP.data, assay = names(unfiltered.PRIMEloci)
+#### 'data = unfiltered.PRIME',  fg.data = GWAS.data[GWAS.data$trait == trait,], bg.data = SNP.data, assay = names(unfiltered.PRIME)
 ```{r}
 enrichment.precision.recall <- function(data, fg.data, bg.data, assay) {
   
@@ -532,7 +532,7 @@ enrichment.precision.recall <- function(data, fg.data, bg.data, assay) {
       X = base::names(data), # equals assay
       FUN = function(n) {
         
-        ## Subset PRIMEloci via scores in a stepwise manner
+        ## Subset PRIME via scores in a stepwise manner
         gr <- data[[n]] # 3,915,085
         scores <- base::seq(0, 1, by = 0.01) # 101
         cnt <- base::sapply( # 101
@@ -543,13 +543,13 @@ enrichment.precision.recall <- function(data, fg.data, bg.data, assay) {
           )
         scores <- scores[cnt>=10] # 100
         
-        ## Overlap all trait-specific, filtered, non-CDS GWAS with all unfiltered PRIMEloci
+        ## Overlap all trait-specific, filtered, non-CDS GWAS with all unfiltered PRIME
         gr.fg.olap <- GenomicRanges::findOverlaps(
             query = fg.data,
             subject = gr,
             minoverlap = 1
           )
-        ## Overlap all non-CDS SNPs with all unfiltered PRIMEloci
+        ## Overlap all non-CDS SNPs with all unfiltered PRIME
         gr.bg.olap <- GenomicRanges::findOverlaps(
             query = bg.data,
             subject = gr,
@@ -603,10 +603,10 @@ enrichment.precision.recall <- function(data, fg.data, bg.data, assay) {
 ```{r}
 run_enrichment_for_trait <- function(trait) {
     .GlobalEnv$enrichment.precision.recall(
-      data = unfiltered.PRIMEloci,
+      data = unfiltered.PRIME,
       fg.data = GWAS.data[GWAS.data$trait == trait,], 
       bg.data = SNP.data, 
-      assay = names(unfiltered.PRIMEloci)
+      assay = names(unfiltered.PRIME)
     )
   }
 
@@ -742,32 +742,32 @@ immune.GWAS.data <- base::subset(GWAS.data, trait %in% immune.traits) # 4.093
 
 ## [3.4.] Run enrichment recall analysis for subset traits
 ```{r}
-cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
-    data = unfiltered.PRIMEloci,
+cellLines.PRIME.blood.GWAS.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = unfiltered.PRIME,
     fg.data = blood.GWAS.data,
     bg.data = SNP.data,
-    assay = base::names(unfiltered.PRIMEloci)
+    assay = base::names(unfiltered.PRIME)
   )
 
-cellLines.PRIMEloci.hep.GWAS.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
-    data = unfiltered.PRIMEloci,
+cellLines.PRIME.hep.GWAS.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = unfiltered.PRIME,
     fg.data = hep.GWAS.data,
     bg.data = SNP.data,
-    assay = base::names(unfiltered.PRIMEloci)
+    assay = base::names(unfiltered.PRIME)
   )
 
-cellLines.PRIMEloci.immune.GWAS.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
-    data = unfiltered.PRIMEloci,
+cellLines.PRIME.immune.GWAS.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = unfiltered.PRIME,
     fg.data = immune.GWAS.data,
     bg.data = SNP.data,
-    assay = base::names(unfiltered.PRIMEloci)
+    assay = base::names(unfiltered.PRIME)
   )
 ```
 
 ## [3.5.] Plot blood GWAS data
 ```{r}
 ggplot2::ggplot(
-    data = cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data,
+    data = cellLines.PRIME.blood.GWAS.enrichment.recall.data,
     mapping = aes(
         x = recall,
         y = enrichment,
@@ -780,8 +780,8 @@ ggplot2::ggplot(
       )
     ) +
   geom_point(
-    data = cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data[
-        cellLines.PRIMEloci.blood.GWAS.enrichment.recall.data$score==0.75,
+    data = cellLines.PRIME.blood.GWAS.enrichment.recall.data[
+        cellLines.PRIME.blood.GWAS.enrichment.recall.data$score==0.75,
       ]
     ) +
   scale_color_manual(
@@ -827,7 +827,7 @@ ggplot2::ggsave(
 ## [3.7.] Plot hepatocyte / liver GWAS
 ```{r}
 ggplot2::ggplot(
-    data = cellLines.PRIMEloci.hep.GWAS.enrichment.recall.data,
+    data = cellLines.PRIME.hep.GWAS.enrichment.recall.data,
     mapping = aes(
         x = recall,
         y = enrichment,
@@ -840,8 +840,8 @@ ggplot2::ggplot(
       )
     ) +
   geom_point(
-    data = cellLines.PRIMEloci.hep.GWAS.enrichment.recall.data[
-        cellLines.PRIMEloci.hep.GWAS.enrichment.recall.data$score == 0.75,
+    data = cellLines.PRIME.hep.GWAS.enrichment.recall.data[
+        cellLines.PRIME.hep.GWAS.enrichment.recall.data$score == 0.75,
       ]
     ) +
   scale_color_manual(
@@ -887,7 +887,7 @@ ggplot2::ggsave(
 ## [3.9.] Plot immune GWAS
 ```{r}
 ggplot2::ggplot(
-    data = cellLines.PRIMEloci.immune.GWAS.enrichment.recall.data,
+    data = cellLines.PRIME.immune.GWAS.enrichment.recall.data,
     mapping = aes(
         x = recall,
         y = enrichment,
@@ -900,8 +900,8 @@ ggplot2::ggplot(
       )
     ) +
   geom_point(
-    data = cellLines.PRIMEloci.immune.GWAS.enrichment.recall.data[
-        cellLines.PRIMEloci.immune.GWAS.enrichment.recall.data$score == 0.75,
+    data = cellLines.PRIME.immune.GWAS.enrichment.recall.data[
+        cellLines.PRIME.immune.GWAS.enrichment.recall.data$score == 0.75,
       ]
     ) +
   scale_color_manual(
@@ -1214,9 +1214,9 @@ GWAS.df$name <- base::paste0(
   )
 ```
 
-## [4.2.] Overlap non-subset PRIMElocis with GWAS in a trait-specific manner
+## [4.2.] Overlap non-subset PRIME loci with GWAS in a trait-specific manner
 #### see [1.5.] above for previous instalment of 'trait.loci.olap' object generation
-#### difference to [1.5.] is that here overlaps are calculated with 'unfiltered.PRIMEloci'
+#### difference to [1.5.] is that here overlaps are calculated with 'unfiltered.PRIME'
 #### Evaluatre with 't = "MCV"'
 ```{r}
 trait.loci.olap <- base::sapply(
@@ -1227,9 +1227,9 @@ trait.loci.olap <- base::sapply(
     base::unique(
       base::unlist(
         base::lapply(
-          X = base::names(unfiltered.PRIMEloci),
+          X = base::names(unfiltered.PRIME),
           FUN = function(n) {
-              pd <- unfiltered.PRIMEloci[[n]]
+              pd <- unfiltered.PRIME[[n]]
               GWAS.olap <- IRanges::findOverlaps(
                   query = GWAS.data[ids,],
                   subject = pd,
@@ -1246,7 +1246,7 @@ trait.loci.olap <- base::sapply(
 # base::length(trait.loci.olap[["MCV"]]) # 724
 ```
 
-## [4.3.] Aggregate trait-specific PRIMEloci-GWAS-overlaps into a matrix
+## [4.3.] Aggregate trait-specific PRIME-GWAS-overlaps into a matrix
 #### Evaluate with 't = "MCHC"'
 ```{r}
 trait.matrices <- base::lapply(
@@ -1263,13 +1263,13 @@ trait.matrices <- base::lapply(
       )
     m <- base::matrix(
         data = 0,
-        ncol = base::length(unfiltered.PRIMEloci),
+        ncol = base::length(unfiltered.PRIME),
         nrow = base::length(g),
-        dimnames = base::list(name, base::names(unfiltered.PRIMEloci))
+        dimnames = base::list(name, base::names(unfiltered.PRIME))
       )
   
-    for (n in base::names(unfiltered.PRIMEloci)){
-      pd <- unfiltered.PRIMEloci[[n]]
+    for (n in base::names(unfiltered.PRIME)){
+      pd <- unfiltered.PRIME[[n]]
       GWAS.olap <- IRanges::findOverlaps(
           query = g,
           subject = pd,
@@ -1388,7 +1388,7 @@ for (trait in base::c(blood.traits,hep.traits,immune.traits)) {
   #         here::here("10.External_validation/plots/"),
   #         "cellLinePlots/",
   #         trait,
-  #         "_variant_PRIMEloci_score_vs_cell_line.pdf"
+  #         "_variant_PRIME_score_vs_cell_line.pdf"
   #       ),
   #     width = 5,
   #     height = 5,
@@ -1534,7 +1534,7 @@ ggplot2::ggsave(
         base::format(base::Sys.Date(),"%Y%m%d"),
         "_", trait,
         "_", REtype,
-        "_variant_PRIMEloci_score_vs_cell_line",
+        "_variant_PRIME_score_vs_cell_line",
         "_", "BloodTraitCoeff", # "HepTraitCoeff",
         ".pdf"
       ),
@@ -1602,7 +1602,7 @@ ggplot2::ggsave(
         base::format(base::Sys.Date(),"%Y%m%d"),
         "_", trait,
         "_", REtype,
-        "_variant_PRIMEloci_score_vs_cell_line",
+        "_variant_PRIME_score_vs_cell_line",
         "_summary",
         ".pdf"
       ),
@@ -1665,7 +1665,7 @@ df %>% # 1,962
 #### TMPRSS6: great example: chr22:37109513:37109512 at the promoter of TMPRSS6, regulator of expression of the iron absorption-regulating hormone hepicidin/HAMP, plays a role in iron homeostasis, very low mean corpuscular erythrocyte volume (Gan et al., 2012, 10.3945/ajcn.111.025684)
 
 #### GMPR: Strong signal in intron: chr6:16267245:16267244
-#### SMIM1: Strong differences between K562 and HepG2 and K562 N vs. C, but PRIMEloci doesn't pick it up: chr1:3774965:3774964
+#### SMIM1: Strong differences between K562 and HepG2 and K562 N vs. C, but PRIME doesn't pick it up: chr1:3774965:3774964
 ```{r}
 df %>% # 1,287
   tidyr::pivot_wider( # 1,287/9 = 143 
@@ -1763,8 +1763,8 @@ df %>%
 ```
 
 ## [4.13.] Acquire scores for all variants across metabolic / hep traits
-#### hep.GWAS.data included 5,005 GWAS hits across all traits irrespective of an overlap with PRIMEloci
-#### trait.matrices[hep.traits] includes 3,314 unique GWAS hits that overlap with PRIMEloci across all samples (e.g., K562_N, GM12878_C)
+#### hep.GWAS.data included 5,005 GWAS hits across all traits irrespective of an overlap with PRIME
+#### trait.matrices[hep.traits] includes 3,314 unique GWAS hits that overlap with PRIME across all samples (e.g., K562_N, GM12878_C)
 ```{r}
 # collection = hep.traits # coefficient = 0.6139217 # 0.6143635 (20260127)
 # hep.GWAS.data 5005
@@ -1890,7 +1890,7 @@ ggplot2::ggsave(
         here::here("10.External_validation/"),
         base::format(base::Sys.Date(),"%Y%m%d"),
         "_", "AllBloodTraits", # "AllHepTraits",
-        "_variant_PRIMEloci_score_vs_cell_line",
+        "_variant_PRIME_score_vs_cell_line",
         ".pdf"
       ),
     plot = ggplot2::last_plot(),
@@ -1979,7 +1979,7 @@ ggplot2::ggsave(
         here::here("10.External_validation/"),
         base::format(base::Sys.Date(),"%Y%m%d"),
         "_", "AllBloodTraits", #"AllHepTraits",
-        "_variant_PRIMEloci_score_vs_cell_line",
+        "_variant_PRIME_score_vs_cell_line",
         "_summary",
         ".pdf"
       ),

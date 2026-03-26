@@ -111,7 +111,7 @@ GM12878.DLs <- GM12878.DLs[GM12878.DLs$sample %in% main_samples,] #1.875.808 vs 
 ```
 
 ## [2.2.] Plot total amount of divergent loci
-#### Resulting plots stored in 'plots.2/repSub.GM12878.nDLs.CTSS.pdf'
+#### Resulting plots stored in 'plots/repSub.GM12878.nDLs.CTSS.pdf'
 ```{r}
 GM12878.DLs %>% # GM12878.DLs.CTSS
   base::as.data.frame(row.names = NULL) %>%
@@ -157,7 +157,7 @@ GM12878.DLs %>% # GM12878.DLs.CTSS
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
-          here::here("3.DivergentLoci/plots.2/"),
+          here::here("3.DivergentLoci/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
           "_totalAmount",
@@ -716,7 +716,7 @@ GM12878.DLs %>% # GM12878.DLs.CTSS
 for(ext in base::c("pdf", "png")){
     ggplot2::ggsave(
       filename = base::paste0(
-          here::here("3.DivergentLoci/plots.2/"),
+          here::here("3.DivergentLoci/plots/"),
           base::format(base::Sys.time(), "%Y%m%d"),
           "_poolSub.GM12878.summitDLs.rmSingletons.main_samples",
           "_nDLs_DhsOverlap_dirScores_genomicFeat",
