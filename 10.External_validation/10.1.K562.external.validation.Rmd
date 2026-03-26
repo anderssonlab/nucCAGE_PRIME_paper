@@ -114,6 +114,9 @@ pooled.DLs <- base::readRDS(
       "poolSub.K562.DLs.FANTOM5style.rds"
     )
   )
+pooled.DLs[[1]]$sample <- "K562_C"
+pooled.DLs[[2]]$sample <- "K562_N"
+pooled.DLs[[3]]$sample <- "K562_N_10M"
 if (base::is.list(pooled.DLs)) {
   pooled.DLs <- base::do.call(
       what = "c",
@@ -273,7 +276,8 @@ olap <- GenomicRanges::findOverlaps(
     subject = cds,
     minoverlap = 1
   )
-ClinVar.data <- ClinVar.data[-S4Vectors::queryHits(olap)]
+if (length(S4Vectors::queryHits(olap))>0)
+  ClinVar.data <- ClinVar.data[-S4Vectors::queryHits(olap)]
 ClinVar.data <- base::sort(ClinVar.data)
 ClinVar.data <- base::unique(ClinVar.data)
 ClinVar.n <- base::length(ClinVar.data)
@@ -428,6 +432,7 @@ base::colnames(k27ac) <- base::c(
     "qvalue","peak"
   )
 k27ac <- GenomicRanges::GRanges(k27ac)
+GenomeInfoDb::seqlevels(k27ac,pruning.mode="coarse") <- GenomeInfoDb::seqlevels(SNP.data)
 k27ac.dhs <- IRanges::subsetByOverlaps(
     x = DHS,
     ranges = k27ac
@@ -770,7 +775,7 @@ ggplot2::ggplot(
 ```
 
 ## [3.2.] Printint plots
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -815,7 +820,7 @@ ggplot2::ggplot(
 ```
 
 ## [3.4.] Printint plots
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -868,7 +873,7 @@ ggplot2::ggplot(
 ```
 
 ## [3.7.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -921,7 +926,7 @@ ggplot2::ggplot(
 ```
 
 ## [3.10.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1009,7 +1014,7 @@ ggplot2::ggplot(
 ```
 
 ## [3.13.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1059,7 +1064,7 @@ ggplot2::ggplot(
 ```
 
 ## [4.3.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1108,7 +1113,7 @@ ggplot2::ggplot(
 ```
 
 ## [4.5.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1163,7 +1168,7 @@ ggplot2::ggplot(
 ```
 
 ## [4.8.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1216,7 +1221,7 @@ ggplot2::ggplot(
 ```
 
 ## [4.11.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1306,7 +1311,7 @@ ggplot2::ggplot(
 ```
 
 ## [4.14.] Plot using ggplot with adjusted spacing
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1356,7 +1361,7 @@ ggplot2::ggplot(
 ```
 
 ## [5.2.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
       here::here("10.External_validation/plots/"),
@@ -1404,7 +1409,7 @@ ggplot2::ggplot(
 ```
 
 ## [5.4.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1459,7 +1464,7 @@ ggplot2::ggplot(
 ```
 
 ## [5.7.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1511,7 +1516,7 @@ ggplot2::ggplot(
 ```
 
 ## [5.10.] Plot data
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1563,7 +1568,7 @@ ggplot2::ggplot(
 ```
 
 ## [6.2.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1609,7 +1614,7 @@ ggplot2::ggplot(
 ```
 
 ## [6.4.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1661,7 +1666,7 @@ ggplot2::ggplot(
 ```
 
 ## [6.7.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1710,7 +1715,7 @@ ggplot2::ggplot(
 ```
 
 ## [6.10.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1802,7 +1807,7 @@ ggplot2::ggplot(
 ```
 
 ## [6.13.] Plot data
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -1961,7 +1966,7 @@ ggplot2::ggplot(
 ```
 
 ## [8.1.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2006,7 +2011,7 @@ ggplot2::ggplot(
 ```
 
 ## [8.3.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2053,7 +2058,7 @@ ggplot2::ggplot(
 ```
 
 ## [8.5.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2100,7 +2105,7 @@ ggplot2::ggplot(
 ```
 
 ## [8.7.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2148,7 +2153,7 @@ ggplot2::ggplot(
     )
 ```
 ## [8.9.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/"),
@@ -2232,7 +2237,7 @@ ggplot2::ggplot(
 ```
 
 ## [8.14.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2282,7 +2287,7 @@ ggplot2::ggplot(
 ```
 
 ## [8.17.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2319,7 +2324,7 @@ ggplot2::ggplot(
 ```
 
 ## [9.1.] Print data
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2353,7 +2358,7 @@ ggplot2::ggplot(
 ```
 
 ## [9.3.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2387,7 +2392,7 @@ ggplot2::ggplot(
 ```
 
 ## [9.5.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2423,7 +2428,7 @@ ggplot2::ggplot(
 ```
 
 ## [9.7.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2459,7 +2464,7 @@ ggplot2::ggplot(
 ```
 
 ## [9.9.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2493,7 +2498,7 @@ ggplot2::ggplot(
 ```
 
 ## [9.11.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2529,7 +2534,7 @@ ggplot2::ggplot(
 ```
 
 ## [9.13.] Print plot
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
@@ -2563,7 +2568,7 @@ ggplot2::ggplot(
 ```
 
 ## [9.15.] Print data
-```{r eval=FALSE}
+```{r}
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),

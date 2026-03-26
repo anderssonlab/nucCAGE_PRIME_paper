@@ -812,7 +812,7 @@ ggplot2::ggplot(
 ```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
-        here::here("10.External_validation/"),
+        here::here("10.External_validation/plots/"),
         base::format(base::Sys.Date(),"%Y%m%d"),
         "_bloodTraits",
         "_enrichment_recall_plot.pdf"
@@ -872,7 +872,7 @@ ggplot2::ggplot(
 ```{r eval=FALSE}
 ggplot2::ggsave(
     filename = base::paste0(
-        here::here("10.External_validation/"),
+        here::here("10.External_validation/plots/"),
         base::format(base::Sys.Date(),"%Y%m%d"),
         "_hepTraits",
         "_enrichment_recall_plot.pdf"
@@ -1530,7 +1530,7 @@ df %>%
 ```{r}
 ggplot2::ggsave(
     filename = base::paste0(
-        here::here("10.External_validation/"),
+        here::here("10.External_validation/plots/"),
         base::format(base::Sys.Date(),"%Y%m%d"),
         "_", trait,
         "_", REtype,
@@ -1598,7 +1598,7 @@ df %>%
 ```{r}
 ggplot2::ggsave(
     filename = base::paste0(
-        here::here("10.External_validation/"),
+        here::here("10.External_validation/plots/"),
         base::format(base::Sys.Date(),"%Y%m%d"),
         "_", trait,
         "_", REtype,
@@ -1887,7 +1887,7 @@ ggplot2::ggplot(
 ```{r}
 ggplot2::ggsave(
     filename = base::paste0(
-        here::here("10.External_validation/"),
+        here::here("10.External_validation/plots/"),
         base::format(base::Sys.Date(),"%Y%m%d"),
         "_", "AllBloodTraits", # "AllHepTraits",
         "_variant_PRIME_score_vs_cell_line",
@@ -1976,7 +1976,7 @@ df %>%
 ```{r}
 ggplot2::ggsave(
     filename = base::paste0(
-        here::here("10.External_validation/"),
+        here::here("10.External_validation/plots/"),
         base::format(base::Sys.Date(),"%Y%m%d"),
         "_", "AllBloodTraits", #"AllHepTraits",
         "_variant_PRIME_score_vs_cell_line",
