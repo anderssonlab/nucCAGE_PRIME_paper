@@ -154,8 +154,8 @@ k562.combined.repSub.CTSSs <- CAGEfightR::calcTPM(k562.combined.repSub.CTSSs)
 k562.combined.poolSub.CTSSs <- CAGEfightR::calcTPM(k562.combined.poolSub.CTSSs)
 
 
-k562.combined.repSub.CTSSs <- PRIME::rmSingletons(k562.combined.repSub.CTSSs)
-k562.combined.poolSub.CTSSs <- PRIME::rmSingletons(k562.combined.poolSub.CTSSs)
+k562.combined.repSub.rmS.CTSSs <- PRIME::rmSingletons(k562.combined.repSub.CTSSs)
+k562.combined.poolSub.rmS.CTSSs <- PRIME::rmSingletons(k562.combined.poolSub.CTSSs)
 ```
 
 # [1.8.] Save CTSS objects
@@ -171,11 +171,25 @@ base::saveRDS(
   object = k562.combined.repSub.CTSSs,
   file = base::paste0(
       here::here("1.CTSSs/"),
-      "repSub.combined.k562.CTSSs.rmSingletons.rds"
+      "repSub.combined.k562.CTSSs.rds"
     )
   )
 base::saveRDS(
   object = k562.combined.poolSub.CTSSs,
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "poolSub.combined.k562.CTSSs.rds"
+    )
+  )
+base::saveRDS(
+  object = k562.combined.repSub.rmS.CTSSs,
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "repSub.combined.k562.CTSSs.rmSingletons.rds"
+    )
+  )
+base::saveRDS(
+  object = k562.combined.poolSub.rmS.CTSSs,
   file = base::paste0(
       here::here("1.CTSSs/"),
       "poolSub.combined.k562.CTSSs.rmSingletons.rds"
@@ -404,8 +418,8 @@ GM12878.combined.poolSub.CTSSs <- CAGEfightR::calcTPM(GM12878.combined.poolSub.C
 ```
 
 ```{r}
-GM12878.combined.repSub.CTSSs <- PRIME::rmSingletons(GM12878.combined.repSub.CTSSs)
-GM12878.combined.poolSub.CTSSs <- PRIME::rmSingletons(GM12878.combined.poolSub.CTSSs)
+GM12878.combined.repSub.rmS.CTSSs <- PRIME::rmSingletons(GM12878.combined.repSub.CTSSs)
+GM12878.combined.poolSub.rmS.CTSSs <- PRIME::rmSingletons(GM12878.combined.poolSub.CTSSs)
 ```
 
 ## [2.9.] Save CTSS objects
@@ -421,11 +435,25 @@ base::saveRDS(
   object = GM12878.combined.repSub.CTSSs,
   file = base::paste0(
       here::here("1.CTSSs/"),
-      "repSub.combined.GM12878.CTSSs.rmSingletons.rds"
+      "repSub.combined.GM12878.CTSSs.rds"
     )
   )
 base::saveRDS(
   object = GM12878.combined.poolSub.CTSSs,
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "poolSub.combined.GM12878.CTSSs.rds"
+    )
+  )
+base::saveRDS(
+  object = GM12878.combined.repSub.rmS.CTSSs,
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "repSub.combined.GM12878.CTSSs.rmSingletons.rds"
+    )
+  )
+base::saveRDS(
+  object = GM12878.combined.poolSub.rmS.CTSSs,
   file = base::paste0(
       here::here("1.CTSSs/"),
       "poolSub.combined.GM12878.CTSSs.rmSingletons.rds"
