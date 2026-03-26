@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r message=FALSE, warning=FALSE}
 base::library("tidyverse")
 base::library("PRIME")
+base::library("GenomeInfoDb")
 
 base::library("BiocParallel")
 BiocParallel::register(
@@ -52,7 +53,7 @@ assertthat::are_equal(
 
 ```{r}
 GM12878.summitDLs.rmS <- base::lapply(
-  X = main_samples[1],
+  X = main_samples,
   FUN = function(s) {
     base::message("Currently processed sample:\t",s)
     ## Split sample into chromosomes
@@ -94,24 +95,28 @@ GM12878.summitDLs.rmS <- base::lapply(
    )
 ```
 
-
 ```{r}
 GM12878.DLs.rmS <- base::lapply(
-  X = main_samples[1],
+  X = main_samples,
   FUN = function(s) {
     base::message("Currently processed sample:\t",s)
+    ## Call TCs
+    ctss <- CAGEfightR::calcPooled(GM12878.CTSSs[,s], inputAssay = "counts.noSingletons")
+    ctss <- base::subset(ctss, score > 0)
+    TCs <- CAGEfightR::clusterUnidirectionally(ctss)
     ## Split sample into chromosomes
     CTSSs.by.chr <- base::split(
         x = GM12878.CTSSs[,s],
         f = GenomeInfoDb::seqnames(GM12878.CTSSs[,s])
       )
-    ## Run divergentLociTCsSummit() across chromosomes
+    ## Run divergentLoci across chromosomes
     DLs.by.chr <- base::lapply(
       X = base::names(CTSSs.by.chr),
       FUN = function(chr) {
         base::message("\tCurrently processed chromosome:\t",chr)
         PRIME::divergentLoci(
-            ctss = CTSSs.by.chr[[chr]]
+          object = TCs,
+          ctss = CTSSs.by.chr[[chr]]
           )
         }
       )
@@ -150,11 +155,23 @@ K562.CTSSs <- base::readRDS(
   )
 ```
 
+```{r}
+main_samples <- base::c(
+    "K562_C", "K562_N", "K562_N_10M"
+  )
+
+## Check that all selected samples are present in GM12878.CTSSs
+assertthat::are_equal(
+    main_samples,
+    base::colnames(K562.CTSSs)[base::colnames(K562.CTSSs) %in% main_samples]
+  )
+```
+
 ## [2.1.] Run divergentLociTCsSummit() and FANTOM5-style divergent loci calling across samples
 
 ```{r}
 K562.summitDLs.rmS <- base::lapply(
-  X = main_samples[1],
+  X = main_samples,
   FUN = function(s) {
     base::message("Currently processed sample:\t",s)
     ## Split sample into chromosomes
@@ -199,21 +216,26 @@ K562.summitDLs.rmS <- base::lapply(
 
 ```{r}
 K562.DLs.rmS <- base::lapply(
-  X = main_samples[1],
+  X = main_samples,
   FUN = function(s) {
     base::message("Currently processed sample:\t",s)
+    ## Call TCs
+    ctss <- CAGEfightR::calcPooled(K562.CTSSs[,s], inputAssay = "counts.noSingletons")
+    ctss <- base::subset(ctss, score > 0)
+    TCs <- CAGEfightR::clusterUnidirectionally(ctss)
     ## Split sample into chromosomes
     CTSSs.by.chr <- base::split(
         x = K562.CTSSs[,s],
         f = GenomeInfoDb::seqnames(K562.CTSSs[,s])
       )
-    ## Run divergentLociTCsSummit() across chromosomes
+    ## Run divergentLoci across chromosomes
     DLs.by.chr <- base::lapply(
       X = base::names(CTSSs.by.chr),
       FUN = function(chr) {
         base::message("\tCurrently processed chromosome:\t",chr)
         PRIME::divergentLoci(
-            ctss = CTSSs.by.chr[[chr]]
+          object = TCs,
+          ctss = CTSSs.by.chr[[chr]]
           )
         }
       )
