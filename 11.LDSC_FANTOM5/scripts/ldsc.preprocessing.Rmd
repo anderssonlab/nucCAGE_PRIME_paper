@@ -1,0 +1,353 @@
+---
+title: "0.2.PRIMEloci predictions processing"
+author: "Hjolli"
+date: "2025-01-06"
+output: html_document
+---
+
+```{r}
+library(CAGEfightR)
+library(GenomicRanges)
+library(readr)
+library(rtracklayer)
+library(parallel)
+library(ggplot2)
+library(GenomicFeatures)
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+library(SummarizedExperiment)
+library(tibble)
+library(ggrepel)
+library(dplyr)
+library(scales)
+library(gridExtra)
+library(BuenColors)
+library(reshape2)
+
+theme_set(theme_bw(base_size = 8))
+```
+
+
+
+```{r}
+# Read in PRIMEloci cellFacet refined predictions 
+# Regions with FANTOM5 pooled rmSingletons score>=0.75 retained
+
+# Per cellFacet PRIMEloci score
+PL.cellFacet.fantom5 <- read.table(
+  "/projects/ralab/data/projects/nucleiCAGEproject/8.Genomewide_prediction/FANTOM5_rmSingletons_cellfacet/FANTOM5-cellfacet_score_setnoCAGEtoNaN.tsv",
+  sep="\t",header=T, row.names = 1)
+
+# Per cellFacet sum counts
+expr.cellFacet.fantom5 <- read.table(
+  "/projects/ralab/data/projects/nucleiCAGEproject/8.Genomewide_prediction/FANTOM5_rmSingletons_cellfacet/FANTOM5-cellfacet_sumcount.tsv",
+  sep="\t",header=T, row.names = 1)
+
+#Make into rangedSummarized experiment
+ranges <- GRanges(gsub(";",":",rownames(PL.cellFacet.fantom5)))
+cellFacet.rse <- SummarizedExperiment(assays=SimpleList(PL.score=PL.cellFacet.fantom5, counts=expr.cellFacet.fantom5),
+                                      rowRanges=ranges,
+                                      colData=DataFrame(sample=colnames(PL.cellFacet.fantom5)))
+
+# Read in FANTOM5 predictions
+F5 <- import.bed("/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/F5.hg38.enhancers.bed.gz")
+```
+
+```{r}
+#Read in bigwig files for TPM normalization
+plus_files <- list.files(path="/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5/pooled_bw",
+                         pattern="*.plus.bw",
+                         full.names=TRUE)
+minus_files <- list.files(path="/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5/pooled_bw/",
+                          pattern="*.minus.bw",
+                          full.names=TRUE)
+
+names <- gsub("\\.plus\\.bw$", "",plus_files) %>% basename()
+
+bw_plus <- BigWigFileList(plus_files)
+bw_minus <- BigWigFileList(minus_files)
+names(bw_plus) <- names
+names(bw_minus) <- names
+
+CTSSs <- quantifyCTSSs(plusStrand=bw_plus,
+                       minusStrand=bw_minus)
+
+CTSSs <- calcTotalTags(CTSSs)
+
+totaltags <- CTSSs$totalTags
+
+#Fix names
+names(totaltags) <- gsub("_",".",names(totaltags))
+names(totaltags) <- gsub("[()]", "", gsub(" ", ".", names(totaltags)))
+names(totaltags) <- gsub("[- ]", ".", names(totaltags)) # Replace spaces and hyphens with dots
+
+colData(cellFacet.rse)$totalTags <- totaltags[colData(cellFacet.rse)$sample]
+
+cellFacet.rse <- calcTPM(cellFacet.rse,
+                         inputAssay="counts",
+                         outputAssay = "TPM",
+                         totalTags = "totalTags")
+
+quantile_target_normalization <- function(mat) {
+  # Get the target distribution, ignoring NA values
+  target_dist <- sort(as.vector(mat), na.last = NA)
+  
+  # Apply quantile normalization to each column
+  normalized_mat <- apply(mat, 2, function(column) {
+    non_na_idx <- which(!is.na(column))
+    
+    if (length(non_na_idx) == 0) return(column)  # If all values are NA, return as is
+    
+    ranks <- rank(column[non_na_idx], ties.method = "average")
+    
+    scaled_ranks <- (ranks - min(ranks)) / (max(ranks) - min(ranks)) * (length(target_dist) - 1) + 1
+    
+    normalized_values <- approx(seq_along(target_dist), target_dist, scaled_ranks, rule = 2)$y
+
+    # Replace the non-NA values with their normalized values
+    output_column <- column
+    output_column[non_na_idx] <- normalized_values  
+    
+    return(output_column)
+  })
+  
+  return(normalized_mat)
+}
+
+
+assay(cellFacet.rse,"qn.PL.score") <- quantile_target_normalization(as.matrix(assay(cellFacet.rse,"PL.score")))
+
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+cellFacet.rse <- assignTxType(cellFacet.rse,txModels = txdb)
+
+saveRDS(cellFacet.rse,file="/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/cellFacet.rds")
+```
+
+
+
+```{r}
+#Select top distal regions and promoter proximal regions
+cellFacet.rse <- readRDS("cellFacet.rds")
+rowData(cellFacet.rse)$location <- NA
+rowData(cellFacet.rse)$location[rowData(cellFacet.rse)$txType %in% c("promoter","proximal","fiveUTR")] <- "proximal"
+rowData(cellFacet.rse)$location[rowData(cellFacet.rse)$txType %in% c("intron","intergenic")] <- "distal"
+keep <- !is.na(rowData(cellFacet.rse)$location)
+cellFacet.rse <- cellFacet.rse[keep,]
+
+F5 <- assignTxType(F5, txModels=txdb)
+F5$location[F5$txType %in% c("promoter","proximal","fiveUTR")] <- "proximal"
+F5$location[F5$txType %in% c("intron","intergenic")] <- "distal"
+```
+
+
+```{r}
+#Generate proximal and distal bed files
+PL.proximal <- subset(rowRanges(cellFacet.rse),location=="proximal")
+PL.distal <- subset(rowRanges(cellFacet.rse),location=="distal")
+export.bed(PL.proximal,"/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/PL_proximal.bed")
+export.bed(PL.distal,"/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/PL_distal.bed")
+
+F5.proximal <- subset(F5,location=="proximal")
+F5.distal <- subset(F5,location=="distal")
+export.bed(F5.proximal,"/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/F5_proximal.bed")
+export.bed(F5.distal,"/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/F5_distal.bed")
+
+```
+
+
+
+
+```{r}
+# Generate per cellFacet bed file
+
+generate_bed_files <- function(rse, assay_name, score_threshold, location_col, output_dir) {
+  # Create output directory if it doesn't exist
+  if (!dir.exists(output_dir)) dir.create(output_dir)
+  
+  # Extract assay data
+  assay_data <- assays(rse)[[assay_name]]
+  
+  # Extract rowRanges directly
+  ranges <- rowRanges(rse)
+  
+  # Ensure the location column exists in rowRanges metadata
+  if (!(location_col %in% colnames(mcols(ranges)))) {
+    stop(paste("Column", location_col, "not found in rowRanges metadata"))
+  }
+  
+  # Loop over each sample
+  sample_names <- colnames(assay_data)
+  for (sample in sample_names) {
+    # Filter regions with PL.score >= threshold for the current sample
+    sample_scores <- assay_data[, sample]
+    valid_idx <- !is.na(sample_scores) & sample_scores >= score_threshold
+    valid_regions <- ranges[valid_idx]
+    
+    # Split regions into distal and proximal based on the location column
+    split_regions <- split(valid_regions, mcols(valid_regions)[[location_col]])
+    
+    # Write each category to a separate BED file
+    for (category in names(split_regions)) {
+      category_regions <- split_regions[[category]]
+      
+      # Convert to BED format
+      bed_data <- data.frame(
+        seqnames = as.character(seqnames(category_regions)),
+        start = start(category_regions),
+        end = end(category_regions),
+        score = sample_scores[valid_idx][mcols(valid_regions)[[location_col]] == category]
+      )
+      
+      # Create a filename
+      bed_filename <- file.path(
+        output_dir, 
+        paste0(sample, "_", category, "_", assay_name, score_threshold, ".bed")
+      )
+      
+      # Write to file
+      write.table(bed_data, bed_filename, quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
+    }
+  }
+}
+
+
+# PL score usage
+generate_bed_files(
+  rse = cellFacet.rse,
+  assay_name = "qn.PL.score",
+  score_threshold = 0.5,
+  location_col = "location",
+  output_dir = "/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/"
+)
+
+
+# TPM usage
+generate_bed_files(
+  rse = cellFacet.rse,
+  assay_name = "TPM",
+  score_threshold = 1,
+  location_col = "location",
+  output_dir = "/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/"
+)
+```
+
+
+
+
+
+
+
+
+```{r}
+generate_bed_files_strict <- function(rse, assay_name, top_n, score_threshold = 0.5, location_col, output_dir) {
+  # Create output directory if it doesn't exist
+  if (!dir.exists(output_dir)) dir.create(output_dir)
+  
+  # Extract assay data and rowRanges
+  assay_data <- assays(rse)[[assay_name]]
+  ranges <- rowRanges(rse)
+  
+  # Ensure the location column exists in rowRanges metadata
+  if (!(location_col %in% colnames(mcols(ranges)))) {
+    stop(paste("Column", location_col, "not found in rowRanges metadata"))
+  }
+  
+  # Loop over each sample
+  sample_names <- colnames(assay_data)
+  for (sample in sample_names) {
+    # Extract scores for the current sample
+    sample_scores <- assay_data[, sample]
+    
+    # Handle distal regions only
+    distal_idx <- mcols(ranges)[[location_col]] == "distal"
+    valid_distal <- ranges[distal_idx]
+    valid_distal_scores <- sample_scores[distal_idx]
+    
+    # Combine scores and ranges into a data frame
+    distal_scores_df <- data.frame(
+      seqnames = as.character(seqnames(valid_distal)),
+      start = start(valid_distal),
+      end = end(valid_distal),
+      score = valid_distal_scores
+    )
+    
+    # Remove NA scores and filter by the threshold (≥ score_threshold)
+    distal_scores_df <- distal_scores_df[!is.na(distal_scores_df$score) & 
+                                           distal_scores_df$score >= score_threshold, ]
+    
+    # If no valid distal regions are found, print a message and skip to next sample
+    if (nrow(distal_scores_df) == 0) {
+      message(sprintf("No valid distal regions with score >= %.2f found for sample: %s", 
+                      score_threshold, sample))
+      next
+    }
+    
+    # Order by score (descending) and keep only top_n if available
+    distal_scores_df <- distal_scores_df[order(-distal_scores_df$score), ]
+    if (nrow(distal_scores_df) > top_n) {
+      distal_scores_df <- distal_scores_df[1:top_n, ]
+    }
+    
+    # Write top distal regions to BED file
+    distal_filename <- file.path(output_dir, paste0(sample, "_distal_", score_threshold, ".bed"))
+    write.table(distal_scores_df, distal_filename, quote = FALSE, sep = "\t", 
+                row.names = FALSE, col.names = FALSE)
+  }
+}
+
+
+# Usage
+generate_bed_files_strict(
+  rse = cellFacet.rse,
+  assay_name = "qn.PL.score",
+  score_threshold = 0.5,
+  top_n = 100000,
+  location_col = "location",
+  output_dir = "/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/score_range/"
+)
+
+generate_bed_files_strict(
+  rse = cellFacet.rse,
+  assay_name = "qn.PL.score",
+  score_threshold = 0.55,
+  top_n = 100000,
+  location_col = "location",
+  output_dir = "/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/score_range/"
+)
+
+generate_bed_files_strict(
+  rse = cellFacet.rse,
+  assay_name = "qn.PL.score",
+  score_threshold = 0.6,
+  top_n = 100000,
+  location_col = "location",
+  output_dir = "/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/score_range/"
+)
+
+generate_bed_files_strict(
+  rse = cellFacet.rse,
+  assay_name = "qn.PL.score",
+  score_threshold = 0.65,
+  top_n = 100000,
+  location_col = "location",
+  output_dir = "/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/score_range/"
+)
+
+generate_bed_files_strict(
+  rse = cellFacet.rse,
+  assay_name = "qn.PL.score",
+  score_threshold = 0.7,
+  top_n = 100000,
+  location_col = "location",
+  output_dir = "/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/score_range/"
+)
+
+generate_bed_files_strict(
+  rse = cellFacet.rse,
+  assay_name = "qn.PL.score",
+  score_threshold = 0.75,
+  top_n = 100000,
+  location_col = "location",
+  output_dir = "/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/score_range/"
+)
+```
+
