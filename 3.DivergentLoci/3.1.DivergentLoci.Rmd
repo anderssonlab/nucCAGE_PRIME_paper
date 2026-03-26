@@ -114,10 +114,12 @@ GM12878.DLs.rmS <- base::lapply(
       X = base::names(CTSSs.by.chr),
       FUN = function(chr) {
         base::message("\tCurrently processed chromosome:\t",chr)
-        PRIME::divergentLoci(
+        gr <- PRIME::divergentLoci(
           object = TCs,
           ctss = CTSSs.by.chr[[chr]]
           )
+        gr$sample <- s
+        return(gr)
         }
       )
     return(
@@ -190,7 +192,7 @@ K562.summitDLs.rmS <- base::lapply(
           )
         }
       )
-    return(
+      return(
       ## Merge information for all chromosomes of one sample
       base::suppressWarnings(
         base::unlist(
@@ -233,10 +235,12 @@ K562.DLs.rmS <- base::lapply(
       X = base::names(CTSSs.by.chr),
       FUN = function(chr) {
         base::message("\tCurrently processed chromosome:\t",chr)
-        PRIME::divergentLoci(
+        gr <- PRIME::divergentLoci(
           object = TCs,
           ctss = CTSSs.by.chr[[chr]]
           )
+        gr$sample <- s
+        return(gr)
         }
       )
     return(
