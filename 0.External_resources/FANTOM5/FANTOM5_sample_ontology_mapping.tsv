@@ -1,0 +1,967 @@
+sampleName	sampelID	ontology	data
+acantholytic_squamous_carcinoma_cell_line_HCC1806	CNhs11844	acantholytic_squamous_carcinoma	cellLine
+acute_lymphoblastic_leukemia_(B-ALL)_cell_line_BALL-1	CNhs11251	acute_lymphoblastic_leukemia_(B-ALL)	cellLine
+acute_lymphoblastic_leukemia_(B-ALL)_cell_line_NALM-6	CNhs11282	acute_lymphoblastic_leukemia_(B-ALL)	cellLine
+acute_lymphoblastic_leukemia_(T-ALL)_cell_line_HPB-ALL	CNhs10746	acute_lymphoblastic_leukemia_(T-ALL)	cellLine
+acute_lymphoblastic_leukemia_(T-ALL)_cell_line_Jurkat	CNhs11253	acute_lymphoblastic_leukemia_(T-ALL)	cellLine
+acute_myeloid_leukemia_(FAB_M0)_cell_line_KG-1	CNhs13053	acute_myeloid_leukemia_(FAB_M0)	cellLine
+acute_myeloid_leukemia_(FAB_M1)_cell_line_HYT-1	CNhs13054	acute_myeloid_leukemia_(FAB_M1)	cellLine
+acute_myeloid_leukemia_(FAB_M2)_cell_line_Kasumi-1	CNhs13502	acute_myeloid_leukemia_(FAB_M2)	cellLine
+acute_myeloid_leukemia_(FAB_M2)_cell_line_Kasumi-6	CNhs13052	acute_myeloid_leukemia_(FAB_M2)	cellLine
+acute_myeloid_leukemia_(FAB_M2)_cell_line_NKM-1	CNhs11864	acute_myeloid_leukemia_(FAB_M2)	cellLine
+acute_myeloid_leukemia_(FAB_M3)_cell_line_HL60	CNhs13055	acute_myeloid_leukemia_(FAB_M3)	cellLine
+acute_myeloid_leukemia_(FAB_M4)_cell_line_FKH-1	CNhs13503	acute_myeloid_leukemia_(FAB_M4)	cellLine
+acute_myeloid_leukemia_(FAB_M4)_cell_line_HNT-34	CNhs13504	acute_myeloid_leukemia_(FAB_M4)	cellLine
+acute_myeloid_leukemia_(FAB_M4eo)_cell_line_EoL-1	CNhs13056	acute_myeloid_leukemia_(FAB_M4eo)	cellLine
+acute_myeloid_leukemia_(FAB_M4eo)_cell_line_EoL-3	CNhs13057	acute_myeloid_leukemia_(FAB_M4eo)	cellLine
+acute_myeloid_leukemia_(FAB_M5)_cell_line_NOMO-1	CNhs13050	acute_myeloid_leukemia_(FAB_M5)	cellLine
+acute_myeloid_leukemia_(FAB_M5)_cell_line_P31%2FFUJ	CNhs13051	acute_myeloid_leukemia_(FAB_M5)	cellLine
+acute_myeloid_leukemia_(FAB_M5)_cell_line_THP-1_(fresh)	CNhs10722	acute_myeloid_leukemia_(FAB_M5)	cellLine
+acute_myeloid_leukemia_(FAB_M5)_cell_line_THP-1_(revived)	CNhs10723	acute_myeloid_leukemia_(FAB_M5)	cellLine
+acute_myeloid_leukemia_(FAB_M5)_cell_line_THP-1_(thawed)	CNhs10724	acute_myeloid_leukemia_(FAB_M5)	cellLine
+acute_myeloid_leukemia_(FAB_M5)_cell_line_U-937_DE-4	CNhs13058	acute_myeloid_leukemia_(FAB_M5)	cellLine
+acute_myeloid_leukemia_(FAB_M6)_cell_line_EEB	CNhs13059	acute_myeloid_leukemia_(FAB_M6)	cellLine
+acute_myeloid_leukemia_(FAB_M6)_cell_line_F-36E	CNhs13060	acute_myeloid_leukemia_(FAB_M6)	cellLine
+acute_myeloid_leukemia_(FAB_M6)_cell_line_F-36P	CNhs13505	acute_myeloid_leukemia_(FAB_M6)	cellLine
+acute_myeloid_leukemia_(FAB_M7)_cell_line_M-MOK	CNhs13049	acute_myeloid_leukemia_(FAB_M7)	cellLine
+acute_myeloid_leukemia_(FAB_M7)_cell_line_MKPL-1	CNhs11888	acute_myeloid_leukemia_(FAB_M7)	cellLine
+adenocarcinoma_cell_line_IM95m	CNhs11882	adenocarcinoma	cellLine
+adrenal_cortex_adenocarcinoma_cell_line_SW-13	CNhs11893	adrenal_cortex_adenocarcinoma	cellLine
+adult_T-cell_leukemia_cell_line_ATN-1	CNhs10738	adult_T-cell_leukemia	cellLine
+alveolar_cell_carcinoma_cell_line_SW_1573	CNhs11838	alveolar_cell_carcinoma	cellLine
+anaplastic_carcinoma_cell_line_8305C	CNhs10745	anaplastic_carcinoma	cellLine
+anaplastic_large_cell_lymphoma_cell_line_Ki-JK	CNhs11881	anaplastic_large_cell_lymphoma	cellLine
+anaplastic_squamous_cell_carcinoma_cell_line_RPMI_2650	CNhs11889	anaplastic_squamous_cell_carcinoma	cellLine
+argyrophil_small_cell_carcinoma_cell_line_TC-YIK	CNhs11725	argyrophil_small_cell_carcinoma	cellLine
+astrocytoma_cell_line_TM-31	CNhs10742	astrocytoma	cellLine
+b_cell_line_RPMI1788	CNhs10744	b	cellLine
+B_lymphoblastoid_cell_line__GM12878_ENCODE,_biol_rep1	CNhs12331	B_lymphoblastoid	cellLine
+B_lymphoblastoid_cell_line__GM12878_ENCODE,_biol_rep2	CNhs12332	B_lymphoblastoid	cellLine
+B_lymphoblastoid_cell_line__GM12878_ENCODE,_biol_rep3	CNhs12333	B_lymphoblastoid	cellLine
+basal_cell_carcinoma_cell_line_TE_354	CNhs11932	basal_cell_carcinoma	cellLine
+bile_duct_carcinoma_cell_line_HuCCT1	CNhs10750	bile_duct_carcinoma	cellLine
+bile_duct_carcinoma_cell_line_TFK-1	CNhs11265	bile_duct_carcinoma	cellLine
+biphenotypic_B_myelomonocytic_leukemia_cell_line_MV-4-11	CNhs11845	biphenotypic_B_myelomonocytic_leukemia	cellLine
+bone_marrow_stromal_cell_line_StromaNKtert	CNhs11931	bone_marrow_stromal	cellLine
+breast_carcinoma_cell_line_MCF7	CNhs11943	breast_carcinoma	cellLine
+breast_carcinoma_cell_line_MDA-MB-453	CNhs10736	breast_carcinoma	cellLine
+bronchial_squamous_cell_carcinoma_cell_line_KNS-62	CNhs11862	bronchial_squamous_cell_carcinoma	cellLine
+bronchioalveolar_carcinoma_cell_line_NCI-H358	CNhs11840	bronchioalveolar_carcinoma	cellLine
+bronchioalveolar_carcinoma_cell_line_NCI-H650	CNhs14138	bronchioalveolar_carcinoma	cellLine
+bronchogenic_carcinoma_cell_line_ChaGo-K-1	CNhs11841	bronchogenic_carcinoma	cellLine
+Burkitts_lymphoma_cell_line_DAUDI	CNhs10739	Burkitts_lymphoma	cellLine
+Burkitts_lymphoma_cell_line_RAJI	CNhs11268	Burkitts_lymphoma	cellLine
+carcinoid_cell_line_NCI-H1770	CNhs11834	carcinoid	cellLine
+carcinoid_cell_line_NCI-H727	CNhs14244	carcinoid	cellLine
+carcinoid_cell_line_SK-PN-DW	CNhs11846	carcinoid	cellLine
+carcinosarcoma_cell_line_JHUCS-1	CNhs11747	carcinosarcoma	cellLine
+cervical_cancer_cell_line_D98-AH2	CNhs11288	cervical_cancer	cellLine
+cervical_cancer_cell_line_ME-180	CNhs11289	cervical_cancer	cellLine
+cholangiocellular_carcinoma_cell_line_HuH-28	CNhs11283	cholangiocellular_carcinoma	cellLine
+chondrosarcoma_cell_line_SW_1353	CNhs11833	chondrosarcoma	cellLine
+choriocarcinoma_cell_line_BeWo	CNhs10740	choriocarcinoma	cellLine
+choriocarcinoma_cell_line_SCH	CNhs11875	choriocarcinoma	cellLine
+choriocarcinoma_cell_line_T3M-3	CNhs11820	choriocarcinoma	cellLine
+chronic_lymphocytic_leukemia_(T-CLL)_cell_line_SKW-3	CNhs11714	chronic_lymphocytic_leukemia_(T-CLL)	cellLine
+chronic_myeloblastic_leukemia_(CML)_cell_line_KCL-22	CNhs11886	chronic_myeloblastic_leukemia_(CML)	cellLine
+chronic_myelogenous_leukemia_(CML)_cell_line_MEG-A2	CNhs11865	chronic_myelogenous_leukemia_(CML)	cellLine
+chronic_myelogenous_leukemia_cell_line_K562_ENCODE,_biol_rep1	CNhs12334	chronic_myelogenous_leukemia	cellLine
+chronic_myelogenous_leukemia_cell_line_K562_ENCODE,_biol_rep2	CNhs12335	chronic_myelogenous_leukemia	cellLine
+chronic_myelogenous_leukemia_cell_line_K562_ENCODE,_biol_rep3	CNhs12336	chronic_myelogenous_leukemia	cellLine
+chronic_myelogenous_leukemia_cell_line_K562	CNhs11250	chronic_myelogenous_leukemia	cellLine
+chronic_myelogenous_leukemia_cell_line_KU812	CNhs10727	chronic_myelogenous_leukemia	cellLine
+clear_cell_carcinoma_cell_line_JHOC-5	CNhs11745	clear_cell_carcinoma	cellLine
+clear_cell_carcinoma_cell_line_TEN	CNhs11930	clear_cell_carcinoma	cellLine
+colon_carcinoma_cell_line_CACO-2	CNhs11280	colon_carcinoma	cellLine
+colon_carcinoma_cell_line_COLO-320	CNhs10737	colon_carcinoma	cellLine
+cord_blood_derived_cell_line_COBL-a_24h_infection	CNhs11050	cord_blood_derived	cellLine
+cord_blood_derived_cell_line_COBL-a_24h_infection(-C)	CNhs11049	cord_blood_derived	cellLine
+cord_blood_derived_cell_line_COBL-a_untreated	CNhs11045	cord_blood_derived	cellLine
+diffuse_large_B-cell_lymphoma_cell_line_CTB-1	CNhs11741	diffuse_large_B-cell_lymphoma	cellLine
+ductal_cell_carcinoma_cell_line_KLM-1	CNhs11100	ductal_cell_carcinoma	cellLine
+ductal_cell_carcinoma_cell_line_MIA_Paca2	CNhs11259	ductal_cell_carcinoma	cellLine
+embryonic_kidney_cell_line__HEK293%2FSLAM_infection,_24hr	CNhs11047	embryonic_kidney	cellLine
+embryonic_kidney_cell_line__HEK293%2FSLAM_untreated	CNhs11046	embryonic_kidney	cellLine
+embryonic_pancreas_cell_line_1B2C6	CNhs11731	embryonic_pancreas	cellLine
+embryonic_pancreas_cell_line_1C3D3	CNhs11732	embryonic_pancreas	cellLine
+embryonic_pancreas_cell_line_1C3IKEI	CNhs11733	embryonic_pancreas	cellLine
+embryonic_pancreas_cell_line_2C6	CNhs11814	embryonic_pancreas	cellLine
+endometrial_carcinoma_cell_line_OMC-2	CNhs11266	endometrial_carcinoma	cellLine
+endometrial_stromal_sarcoma_cell_line_OMC-9	CNhs11249	endometrial_stromal_sarcoma	cellLine
+endometrioid_adenocarcinoma_cell_line_JHUEM-1	CNhs11748	endometrioid_adenocarcinoma	cellLine
+epidermoid_carcinoma_cell_line_A431	CNhs10743	epidermoid_carcinoma	cellLine
+epidermoid_carcinoma_cell_line_Ca_Ski	CNhs10748	epidermoid_carcinoma	cellLine
+epithelioid_sarcoma_cell_line_HS-ES-1	CNhs11247	epithelioid_sarcoma	cellLine
+epithelioid_sarcoma_cell_line_HS-ES-2R	CNhs14239	epithelioid_sarcoma	cellLine
+epitheloid_carcinoma_cell_line__HelaS3_ENCODE,_biol_rep1	CNhs12325	epitheloid_carcinoma	cellLine
+epitheloid_carcinoma_cell_line__HelaS3_ENCODE,_biol_rep2	CNhs12326	epitheloid_carcinoma	cellLine
+epitheloid_carcinoma_cell_line__HelaS3_ENCODE,_biol_rep3	CNhs12327	epitheloid_carcinoma	cellLine
+Ewings_sarcoma_cell_line_Hs_863	CNhs11836	Ewings_sarcoma	cellLine
+extraskeletal_myxoid_chondrosarcoma_cell_line_H-EMC-SS	CNhs10728	extraskeletal_myxoid_chondrosarcoma	cellLine
+fibrosarcoma_cell_line_HT-1080	CNhs11860	fibrosarcoma	cellLine
+fibrous_histiocytoma_cell_line_GCT_TIB-223	CNhs11842	fibrous_histiocytoma	cellLine
+gall_bladder_carcinoma_cell_line_TGBC14TKB	CNhs11256	gall_bladder_carcinoma	cellLine
+gall_bladder_carcinoma_cell_line_TGBC2TKB	CNhs10733	gall_bladder_carcinoma	cellLine
+gastric_adenocarcinoma_cell_line_MKN1	CNhs11737	gastric_adenocarcinoma	cellLine
+gastric_adenocarcinoma_cell_line_MKN45	CNhs11819	gastric_adenocarcinoma	cellLine
+gastric_cancer_cell_line_AZ521	CNhs11286	gastric_cancer	cellLine
+gastric_cancer_cell_line_GSS	CNhs14241	gastric_cancer	cellLine
+gastrointestinal_carcinoma_cell_line_ECC12	CNhs11738	gastrointestinal_carcinoma	cellLine
+giant_cell_carcinoma_cell_line_LU65	CNhs11274	giant_cell_carcinoma	cellLine
+giant_cell_carcinoma_cell_line_Lu99B	CNhs10751	giant_cell_carcinoma	cellLine
+glassy_cell_carcinoma_cell_line_HOKUG	CNhs11824	glassy_cell_carcinoma	cellLine
+glioblastoma_cell_line_A172,_tech_rep1	CNhs11185	glioblastoma	cellLine
+glioblastoma_cell_line_A172,_tech_rep2	CNhs11248	glioblastoma	cellLine
+glioblastoma_cell_line_T98G	CNhs11272	glioblastoma	cellLine
+glioma_cell_line_GI-1	CNhs10731	glioma	cellLine
+granulosa_cell_tumor_cell_line_KGN	CNhs11740	granulosa_cell_tumor	cellLine
+hairy_cell_leukemia_cell_line_Mo	CNhs11843	hairy_cell_leukemia	cellLine
+Hep-2_cells_mock_treated,_biol_rep1	CNhs13479	Hep-2	cellLine
+Hep-2_cells_mock_treated,_biol_rep2	CNhs13500	Hep-2	cellLine
+Hep-2_cells_mock_treated,_biol_rep3	CNhs13501	Hep-2	cellLine
+Hep-2_cells_treated_with_Streptococci_strain_5448,_biol_rep1	CNhs13477	Hep-2	cellLine
+Hep-2_cells_treated_with_Streptococci_strain_5448,_biol_rep2	CNhs13496	Hep-2	cellLine
+Hep-2_cells_treated_with_Streptococci_strain_5448,_biol_rep3	CNhs13497	Hep-2	cellLine
+Hep-2_cells_treated_with_Streptococci_strain_JRS4,_biol_rep1	CNhs13478	Hep-2	cellLine
+Hep-2_cells_treated_with_Streptococci_strain_JRS4,_biol_rep2	CNhs13498	Hep-2	cellLine
+Hep-2_cells_treated_with_Streptococci_strain_JRS4,_biol_rep3	CNhs13499	Hep-2	cellLine
+hepatic_mesenchymal_tumor_cell_line_LI90	CNhs11868	hepatic_mesenchymal_tumor	cellLine
+hepatoblastoma_cell_line_HuH-6	CNhs11742	hepatoblastoma	cellLine
+hepatocellular_carcinoma_cell_line__HepG2_ENCODE,_biol_rep1	CNhs12328	hepatocellular_carcinoma	cellLine
+hepatocellular_carcinoma_cell_line__HepG2_ENCODE,_biol_rep2	CNhs12329	hepatocellular_carcinoma	cellLine
+hepatocellular_carcinoma_cell_line__HepG2_ENCODE,_biol_rep3	CNhs12330	hepatocellular_carcinoma	cellLine
+hepatoma_cell_line_Li-7	CNhs11271	hepatoma	cellLine
+hereditary_spherocytic_anemia_cell_line_WIL2-NS	CNhs11891	hereditary_spherocytic_anemia	cellLine
+Hodgkins_lymphoma_cell_line_HD-Mar2	CNhs11715	Hodgkins_lymphoma	cellLine
+keratoacanthoma_cell_line_HKA-1	CNhs11880	keratoacanthoma	cellLine
+Krukenberg_tumor_cell_line_HSKTC	CNhs11822	Krukenberg_tumor	cellLine
+large_cell_lung_carcinoma_cell_line_IA-LM	CNhs11277	large_cell_lung_carcinoma	cellLine
+large_cell_lung_carcinoma_cell_line_NCI-H460	CNhs12806	large_cell_lung_carcinoma	cellLine
+large_cell_non-keratinizing_squamous_carcinoma_cell_line_SKG-II-SF	CNhs11825	large_cell_non-keratinizing_squamous_carcinoma	cellLine
+leiomyoblastoma_cell_line_G-402	CNhs11848	leiomyoblastoma	cellLine
+leiomyoma_cell_line_10964C	CNhs11722	leiomyoma	cellLine
+leiomyoma_cell_line_15242A	CNhs11723	leiomyoma	cellLine
+leiomyoma_cell_line_15425	CNhs11724	leiomyoma	cellLine
+lens_epithelial_cell_line_SRA_01%2F04	CNhs11750	lens_epithelial	cellLine
+leukemia,_chronic_megakaryoblastic_cell_line_MEG-01	CNhs11859	leukemia,_chronic_megakaryoblastic	cellLine
+liposarcoma_cell_line_KMLS-1	CNhs11870	liposarcoma	cellLine
+liposarcoma_cell_line_SW_872	CNhs11851	liposarcoma	cellLine
+lung_adenocarcinoma_cell_line_A549	CNhs11275	lung_adenocarcinoma	cellLine
+lung_adenocarcinoma_cell_line_PC-14	CNhs10726	lung_adenocarcinoma	cellLine
+lung_adenocarcinoma,_papillary_cell_line_NCI-H441	CNhs14245	lung_adenocarcinoma,_papillary	cellLine
+lymphangiectasia_cell_line_DS-1	CNhs11852	lymphangiectasia	cellLine
+lymphoma,_malignant,_hairy_B-cell_cell_line_MLMA	CNhs11935	lymphoma,_malignant,_hairy_B-cell	cellLine
+malignant_trichilemmal_cyst_cell_line_DJM-1	CNhs10730	malignant_trichilemmal_cyst	cellLine
+maxillary_sinus_tumor_cell_line_HSQ-89	CNhs10732	maxillary_sinus_tumor	cellLine
+medulloblastoma_cell_line_D283_Med	CNhs12805	medulloblastoma	cellLine
+medulloblastoma_cell_line_ONS-76	CNhs11861	medulloblastoma	cellLine
+melanoma_cell_line_COLO_679	CNhs11281	melanoma	cellLine
+melanoma_cell_line_G-361	CNhs11254	melanoma	cellLine
+meningioma_cell_line_HKBMM	CNhs11945	meningioma	cellLine
+merkel_cell_carcinoma_cell_line_MKL-1	CNhs12838	merkel_cell_carcinoma	cellLine
+merkel_cell_carcinoma_cell_line_MS-1	CNhs12839	merkel_cell_carcinoma	cellLine
+mesenchymal_stem_cell_line_Hu5%2FE18	CNhs11718	mesenchymal_stem	cellLine
+mesothelioma_cell_line_ACC-MESO-1	CNhs11263	mesothelioma	cellLine
+mesothelioma_cell_line_ACC-MESO-4	CNhs11264	mesothelioma	cellLine
+mesothelioma_cell_line_Mero-14,_tech_rep1	CNhs13065	mesothelioma	cellLine
+mesothelioma_cell_line_Mero-25	CNhs13066	mesothelioma	cellLine
+mesothelioma_cell_line_Mero-41	CNhs13067	mesothelioma	cellLine
+mesothelioma_cell_line_Mero-48a	CNhs13068	mesothelioma	cellLine
+mesothelioma_cell_line_Mero-82	CNhs13069	mesothelioma	cellLine
+mesothelioma_cell_line_Mero-83	CNhs13070	mesothelioma	cellLine
+mesothelioma_cell_line_Mero-84	CNhs13072	mesothelioma	cellLine
+mesothelioma_cell_line_Mero-95	CNhs13073	mesothelioma	cellLine
+mesothelioma_cell_line_NCI-H2052	CNhs13063	mesothelioma	cellLine
+mesothelioma_cell_line_NCI-H226	CNhs13062	mesothelioma	cellLine
+mesothelioma_cell_line_NCI-H2452	CNhs13064	mesothelioma	cellLine
+mesothelioma_cell_line_NCI-H28	CNhs13061	mesothelioma	cellLine
+mesothelioma_cell_line_No36	CNhs13074	mesothelioma	cellLine
+mesothelioma_cell_line_ONE58	CNhs13075	mesothelioma	cellLine
+mixed_mullerian_tumor_cell_line_HTMMT	CNhs11944	mixed_mullerian_tumor	cellLine
+mucinous_adenocarcinoma_cell_line_JHOM-1	CNhs11752	mucinous_adenocarcinoma	cellLine
+mucinous_cystadenocarcinoma_cell_line_MCAS	CNhs11873	mucinous_cystadenocarcinoma	cellLine
+mycosis_fungoides,_T_cell_lymphoma_cell_line_HuT_102_TIB-162	CNhs11858	mycosis_fungoides,_T_cell_lymphoma	cellLine
+myelodysplastic_syndrome_cell_line_SKM-1	CNhs11934	myelodysplastic_syndrome	cellLine
+myeloma_cell_line_PCM6	CNhs11258	myeloma	cellLine
+myxofibrosarcoma_cell_line_MFH-ino	CNhs11729	myxofibrosarcoma	cellLine
+myxofibrosarcoma_cell_line_NMFH-1	CNhs11821	myxofibrosarcoma	cellLine
+neuroblastoma_cell_line_CHP-134	CNhs11276	neuroblastoma	cellLine
+neuroblastoma_cell_line_NB-1	CNhs11284	neuroblastoma	cellLine
+neuroblastoma_cell_line_NBsusSR	CNhs11818	neuroblastoma	cellLine
+neuroblastoma_cell_line_NH-12	CNhs11811	neuroblastoma	cellLine
+neuroectodermal_tumor_cell_line_FU-RPNT-1	CNhs11744	neuroectodermal_tumor	cellLine
+neuroectodermal_tumor_cell_line_FU-RPNT-2	CNhs11753	neuroectodermal_tumor	cellLine
+neuroectodermal_tumor_cell_line_TASK1	CNhs11866	neuroectodermal_tumor	cellLine
+neuroepithelioma_cell_line_SK-N-MC	CNhs11853	neuroepithelioma	cellLine
+neurofibroma_cell_line_Hs_53	CNhs11854	neurofibroma	cellLine
+NK_T_cell_leukemia_cell_line_KHYG-1	CNhs11867	NK_T_cell_leukemia	cellLine
+non_T_non_B_acute_lymphoblastic_leukemia_(ALL)_cell_line_P30%2FOHK	CNhs10747	non_T_non_B_acute_lymphoblastic_leukemia_(ALL)	cellLine
+normal_embryonic_palatal_mesenchymal_cell_line_HEPM	CNhs11894	normal_embryonic_palatal_mesenchymal	cellLine
+normal_intestinal_epithelial_cell_line_FHs_74_Int	CNhs11950	normal_intestinal_epithelial	cellLine
+oral_squamous_cell_carcinoma_cell_line_Ca9-22	CNhs10752	oral_squamous_cell_carcinoma	cellLine
+oral_squamous_cell_carcinoma_cell_line_HO-1-u-1	CNhs11287	oral_squamous_cell_carcinoma	cellLine
+oral_squamous_cell_carcinoma_cell_line_HSC-3	CNhs11717	oral_squamous_cell_carcinoma	cellLine
+oral_squamous_cell_carcinoma_cell_line_SAS	CNhs11810	oral_squamous_cell_carcinoma	cellLine
+osteoclastoma_cell_line_Hs_706	CNhs11835	osteoclastoma	cellLine
+osteosarcoma_cell_line_143B%2FTK^(-)neo^(R)	CNhs11279	osteosarcoma	cellLine
+osteosarcoma_cell_line_HS-Os-1	CNhs11290	osteosarcoma	cellLine
+pagetoid_sarcoma_cell_line_Hs_925	CNhs11856	pagetoid_sarcoma	cellLine
+pancreatic_carcinoma_cell_line_NOR-P1	CNhs11832	pancreatic_carcinoma	cellLine
+papillary_adenocarcinoma_cell_line_8505C	CNhs11716	papillary_adenocarcinoma	cellLine
+papillotubular_adenocarcinoma_cell_line_TGBC18TKB	CNhs10734	papillotubular_adenocarcinoma	cellLine
+peripheral_neuroectodermal_tumor_cell_line_KU-SN	CNhs11830	peripheral_neuroectodermal_tumor	cellLine
+pharyngeal_carcinoma_cell_line_Detroit_562	CNhs11849	pharyngeal_carcinoma	cellLine
+plasma_cell_leukemia_cell_line_ARH-77	CNhs12807	plasma_cell_leukemia	cellLine
+pleomorphic_hepatocellular_carcinoma_cell_line_SNU-387	CNhs11933	pleomorphic_hepatocellular_carcinoma	cellLine
+prostate_cancer_cell_line_DU145	CNhs11260	prostate_cancer	cellLine
+prostate_cancer_cell_line_PC-3	CNhs11243	prostate_cancer	cellLine
+rectal_cancer_cell_line_TT1TKB	CNhs11255	rectal_cancer	cellLine
+renal_cell_carcinoma_cell_line_OS-RC-2	CNhs10729	renal_cell_carcinoma	cellLine
+renal_cell_carcinoma_cell_line_TUHR10TKB	CNhs11257	renal_cell_carcinoma	cellLine
+retinoblastoma_cell_line_Y79	CNhs11267	retinoblastoma	cellLine
+rhabdomyosarcoma_cell_line_KYM-1	CNhs11877	rhabdomyosarcoma	cellLine
+rhabdomyosarcoma_cell_line_RMS-YM	CNhs11269	rhabdomyosarcoma	cellLine
+sacrococcigeal_teratoma_cell_line_HTST	CNhs11829	sacrococcigeal_teratoma	cellLine
+schwannoma_cell_line_HS-PSS,_tech_rep1	CNhs11183	schwannoma	cellLine
+schwannoma_cell_line_HS-PSS,_tech_rep2	CNhs11245	schwannoma	cellLine
+serous_adenocarcinoma_cell_line_JHOS-2	CNhs11746	serous_adenocarcinoma	cellLine
+serous_adenocarcinoma_cell_line_SK-OV-3-R_after_co-culture_with_SOC-57-02-G,_biol_rep1	CNhs13508	serous_adenocarcinoma	cellLine
+serous_adenocarcinoma_cell_line_SK-OV-3-R,_biol_rep1	CNhs13099	serous_adenocarcinoma	cellLine
+serous_cystadenocarcinoma_cell_line_HTOA	CNhs11827	serous_cystadenocarcinoma	cellLine
+signet_ring_carcinoma_cell_line_Kato_III	CNhs10753	signet_ring_carcinoma	cellLine
+signet_ring_carcinoma_cell_line_NUGC-4	CNhs11270	signet_ring_carcinoma	cellLine
+small_cell_cervical_cancer_cell_line_HCSC-1	CNhs11885	small_cell_cervical_cancer	cellLine
+small_cell_gastrointestinal_carcinoma_cell_line_ECC10	CNhs11736	small_cell_gastrointestinal_carcinoma	cellLine
+small_cell_lung_carcinoma_cell_line_DMS_144	CNhs12808	small_cell_lung_carcinoma	cellLine
+small_cell_lung_carcinoma_cell_line_LK-2	CNhs11285	small_cell_lung_carcinoma	cellLine
+small_cell_lung_carcinoma_cell_line_NCI-H82	CNhs12809	small_cell_lung_carcinoma	cellLine
+small_cell_lung_carcinoma_cell_line_WA-hT	CNhs11812	small_cell_lung_carcinoma	cellLine
+small-cell_gastrointestinal_carcinoma_cell_line_ECC4	CNhs11734	small-cell_gastrointestinal_carcinoma	cellLine
+somatostatinoma_cell_line_QGP-1	CNhs11869	somatostatinoma	cellLine
+spindle_cell_sarcoma_cell_line_Hs_132	CNhs11857	spindle_cell_sarcoma	cellLine
+splenic_lymphoma_with_villous_lymphocytes_cell_line_SLVL	CNhs10741	splenic_lymphoma_with_villous_lymphocytes	cellLine
+squamous_cell_carcinoma_cell_line_EC-GI-10	CNhs11252	squamous_cell_carcinoma	cellLine
+squamous_cell_carcinoma_cell_line_JHUS-nk1	CNhs11749	squamous_cell_carcinoma	cellLine
+squamous_cell_carcinoma_cell_line_T3M-5	CNhs11739	squamous_cell_carcinoma	cellLine
+squamous_cell_lung_carcinoma_cell_line_EBC-1	CNhs11273	squamous_cell_lung_carcinoma	cellLine
+squamous_cell_lung_carcinoma_cell_line_LC-1F	CNhs14238	squamous_cell_lung_carcinoma	cellLine
+squamous_cell_lung_carcinoma_cell_line_RERF-LC-AI	CNhs14240	squamous_cell_lung_carcinoma	cellLine
+synovial_sarcoma_cell_line_HS-SY-II	CNhs11244	synovial_sarcoma	cellLine
+teratocarcinoma_cell_line_NCC-IT-A3	CNhs11878	teratocarcinoma	cellLine
+teratocarcinoma_cell_line_NCR-G1	CNhs11884	teratocarcinoma	cellLine
+teratocarcinoma_cell_line_PA-1	CNhs11890	teratocarcinoma	cellLine
+testicular_germ_cell_embryonal_carcinoma_cell_line_ITO-II	CNhs11876	testicular_germ_cell_embryonal_carcinoma	cellLine
+testicular_germ_cell_embryonal_carcinoma_cell_line_NEC14	CNhs12351	testicular_germ_cell_embryonal_carcinoma	cellLine
+testicular_germ_cell_embryonal_carcinoma_cell_line_NEC15	CNhs12362	testicular_germ_cell_embryonal_carcinoma	cellLine
+testicular_germ_cell_embryonal_carcinoma_cell_line_NEC8	CNhs11726	testicular_germ_cell_embryonal_carcinoma	cellLine
+thymic_carcinoma_cell_line_Ty-82	CNhs14139	thymic_carcinoma	cellLine
+thyroid_carcinoma_cell_line_KHM-5M	CNhs14140	thyroid_carcinoma	cellLine
+thyroid_carcinoma_cell_line_TCO-1	CNhs11872	thyroid_carcinoma	cellLine
+transitional_cell_carcinoma_cell_line_Hs_769	CNhs11837	transitional_cell_carcinoma	cellLine
+transitional-cell_carcinoma_cell_line_5637	CNhs10735	transitional-cell_carcinoma	cellLine
+transitional-cell_carcinoma_cell_line_JMSU1	CNhs11261	transitional-cell_carcinoma	cellLine
+tridermal_teratoma_cell_line_HGRT	CNhs11828	tridermal_teratoma	cellLine
+tubular_adenocarcinoma_cell_line_SUIT-2	CNhs11883	tubular_adenocarcinoma	cellLine
+Wilms_tumor_cell_line_G-401	CNhs11892	Wilms_tumor	cellLine
+Wilms_tumor_cell_line_HFWT	CNhs11728	Wilms_tumor	cellLine
+xeroderma_pigentosum_b_cell_line_XPL_17	CNhs11813	xeroderma_pigentosum_b	cellLine
+achillestendon,donor2	CNhs13435	NA	tissue
+adipose,donor1	CNhs13972	NA	tissue
+adipose,donor2	CNhs13973	NA	tissue
+adipose,donor3	CNhs13974	NA	tissue
+adipose,donor4	CNhs13975	NA	tissue
+adiposetissue,adult,pool1	CNhs10615	adipose tissue	tissue
+adrenalgland,adult,pool1	CNhs11793	NA	tissue
+amygdala-adult,donor10196	CNhs13793	brain	tissue
+amygdala,adult,donor10252	CNhs12311	brain	tissue
+amygdala,newborn,donor10223	CNhs14078	NA	tissue
+aorta,adult,pool1	CNhs11760	blood vessel	tissue
+appendix,adult	CNhs12842	large intestine	tissue
+artery,adult	CNhs12843	NA	tissue
+bladder,adult,pool1	CNhs10616	urinary bladder	tissue
+blood,adult,pool1	CNhs11761	blood	tissue
+bonemarrow,adult	CNhs12845	NA	tissue
+brain,adult,donor1	CNhs11796	brain	tissue
+brain,adult,pool1	CNhs10617	brain	tissue
+brain,fetal,pool1	CNhs11797	brain	tissue
+breast,adult,donor1	CNhs11792	NA	tissue
+caudatenucleus-adult,donor10196	CNhs13802	brain	tissue
+caudatenucleus,adult,donor10252	CNhs12321	brain	tissue
+caudatenucleus,adult,donor10258	CNhs14232	NA	tissue
+caudatenucleus,newborn,donor10223	CNhs14071	NA	tissue
+cerebellum-adult,donor10196	CNhs13799	brain	tissue
+cerebellum,adult,donor10252	CNhs12323	brain	tissue
+cerebellum,adult,pool1	CNhs11795	brain	tissue
+cerebellum,newborn,donor10223	CNhs14075	NA	tissue
+cerebralmeninges,adult	CNhs12840	meninx	tissue
+cerebrospinalfluid,donor2	CNhs13437	NA	tissue
+cervix,adult,pool1	CNhs10618	uterus	tissue
+ClontechHumanUniversalReferenceTotalRNA,pool1	CNhs10608	NA	tissue
+colon,adult,donor1	CNhs11794	large intestine	tissue
+colon,adult,pool1	CNhs10619	large intestine	tissue
+colon,fetal,donor1	CNhs11780	large intestine	tissue
+corpuscallosum,adult,pool1	CNhs10649	brain	tissue
+cruciateligament,donor2	CNhs13439	NA	tissue
+diaphragm,fetal,donor1	CNhs11779	skeletal muscle tissue	tissue
+diencephalon,adult	CNhs12610	brain	tissue
+ductusdeferens,adult	CNhs12846	internal male genitalia	tissue
+duodenum,fetal,donor1,tech_rep1	CNhs11781	brain	tissue
+duodenum,fetal,donor1,tech_rep2	CNhs12997	brain	tissue
+duramater,adult,donor1	CNhs10648	meninx	tissue
+epididymis,adult	CNhs12847	internal male genitalia	tissue
+esophagus,adult,pool1	CNhs10620	esophagus	tissue
+eye-muscleinferiorrectus,donor1	CNhs13444	NA	tissue
+eye-musclelateral,donor2	CNhs13442	NA	tissue
+eye-musclemedial,donor2	CNhs13443	NA	tissue
+eye-musclesuperior,donor2	CNhs13441	NA	tissue
+eye-vitreoushumor,donor1	CNhs13440	NA	tissue
+eye,fetal,donor1	CNhs11762	eye	tissue
+Fingernail(includingnailplate,eponychiumandhyponychium),donor2	CNhs13445	NA	tissue
+frontallobe,adult,pool1	CNhs10647	brain	tissue
+gallbladder,adult	CNhs12848	gallbladder	tissue
+globuspallidus-adult,donor10196	CNhs13801	brain	tissue
+globuspallidus,adult,donor10252	CNhs12319	brain	tissue
+globuspallidus,adult,donor10258	CNhs14549	NA	tissue
+globuspallidus,newborn,donor10223	CNhs14082	NA	tissue
+heart-mitralvalve,adult	CNhs12855	heart	tissue
+heart-pulmonicvalve,adult	CNhs12856	heart	tissue
+heart-tricuspidvalve,adult	CNhs12857	heart	tissue
+heart,adult,diseased,donor1	CNhs11758	heart	tissue
+heart,adult,diseasedpost-infarction,donor1	CNhs11757	heart	tissue
+heart,adult,pool1	CNhs10621	heart	tissue
+heart,fetal,pool1	CNhs10653	heart	tissue
+hippocampus-adult,donor10196	CNhs13795	brain	tissue
+hippocampus,adult,donor10252	CNhs12312	brain	tissue
+hippocampus,adult,donor10258	CNhs14227	NA	tissue
+hippocampus,newborn,donor10223	CNhs14081	NA	tissue
+insula,adult,pool1	CNhs10646	brain	tissue
+kidney,adult,pool1	CNhs10622	kidney	tissue
+kidney,fetal,pool1	CNhs10652	kidney	tissue
+leftatrium,adult,donor1	CNhs11790	heart	tissue
+leftventricle,adult,donor1	CNhs11789	heart	tissue
+liver,adult,pool1	CNhs10624	liver	tissue
+liver,fetal,pool1	CNhs11798	liver	tissue
+locuscoeruleus-adult,donor10196	CNhs13808	brain	tissue
+locuscoeruleus,adult,donor10252	CNhs12322	brain	tissue
+locuscoeruleus,adult,donor10258	CNhs14550	NA	tissue
+locuscoeruleus,newborn,donor10223	CNhs14080	NA	tissue
+lung,adult,pool1	CNhs10625	lung	tissue
+lung,fetal,donor1	CNhs11680	lung	tissue
+lung,rightlowerlobe,adult,donor1	CNhs11786	lung	tissue
+lymphnode,adult,donor1	CNhs11788	lymph node	tissue
+medialfrontalgyrus-adult,donor10196	CNhs13796	brain	tissue
+medialfrontalgyrus,adult,donor10252	CNhs12310	brain	tissue
+medialfrontalgyrus,adult,donor10258	CNhs14221	NA	tissue
+medialfrontalgyrus,newborn,donor10223	CNhs14069	NA	tissue
+medialtemporalgyrus-adult,donor10196	CNhs13809	brain	tissue
+medialtemporalgyrus,adult,donor10252	CNhs12316	brain	tissue
+medialtemporalgyrus,adult,donor10258,tech_rep1	CNhs14229	NA	tissue
+medialtemporalgyrus,adult,donor10258,tech_rep2	CNhs14552	NA	tissue
+medialtemporalgyrus,newborn,donor10223	CNhs14070	NA	tissue
+medullaoblongata-adult,donor10196	CNhs13800	brain	tissue
+medullaoblongata,adult,donor10252	CNhs12315	brain	tissue
+medullaoblongata,adult,pool1	CNhs10645	brain	tissue
+medullaoblongata,newborn,donor10223	CNhs14079	NA	tissue
+nucleusaccumbens,adult,pool1	CNhs10644	brain	tissue
+occipitalcortex-adult,donor10196	CNhs13798	brain	tissue
+occipitalcortex,adult,donor10252	CNhs12320	brain	tissue
+occipitalcortex,newborn,donor10223	CNhs14073	NA	tissue
+occipitallobe,adult,donor1	CNhs11787	brain	tissue
+occipitallobe,fetal,donor1	CNhs11784	brain	tissue
+occipitalpole,adult,pool1	CNhs10643	brain	tissue
+olfactoryregion,adult	CNhs12611	olfactory region	tissue
+opticnerve,donor1	CNhs13449	brain	tissue
+ovary,adult,pool1	CNhs10626	female gonad	tissue
+pancreas,adult,donor1	CNhs11756	pancreas	tissue
+paracentralgyrus,adult,pool1	CNhs10642	brain	tissue
+parietalcortex,adult,donor10258	CNhs14226	NA	tissue
+parietallobe-adult,donor10196	CNhs13797	brain	tissue
+parietallobe,adult,donor10252	CNhs12317	brain	tissue
+parietallobe,adult,pool1	CNhs10641	brain	tissue
+parietallobe,fetal,donor1	CNhs11782	brain	tissue
+parietallobe,newborn,donor10223	CNhs14074	NA	tissue
+parotidgland,adult	CNhs12849	parotid gland	tissue
+penis,adult	CNhs12850	penis	tissue
+pinealgland-adult,donor10196	CNhs13804	brain	tissue
+pinealgland,adult,donor10252	CNhs12228	brain	tissue
+pinealgland,adult,donor10258	CNhs14230	NA	tissue
+pituitarygland-adult,donor10196	CNhs13805	brain	tissue
+pituitarygland,adult,donor10252	CNhs12229	brain	tissue
+pituitarygland,adult,donor10258	CNhs14231	NA	tissue
+placenta,adult,pool1	CNhs10627	placenta	tissue
+pons,adult,pool1	CNhs10640	brain	tissue
+postcentralgyrus,adult,pool1	CNhs10638	brain	tissue
+prostate,adult,pool1	CNhs10628	prostate gland	tissue
+putamen,adult,donor10196	CNhs12324	brain	tissue
+putamen,adult,donor10252	CNhs13912	NA	tissue
+putamen,adult,donor10258,tech_rep1	CNhs14225	NA	tissue
+putamen,adult,donor10258,tech_rep2	CNhs14618	NA	tissue
+putamen,newborn,donor10223	CNhs14083	NA	tissue
+rectum,fetal,donor1	CNhs11777	large intestine	tissue
+retina,adult,pool1	CNhs10636	eye	tissue
+SABiosciencesXpressRefHumanUniversalTotalRNA,pool1	CNhs10610	NA	tissue
+salivarygland,adult,pool1	CNhs11677	salivary gland	tissue
+seminalvesicle,adult	CNhs12851	internal male genitalia	tissue
+skeletalmuscle-soleusmuscle,donor1	CNhs13454	skeletal muscle tissue	tissue
+skeletalmuscle,adult,pool1	CNhs10629	skeletal muscle tissue	tissue
+skeletalmuscle,fetal,donor1	CNhs11776	skeletal muscle tissue	tissue
+Skin-palm,donor1	CNhs13458	NA	tissue
+skin,adult,donor1	CNhs11785	NA	tissue
+skin,fetal,donor1	CNhs11774	skin of body	tissue
+smallintestine,adult,pool1	CNhs10630	small intestine	tissue
+smallintestine,fetal,donor1	CNhs11773	small intestine	tissue
+smoothmuscle,adult,pool1	CNhs11755	smooth muscle tissue	tissue
+spinalcord-adult,donor10196	CNhs13807	spinal cord	tissue
+spinalcord,adult,donor10252	CNhs12227	spinal cord	tissue
+spinalcord,adult,donor10258	CNhs14222	NA	tissue
+spinalcord,fetal,donor1	CNhs11764	spinal cord	tissue
+spinalcord,newborn,donor10223	CNhs14077	NA	tissue
+spleen,adult,pool1	CNhs10631	spleen	tissue
+spleen,fetal,pool1	CNhs10651	spleen	tissue
+stomach,fetal,donor1	CNhs11771	stomach	tissue
+submaxillarygland,adult	CNhs12852	submandibular gland	tissue
+substantianigra-adult,donor10196	CNhs13803	NA	tissue
+substantianigra,adult,donor10252	CNhs12318	brain	tissue
+substantianigra,adult,donor10258	CNhs14224	NA	tissue
+substantianigra,newborn,donor10223	CNhs14076	NA	tissue
+temporallobe,adult,pool1	CNhs10637	brain	tissue
+temporallobe,fetal,donor1,tech_rep1	CNhs11772	brain	tissue
+temporallobe,fetal,donor1,tech_rep2	CNhs12996	brain	tissue
+testis,adult,pool1	CNhs10632	testis	tissue
+testis,adult,pool2	CNhs12998	testis	tissue
+thalamus-adult,donor10196	CNhs13794	brain	tissue
+thalamus,adult,donor10252	CNhs12314	brain	tissue
+thalamus,adult,donor10258,tech_rep1	CNhs14223	NA	tissue
+thalamus,adult,donor10258,tech_rep2	CNhs14551	NA	tissue
+thalamus,newborn,donor10223	CNhs14084	NA	tissue
+throat,adult	CNhs12858	throat	tissue
+throat,fetal,donor1	CNhs11770	throat	tissue
+thymus,adult,pool1	CNhs10633	thymus	tissue
+thymus,fetal,pool1	CNhs10650	thymus	tissue
+thyroid,adult,pool1	CNhs10634	thyroid gland	tissue
+thyroid,fetal,donor1	CNhs11769	thyroid gland	tissue
+tongue,adult	CNhs12853	tongue	tissue
+tongue,fetal,donor1	CNhs11768	tongue	tissue
+tongueepidermis(fungiformpapillae),donor1	CNhs13460	NA	tissue
+tonsil,adult,pool1	CNhs10654	tonsil	tissue
+trachea,adult,pool1	CNhs10635	lung	tissue
+trachea,fetal,donor1	CNhs11766	lung	tissue
+umbilicalcord,fetal,donor1	CNhs11765	umbilical cord	tissue
+UniversalRNA-HumanNormalTissuesBiochain,pool1	CNhs10612	NA	tissue
+Urethra,donor2	CNhs13464	NA	tissue
+uterus,adult,pool1	CNhs11676	uterus	tissue
+uterus,fetal,donor1	CNhs11763	uterus	tissue
+vagina,adult	CNhs12854	vagina	tissue
+vein,adult	CNhs12844	blood vessel	tissue
+Adipocyte-breast,donor1	CNhs11051	fat cell	primaryCells
+Adipocyte-breast,donor2	CNhs11969	NA	primaryCells
+Adipocyte-omental,donor1	CNhs11054	fat cell	primaryCells
+Adipocyte-omental,donor2	CNhs12067	fat cell	primaryCells
+Adipocyte-omental,donor3	CNhs12068	fat cell	primaryCells
+Adipocyte-perirenal,donor1	CNhs12069	fat cell	primaryCells
+Adipocyte-subcutaneous,donor1	CNhs12494	fat cell	primaryCells
+Adipocyte-subcutaneous,donor2	CNhs11371	fat cell	primaryCells
+Adipocyte-subcutaneous,donor3	CNhs12017	fat cell	primaryCells
+AlveolarEpithelialCells,donor1	CNhs11325	respiratory epithelial cell	primaryCells
+AlveolarEpithelialCells,donor2	CNhs12084	kidney epithelial cell	primaryCells
+AlveolarEpithelialCells,donor3	CNhs12119	NA	primaryCells
+AmnioticEpithelialCells,donor1	CNhs11341	amniotic epithelial cell	primaryCells
+AmnioticEpithelialCells,donor2	CNhs12098	NA	primaryCells
+AmnioticEpithelialCells,donor3	CNhs12125	amniotic epithelial cell	primaryCells
+amnioticmembranecells,donor1	CNhs12502	mesenchymal cell	primaryCells
+amnioticmembranecells,donor2	CNhs12503	mesenchymal cell	primaryCells
+amnioticmembranecells,donor3	CNhs12379	mesenchymal cell	primaryCells
+AnulusPulposusCell,donor1	CNhs10876	NA	primaryCells
+AnulusPulposusCell,donor2	CNhs12064	NA	primaryCells
+Astrocyte-cerebellum,donor1	CNhs11321	astrocyte	primaryCells
+Astrocyte-cerebellum,donor2	CNhs12081	astrocyte	primaryCells
+Astrocyte-cerebellum,donor3	CNhs12117	astrocyte	primaryCells
+Astrocyte-cerebralcortex,donor1	CNhs10864	astrocyte	primaryCells
+Astrocyte-cerebralcortex,donor2	CNhs11960	astrocyte	primaryCells
+Astrocyte-cerebralcortex,donor3	CNhs12005	astrocyte	primaryCells
+Basophils,donor3	CNhs12575	basophil	primaryCells
+BronchialEpithelialCell,donor1	CNhs11327	NA	primaryCells
+BronchialEpithelialCell,donor2	CNhs12085	NA	primaryCells
+BronchialEpithelialCell,donor3	CNhs12623	NA	primaryCells
+BronchialEpithelialCell,donor4	CNhs12054	respiratory epithelial cell	primaryCells
+BronchialEpithelialCell,donor5	CNhs12058	respiratory epithelial cell	primaryCells
+BronchialEpithelialCell,donor6	CNhs12062	respiratory epithelial cell	primaryCells
+BronchialEpithelialCell,donor7	CNhs12642	NA	primaryCells
+CardiacMyocyte,donor1	CNhs12341	cardiac myocyte	primaryCells
+CardiacMyocyte,donor2	CNhs12350	cardiac myocyte	primaryCells
+CardiacMyocyte,donor3	CNhs12571	cardiac myocyte	primaryCells
+CD14-CD16+Monocytes,donor2	CNhs13207	monocyte	primaryCells
+CD14-CD16+Monocytes,donor3	CNhs13548	monocyte	primaryCells
+CD14+CD16-Monocytes,donor1	CNhs13224	monocyte	primaryCells
+CD14+CD16-Monocytes,donor2	CNhs13216	monocyte	primaryCells
+CD14+CD16-Monocytes,donor3	CNhs13540	monocyte	primaryCells
+CD14+CD16+Monocytes,donor1	CNhs13541	monocyte	primaryCells
+CD14+CD16+Monocytes,donor2	CNhs13208	monocyte	primaryCells
+CD14+CD16+Monocytes,donor3	CNhs13549	monocyte	primaryCells
+CD14+monocytederivedendothelialprogenitorcells,donor1	CNhs10858	monocyte	primaryCells
+CD14+monocytederivedendothelialprogenitorcells,donor2	CNhs11897	monocyte	primaryCells
+CD14+monocytederivedendothelialprogenitorcells,donor3	CNhs11904	monocyte	primaryCells
+CD14+monocytes-mocktreated,donor1	CNhs13468	monocyte	primaryCells
+CD14+monocytes-mocktreated,donor2	CNhs13484	monocyte	primaryCells
+CD14+monocytes-mocktreated,donor3	CNhs13491	monocyte	primaryCells
+CD14+monocytes-treatedwithB-glucan,donor1	CNhs13474	NA	primaryCells
+CD14+monocytes-treatedwithB-glucan,donor2	CNhs13489	NA	primaryCells
+CD14+monocytes-treatedwithB-glucan,donor3	CNhs13495	NA	primaryCells
+CD14+monocytes-treatedwithBCG,donor1	CNhs13465	NA	primaryCells
+CD14+monocytes-treatedwithBCG,donor2	CNhs13475	NA	primaryCells
+CD14+monocytes-treatedwithBCG,donor3	CNhs13543	NA	primaryCells
+CD14+monocytes-treatedwithCandida,donor1	CNhs13473	NA	primaryCells
+CD14+monocytes-treatedwithCandida,donor2	CNhs13488	NA	primaryCells
+CD14+monocytes-treatedwithCandida,donor3	CNhs13494	NA	primaryCells
+CD14+monocytes-treatedwithCryptococcus,donor1	CNhs13472	NA	primaryCells
+CD14+monocytes-treatedwithCryptococcus,donor2	CNhs13487	NA	primaryCells
+CD14+monocytes-treatedwithCryptococcus,donor3	CNhs13546	NA	primaryCells
+CD14+monocytes-treatedwithGroupAstreptococci,donor1	CNhs13469	NA	primaryCells
+CD14+monocytes-treatedwithGroupAstreptococci,donor2	CNhs13532	NA	primaryCells
+CD14+monocytes-treatedwithGroupAstreptococci,donor3	CNhs13492	NA	primaryCells
+CD14+monocytes-treatedwithIFN+N-hexane,donor1	CNhs13466	NA	primaryCells
+CD14+monocytes-treatedwithIFN+N-hexane,donor2	CNhs13476	NA	primaryCells
+CD14+monocytes-treatedwithIFN+N-hexane,donor3	CNhs13490	NA	primaryCells
+CD14+monocytes-treatedwithlipopolysaccharide,donor1	CNhs13470	NA	primaryCells
+CD14+monocytes-treatedwithlipopolysaccharide,donor2	CNhs13533	NA	primaryCells
+CD14+monocytes-treatedwithlipopolysaccharide,donor3	CNhs13545	NA	primaryCells
+CD14+monocytes-treatedwithSalmonella,donor1	CNhs13471	NA	primaryCells
+CD14+monocytes-treatedwithSalmonella,donor2	CNhs13485	NA	primaryCells
+CD14+monocytes-treatedwithSalmonella,donor3	CNhs13493	NA	primaryCells
+CD14+monocytes-treatedwithTrehalosedimycolate(TDM),donor1	CNhs13467	NA	primaryCells
+CD14+monocytes-treatedwithTrehalosedimycolate(TDM),donor2	CNhs13483	NA	primaryCells
+CD14+monocytes-treatedwithTrehalosedimycolate(TDM),donor3	CNhs13544	NA	primaryCells
+CD14+Monocytes,donor1	CNhs10852	monocyte	primaryCells
+CD14+Monocytes,donor2	CNhs11954	monocyte	primaryCells
+CD14+Monocytes,donor3	CNhs11997	monocyte	primaryCells
+CD19+BCells,donor1	CNhs12343	lymphocyte of B lineage	primaryCells
+CD19+BCells,donor2	CNhs12352	lymphocyte of B lineage	primaryCells
+CD19+BCells,donor3	CNhs12354	lymphocyte of B lineage	primaryCells
+CD34+stemcells-adultbonemarrowderived,donor1,tech_rep1	CNhs12588	NA	primaryCells
+CD34cellsdifferentiatedtoerythrocytelineage,biol_rep1	CNhs13552	reticulocyte	primaryCells
+CD34cellsdifferentiatedtoerythrocytelineage,biol_rep2	CNhs13553	reticulocyte	primaryCells
+CD4+CD25-CD45RA-memoryconventionalTcells,donor3	CNhs13539	T cell	primaryCells
+CD4+CD25-CD45RA-memoryconventionalTcellsexpanded,donor1	CNhs13215	T cell	primaryCells
+CD4+CD25-CD45RA-memoryconventionalTcellsexpanded,donor2	CNhs13920	NA	primaryCells
+CD4+CD25-CD45RA-memoryconventionalTcellsexpanded,donor3	CNhs13921	NA	primaryCells
+CD4+CD25-CD45RA+naiveconventionalTcells,donor1	CNhs13223	T cell	primaryCells
+CD4+CD25-CD45RA+naiveconventionalTcells,donor2	CNhs13205	T cell	primaryCells
+CD4+CD25-CD45RA+naiveconventionalTcells,donor3	CNhs13512	T cell	primaryCells
+CD4+CD25-CD45RA+naiveconventionalTcellsexpanded,donor1	CNhs13202	T cell	primaryCells
+CD4+CD25-CD45RA+naiveconventionalTcellsexpanded,donor2	CNhs13813	T cell	primaryCells
+CD4+CD25-CD45RA+naiveconventionalTcellsexpanded,donor3	CNhs13814	T cell	primaryCells
+CD4+CD25+CD45RA-memoryregulatoryTcells,donor1	CNhs13195	T cell	primaryCells
+CD4+CD25+CD45RA-memoryregulatoryTcells,donor2	CNhs13206	T cell	primaryCells
+CD4+CD25+CD45RA-memoryregulatoryTcells,donor3	CNhs13538	T cell	primaryCells
+CD4+CD25+CD45RA-memoryregulatoryTcellsexpanded,donor1	CNhs13204	T cell	primaryCells
+CD4+CD25+CD45RA-memoryregulatoryTcellsexpanded,donor2	CNhs13811	T cell	primaryCells
+CD4+CD25+CD45RA-memoryregulatoryTcellsexpanded,donor3	CNhs13812	T cell	primaryCells
+CD4+CD25+CD45RA+naiveregulatoryTcells,donor3	CNhs13513	T cell	primaryCells
+CD4+CD25+CD45RA+naiveregulatoryTcellsexpanded,donor1	CNhs13203	T cell	primaryCells
+CD4+CD25+CD45RA+naiveregulatoryTcellsexpanded,donor2	CNhs13918	NA	primaryCells
+CD4+CD25+CD45RA+naiveregulatoryTcellsexpanded,donor3	CNhs13919	NA	primaryCells
+CD4+TCells,donor1	CNhs10853	T cell	primaryCells
+CD4+TCells,donor2	CNhs11955	T cell	primaryCells
+CD4+TCells,donor3	CNhs11998	T cell	primaryCells
+CD8+TCells,donor1	CNhs10854	T cell	primaryCells
+CD8+TCells,donor2	CNhs11956	T cell	primaryCells
+CD8+TCells,donor3	CNhs11999	T cell	primaryCells
+Chondrocyte-dediff,donor1	CNhs11923	chondrocyte	primaryCells
+Chondrocyte-dediff,donor2	CNhs11372	chondrocyte	primaryCells
+Chondrocyte-dediff,donor3	CNhs12020	chondrocyte	primaryCells
+Chondrocyte-rediff,donor2	CNhs11373	chondrocyte	primaryCells
+Chondrocyte-rediff,donor3	CNhs12021	chondrocyte	primaryCells
+chorionicmembranecells,donor1	CNhs12504	mesenchymal cell	primaryCells
+chorionicmembranecells,donor2	CNhs12506	mesenchymal cell	primaryCells
+chorionicmembranecells,donor3	CNhs12380	mesenchymal cell	primaryCells
+CiliaryEpithelialCells,donor1	CNhs10871	ciliated epithelial cell	primaryCells
+CiliaryEpithelialCells,donor2	CNhs11966	ciliated epithelial cell	primaryCells
+CiliaryEpithelialCells,donor3	CNhs12009	ciliated epithelial cell	primaryCells
+CornealEpithelialCells,donor1	CNhs11336	corneal epithelial cell	primaryCells
+CornealEpithelialCells,donor2	CNhs12094	NA	primaryCells
+CornealEpithelialCells,donor3	CNhs12123	corneal epithelial cell	primaryCells
+DendriticCells-monocyteimmaturederived,donor1,rep2	CNhs11062	dendritic cell	primaryCells
+DendriticCells-monocyteimmaturederived,donor1,tech_rep1	CNhs10855	dendritic cell	primaryCells
+DendriticCells-monocyteimmaturederived,donor3	CNhs12000	dendritic cell	primaryCells
+DendriticCells-plasmacytoid,donor1	CNhs10857	dendritic cell	primaryCells
+EndothelialCells-Aortic,donor0	CNhs10837	blood vessel endothelial cell	primaryCells
+EndothelialCells-Aortic,donor1	CNhs12495	blood vessel endothelial cell	primaryCells
+EndothelialCells-Aortic,donor2	CNhs11375	blood vessel endothelial cell	primaryCells
+EndothelialCells-Aortic,donor3	CNhs12022	blood vessel endothelial cell	primaryCells
+EndothelialCells-Artery,donor1	CNhs12496	blood vessel endothelial cell	primaryCells
+EndothelialCells-Artery,donor2	CNhs11977	blood vessel endothelial cell	primaryCells
+EndothelialCells-Artery,donor3	CNhs12023	blood vessel endothelial cell	primaryCells
+EndothelialCells-Lymphatic,donor1	CNhs10865	endothelial cell of lymphatic vessel	primaryCells
+EndothelialCells-Lymphatic,donor2	CNhs11901	endothelial cell of lymphatic vessel	primaryCells
+EndothelialCells-Lymphatic,donor3	CNhs11906	endothelial cell of lymphatic vessel	primaryCells
+EndothelialCells-Microvascular,donor1	CNhs11925	blood vessel endothelial cell	primaryCells
+EndothelialCells-Microvascular,donor2	CNhs11376	blood vessel endothelial cell	primaryCells
+EndothelialCells-Microvascular,donor3	CNhs12024	blood vessel endothelial cell	primaryCells
+EndothelialCells-Thoracic,donor1	CNhs11926	blood vessel endothelial cell	primaryCells
+EndothelialCells-Thoracic,donor2	CNhs11978	blood vessel endothelial cell	primaryCells
+EndothelialCells-Umbilicalvein,donor1	CNhs10872	blood vessel endothelial cell	primaryCells
+EndothelialCells-Umbilicalvein,donor2	CNhs11967	blood vessel endothelial cell	primaryCells
+EndothelialCells-Umbilicalvein,donor3	CNhs12010	blood vessel endothelial cell	primaryCells
+EndothelialCells-Vein,donor1	CNhs12497	blood vessel endothelial cell	primaryCells
+EndothelialCells-Vein,donor2	CNhs11377	blood vessel endothelial cell	primaryCells
+EndothelialCells-Vein,donor3	CNhs12026	blood vessel endothelial cell	primaryCells
+EsophagealEpithelialCells,donor1	CNhs11323	epithelial cell of esophagus	primaryCells
+EsophagealEpithelialCells,donor2	CNhs12083	NA	primaryCells
+EsophagealEpithelialCells,donor3	CNhs12622	NA	primaryCells
+Fibroblast-AorticAdventitial,donor1	CNhs10874	fibroblast of tunica adventitia of artery	primaryCells
+Fibroblast-AorticAdventitial,donor2	CNhs11968	NA	primaryCells
+Fibroblast-AorticAdventitial,donor3	CNhs12011	fibroblast of tunica adventitia of artery	primaryCells
+Fibroblast-Cardiac,donor1	CNhs12498	cardiac fibroblast	primaryCells
+Fibroblast-Cardiac,donor2	CNhs11378	cardiac fibroblast	primaryCells
+Fibroblast-Cardiac,donor3	CNhs12027	cardiac fibroblast	primaryCells
+Fibroblast-Cardiac,donor4	CNhs11909	cardiac fibroblast	primaryCells
+Fibroblast-Cardiac,donor5	CNhs12057	cardiac fibroblast	primaryCells
+Fibroblast-Cardiac,donor6	CNhs12061	cardiac fibroblast	primaryCells
+Fibroblast-ChoroidPlexus,donor1	CNhs11319	fibroblast of choroid plexus	primaryCells
+Fibroblast-ChoroidPlexus,donor2	CNhs12344	fibroblast of choroid plexus	primaryCells
+Fibroblast-ChoroidPlexus,donor3	CNhs12620	NA	primaryCells
+Fibroblast-Conjunctival,donor1	CNhs11339	fibroblast of the conjuctiva	primaryCells
+Fibroblast-Conjunctival,donor3	CNhs12734	NA	primaryCells
+Fibroblast-Dermal,donor1	CNhs12499	skin fibroblast	primaryCells
+Fibroblast-Dermal,donor2	CNhs11379	skin fibroblast	primaryCells
+Fibroblast-Dermal,donor3	CNhs12028	skin fibroblast	primaryCells
+Fibroblast-Dermal,donor4	CNhs12052	skin fibroblast	primaryCells
+Fibroblast-Dermal,donor5	CNhs12055	skin fibroblast	primaryCells
+Fibroblast-Dermal,donor6	CNhs12059	skin fibroblast	primaryCells
+Fibroblast-Gingival,donor1	CNhs10866	fibroblast of gingiva	primaryCells
+Fibroblast-Gingival,donor10(periodontitis)	CNhs14135	NA	primaryCells
+Fibroblast-Gingival,donor2	CNhs11961	fibroblast of gingiva	primaryCells
+Fibroblast-Gingival,donor3	CNhs12006	fibroblast of gingiva	primaryCells
+Fibroblast-Gingival,donor4(GFH2)	CNhs10848	fibroblast of gingiva	primaryCells
+Fibroblast-Gingival,donor5(GFH3)	CNhs11952	fibroblast of gingiva	primaryCells
+Fibroblast-Gingival,donor6(aggressiveperiodontitis)	CNhs14128	NA	primaryCells
+Fibroblast-Gingival,donor6(control)	CNhs14129	NA	primaryCells
+Fibroblast-Gingival,donor7(aggressiveperiodontitis)	CNhs14130	NA	primaryCells
+Fibroblast-Gingival,donor7(control)	CNhs14131	NA	primaryCells
+Fibroblast-Gingival,donor8(chronicperiodontitis)	CNhs14132	NA	primaryCells
+Fibroblast-Gingival,donor8(control)	CNhs14133	NA	primaryCells
+Fibroblast-Gingival,donor9(control)	CNhs14134	NA	primaryCells
+Fibroblast-Lung,donor1	CNhs12500	NA	primaryCells
+Fibroblast-Lung,donor2	CNhs11380	NA	primaryCells
+Fibroblast-Lung,donor3	CNhs12029	NA	primaryCells
+Fibroblast-Lymphatic,donor1	CNhs11322	fibroblast of lymphatic vessel	primaryCells
+Fibroblast-Lymphatic,donor2	CNhs12082	NA	primaryCells
+Fibroblast-Lymphatic,donor3	CNhs12118	fibroblast of lymphatic vessel	primaryCells
+Fibroblast-Mammary,donor1	CNhs11348	NA	primaryCells
+Fibroblast-Mammary,donor2	CNhs12103	NA	primaryCells
+Fibroblast-Mammary,donor3	CNhs12128	NA	primaryCells
+Fibroblast-PeriodontalLigament,donor1	CNhs10867	fibroblast of periodontium	primaryCells
+Fibroblast-PeriodontalLigament,donor2	CNhs11962	fibroblast of periodontium	primaryCells
+Fibroblast-PeriodontalLigament,donor3	CNhs11907	fibroblast of periodontium	primaryCells
+Fibroblast-PeriodontalLigament,donor4(PL29)	CNhs12493	fibroblast of periodontium	primaryCells
+Fibroblast-PeriodontalLigament,donor5(PL30)	CNhs11953	fibroblast of periodontium	primaryCells
+Fibroblast-PeriodontalLigament,donor6(PLH3)	CNhs11996	fibroblast of periodontium	primaryCells
+Fibroblast-PulmonaryArtery,donor1	CNhs10878	fibroblast of pulmonary artery	primaryCells
+Fibroblast-skindystrophiamyotonica,donor1	CNhs11353	skin fibroblast	primaryCells
+Fibroblast-skindystrophiamyotonica,donor2	CNhs11354	skin fibroblast	primaryCells
+Fibroblast-skindystrophiamyotonica,donor3	CNhs11913	skin fibroblast	primaryCells
+Fibroblast-skinnormal,donor1	CNhs11351	skin fibroblast	primaryCells
+Fibroblast-skinnormal,donor2	CNhs11914	skin fibroblast	primaryCells
+Fibroblast-skinspinalmuscularatrophy,donor1	CNhs11074	skin fibroblast	primaryCells
+Fibroblast-skinspinalmuscularatrophy,donor2	CNhs11911	skin fibroblast	primaryCells
+Fibroblast-skinspinalmuscularatrophy,donor3	CNhs11912	skin fibroblast	primaryCells
+Fibroblast-skinwalkerwarburg,donor1	CNhs11352	skin fibroblast	primaryCells
+Fibroblast-VillousMesenchymal,donor1	CNhs11343	NA	primaryCells
+Fibroblast-VillousMesenchymal,donor2	CNhs12099	NA	primaryCells
+Fibroblast-VillousMesenchymal,donor3	CNhs12920	NA	primaryCells
+gammadeltapositiveTcells,donor1	CNhs13914	NA	primaryCells
+gammadeltapositiveTcells,donor2	CNhs13915	NA	primaryCells
+Gingivalepithelialcells,donor1(GEA11)	CNhs11061	gingival epithelial cell	primaryCells
+Gingivalepithelialcells,donor2(GEA14)	CNhs11896	gingival epithelial cell	primaryCells
+Gingivalepithelialcells,donor3(GEA15)	CNhs11903	gingival epithelial cell	primaryCells
+HairFollicleDermalPapillaCells,donor1	CNhs12501	hair follicle cell	primaryCells
+HairFollicleDermalPapillaCells,donor2	CNhs11979	hair follicle cell	primaryCells
+HairFollicleDermalPapillaCells,donor3	CNhs12030	hair follicle cell	primaryCells
+HairFollicleOuterRootSheathCells,donor1	CNhs12339	hair follicle cell	primaryCells
+HairFollicleOuterRootSheathCells,donor2	CNhs12347	epithelial cell of esophagus	primaryCells
+HepaticSinusoidalEndothelialCells,donor1	CNhs12075	endothelial cell of hepatic sinusoid	primaryCells
+HepaticSinusoidalEndothelialCells,donor2	CNhs12092	endothelial cell of hepatic sinusoid	primaryCells
+HepaticSinusoidalEndothelialCells,donor3	CNhs12625	NA	primaryCells
+HepaticStellateCells(lipocyte),donor1	CNhs11335	hepatic stellate cell	primaryCells
+HepaticStellateCells(lipocyte),donor2	CNhs12093	hepatic stellate cell	primaryCells
+HepaticStellateCells(lipocyte),donor3	CNhs12627	NA	primaryCells
+Hepatocyte,donor1	CNhs12340	hepatocyte	primaryCells
+Hepatocyte,donor2	CNhs12349	hepatocyte	primaryCells
+Hepatocyte,donor3	CNhs12626	hepatocyte	primaryCells
+immaturelangerhanscells,donor1	CNhs13537	dendritic cell	primaryCells
+immaturelangerhanscells,donor2	CNhs13480	dendritic cell	primaryCells
+Intestinalepithelialcells(polarized),donor1	CNhs10875	intestinal epithelial cell	primaryCells
+IrisPigmentEpithelialCells,donor1	CNhs12596	iris pigment epithelial cell	primaryCells
+Keratinocyte-epidermal,donor1	CNhs11064	keratinocyte	primaryCells
+Keratinocyte-epidermal,donor2	CNhs11381	keratinocyte	primaryCells
+Keratinocyte-epidermal,donor3	CNhs12031	keratinocyte	primaryCells
+Keratinocyte-oral,donor1	CNhs10879	keratinocyte	primaryCells
+Keratocytes,donor1	CNhs11337	keratocyte	primaryCells
+Keratocytes,donor2	CNhs12095	keratocyte	primaryCells
+Keratocytes,donor3	CNhs12921	NA	primaryCells
+LensEpithelialCells,donor1	CNhs12342	lens epithelial cell	primaryCells
+LensEpithelialCells,donor2	CNhs12568	lens epithelial cell	primaryCells
+LensEpithelialCells,donor3	CNhs12572	lens epithelial cell	primaryCells
+Macrophage-monocytederived,donor1	CNhs10861	macrophage	primaryCells
+Macrophage-monocytederived,donor2	CNhs11899	macrophage	primaryCells
+Macrophage-monocytederived,donor3	CNhs12003	macrophage	primaryCells
+Mallassez-derivedcells,donor2	CNhs13550	epithelial cell of Malassez	primaryCells
+Mallassez-derivedcells,donor3	CNhs13551	epithelial cell of Malassez	primaryCells
+MammaryEpithelialCell,donor1	CNhs11077	mammary epithelial cell	primaryCells
+MammaryEpithelialCell,donor2	CNhs11382	mammary epithelial cell	primaryCells
+MammaryEpithelialCell,donor3	CNhs12032	mammary epithelial cell	primaryCells
+Mastcell-stimulated,donor1	CNhs11073	mast cell	primaryCells
+Mastcell,donor1	CNhs12566	mast cell	primaryCells
+Mastcell,donor2	CNhs12594	mast cell	primaryCells
+Mastcell,donor3	CNhs12593	mast cell	primaryCells
+Mastcell,donor4	CNhs12592	mast cell	primaryCells
+Mastcell,expanded,donor5	CNhs13924	NA	primaryCells
+Mastcell,expanded,donor8	CNhs13926	NA	primaryCells
+Mastcell,expandedandstimulated,donor5	CNhs13925	NA	primaryCells
+Mastcell,expandedandstimulated,donor8	CNhs13927	NA	primaryCells
+Melanocyte-dark,donor1	CNhs12591	NA	primaryCells
+Melanocyte-dark,donor2	CNhs12346	NA	primaryCells
+Melanocyte-dark,donor3	CNhs12570	melanocyte	primaryCells
+Melanocyte-light,donor1	CNhs11303	melanocyte	primaryCells
+Melanocyte-light,donor2	CNhs11383	melanocyte	primaryCells
+Melanocyte-light,donor3	CNhs12033	melanocyte	primaryCells
+MeningealCells,donor1	CNhs11320	stromal cell	primaryCells
+MeningealCells,donor2	CNhs12080	stromal cell	primaryCells
+MeningealCells,donor3	CNhs12731	stromal cell	primaryCells
+mesenchymalprecursorcell-adipose,donor1	CNhs12363	mesenchymal cell	primaryCells
+mesenchymalprecursorcell-adipose,donor2	CNhs12364	mesenchymal cell	primaryCells
+mesenchymalprecursorcell-adipose,donor3	CNhs12365	mesenchymal cell	primaryCells
+mesenchymalprecursorcell-bonemarrow,donor1	CNhs12366	mesenchymal cell	primaryCells
+mesenchymalprecursorcell-bonemarrow,donor2	CNhs12367	mesenchymal cell	primaryCells
+mesenchymalprecursorcell-bonemarrow,donor3	CNhs13098	mesenchymal cell	primaryCells
+mesenchymalprecursorcell-cardiac,donor1	CNhs12368	mesenchymal cell	primaryCells
+mesenchymalprecursorcell-cardiac,donor2	CNhs12369	mesenchymal cell	primaryCells
+mesenchymalprecursorcell-cardiac,donor3	CNhs12370	mesenchymal cell	primaryCells
+mesenchymalprecursorcell-cardiac,donor4	CNhs12371	mesenchymal cell	primaryCells
+mesenchymalprecursorcell-ovariancancerleftovary,donor1	CNhs12372	NA	primaryCells
+mesenchymalprecursorcell-ovariancancerleftovary,donor2	CNhs13092	NA	primaryCells
+mesenchymalprecursorcell-ovariancancerleftovary,donor3	CNhs12376	NA	primaryCells
+mesenchymalprecursorcell-ovariancancerleftovary,donor4	CNhs13094	NA	primaryCells
+mesenchymalprecursorcell-ovariancancermetastasis,donor1	CNhs12374	NA	primaryCells
+mesenchymalprecursorcell-ovariancancermetastasis,donor2	CNhs13093	NA	primaryCells
+mesenchymalprecursorcell-ovariancancermetastasis,donor3	CNhs12378	NA	primaryCells
+mesenchymalprecursorcell-ovariancancermetastasis,donor4	CNhs13097	NA	primaryCells
+mesenchymalprecursorcell-ovariancancerrightovary,donor1	CNhs12373	NA	primaryCells
+mesenchymalprecursorcell-ovariancancerrightovary,donor2	CNhs12375	NA	primaryCells
+mesenchymalprecursorcell-ovariancancerrightovary,donor3(SOC-57-02-G)	CNhs13507	NA	primaryCells
+mesenchymalprecursorcell-ovariancancerrightovary,donor3(SOC-57-02)	CNhs12377	NA	primaryCells
+mesenchymalprecursorcell-ovariancancerrightovary,donor4	CNhs13096	NA	primaryCells
+Mesenchymalstemcells-adipose,donor0	CNhs10844	mesenchymal cell	primaryCells
+MesenchymalStemCells-adipose,donor1	CNhs11345	mesenchymal cell	primaryCells
+MesenchymalStemCells-adipose,donor2	CNhs12101	NA	primaryCells
+MesenchymalStemCells-adipose,donor3	CNhs12922	mesenchymal cell	primaryCells
+MesenchymalStemCells-amnioticmembrane,donor1	CNhs11349	mesenchymal cell	primaryCells
+MesenchymalStemCells-amnioticmembrane,donor2	CNhs12104	mesenchymal cell	primaryCells
+MesenchymalStemCells-bonemarrow,donor1	CNhs11344	mesenchymal cell	primaryCells
+MesenchymalStemCells-bonemarrow,donor2	CNhs12100	mesenchymal cell	primaryCells
+MesenchymalStemCells-bonemarrow,donor3	CNhs12126	mesenchymal cell	primaryCells
+MesenchymalStemCells-bonemarrow,donor4	CNhs11316	NA	primaryCells
+Mesenchymalstemcells-hepatic,donor0	CNhs10845	mesenchymal cell	primaryCells
+MesenchymalStemCells-hepatic,donor1	CNhs11346	NA	primaryCells
+MesenchymalStemCells-hepatic,donor2	CNhs12730	mesenchymal cell	primaryCells
+Mesenchymalstemcells-umbilical,donor0	CNhs12492	mesenchymal cell	primaryCells
+MesenchymalStemCells-umbilical,donor1	CNhs11347	mesenchymal cell	primaryCells
+MesenchymalStemCells-umbilical,donor2	CNhs12102	NA	primaryCells
+MesenchymalStemCells-umbilical,donor3	CNhs12127	mesenchymal cell	primaryCells
+MesenchymalStemCells-Vertebral,donor1	CNhs10846	NA	primaryCells
+MesenchymalStemCells-Wharton'sJelly,donor1	CNhs11057	mesenchymal cell	primaryCells
+MesothelialCells,donor1	CNhs10850	mesothelial cell	primaryCells
+MesothelialCells,donor3	CNhs12012	mesothelial cell	primaryCells
+migratorylangerhanscells,donor1	CNhs13535	dendritic cell	primaryCells
+migratorylangerhanscells,donor2	CNhs13536	dendritic cell	primaryCells
+migratorylangerhanscells,donor3	CNhs13547	dendritic cell	primaryCells
+MultipotentCordBloodUnrestrictedSomaticStemCells,donor1	CNhs11350	mesenchymal cell	primaryCells
+MultipotentCordBloodUnrestrictedSomaticStemCells,donor2	CNhs12105	mesenchymal cell	primaryCells
+Myoblast,donor1	CNhs10870	myoblast	primaryCells
+Myoblast,donor2	CNhs11965	myoblast	primaryCells
+Myoblast,donor3	CNhs11908	myoblast	primaryCells
+nasalepithelialcells,donor1,tech_rep1	CNhs12589	sensory epithelial cell	primaryCells
+nasalepithelialcells,donor2	CNhs12574	sensory epithelial cell	primaryCells
+NaturalKillerCells,donor1	CNhs10859	natural killer cell	primaryCells
+NaturalKillerCells,donor2	CNhs11957	natural killer cell	primaryCells
+NaturalKillerCells,donor3	CNhs12001	natural killer cell	primaryCells
+Neuralstemcells,donor1	CNhs11063	neuronal stem cell	primaryCells
+Neuralstemcells,donor2	CNhs11384	neuronal stem cell	primaryCells
+Neurons,donor1	CNhs12338	neuron	primaryCells
+Neurons,donor2	CNhs12726	neuron	primaryCells
+Neurons,donor3	CNhs13815	neuron	primaryCells
+Neutrophils,donor1	CNhs10862	neutrophil	primaryCells
+Neutrophils,donor2	CNhs11959	neutrophil	primaryCells
+Neutrophils,donor3	CNhs11905	neutrophil	primaryCells
+NucleusPulposusCell,donor1	CNhs10881	NA	primaryCells
+NucleusPulposusCell,donor2	CNhs12019	NA	primaryCells
+NucleusPulposusCell,donor3	CNhs12063	NA	primaryCells
+Olfactoryepithelialcells,donor1	CNhs13816	sensory epithelial cell	primaryCells
+Olfactoryepithelialcells,donor2	CNhs13817	sensory epithelial cell	primaryCells
+Olfactoryepithelialcells,donor3	CNhs13818	sensory epithelial cell	primaryCells
+Olfactoryepithelialcells,donor4	CNhs13819	sensory epithelial cell	primaryCells
+Oligodendrocyte-precursors,donor1	CNhs12586	NA	primaryCells
+Osteoblast-differentiated,donor1	CNhs11311	osteoblast	primaryCells
+Osteoblast-differentiated,donor2	CNhs11980	osteoblast	primaryCells
+Osteoblast-differentiated,donor3	CNhs12035	osteoblast	primaryCells
+Osteoblast,donor1	CNhs11078	NA	primaryCells
+Osteoblast,donor2	CNhs11385	osteoblast	primaryCells
+Osteoblast,donor3	CNhs12036	osteoblast	primaryCells
+Pancreaticstromalcells,donor1	CNhs10877	stromal cell	primaryCells
+Pericytes,donor1	CNhs11317	pericyte cell	primaryCells
+Pericytes,donor2	CNhs12079	pericyte cell	primaryCells
+Pericytes,donor3	CNhs12116	NA	primaryCells
+PerineurialCells,donor1	CNhs12587	NA	primaryCells
+PerineurialCells,donor2	CNhs12590	NA	primaryCells
+PeripheralBloodMononuclearCells,donor1	CNhs10860	NA	primaryCells
+PeripheralBloodMononuclearCells,donor2	CNhs11958	NA	primaryCells
+PeripheralBloodMononuclearCells,donor3	CNhs12002	NA	primaryCells
+PlacentalEpithelialCells,donor1	CNhs11079	placental epithelial cell	primaryCells
+PlacentalEpithelialCells,donor2	CNhs11386	placental epithelial cell	primaryCells
+PlacentalEpithelialCells,donor3	CNhs12037	placental epithelial cell	primaryCells
+Preadipocyte-breast,donor1	CNhs11052	preadipocyte	primaryCells
+Preadipocyte-breast,donor2	CNhs11971	preadipocyte	primaryCells
+Preadipocyte-omental,donor1	CNhs11065	preadipocyte	primaryCells
+Preadipocyte-omental,donor2	CNhs11902	preadipocyte	primaryCells
+Preadipocyte-omental,donor3	CNhs12013	preadipocyte	primaryCells
+Preadipocyte-perirenal,donor1	CNhs12065	preadipocyte	primaryCells
+Preadipocyte-subcutaneous,donor1	CNhs11081	NA	primaryCells
+Preadipocyte-subcutaneous,donor2	CNhs11981	preadipocyte	primaryCells
+Preadipocyte-subcutaneous,donor3	CNhs12038	preadipocyte	primaryCells
+Preadipocyte-visceral,donor1	CNhs11082	preadipocyte	primaryCells
+Preadipocyte-visceral,donor2	CNhs11982	preadipocyte	primaryCells
+Preadipocyte-visceral,donor3	CNhs12039	preadipocyte	primaryCells
+ProstateEpithelialCells,donor2	CNhs11972	epithelial cell of prostate	primaryCells
+ProstateEpithelialCells,donor3	CNhs12014	epithelial cell of prostate	primaryCells
+ProstateEpithelialCells(polarized),donor1	CNhs10882	epithelial cell of prostate	primaryCells
+ProstateStromalCells,donor1	CNhs10883	stromal cell	primaryCells
+ProstateStromalCells,donor2	CNhs11973	stromal cell	primaryCells
+ProstateStromalCells,donor3	CNhs12015	stromal cell	primaryCells
+RenalCorticalEpithelialCells,donor1	CNhs11331	kidney epithelial cell	primaryCells
+RenalCorticalEpithelialCells,donor2	CNhs12728	kidney epithelial cell	primaryCells
+RenalEpithelialCells,donor1	CNhs11332	kidney epithelial cell	primaryCells
+RenalEpithelialCells,donor2	CNhs12088	kidney epithelial cell	primaryCells
+RenalEpithelialCells,donor3	CNhs12732	kidney epithelial cell	primaryCells
+RenalGlomerularEndothelialCells,donor1	CNhs12074	kidney epithelial cell	primaryCells
+RenalGlomerularEndothelialCells,donor2	CNhs12086	kidney epithelial cell	primaryCells
+RenalGlomerularEndothelialCells,donor3	CNhs12624	kidney epithelial cell	primaryCells
+RenalGlomerularEndothelialCells,donor4	CNhs13080	kidney epithelial cell	primaryCells
+RenalMesangialCells,donor1	CNhs11333	kidney epithelial cell	primaryCells
+RenalMesangialCells,donor2	CNhs12089	NA	primaryCells
+RenalMesangialCells,donor3	CNhs12121	kidney epithelial cell	primaryCells
+RenalProximalTubularEpithelialCell,donor1	CNhs11330	kidney epithelial cell	primaryCells
+RenalProximalTubularEpithelialCell,donor2	CNhs12087	kidney epithelial cell	primaryCells
+RenalProximalTubularEpithelialCell,donor3	CNhs12120	kidney epithelial cell	primaryCells
+RetinalPigmentEpithelialCells,donor0	CNhs10842	retinal pigment epithelial cell	primaryCells
+RetinalPigmentEpithelialCells,donor1	CNhs11338	retinal pigment epithelial cell	primaryCells
+RetinalPigmentEpithelialCells,donor2	CNhs12096	NA	primaryCells
+RetinalPigmentEpithelialCells,donor3	CNhs12733	retinal pigment epithelial cell	primaryCells
+salivaryacinarcells,donor1	CNhs12810	acinar cell	primaryCells
+salivaryacinarcells,donor2	CNhs12811	acinar cell	primaryCells
+salivaryacinarcells,donor3	CNhs12812	acinar cell	primaryCells
+SchwannCells,donor1	CNhs12073	NA	primaryCells
+SchwannCells,donor2	CNhs12345	NA	primaryCells
+SchwannCells,donor3	CNhs12621	NA	primaryCells
+Sebocyte,donor1	CNhs10847	acinar cell	primaryCells
+Sebocyte,donor2	CNhs11951	acinar cell	primaryCells
+Sebocyte,donor3	CNhs11995	NA	primaryCells
+SertoliCells,donor1	CNhs10851	mesothelial cell	primaryCells
+SertoliCells,donor2	CNhs11974	NA	primaryCells
+SkeletalMuscleCells,donor1	CNhs11083	skeletal muscle cell	primaryCells
+SkeletalMuscleCells,donor2	CNhs11983	NA	primaryCells
+SkeletalMuscleCells,donor3	CNhs12040	NA	primaryCells
+SkeletalMuscleCells,donor4	CNhs12053	skeletal muscle cell	primaryCells
+SkeletalMuscleCells,donor5	CNhs12056	skeletal muscle cell	primaryCells
+SkeletalMuscleCells,donor6	CNhs12060	skeletal muscle cell	primaryCells
+SkeletalmusclecellsdifferentiatedintoMyotubes-multinucleated,donor1	CNhs11084	skeletal muscle cell	primaryCells
+SkeletalmusclecellsdifferentiatedintoMyotubes-multinucleated,donor2	CNhs11984	NA	primaryCells
+SkeletalmusclecellsdifferentiatedintoMyotubes-multinucleated,donor3	CNhs12041	NA	primaryCells
+SkeletalMuscleSatelliteCells,donor1	CNhs10869	skeletal muscle cell	primaryCells
+SkeletalMuscleSatelliteCells,donor2	CNhs11964	skeletal muscle cell	primaryCells
+SkeletalMuscleSatelliteCells,donor3	CNhs12008	skeletal muscle cell	primaryCells
+SmallAirwayEpithelialCells,donor1	CNhs10884	respiratory epithelial cell	primaryCells
+SmallAirwayEpithelialCells,donor2	CNhs11975	respiratory epithelial cell	primaryCells
+SmallAirwayEpithelialCells,donor3	CNhs12016	respiratory epithelial cell	primaryCells
+Smoothmusclecells-airway,asthmatic,donor1	CNhs14183	NA	primaryCells
+Smoothmusclecells-airway,asthmatic,donor2	CNhs14184	NA	primaryCells
+Smoothmusclecells-airway,asthmatic,donor3	CNhs14186	NA	primaryCells
+Smoothmusclecells-airway,asthmatic,donor4	CNhs14187	NA	primaryCells
+Smoothmusclecells-airway,asthmatic,donor5	CNhs14188	NA	primaryCells
+Smoothmusclecells-airway,asthmatic,donor6	CNhs14189	NA	primaryCells
+Smoothmusclecells-airway,control,donor1	CNhs14190	NA	primaryCells
+Smoothmusclecells-airway,control,donor2	CNhs14191	NA	primaryCells
+Smoothmusclecells-airway,control,donor3	CNhs14192	NA	primaryCells
+Smoothmusclecells-airway,control,donor4	CNhs14193	NA	primaryCells
+SmoothMuscleCells-Aortic,donor0	CNhs10838	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-Aortic,donor1	CNhs11085	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-Aortic,donor2	CNhs11305	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-Aortic,donor3	CNhs11309	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-Bladder,donor1	CNhs12893	NA	primaryCells
+SmoothMuscleCells-Brachiocephalic,donor1	CNhs11086	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-Brachiocephalic,donor2	CNhs11985	NA	primaryCells
+SmoothMuscleCells-Brachiocephalic,donor3	CNhs12043	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-BrainVascular,donor1	CNhs10863	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-BrainVascular,donor2	CNhs11900	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-BrainVascular,donor3	CNhs12004	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-Bronchial,donor1	CNhs11328	bronchial smooth muscle cell	primaryCells
+SmoothMuscleCells-Bronchial,donor2	CNhs12348	kidney epithelial cell	primaryCells
+SmoothMuscleCells-Carotid,donor1	CNhs11087	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-Carotid,donor2	CNhs11986	NA	primaryCells
+SmoothMuscleCells-Carotid,donor3	CNhs12044	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-Colonic,donor1	CNhs10868	enteric smooth muscle cell	primaryCells
+SmoothMuscleCells-Colonic,donor2	CNhs11963	enteric smooth muscle cell	primaryCells
+SmoothMuscleCells-Colonic,donor3	CNhs12007	enteric smooth muscle cell	primaryCells
+SmoothMuscleCells-CoronaryArtery,donor1	CNhs11088	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-CoronaryArtery,donor2	CNhs11987	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-CoronaryArtery,donor3	CNhs12045	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-Esophageal,donor1	CNhs11324	smooth muscle cell of the esophagus	primaryCells
+SmoothMuscleCells-Esophageal,donor2	CNhs12727	NA	primaryCells
+SmoothMuscleCells-InternalThoracicArtery,donor1	CNhs11067	NA	primaryCells
+SmoothMuscleCells-InternalThoracicArtery,donor2	CNhs11988	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-InternalThoracicArtery,donor3	CNhs12046	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-Intestinal,donor1	CNhs12595	NA	primaryCells
+SmoothMuscleCells-Prostate,donor1	CNhs11920	smooth muscle cell of prostate	primaryCells
+SmoothMuscleCells-Prostate,donor2	CNhs11976	smooth muscle cell of prostate	primaryCells
+SmoothMuscleCells-Prostate,donor3	CNhs11910	NA	primaryCells
+SmoothMuscleCells-PulmonaryArtery,donor1	CNhs11089	NA	primaryCells
+SmoothMuscleCells-PulmonaryArtery,donor2	CNhs11989	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-PulmonaryArtery,donor3	CNhs12047	NA	primaryCells
+SmoothMuscleCells-SubclavianArtery,donor1	CNhs11090	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-SubclavianArtery,donor2	CNhs11990	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-SubclavianArtery,donor3	CNhs12048	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-Tracheal,donor1	CNhs11329	smooth muscle cell of trachea	primaryCells
+SmoothMuscleCells-Tracheal,donor2	CNhs12567	NA	primaryCells
+SmoothMuscleCells-Tracheal,donor3	CNhs12894	smooth muscle cell of trachea	primaryCells
+SmoothMuscleCells-Umbilicalartery,donor0	CNhs10839	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-UmbilicalArtery,donor1	CNhs11091	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-UmbilicalArtery,donor2	CNhs11991	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-UmbilicalArtery,donor3	CNhs12049	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-UmbilicalVein,donor1	CNhs12597	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-UmbilicalVein,donor2	CNhs12569	vascular associated smooth muscle cell	primaryCells
+SmoothMuscleCells-UmbilicalVein,donor3	CNhs13076	NA	primaryCells
+SmoothMuscleCells-Uterine,donor1	CNhs11921	NA	primaryCells
+SmoothMuscleCells-Uterine,donor3	CNhs11927	uterine smooth muscle cell	primaryCells
+Synoviocyte,donor1	CNhs11068	NA	primaryCells
+Synoviocyte,donor2	CNhs11992	stromal cell	primaryCells
+Synoviocyte,donor3	CNhs12050	stromal cell	primaryCells
+tenocyte,donor1	CNhs12639	tendon cell	primaryCells
+tenocyte,donor2	CNhs12640	tendon cell	primaryCells
+tenocyte,donor3	CNhs12641	tendon cell	primaryCells
+TrabecularMeshworkCells,donor1	CNhs11340	trabecular meshwork cell	primaryCells
+TrabecularMeshworkCells,donor2	CNhs12097	NA	primaryCells
+TrabecularMeshworkCells,donor3	CNhs12124	trabecular meshwork cell	primaryCells
+TrachealEpithelialCells,donor1	CNhs11092	respiratory epithelial cell	primaryCells
+TrachealEpithelialCells,donor2	CNhs11993	respiratory epithelial cell	primaryCells
+TrachealEpithelialCells,donor3	CNhs12051	respiratory epithelial cell	primaryCells
+Urothelialcells,donor0	CNhs10843	urothelial cell	primaryCells
+UrothelialCells,donor1	CNhs11334	urothelial cell	primaryCells
+UrothelialCells,donor2	CNhs12091	urothelial cell	primaryCells
+UrothelialCells,donor3	CNhs12122	urothelial cell	primaryCells
+Wholeblood(ribopure),donor090309,donation1	CNhs11675	NA	primaryCells
+Wholeblood(ribopure),donor090309,donation2	CNhs11671	NA	primaryCells
+Wholeblood(ribopure),donor090309,donation3	CNhs11948	NA	primaryCells
+Wholeblood(ribopure),donor090325,donation1	CNhs11075	NA	primaryCells
+Wholeblood(ribopure),donor090325,donation2	CNhs11076	NA	primaryCells
+Wholeblood(ribopure),donor090612,donation1	CNhs11672	NA	primaryCells
+Wholeblood(ribopure),donor090612,donation2	CNhs11673	NA	primaryCells
+Wholeblood(ribopure),donor090612,donation3	CNhs11949	NA	primaryCells
