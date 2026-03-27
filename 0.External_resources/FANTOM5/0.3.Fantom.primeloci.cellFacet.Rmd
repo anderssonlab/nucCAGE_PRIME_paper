@@ -1,0 +1,142 @@
+---
+title: "0.3.Fantom.perFacet"
+output: html_document
+date: "2024-12-10"
+---
+
+```{r}
+library(CAGEfightR)
+library(GenomicRanges)
+library(readr)
+library(rtracklayer)
+library(parallel)
+library(ggplot2)
+library(GenomicFeatures)
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+library(SummarizedExperiment)
+library(tibble)
+library(ggrepel)
+library(dplyr)
+library(scales)
+library(gridExtra)
+library(BuenColors)
+
+theme_set(theme_bw(base_size = 8))
+
+
+```
+
+
+
+
+```{r}
+#Reading in PRIMEloci preditions for different cell facets
+cellFacet.files <- list.files("/maps/projects/ralab/data/projects/nucleiCAGEproject/8.Genomewide_prediction/FANTOM5_pooled_rmSingletons_bw")
+
+cellFacet.files <- grep("_0_6_", cellFacet.files, value = TRUE)
+
+file_names <- sub(".*_0_6_(.*?)\\_combined_coreovlwith-d.bed$", "\\1", basename(cellFacet.files))
+
+cellFacet.primeloci <- setNames(lapply(paste0("/maps/projects/ralab/data/projects/nucleiCAGEproject/8.Genomewide_prediction/FANTOM5_pooled_rmSingletons_bw/",
+                                              cellFacet.files), function(file) {
+  read.table(file, header = TRUE, sep = "\t") # Adjust sep = "\t" if files are tab-delimited
+}), file_names)
+
+
+# Function to convert a data frame to a GRanges object
+df_to_granges <- function(df) {
+  GRanges(
+    seqnames = df$chrom,  # Chromosome
+    ranges = IRanges(start = df$chromStart, end = df$chromEnd),  # Main range
+    strand = df$strand,  # Strand information
+    thick = IRanges(start = df$thickStart),  # Additional range for thick
+    score = df$max_score,  # Max score as metadata
+    name = df$name        # Name as metadata
+  )
+}
+
+# Convert all data frames in the list to GRanges
+cellFacet.primeloci.gr <- lapply(cellFacet.primeloci, df_to_granges)
+
+```
+
+
+
+```{r}
+#Read in FANTOM5 enhancers
+FANTOM5.enhancers.file <- "../F5.hg38.enhancers.bed.gz"
+FANTOM5.id <- "CNhs12334"
+
+FANTOM5.enhancers <- import.bed(FANTOM5.enhancers.file)
+```
+
+
+```{r}
+subset_query_gr <- function(query_gr, granges_list) {
+  # Initialize an empty vector to store overlapping indices
+  overlap_indices <- integer(0)
+  
+  # Loop through each GRanges in the list and find overlaps
+  for (gr in granges_list) {
+    overlaps <- queryHits(findOverlaps(query_gr, gr))
+    overlap_indices <- c(overlap_indices, overlaps)
+  }
+  
+  # Get unique indices of overlapping ranges
+  unique_indices <- unique(overlap_indices)
+  
+  # Subset `query_gr` using these indices
+  query_gr[unique_indices]
+}
+
+# Apply the function
+filtered_query_gr <- subset_query_gr(FANTOM5.enhancers, cellFacet.primeloci.gr)
+```
+
+
+```{r}
+SNP.file <- "../all.bg.SNPs.hg38.baseline.v1.1.bed.sorted"
+GWAS.file <- "..//UKBB_94traits_release1_pip01_clean_uniq_hg38.bed"
+GWAS.pip.thres <- 0.2
+
+## Annotated CDS
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+cds <- unlist(cdsBy(txdb,"gene"))
+
+
+## Background SNPs (9,913,974 unique autosomal SNP locations)
+SNP.data <- import.bed(SNP.file)
+SNP.data <- sort(SNP.data)
+olap <- findOverlaps(SNP.data,cds,minoverlap=1)
+SNP.data$name <- NULL
+SNP.data <- unique(SNP.data[-queryHits(olap)])
+
+## Annotated promoters
+seqlevels(txdb,pruning.mode="coarse") <- seqlevels(SNP.data)
+promoters <- promoters(txdb,upstream=500,downstream=500)
+
+
+## GWAS data
+GWAS.data <- read_tsv(GWAS.file,col_names=FALSE,show_col_types=FALSE)
+colnames(GWAS.data) <- c("chr","start","end","name","score","strand","RS_id","trait","pip")
+traits <- unique(GWAS.data$trait)
+GWAS.data <- makeGRangesFromDataFrame(GWAS.data,keep.extra.columns = TRUE, starts.in.df.are.0based=TRUE)
+GWAS.data <- subset(GWAS.data, pip >= GWAS.pip.thres)
+seqlevels(GWAS.data,pruning.mode="coarse") <- seqlevels(SNP.data)
+olap <- findOverlaps(GWAS.data,cds,minoverlap=1)
+GWAS.data <- GWAS.data[-queryHits(olap)]
+GWAS.data <- subset(GWAS.data, trait %in% traits)
+trait.count.df <- do.call("rbind", lapply(traits, function(t) {
+  dat <- subset(GWAS.data, trait==t)
+  as.data.frame(table(dat$trait))
+}))
+trait.count.df
+GWAS.data <- unique(GWAS.data)
+GWAS.n <- length(GWAS.data)
+```
+
+
+
+
+
+
