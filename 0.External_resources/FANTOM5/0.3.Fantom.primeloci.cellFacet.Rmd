@@ -31,13 +31,13 @@ theme_set(theme_bw(base_size = 8))
 
 ```{r}
 #Reading in PRIMEloci preditions for different cell facets
-cellFacet.files <- list.files("/maps/projects/ralab/data/projects/nucleiCAGEproject/8.Genomewide_prediction/FANTOM5_pooled_rmSingletons_bw")
+cellFacet.files <- list.files("/maps/projects/ralab/data/projects/nucCAGE_PRIME_paper/8.Genomewide_prediction/FANTOM5_pooled_rmSingletons_bw")
 
 cellFacet.files <- grep("_0_6_", cellFacet.files, value = TRUE)
 
 file_names <- sub(".*_0_6_(.*?)\\_combined_coreovlwith-d.bed$", "\\1", basename(cellFacet.files))
 
-cellFacet.primeloci <- setNames(lapply(paste0("/maps/projects/ralab/data/projects/nucleiCAGEproject/8.Genomewide_prediction/FANTOM5_pooled_rmSingletons_bw/",
+cellFacet.primeloci <- setNames(lapply(paste0("/maps/projects/ralab/data/projects/nucCAGE_PRIME_paper/8.Genomewide_prediction/FANTOM5_pooled_rmSingletons_bw/",
                                               cellFacet.files), function(file) {
   read.table(file, header = TRUE, sep = "\t") # Adjust sep = "\t" if files are tab-delimited
 }), file_names)
@@ -96,7 +96,7 @@ filtered_query_gr <- subset_query_gr(FANTOM5.enhancers, cellFacet.primeloci.gr)
 
 ```{r}
 SNP.file <- "../all.bg.SNPs.hg38.baseline.v1.1.bed.sorted"
-GWAS.file <- "..//UKBB_94traits_release1_pip01_clean_uniq_hg38.bed"
+GWAS.file <- "../UKBB_94traits_release1_pip01_clean_uniq_hg38.bed"
 GWAS.pip.thres <- 0.2
 
 ## Annotated CDS
