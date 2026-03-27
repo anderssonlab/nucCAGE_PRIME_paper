@@ -5,28 +5,22 @@ shopt -s nullglob
 
  module load htslib/1.22
 
-############################################
-# Directories
-############################################
-
 SRC_DIR="../0.External_resources/FANTOM5_cellFacet_bedFiles"
+CELL_SRC_1="../8.Genomewide_prediction"
+CELL_SRC_2="../8.Genomewide_prediction/K562_thresholding"
 FACET_DIR="./PRIME_FANTOM5_facets"
 AGNOSTIC_DIR="./PRIME_FANTOM5_agnostic"
 CELLLINE_DIR="./PRIME_cellLines"
 
 mkdir -p "$FACET_DIR" "$AGNOSTIC_DIR" "$CELLLINE_DIR"
 
-: << 'SKIP_STEPS'
+NPROC=$(nproc)
 
 ############################################
 # 1. Produce cell line BED6 files
 ############################################
 
 echo "Processing cell line predictions..."
-
-# Define the source patterns
-CELL_SRC_1="../8.Genomewide_prediction"
-CELL_SRC_2="../8.Genomewide_prediction/K562_thresholding"
 
 # Process standard cell line files (*t075d010.bed)
 for FILE_PATH in "$CELL_SRC_1"/*t075d010.bed; do
@@ -36,7 +30,8 @@ for FILE_PATH in "$CELL_SRC_1"/*t075d010.bed; do
     
     OUT_FILE="$CELLLINE_DIR/PRIME_${clean_name}_0.75.bed"
 
-    awk 'BEGIN{OFS="\t"} { print $1,$2,$3,$1":"$2"-"$3,$5,"*" }' "$FILE_PATH" | sort -k 1,1 -k 2,2n > "$OUT_FILE"
+    awk 'BEGIN{OFS="\t"} { printf "%s\t%d\t%d\t%s\t%.4f\t%s\n", $1,$2,$3,$1":"$2"-"$3,$5,"*" }' "$FILE_PATH" | \
+    sort -k 1,1 -k 2,2n > "$OUT_FILE"
 ) &
 done
 
@@ -49,7 +44,8 @@ for FILE_PATH in "$CELL_SRC_2"/*0_75*d010.bed; do
     
     OUT_FILE="$CELLLINE_DIR/PRIME_${clean_name}_0.75.bed"
 
-    awk 'BEGIN{OFS="\t"} { print $1,$2,$3,$1":"$2"-"$3,$5,"*" }' "$FILE_PATH" | sort -k 1,1 -k 2,2n > "$OUT_FILE"
+    awk 'BEGIN{OFS="\t"} { printf "%s\t%d\t%d\t%s\t%.4f\t%s\n", $1,$2,$3,$1":"$2"-"$3,$5,"*" }' "$FILE_PATH" | \
+    sort -k 1,1 -k 2,2n > "$OUT_FILE"
 ) &
 done
 
@@ -59,9 +55,7 @@ exit 0
 # 2. Produce FANTOM facet BED6 files
 ############################################
 
-echo "Reformating bed files..."
-
-NPROC=$(nproc)
+echo "Processing FANTOM5 facet predictions..."
 
 for FILE_PATH in "$SRC_DIR"/*_qn.PL.score0.5.bed; do
 (    
@@ -70,12 +64,8 @@ for FILE_PATH in "$SRC_DIR"/*_qn.PL.score0.5.bed; do
 
     OUT_FILE="$FACET_DIR/PRIME_FANTOM5_${prefix}_0.5.bed"
 
-    awk 'BEGIN{OFS="\t"}
-    {
-        score=$4
-        name=$1":"$2"-"$3
-        print $1,$2,$3,name,score,"*"
-    }' "$FILE_PATH" | sort -k 1,1 -k 2,2n > "$OUT_FILE"
+    awk 'BEGIN{OFS="\t"} { printf "%s\t%d\t%d\t%s\t%.4f\t%s\n", $1,$2,$3,$1":"$2"-"$3,$4,"*" }' "$FILE_PATH" | \
+    sort -k 1,1 -k 2,2n > "$OUT_FILE"
 ) &
 
 while (( $(jobs -r | wc -l) >= NPROC )); do
@@ -89,17 +79,21 @@ wait
 # # 3. Create pooled ≥0.75 dataset
 # ############################################
 
+echo "Creating pooled dataset..."
+
 INPUT_FILE="../8.Genomewide_prediction/FANTOM5_rmSingletons/PRIMEloci_pred_0_75_FANTOM5_rmSingletons_combined_coreovlwith-d.bed"
 OUTPUT_FILE="${AGNOSTIC_DIR}/PRIME_FANTOM5_pooled_0.75.bed"
 
 sed 1d "$INPUT_FILE" | awk 'BEGIN{FS="\t"; OFS="\t"} {
-    name = $1":"$2"-"$3;    
-    print $1, $2, $3, name, $5, $6, $7, $8
+    name = $1":"$2"-"$3;
+    printf "%s\t%d\t%d\t%s\t%.4f\t%s\t%d\t%d\n", $1, $2, $3, name, $5, $6, $7, $8
 }' | sort --parallel=$(nproc) -k1,1 -k2,2n > "$OUTPUT_FILE"
 
 ############################################
 # 4. Merge facet GREs
 ############################################
+
+echo "Merging facets..."
 
 cd "$FACET_DIR" || exit
 
@@ -135,7 +129,7 @@ merge_facets() {
     }
     END {
         for (n in chr) {
-            print chr[n], start[n], end[n], n, score[n], strand[n], facets[n]
+            printf "%s\t%d\t%d\t%s\t%.4f\t%s\t%s\n", chr[n], start[n], end[n], n, score[n], strand[n], facets[n]
         }
     }' $pattern | sort -k1,1 -k2,2n > "${out_name}.bed"
 }
@@ -154,6 +148,8 @@ wait
 ############################################
 # 5. Generate facet statistics
 ############################################
+
+echo "Generating statistics..."
 
 gawk '
 BEGIN {
@@ -212,8 +208,6 @@ END {
     }
 }
 ' PRIME_FANTOM5_*_0.5.bed > "../PRIME_FANTOM5_agnostic/facet_statistics.tsv"
-
-SKIP_STEPS
 
 ############################################
 # 6: Compression and indexing
