@@ -3,7 +3,7 @@
 set -euo pipefail
 shopt -s nullglob
 
- module load htslib/1.22
+module load htslib/1.22
 
 SRC_DIR="../0.External_resources/FANTOM5_cellFacet_bedFiles"
 CELL_SRC_1="../8.Genomewide_prediction"
@@ -48,8 +48,6 @@ for FILE_PATH in "$CELL_SRC_2"/*0_75*d010.bed; do
     sort -k 1,1 -k 2,2n > "$OUT_FILE"
 ) &
 done
-
-exit 0
 
 ############################################
 # 2. Produce FANTOM facet BED6 files
