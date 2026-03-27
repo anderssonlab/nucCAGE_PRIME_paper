@@ -31,7 +31,7 @@ parser$add_argument("-o", "--output_dir", default = "./",
 parser$add_argument("-u", "--ucsc", default = "TRUE",
                     help = "USE UCSC hg38 for txdb")
 parser$add_argument("-a", "--annotation_file",
-                    default = "/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/gencode.v31.annotation.gtf", # nolint: line_length_linter.
+                    default = "../0.External_resources/gencode.v31.annotation.gtf", # nolint: line_length_linter.
                     help = "gtf annotation file from GENCODE")
 parser$add_argument("-g", "--ucscgenome", default = "hg38",
                     help = "UCSC genome")
