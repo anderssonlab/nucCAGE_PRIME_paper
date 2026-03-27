@@ -1,5 +1,5 @@
 ---
-title: "PRIMEloci FANTOM5 quantification"
+title: "PRIME FANTOM5 quantification"
 output: html_document
 date: "2024-10-21"
 ---
@@ -20,85 +20,9 @@ library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 library(SummarizedExperiment)
 library(tibble)
 library(ggrepel)
+library(PRIME)
 
 ```
-
-```{r}
-#Helper functions from PRIME
-poolReplicates <- function(object, replicates, inputAssay="counts") {
-  library(assertthat)
-    
-    ## dimensions
-    assert_that(ncol(object)==length(replicates),
-                length(unique(replicates))>1)
-
-
-    message("Pooling counts...")
-    a <- do.call("cbind", lapply(unique(replicates), function(b) {
-      message(paste("pooling:",b,sep=" "))
-      Matrix::rowSums(assay(object,inputAssay)[,replicates==b,drop=FALSE])}))
-    message("Converting...")
-    a <- as(a, "sparseMatrix")
-    colnames(a) <- unique(replicates)
-
-    message("Create a pasted design matrix...")
-    c <- do.call("rbind", lapply(unique(replicates), function(b) 
-      apply(colData(object)[replicates==b,], 2 , paste , collapse = "," )))
-
-    rse <- SummarizedExperiment(assays=SimpleList(counts=a),
-                            rowRanges=rowRanges(object), colData=as.data.frame(c))
-    
-    rse <- calcTotalTags(rse)
-    
-    gc()
-    rse
-}
-
-
-nonzero <- function(x){
-    stopifnot(inherits(x, "dgCMatrix"))
-    if (all(x@p == 0))
-        return(matrix(0, nrow=0, ncol=2,
-                      dimnames=list(character(0), c("row","col"))))
-    res <- cbind(x@i+1, rep(seq(dim(x)[2]), diff(x@p)))
-    colnames(res) <- c("row", "col")
-    res <- res[x@x != 0, , drop = FALSE]
-    return(res)
-}
-
-
-subsampleTarget <- function(object, inputAssay = "counts", target) {
-
-    assert_that(methods::is(object, "SummarizedExperiment"),
-                inputAssay %in% assayNames(object),
-                is.numeric(target), target > 0)
-    
-    a <- assay(object,inputAssay)
-    a <- as(a, "sparseMatrix")
-    n <- ncol(a)
-    nz <- lapply(1:n, function(i) nonzero(a[,i,drop=FALSE])[,1])
-    s <- Matrix::colSums(a)
-    d <- unlist(lapply(1:n, function(i) {
-        if (s[i]<=target)
-            a[nz[[i]],i]
-        else
-            rbinom(length(nz[[i]]),a[nz[[i]],i], target/s[i])
-    }))
-    keep <- which(sapply(nz,length)>0)
-    assay(object, inputAssay) <- Matrix::sparseMatrix(i=unlist(nz),
-                                                      j=unlist(lapply(keep, function(i) rep(i,length(nz[[i]])))),
-                                                      x=d, dimnames=list(rownames(a), colnames(a)[keep]))
-    object <- calcTotalTags(object)
-    
-    object
-}
-
-
-
-
-
-```
-
 
 ```{r}
 #Cell lines
@@ -310,7 +234,7 @@ saveRDS(sub.pooled.F5, "./sub.pooled.F5.rds")
 ```{r}
 
 #Export pooled
-output_dir <- "/maps/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5/pooled_bw"
+output_dir <- "/maps/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5/pooled_bw"
 #
 for (i in seq_len(ncol(pooled.CTSSs))) {
   # Extract the sample name
@@ -338,7 +262,7 @@ for (i in seq_len(ncol(pooled.CTSSs))) {
 }
 
 #Export subsampled
-output_dir <- "/maps/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5/sub_pooled_bw"
+output_dir <- "/maps/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5/sub_pooled_bw"
 #
 for (i in seq_len(ncol(sub.pooled.CTSSs))) {
   # Extract the sample name
@@ -367,7 +291,7 @@ for (i in seq_len(ncol(sub.pooled.CTSSs))) {
 
 
 #Export rm singletons
-output_dir <- "/maps/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5/pooled_rmSingletons_bw"
+output_dir <- "/maps/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5/pooled_rmSingletons_bw"
 #
 for (i in seq_len(ncol(pooled.CTSSs.rmSingletons))) {
   # Extract the sample name

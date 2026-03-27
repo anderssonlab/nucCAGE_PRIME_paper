@@ -216,7 +216,7 @@ GM12878.CTSSs <- GM12878.CTSSs %>%
   CAGEfightR::calcTPM() %>%
   CAGEfightR::calcPooled()
 
-GM12878.p.CTSSs <- .GlobalEnv$poolReplicates(
+GM12878.p.CTSSs <- PRIME::poolReplicates(
   object = GM12878.CTSSs,
   replicates = base::paste(
       SummarizedExperiment::colData(GM12878.CTSSs)$Cell.line,
@@ -231,7 +231,7 @@ GM12878.p.CTSSs <- CAGEfightR::calcTPM(GM12878.p.CTSSs)
 
 ## [2.6.] Pool only based on reqsequencing
 ```{r}
-GM12878.pID.CTSSs <- .GlobalEnv$poolReplicates(
+GM12878.pID.CTSSs <- PRIME::poolReplicates(
     object = GM12878.CTSSs,
     replicates = SummarizedExperiment::colData(GM12878.CTSSs)$ID
   )
