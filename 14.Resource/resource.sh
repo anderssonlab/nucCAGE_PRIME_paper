@@ -213,6 +213,8 @@ END {
 # 6: Compression and indexing
 ############################################
 
+cd .. || exit
+
 echo "Starting block-gzip compression and indexing..."
 
 # Find all .bed files in your output directories
