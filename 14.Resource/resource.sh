@@ -47,7 +47,7 @@ wait
 # # 2. Create pooled ≥0.75 dataset
 # ############################################
 
-INPUT_FILE="/projects/ralab/data/projects/nucleiCAGEproject/8.Genomewide_prediction/FANTOM5_rmSingletons/PRIMEloci_pred_0_75_FANTOM5_rmSingletons_combined_coreovlwith-d.bed"
+INPUT_FILE="../8.Genomewide_prediction/FANTOM5_rmSingletons/PRIMEloci_pred_0_75_FANTOM5_rmSingletons_combined_coreovlwith-d.bed"
 OUTPUT_FILE="${AGNOSTIC_DIR}/PRIME_FANTOM5_pooled_0.75.bed"
 
 sed 1d "$INPUT_FILE" | awk 'BEGIN{FS="\t"; OFS="\t"} {
