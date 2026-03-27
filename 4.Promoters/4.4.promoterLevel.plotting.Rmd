@@ -450,9 +450,9 @@ for(ext in base::c("pdf", "png")){
 
 ## [2.0.] Read in TC and gene level metrics
 ```{r}
-rm(K562.comb.expr,K562.cor.df,K562.TCs)
-base::load(paste0(here::here("4.Promoters/"),"poolSub.K562.GeneLevel.RData"))
-K562.TCs <- base::readRDS(paste0(here::here("4.Promoters/"),"poolSub.TCs.K562.rds"))
+#rm(K562.comb.expr,K562.cor.df,K562.TCs)
+base::load(paste0(here::here("4.Promoters/"),"poolSub.k562.GeneLevel.RData"))
+K562.TCs <- base::readRDS(paste0(here::here("4.Promoters/"),"poolSub.TCs.k562.rds"))
 
 use <- base::c(
     "K562_C1","K562_C2","K562_C3","K562_C",

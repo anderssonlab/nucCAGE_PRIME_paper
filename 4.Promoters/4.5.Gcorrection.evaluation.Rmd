@@ -70,7 +70,7 @@ perSampleTCs<- function(ctss, inputAssay="counts") {
 ```{r}
 fn <- base::paste0(
     here::here("1.CTSSs/"),
-    "K562.mappingCompare.design.txt"
+    "K562.design.txt"
   )
 clns <- base::c( 
     "nr","ID", "ENCODE_ID",
@@ -82,7 +82,7 @@ clns <- base::c(
 design_ <- readr::read_delim(
    file =  base::paste0(
         here::here("1.CTSSs/"),
-        "K562.mappingCompare.design.txt"
+        "K562.design.txt"
       ),
    delim = "\t",
    quote = "\"",

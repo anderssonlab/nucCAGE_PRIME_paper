@@ -238,7 +238,7 @@ K562.cor.df <- data.frame(
 ## [1.7.] Save files in RData container
 ```{r}
 base::save(
-  k562.cor.df,k562.comb.expr,
+  K562.cor.df,K562.comb.expr,
   file = base::paste0(
       here::here("4.Promoters/"),
       "repSub.k562.GeneLevel.RData"
@@ -369,19 +369,19 @@ corel <- base::lapply(
   )
 
 K562.cor.df <- base::data.frame(
-    samp = base::unique(k562.comb.expr$sample),
+    samp = base::unique(K562.comb.expr$sample),
     correlation = base::unlist(corel)
   )
 ```
 
 ## [2.5.] Save data
 ```{r}
-k562.p.cor.df <- k562.cor.df
-k562.p.comb.expr <- k562.comb.expr
+K562.p.cor.df <- K562.cor.df
+K562.p.comb.expr <- K562.comb.expr
 
 base::save(
-    k562.p.cor.df,
-    k562.p.comb.expr,
+    K562.p.cor.df,
+    K562.p.comb.expr,
     file = base::paste0(
       here::here("4.Promoters/"),
       "poolSub.k562.GeneLevel.RData"
@@ -967,7 +967,7 @@ GM12878.TCs <- base::readRDS(
 
 GM12878.TCs <- CAGEfightR::assignGeneID(GM12878.TCs,geneModels=txdb)
 
-gm12878.cageExpr <- GM12878.TCs %>%
+GM12878.cageExpr <- GM12878.TCs %>%
   as.data.frame(row.names=NULL) %>%
   group_by(sample, geneID) %>% 
   summarize(gene_counts=sum(score))
@@ -976,7 +976,7 @@ gm12878.cageExpr <- GM12878.TCs %>%
 ## [4.1.] Map IDs between CAGE and ENCODE gene expression
 ```{r}
 map <- mapIds(org.Hs.eg.db,
-              keys = gm12878.cageExpr$geneID,
+              keys = GM12878.cageExpr$geneID,
               keytype="ENTREZID",
               column = "ENSEMBL",
               multiVals="first")
@@ -984,28 +984,28 @@ map <- mapIds(org.Hs.eg.db,
 inds <- which(!is.na(map))
 found_genes <- map[inds]
 
-gm12878.cageExpr <- gm12878.cageExpr[
-  gm12878.cageExpr$geneID %in% names(found_genes),]
+GM12878.cageExpr <- GM12878.cageExpr[
+  GM12878.cageExpr$geneID %in% names(found_genes),]
 
-gm12878.cageExpr$ensembl <- as.character(found_genes)
+GM12878.cageExpr$ensembl <- as.character(found_genes)
 
-gm12878.comb.expr <- merge(gm12878.cageExpr,gm12878.geneExpr, by.y="ensembl",by.x="ensembl")
+GM12878.comb.expr <- merge(GM12878.cageExpr,GM12878.geneExpr, by.y="ensembl",by.x="ensembl")
 ```
 
 ## [4.2.] Calculate correlations
 ```{r}
-corel <- lapply(unique(gm12878.comb.expr$sample),function(x) {
-  samp <- gm12878.comb.expr[gm12878.comb.expr$sample==x & gm12878.comb.expr$TPM>0 & gm12878.comb.expr$gene_counts>0,]
+corel <- lapply(unique(GM12878.comb.expr$sample),function(x) {
+  samp <- GM12878.comb.expr[GM12878.comb.expr$sample==x & GM12878.comb.expr$TPM>0 & GM12878.comb.expr$gene_counts>0,]
   cor <- cor(log10(samp$gene_counts), log10(samp$TPM))
 })
 
-gm12878.cor.df <- data.frame(samp=unique(gm12878.comb.expr$sample), correlation=unlist(corel))
+GM12878.cor.df <- data.frame(samp=unique(GM12878.comb.expr$sample), correlation=unlist(corel))
 ```
 
 ## [4.3.] Write output
 ```{r}
-gm12878.p.cor.df <- gm12878.cor.df
-gm12878.p.comb.expr <- gm12878.comb.expr
-save(gm12878.p.cor.df,gm12878.p.comb.expr,file=paste0(here::here("4.Promoters/"),"poolSub.GM12878.GeneLevel.RData"))
+GM12878.p.cor.df <- GM12878.cor.df
+GM12878.p.comb.expr <- GM12878.comb.expr
+save(GM12878.p.cor.df,GM12878.p.comb.expr,file=paste0(here::here("4.Promoters/"),"poolSub.GM12878.GeneLevel.RData"))
 ```
 
