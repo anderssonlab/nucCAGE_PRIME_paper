@@ -3,6 +3,8 @@
 set -euo pipefail
 shopt -s nullglob
 
+ module load htslib/1.22
+
 ############################################
 # Directories
 ############################################
@@ -12,7 +14,9 @@ FACET_DIR="./PRIME_FANTOM5_facets"
 AGNOSTIC_DIR="./PRIME_FANTOM5_agnostic"
 CELLLINE_DIR="./PRIME_cellLines"
 
-#mkdir -p "$FACET_DIR" "$AGNOSTIC_DIR" "$CELLLINE_DIR"
+mkdir -p "$FACET_DIR" "$AGNOSTIC_DIR" "$CELLLINE_DIR"
+
+: << 'SKIP_STEPS'
 
 ############################################
 # 1. Produce cell line BED6 files
@@ -209,3 +213,15 @@ END {
 }
 ' PRIME_FANTOM5_*_0.5.bed > "../PRIME_FANTOM5_agnostic/facet_statistics.tsv"
 
+SKIP_STEPS
+
+############################################
+# 6: Compression and indexing
+############################################
+
+echo "Starting block-gzip compression and indexing..."
+
+# Find all .bed files in your output directories
+# and compress them using all available cores
+find "$FACET_DIR" "$AGNOSTIC_DIR" "$CELLLINE_DIR" -name "*.bed" | \
+parallel -j $(nproc) 'bgzip {} && tabix -p bed {}.gz'
