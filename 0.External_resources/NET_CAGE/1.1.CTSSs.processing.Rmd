@@ -22,108 +22,6 @@ BiocParallel::register(
 #base::setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/1.CTSSs/")
 ```
 
-## [0.3.] Function for pooling replicates
-```{r}
-#In future included in PRIME so can be removed
-poolReplicates <- function(object, replicates, inputAssay="counts") {
-    
-    ## dimensions
-    assertthat::assert_that(
-        base::ncol(object) == base::length(replicates),
-        base::length(base::unique(replicates)) > 1
-      )
-
-    base::message("Calculating pooled counts...")
-    a <- base::do.call(
-        what = "cbind",
-        args = base::lapply(
-          X = base::unique(replicates),
-          FUN = function(b){
-            Matrix::rowSums(
-                SummarizedExperiment::assay(object,inputAssay)[,replicates==b,drop=FALSE]
-              )
-            }
-          )
-        )
-    a <- methods::as(a, "sparseMatrix")
-    base::colnames(a) <- base::unique(replicates)
-
-    base::message("Create a pasted design matrix...")
-    c <- base::do.call(
-      what = "rbind",
-      args = base::lapply(
-        X = base::unique(replicates),
-        FUN = function(b){ 
-          base::apply(
-              X = SummarizedExperiment::colData(object)[replicates==b,],
-              MARGIN = 2 ,
-              FUN = base::paste ,
-              collapse = ","
-            )
-          }
-        )
-      )
-
-    rse <- SummarizedExperiment::SummarizedExperiment(
-        assays = S4Vectors::SimpleList(counts = a),
-        rowRanges = SummarizedExperiment::rowRanges(object),
-        colData = base::as.data.frame(c)
-      )
-    rse <- CAGEfightR::calcTotalTags(rse)
-    return(rse)
-  }
-```
-
-## [0.4.] Function for removing singletons
-```{r}
-#Create new assay with counts where 1 counts become 0
-rmSingletons <- function(rse, inputAssay = "counts") {
-  rmS <- assay(rse, inputAssay)
-  # Find the indices where values are equal to 1
-  idx <- which(rmS == 1, arr.ind = TRUE)
-  # Replace the values at those indices with 0
-  rmS[idx] <- 0
-  # Assign the modified assay back to the SummarizedExperiment object
-  assay(rse, "counts.noSingletons") <- rmS
-  rse
-}
-```
-## [0.5.] Function for writing out TMM normalized bigwig tracks
-```{r}
-#In future included in PRIME so can be removed
-writeBw <- function(object, replicates, dir, inputAssay="TMM"){
-  
-  ## Check consistency of replicates
-  assertthat::assert_that(
-      base::length(SummarizedExperiment::rowRanges(object)) == base::nrow(SummarizedExperiment::assay(object,"TMM")),
-      base::all(replicates %in% rownames(SummarizedExperiment::colData(object)))
-    )
-  base::stopifnot("Chosen directory doesn't exist!" = base::dir.exists(dir))
-  
-  ## Parallel export across all chosen replicates
-  foreach::foreach(i=1:base::length(replicates)) %dopar% {
-    
-    ## Convert individual replicate to GRanges object
-    gr <- SummarizedExperiment::rowRanges(object)
-    S4Vectors::mcols(gr)["score"] <- SummarizedExperiment::assay(object,inputAssay)[,replicates[i]]
-    
-    ## Export replicate's plus and minus strands separately
-    for (s in base::c("+","-")){
-        grs <- gr[BiocGenerics::strand(gr) == s,]
-        s <- base::ifelse(s == "+","plus","minus")
-        fn <- base::paste0(dir,reps[i],".tmm.",s,".bw")
-        
-        rtracklayer::export(
-            object = grs,
-            con = fn,
-            format = "bigWig"
-          )
-        base::message(base::paste(fn,"done.",sep = " "))
-      }
-    }
-  }
-```
-
 # [2.] Process GM12878 datasets -------------------------
 
 ## [2.0.] Read in GM12878 design matrix
@@ -211,7 +109,7 @@ GM12878.CTSSs <- GM12878.CTSSs %>%
   CAGEfightR::calcTPM() %>%
   CAGEfightR::calcPooled()
 
-GM12878.p.CTSSs <- .GlobalEnv$poolReplicates(
+GM12878.p.CTSSs <- PRIME::poolReplicates(
   object = GM12878.CTSSs,
   replicates = base::paste(
       SummarizedExperiment::colData(GM12878.CTSSs)$Cell.line,
@@ -226,7 +124,7 @@ GM12878.p.CTSSs <- CAGEfightR::calcTPM(GM12878.p.CTSSs)
 
 ## [2.6.] Pool only based on reqsequencing
 ```{r}
-GM12878.pID.CTSSs <- .GlobalEnv$poolReplicates(
+GM12878.pID.CTSSs <- PRIME::poolReplicates(
     object = GM12878.CTSSs,
     replicates = SummarizedExperiment::colData(GM12878.CTSSs)$ID
   )
