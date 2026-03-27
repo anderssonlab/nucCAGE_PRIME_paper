@@ -1,0 +1,325 @@
+---
+title: "PRIME FANTOM5 quantification"
+output: html_document
+date: "2024-10-21"
+---
+
+
+```{r}
+
+library(CAGEfightR)
+library(BiocParallel)
+library(GenomicRanges)
+library(readr)
+library(readxl)
+library(rtracklayer)
+library(parallel)
+library(ggplot2)
+library(GenomicFeatures)
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+library(SummarizedExperiment)
+library(tibble)
+library(ggrepel)
+library(PRIME)
+
+```
+
+```{r}
+#Cell lines
+bw.plus.cellLines <- list.files("./bw_files",pattern="plus.bw",full.names=TRUE)
+bw.minus.cellLines <- list.files("./bw_files",pattern="minus.bw",full.names=TRUE)
+
+cellLine.names <- gsub("^.*/([^\\.]+)\\..*$", "\\1", bw.plus.cellLines)
+cellLine.ID <- sub(".*(CNhs[0-9]+)\\..*", "\\1", bw.plus.cellLines)
+cellLine.ontology <-  sub(".*/(.*?)_cell_line.*", "\\1", bw.plus.cellLines)
+cellLine.ontology <-  sub(".*/(.*?)_cells.*", "\\1", cellLine.ontology)
+cellLines <- rep("cellLine",length(bw.plus.cellLines))
+
+bw.plus.cellLines <- BigWigFileList(bw.plus.cellLines)                       
+bw.minus.cellLines <- BigWigFileList(bw.minus.cellLines)                     
+names(bw.plus.cellLines) <- names(bw.minus.cellLines) <- cellLine.ID
+
+
+#Tissues
+bw.plus.tissue <- list.files("./tissue_bw",pattern="plus.bw",full.names=TRUE)
+bw.minus.tissue <- list.files("./tissue_bw",pattern="minus.bw",full.names=TRUE)
+
+tissue.facets <- read_excel("./NIHMS824707-supplement-Table_S11.xls")
+
+tissue.names <- gsub("^.*/([^\\.]+)\\..*$", "\\1", bw.plus.tissue)
+tissue.ID <- sub(".*(CNhs[0-9]+)\\..*", "\\1", bw.plus.tissue)
+
+tissue.ontology <- sapply(tissue.ID, function(id) {
+  match_row <- tissue.facets[tissue.facets$`Sample ID` == id, ] 
+  if (nrow(match_row) > 0) {
+    match_row$`Facet ontology term`
+  } else {
+    NA  # Return NA if no match is found
+  }
+})
+tissue.ontology <- unlist(tissue.ontology)
+
+tissue <- rep("tissue",length(bw.plus.tissue))
+
+
+bw.plus.tissue <- BigWigFileList(bw.plus.tissue)                       
+bw.minus.tissue <- BigWigFileList(bw.minus.tissue)                     
+names(bw.plus.tissue) <- names(bw.minus.tissue) <- tissue.ID
+
+
+#Primary cells
+bw.plus.primary <- list.files("./primary_bw",pattern="plus.bw",full.names=TRUE)
+bw.minus.primary <- list.files("./primary_bw",pattern="minus.bw",full.names=TRUE)
+
+primary.facets <- read_excel("./NIHMS824707-supplement-Table_S10.xls")
+
+
+primary.names <- gsub("^.*/([^\\.]+)\\..*$", "\\1", bw.plus.primary)
+primary.ID <- sub(".*(CNhs[0-9]+)\\..*", "\\1", bw.plus.primary)
+
+primary.ontology <- sapply(primary.ID, function(id) {
+  match_row <- primary.facets[primary.facets$`Sample ID` == id, ] 
+  if (nrow(match_row) > 0) {
+    match_row$`Facet ontology term`
+  } else {
+    NA  # Return NA if no match is found
+  }
+})
+primaryontology <- unlist(primary.ontology)
+
+primaryCells <- rep("primaryCells",length(bw.plus.primary))
+
+bw.plus.primary <- BigWigFileList(bw.plus.primary)                       
+bw.minus.primary <- BigWigFileList(bw.minus.primary)                     
+names(bw.plus.primary) <- names(bw.minus.primary) <- primary.ID
+
+
+#Merge all bigwigs
+bw.plus <- c(bw.plus.cellLines,bw.plus.tissue,bw.plus.primary)
+bw.minus <- c(bw.minus.cellLines,bw.minus.tissue,bw.minus.primary)
+
+#Design matrix
+design <- data.frame(sampleName=c(cellLine.names,tissue.names,primary.names),
+                     sampelID=c(cellLine.ID,tissue.ID,primary.ID),
+                     ontology=c(cellLine.ontology,tissue.ontology,primary.ontology),
+                     data=c(cellLines,tissue,primaryCells))
+
+
+row.names(design) <- design$sampelID
+```
+
+
+
+```{r}
+#Quantify CTSSs
+genomeInfo <- SeqinfoForUCSCGenome("hg38")
+
+
+register(MulticoreParam(workers=50))
+CTSSs <- quantifyCTSSs(plusStrand = bw.plus,                         
+                       minusStrand = bw.minus,
+                       design = design,
+                       genome=genomeInfo)    
+
+saveRDS(CTSSs, "./FANTOM5.CTSSs.rds")
+```
+
+
+
+```{r}
+#Create pooled signal over ontology labels
+f <- colData(CTSSs)$ontology[!is.na(colData(CTSSs)$ontology)]
+f <- unique(f[f %in% names(table(f)[table(f) > 1])])
+
+# Define the chunk size
+chunkSize <- 21
+
+# Split the replicates into chunks
+replicate_chunks <- split(unique(colData(CTSSs)$ontology[colData(CTSSs)$ontology %in% f]), 
+                          ceiling(seq_along(unique(colData(CTSSs)$ontology[colData(CTSSs)$ontology %in% f])) / chunkSize))
+
+# Use lapply to apply the function to each chunk
+pooled_results <- lapply(replicate_chunks, function(chunk) {
+  poolReplicates(CTSSs[, colData(CTSSs)$ontology %in% chunk], 
+                 colData(CTSSs)$ontology[colData(CTSSs)$ontology %in% chunk])
+})
+
+
+pooled.CTSSs <- do.call(cbind, pooled_results)
+rm(pooled_results)
+pooled.CTSSs <- calcPooled(pooled.CTSSs, inputAssay = "counts")
+pooled.CTSSs <- subset(pooled.CTSSs,score>0)
+
+#Create a assay with singletons removed
+a <- assay(pooled.CTSSs,"counts")
+a@x[a@x == 1] <- 0
+pooled.CTSSs.rmSingletons <- SummarizedExperiment(
+  assays = list(counts = a),
+  rowRanges = rowRanges(pooled.CTSSs),
+  colData = colData(pooled.CTSSs)
+)
+pooled.CTSSs.rmSingletons <- calcPooled(pooled.CTSSs.rmSingletons, inputAssay = "counts")
+pooled.CTSSs.rmSingletons <- subset(pooled.CTSSs.rmSingletons, score>0)
+
+#Save outputs
+saveRDS(pooled.CTSSs, "./FANTOM5.pooled.CTSSs.rds")
+saveRDS(pooled.CTSSs.rmSingletons, "./FANTOM5.pooled.CTSSs.rmSingletons.rds")
+```
+
+
+
+
+```{r}
+#Read in PRIMEloci prediction for pooled FANTOM5
+fantom.PRIMEloci <- readRDS("../../8.Genomewide_prediction/FANTOM5/FANTOM_on_PRIMEloci_pred_0_75_FANTOM5_phase1_2_combined_ovlcorereduced.rds")
+fantom.PRIMEloci$thick <- IRanges(fantom.PRIMEloci$thick)
+seqlevels(CTSSs, pruning.mode="coarse") <- seqlevels(fantom.PRIMEloci)
+seqinfo(fantom.PRIMEloci) <- seqinfo(CTSSs)
+
+#Quantify samples
+fantom.PRIMEloci <- quantifyClusters(CTSSs, fantom.PRIMEloci)
+fantom.PRIMEloci <- calcPooled(fantom.PRIMEloci,inputAssay = "counts")
+fantom.PRIMEloci <- subset(fantom.PRIMEloci, score>0)
+saveRDS(fantom.PRIMEloci, "./FANTOM5.PRIMEloci.rds")
+```
+
+
+
+```{r}
+seqlevels(pooled.CTSSs, pruning.mode="coarse") <- seqlevels(fantom.PRIMEloci)
+
+#Quantify samples
+pooled.fantom.PRIMEloci <- quantifyClusters(pooled.CTSSs, rowRanges(fantom.PRIMEloci))
+pooled.fantom.PRIMEloci <- calcPooled(pooled.fantom.PRIMEloci,inputAssay = "counts")
+pooled.fantom.PRIMEloci <- subset(pooled.fantom.PRIMEloci, score>0)
+saveRDS(pooled.fantom.PRIMEloci, "./pooled.FANTOM5.PRIMEloci.rds")
+```
+
+
+
+
+```{r}
+#Subsample pooled data
+sub.pooled.CTSSs <- subsampleTarget(pooled.CTSSs,target = 1e7)
+sub.pooled.CTSSs <- calcPooled(sub.pooled.CTSSs, inputAssay="counts")
+sub.pooled.CTSSs <- subset(sub.pooled.CTSSs, score>0)
+saveRDS(sub.pooled.CTSSs, "./FANTOM5.sub.pooled.CTSSs.rds")
+
+
+
+#Quantify samples
+sub.pooled.fantom.PRIMEloci <- quantifyClusters(sub.pooled.CTSSs, rowRanges(fantom.PRIMEloci))
+sub.pooled.fantom.PRIMEloci <- calcPooled(sub.pooled.fantom.PRIMEloci,inputAssay = "counts")
+sub.pooled.fantom.PRIMEloci <- subset(sub.pooled.fantom.PRIMEloci, score>0)
+saveRDS(sub.pooled.fantom.PRIMEloci, "./sub.pooled.FANTOM5.PRIMEloci.rds")
+
+#Quantify for original F5 enhancers
+FANTOM5.enhancers.file <- "../F5.hg38.enhancers.bed.gz"
+
+
+
+
+FANTOM5.enhancers <- import.bed(FANTOM5.enhancers.file)
+seqlevels(FANTOM5.enhancers,pruning.mode="coarse") <- seqlevels(sub.pooled.CTSSs)
+seqinfo(FANTOM5.enhancers) <- seqinfo(sub.pooled.CTSSs)
+sub.pooled.F5 <- quantifyClusters(sub.pooled.CTSSs, FANTOM5.enhancers)
+sub.pooled.F5 <- calcPooled(sub.pooled.F5,inputAssay = "counts")
+sub.pooled.F5 <- subset(sub.pooled.F5, score>0)
+saveRDS(sub.pooled.F5, "./sub.pooled.F5.rds")
+```
+
+
+
+
+```{r}
+
+#Export pooled
+output_dir <- "/maps/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5/pooled_bw"
+#
+for (i in seq_len(ncol(pooled.CTSSs))) {
+  # Extract the sample name
+  sample_name <- colnames(pooled.CTSSs)[i]
+  
+  # Extract signal data for the current sample
+  signal <- assays(pooled.CTSSs)[[1]][, i]
+  
+  # Create a GRanges object for the signal
+  gr <- rowRanges(pooled.CTSSs)
+  gr$score <- signal
+  gr <- subset(gr, score>0)
+  
+  # Separate by strand
+  gr_plus <- gr[strand(gr) == "+"]
+  gr_minus <- gr[strand(gr) == "-"]
+  
+  # Define output file names
+  plus_file <- file.path(output_dir, paste0(sample_name, ".plus.bw"))
+  minus_file <- file.path(output_dir, paste0(sample_name, ".minus.bw"))
+  
+  # Export to BigWig
+  export.bw(gr_plus, plus_file)
+  export.bw(gr_minus, minus_file)
+}
+
+#Export subsampled
+output_dir <- "/maps/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5/sub_pooled_bw"
+#
+for (i in seq_len(ncol(sub.pooled.CTSSs))) {
+  # Extract the sample name
+  sample_name <- colnames(sub.pooled.CTSSs)[i]
+  
+  # Extract signal data for the current sample
+  signal <- assays(sub.pooled.CTSSs)[[1]][, i]
+  
+  # Create a GRanges object for the signal
+  gr <- rowRanges(sub.pooled.CTSSs)
+  gr$score <- signal
+  gr <- subset(gr, score>0)
+  
+  # Separate by strand
+  gr_plus <- gr[strand(gr) == "+"]
+  gr_minus <- gr[strand(gr) == "-"]
+  
+  # Define output file names
+  plus_file <- file.path(output_dir, paste0(sample_name, ".plus.bw"))
+  minus_file <- file.path(output_dir, paste0(sample_name, ".minus.bw"))
+  
+  # Export to BigWig
+  export.bw(gr_plus, plus_file)
+  export.bw(gr_minus, minus_file)
+}
+
+
+#Export rm singletons
+output_dir <- "/maps/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5/pooled_rmSingletons_bw"
+#
+for (i in seq_len(ncol(pooled.CTSSs.rmSingletons))) {
+  # Extract the sample name
+  sample_name <- colnames(pooled.CTSSs.rmSingletons)[i]
+  
+  # Extract signal data for the current sample
+  signal <- assays(pooled.CTSSs.rmSingletons)[[1]][, i]
+  
+  # Create a GRanges object for the signal
+  gr <- rowRanges(pooled.CTSSs.rmSingletons)
+  gr$score <- signal
+  gr <- subset(gr, score>0)
+  
+  # Separate by strand
+  gr_plus <- gr[strand(gr) == "+"]
+  gr_minus <- gr[strand(gr) == "-"]
+  
+  # Define output file names
+  plus_file <- file.path(output_dir, paste0(sample_name, ".plus.bw"))
+  minus_file <- file.path(output_dir, paste0(sample_name, ".minus.bw"))
+  
+  # Export to BigWig
+  export.bw(gr_plus, plus_file)
+  export.bw(gr_minus, minus_file)
+}
+```
+
+
+
+
+
