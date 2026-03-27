@@ -6,11 +6,6 @@ date: "2024-06-18"
 
 # Estimate noise levels across libraries
 
-```{r}
-# source("CAGEfightR_extensions/utils.R")
-# source("CAGEfightR_extensions/noise.R")
-```
-
 ## [0.0.] Load necessary packages
 ```{r message=FALSE}
 base::library(tidyverse)

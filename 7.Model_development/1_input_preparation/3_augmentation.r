@@ -37,21 +37,6 @@ ocr_rdata_file <- args$ocr_rdata
 output_dir <- args$output_dir
 name <- args$name
 
-# setwd("/Users/natsudanav/Desktop/zmk214workingspace/model_input_preparation")
-# # general
-# dist <- 200
-# 
-# # input and output
-# ocr_rdata_file <- "2_K562_ocr_ocrlikeneg.RData"
-# output_dir <- "./"
-# name <- "K562"
-
-# save(list = c("ocr_train_gr",
-#               "ocr_test_gr",
-#               "ocrlike_neg_train_gr",
-#               "ocrlike_neg_test_gr"),
-
-
 
 # 1 load Rdata
 load(ocr_rdata_file)

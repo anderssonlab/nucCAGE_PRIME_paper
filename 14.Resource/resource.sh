@@ -10,11 +10,49 @@ shopt -s nullglob
 SRC_DIR="../0.External_resources/FANTOM5_cellFacet_bedFiles"
 FACET_DIR="./PRIME_FANTOM5_facets"
 AGNOSTIC_DIR="./PRIME_FANTOM5_agnostic"
+CELLLINE_DIR="./PRIME_cellLines"
 
-mkdir -p "$FACET_DIR" "$AGNOSTIC_DIR"
+#mkdir -p "$FACET_DIR" "$AGNOSTIC_DIR" "$CELLLINE_DIR"
 
 ############################################
-# 1. Produce FANTOM facet BED6 files
+# 1. Produce cell line BED6 files
+############################################
+
+echo "Processing cell line predictions..."
+
+# Define the source patterns
+CELL_SRC_1="../8.Genomewide_prediction"
+CELL_SRC_2="../8.Genomewide_prediction/K562_thresholding"
+
+# Process standard cell line files (*t075d010.bed)
+for FILE_PATH in "$CELL_SRC_1"/*t075d010.bed; do
+(
+    base=$(basename "$FILE_PATH")
+    clean_name=$(echo "$base" | sed -E 's/_sld_on_PRIMEloci1.0//; s/_t075d010\.bed//')
+    
+    OUT_FILE="$CELLLINE_DIR/PRIME_${clean_name}_0.75.bed"
+
+    awk 'BEGIN{OFS="\t"} { print $1,$2,$3,$1":"$2"-"$3,$5,"*" }' "$FILE_PATH" | sort -k 1,1 -k 2,2n > "$OUT_FILE"
+) &
+done
+
+# Process K562 files (*0_75*d010.bed)
+for FILE_PATH in "$CELL_SRC_2"/*0_75*d010.bed; do
+(
+    base=$(basename "$FILE_PATH")
+    # Extract K562_C or K562_N from the complex filename
+    clean_name=$(echo "$base" | grep -oE 'K562_[CN]')
+    
+    OUT_FILE="$CELLLINE_DIR/PRIME_${clean_name}_0.75.bed"
+
+    awk 'BEGIN{OFS="\t"} { print $1,$2,$3,$1":"$2"-"$3,$5,"*" }' "$FILE_PATH" | sort -k 1,1 -k 2,2n > "$OUT_FILE"
+) &
+done
+
+exit 0
+
+############################################
+# 2. Produce FANTOM facet BED6 files
 ############################################
 
 echo "Reformating bed files..."
@@ -44,7 +82,7 @@ done
 wait
 
 # ############################################
-# # 2. Create pooled ≥0.75 dataset
+# # 3. Create pooled ≥0.75 dataset
 # ############################################
 
 INPUT_FILE="../8.Genomewide_prediction/FANTOM5_rmSingletons/PRIMEloci_pred_0_75_FANTOM5_rmSingletons_combined_coreovlwith-d.bed"
@@ -56,7 +94,7 @@ sed 1d "$INPUT_FILE" | awk 'BEGIN{FS="\t"; OFS="\t"} {
 }' | sort --parallel=$(nproc) -k1,1 -k2,2n > "$OUTPUT_FILE"
 
 ############################################
-# 3. Merge facet GREs
+# 4. Merge facet GREs
 ############################################
 
 cd "$FACET_DIR" || exit
@@ -110,7 +148,7 @@ merge_facets "*_0.5.bed" "../${AGNOSTIC_DIR}/PRIME_FANTOM5_agnostic_all_0.75" 0.
 wait
 
 ############################################
-# 4. Generate facet statistics
+# 5. Generate facet statistics
 ############################################
 
 gawk '
