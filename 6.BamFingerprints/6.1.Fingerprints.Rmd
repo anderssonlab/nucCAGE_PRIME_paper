@@ -628,7 +628,7 @@ keep <- Matrix::rowSums(
 GM12878.s.CTSSs.mod <- GM12878.s.CTSSs[keep,samples]
 # SummarizedExperiment::assay(GM12878.s.CTSSs.mod,"counts.noSingletons")
 
-GM12878.finger <- PRIME::fingerPrint(
+GM12878.finger <- fingerPrint(
     object = GM12878.s.CTSSs.mod,
     replicates = samples,
     inputAssay = "counts.noSingletons"
