@@ -20,7 +20,7 @@ library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 library(SummarizedExperiment)
 library(tibble)
 library(ggrepel)
-
+library(PRIME)
 ```
 
 ```{r}
