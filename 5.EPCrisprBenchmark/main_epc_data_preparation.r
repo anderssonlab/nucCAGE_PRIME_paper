@@ -11,7 +11,7 @@ suppressPackageStartupMessages({
   library(GenomicRanges)
   library(GenomicFeatures)
 
-  library(PRIMEloci)
+  library(PRIMEmodel)
 })
 
 # Working directory and environment variables

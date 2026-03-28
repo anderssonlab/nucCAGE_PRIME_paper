@@ -13,7 +13,7 @@ suppressPackageStartupMessages({
   library(AnnotationDbi)
   library(GenomicFeatures)
   library(GenomicRanges)
-  library(PRIMEloci)
+  library(PRIMEmodel)
 })
 
 
