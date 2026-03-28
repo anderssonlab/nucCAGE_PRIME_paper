@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Directories
-annot_dir="/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/annotation_files"  # Directory containing annotation files
-output_dir="/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/merged_annotations"    # Output directory for merged files
-bim_dir="/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/plink_files"                 # Path to .bim files
+annot_dir="/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/ldsc_files/annotation_files"  # Directory containing annotation files
+output_dir="/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/ldsc_files/merged_annotations"    # Output directory for merged files
+bim_dir="/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/ldsc_files/plink_files"                 # Path to .bim files
 
 # Create output directory if it doesn't exist
 mkdir -p "$output_dir"

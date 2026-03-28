@@ -52,7 +52,7 @@ col.scheme <- base::c(
 ## Read in SNP.file
 SNP.data <- rtracklayer::import.bed( # 9.991.229
   con = base::paste0(
-    here::here("/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/"),
+    here::here("/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/"),
     "all.bg.SNPs.hg38.baseline.v1.1.bed.sorted"
   )
 )
@@ -103,7 +103,7 @@ point.data[["ENCODE cCRE"]] <- base::c(
 )
 
 PRIME.proximal <- readr::read_tsv(
-  file = base::paste0("/maps/projects/ralab/data/projects/nucleiCAGEproject/resource/PRIME_FANTOM5_agnostic/",
+  file = base::paste0("/maps/projects/ralab/data/projects/nucCAGE_PRIME_paper/resource/PRIME_FANTOM5_agnostic/",
                       "PRIME_FANTOM5_agnostic_proximal_0.5.bed"
   ),
   col_names = FALSE,
@@ -115,7 +115,7 @@ PRIME.proximal <- GenomicRanges::makeGRangesFromDataFrame(PRIME.proximal)
 point.data[["PRIME proximal"]] <- PRIME.proximal
 
 PRIME.distal <- readr::read_tsv(
-  file = base::paste0("/maps/projects/ralab/data/projects/nucleiCAGEproject/resource/PRIME_FANTOM5_agnostic/",
+  file = base::paste0("/maps/projects/ralab/data/projects/nucCAGE_PRIME_paper/resource/PRIME_FANTOM5_agnostic/",
                       "PRIME_FANTOM5_agnostic_distal_0.5.bed"
   ),
   col_names = FALSE,

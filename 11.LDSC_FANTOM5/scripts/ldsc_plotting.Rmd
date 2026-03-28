@@ -43,10 +43,10 @@ theme_set(theme_bw(base_size = 8))
 
 ## [0.1.] Load PHANTOM5 data and add annotations
 ```{r}
-cellFacet.rse <- readRDS("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/cellFacet.rds")
+cellFacet.rse <- readRDS("/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/ldsc_files/cellFacet.rds")
 
 # Read in FANTOM5 predictions
-F5 <- import.bed("/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/F5.hg38.enhancers.bed.gz")
+F5 <- import.bed("/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/F5.hg38.enhancers.bed.gz")
 
 # Add annotations
 rowData(cellFacet.rse)$location <- NA
@@ -255,7 +255,7 @@ cellFacet.rse %>%
   geom_bar() +
   facet_wrap(~location, scales = "free", ncol = 1)
 
-ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/support0.5.pdf", height=10,width=7)
+ggsave("/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/plots/support0.5.pdf", height=10,width=7)
 ```
 
 
@@ -316,7 +316,7 @@ dend_plot <- ggplot(seg_data) +
 combined_plot <- dend_plot + bar_plot + plot_layout(widths = c(1, 3))
 combined_plot
 
-ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/nBarplot.pdf", combined_plot, width = 7, height = 15)
+ggsave("/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/plots/nBarplot.pdf", combined_plot, width = 7, height = 15)
 
 
 
@@ -377,7 +377,7 @@ dend_plot <- ggplot(seg_data) +
 combined_plot <- dend_plot + bar_plot + plot_layout(widths = c(1, 3))
 combined_plot
 
-ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/nBarplot.main.pdf", combined_plot, width = 15, height = 15)
+ggsave("/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/plots/nBarplot.main.pdf", combined_plot, width = 15, height = 15)
 ```
 
 
@@ -389,8 +389,8 @@ ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/nB
 ## [2.0] Read in main LDSC results
 ```{r}
 # Input file
-input_file <- "/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/combined_results.tsv"
-sumstat_file <- "/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/ukb31063_ldsc_sumstat_manifest_aws_sep2022.tsv"
+input_file <- "/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/ldsc_files/combined_results.tsv"
+sumstat_file <- "/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/ldsc_files/ukb31063_ldsc_sumstat_manifest_aws_sep2022.tsv"
 
 # Load the data
 ldsc_score <- read_tsv(input_file)
@@ -490,17 +490,17 @@ min_top_scores <- apply(assay(cellFacet.rse, "qn.PL.score")[rowData(cellFacet.rs
 
 
 plot_trait_scores(ldsc_score, "Reticulocyte count", c("reticulocyte"), min_top_scores)
-ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/her.enrichment.reticulocyte.pdf",width=7.5, height=5)
+ggsave("/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/plots/her.enrichment.reticulocyte.pdf",width=7.5, height=5)
 
 plot_trait_scores(ldsc_score, "Monocyte count", c("monocyte"), min_top_scores)
-ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/her.enrichment.monocyte.pdf",width=7.5, height=5)
+ggsave("/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/plots/her.enrichment.monocyte.pdf",width=7.5, height=5)
 
 plot_trait_scores(ldsc_score, "Basophill count", c("mast.cell"), min_top_scores)
-ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/her.enrichment.basophill.pdf",width=7.5, height=5)
+ggsave("/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/plots/her.enrichment.basophill.pdf",width=7.5, height=5)
 
 
 plot_trait_scores(ldsc_score, "Urate (umol/L)", c("kidney"), min_top_scores)
-ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/her.enrichment.urate.pdf",width=7.5, height=5)
+ggsave("/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/plots/her.enrichment.urate.pdf",width=7.5, height=5)
 ```
 
 
@@ -660,7 +660,7 @@ ggplot(df_top3plusF5, aes(x = Enrichment, y = description, color = Category)) +
   ) +
   xlim(2.5,65)
 
-ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/blood.enrichments.pdf",height=10, width=10)
+ggsave("/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/plots/blood.enrichments.pdf",height=10, width=10)
 ```
 
 
@@ -748,7 +748,7 @@ m <- mean(df_sub$Enrichment_scaled)
     ) +
     coord_fixed(ratio = 1)
 
-ggsave("/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/plots/heatmap.Scaledenrichments.pdf",p,height=10, width=10)
+ggsave("/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/plots/heatmap.Scaledenrichments.pdf",p,height=10, width=10)
 
 ```
 

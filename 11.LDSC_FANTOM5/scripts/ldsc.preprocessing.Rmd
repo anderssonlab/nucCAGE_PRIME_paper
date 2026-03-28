@@ -34,12 +34,12 @@ theme_set(theme_bw(base_size = 8))
 
 # Per cellFacet PRIMEloci score
 PL.cellFacet.fantom5 <- read.table(
-  "/projects/ralab/data/projects/nucleiCAGEproject/8.Genomewide_prediction/FANTOM5_rmSingletons_cellfacet/FANTOM5-cellfacet_score_setnoCAGEtoNaN.tsv",
+  "/projects/ralab/data/projects/nucCAGE_PRIME_paper/8.Genomewide_prediction/FANTOM5_rmSingletons_cellfacet/FANTOM5-cellfacet_score_setnoCAGEtoNaN.tsv",
   sep="\t",header=T, row.names = 1)
 
 # Per cellFacet sum counts
 expr.cellFacet.fantom5 <- read.table(
-  "/projects/ralab/data/projects/nucleiCAGEproject/8.Genomewide_prediction/FANTOM5_rmSingletons_cellfacet/FANTOM5-cellfacet_sumcount.tsv",
+  "/projects/ralab/data/projects/nucCAGE_PRIME_paper/8.Genomewide_prediction/FANTOM5_rmSingletons_cellfacet/FANTOM5-cellfacet_sumcount.tsv",
   sep="\t",header=T, row.names = 1)
 
 #Make into rangedSummarized experiment
@@ -49,15 +49,15 @@ cellFacet.rse <- SummarizedExperiment(assays=SimpleList(PL.score=PL.cellFacet.fa
                                       colData=DataFrame(sample=colnames(PL.cellFacet.fantom5)))
 
 # Read in FANTOM5 predictions
-F5 <- import.bed("/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/F5.hg38.enhancers.bed.gz")
+F5 <- import.bed("/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/F5.hg38.enhancers.bed.gz")
 ```
 
 ```{r}
 #Read in bigwig files for TPM normalization
-plus_files <- list.files(path="/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5/pooled_bw",
+plus_files <- list.files(path="/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5/pooled_bw",
                          pattern="*.plus.bw",
                          full.names=TRUE)
-minus_files <- list.files(path="/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5/pooled_bw/",
+minus_files <- list.files(path="/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5/pooled_bw/",
                           pattern="*.minus.bw",
                           full.names=TRUE)
 
@@ -119,7 +119,7 @@ assay(cellFacet.rse,"qn.PL.score") <- quantile_target_normalization(as.matrix(as
 txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 cellFacet.rse <- assignTxType(cellFacet.rse,txModels = txdb)
 
-saveRDS(cellFacet.rse,file="/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/cellFacet.rds")
+saveRDS(cellFacet.rse,file="/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/ldsc_files/cellFacet.rds")
 ```
 
 
@@ -143,13 +143,13 @@ F5$location[F5$txType %in% c("intron","intergenic")] <- "distal"
 #Generate proximal and distal bed files
 PL.proximal <- subset(rowRanges(cellFacet.rse),location=="proximal")
 PL.distal <- subset(rowRanges(cellFacet.rse),location=="distal")
-export.bed(PL.proximal,"/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/PL_proximal.bed")
-export.bed(PL.distal,"/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/PL_distal.bed")
+export.bed(PL.proximal,"/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5_cellFacet_bedFiles/PL_proximal.bed")
+export.bed(PL.distal,"/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5_cellFacet_bedFiles/PL_distal.bed")
 
 F5.proximal <- subset(F5,location=="proximal")
 F5.distal <- subset(F5,location=="distal")
-export.bed(F5.proximal,"/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/F5_proximal.bed")
-export.bed(F5.distal,"/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/F5_distal.bed")
+export.bed(F5.proximal,"/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5_cellFacet_bedFiles/F5_proximal.bed")
+export.bed(F5.distal,"/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5_cellFacet_bedFiles/F5_distal.bed")
 
 ```
 
@@ -216,7 +216,7 @@ generate_bed_files(
   assay_name = "qn.PL.score",
   score_threshold = 0.5,
   location_col = "location",
-  output_dir = "/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/"
+  output_dir = "/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5_cellFacet_bedFiles/"
 )
 
 
@@ -226,7 +226,7 @@ generate_bed_files(
   assay_name = "TPM",
   score_threshold = 1,
   location_col = "location",
-  output_dir = "/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/"
+  output_dir = "/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5_cellFacet_bedFiles/"
 )
 ```
 
@@ -302,7 +302,7 @@ generate_bed_files_strict(
   score_threshold = 0.5,
   top_n = 100000,
   location_col = "location",
-  output_dir = "/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/score_range/"
+  output_dir = "/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5_cellFacet_bedFiles/score_range/"
 )
 
 generate_bed_files_strict(
@@ -311,7 +311,7 @@ generate_bed_files_strict(
   score_threshold = 0.55,
   top_n = 100000,
   location_col = "location",
-  output_dir = "/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/score_range/"
+  output_dir = "/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5_cellFacet_bedFiles/score_range/"
 )
 
 generate_bed_files_strict(
@@ -320,7 +320,7 @@ generate_bed_files_strict(
   score_threshold = 0.6,
   top_n = 100000,
   location_col = "location",
-  output_dir = "/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/score_range/"
+  output_dir = "/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5_cellFacet_bedFiles/score_range/"
 )
 
 generate_bed_files_strict(
@@ -329,7 +329,7 @@ generate_bed_files_strict(
   score_threshold = 0.65,
   top_n = 100000,
   location_col = "location",
-  output_dir = "/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/score_range/"
+  output_dir = "/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5_cellFacet_bedFiles/score_range/"
 )
 
 generate_bed_files_strict(
@@ -338,7 +338,7 @@ generate_bed_files_strict(
   score_threshold = 0.7,
   top_n = 100000,
   location_col = "location",
-  output_dir = "/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/score_range/"
+  output_dir = "/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5_cellFacet_bedFiles/score_range/"
 )
 
 generate_bed_files_strict(
@@ -347,7 +347,7 @@ generate_bed_files_strict(
   score_threshold = 0.75,
   top_n = 100000,
   location_col = "location",
-  output_dir = "/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5_cellFacet_bedFiles/score_range/"
+  output_dir = "/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5_cellFacet_bedFiles/score_range/"
 )
 ```
 

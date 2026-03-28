@@ -24,7 +24,7 @@ BiocParallel::register(
 
 ## [0.2.] Set working directory
 ```{r eval=FALSE}
-#base::setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/1.CTSSs/")
+#base::setwd("/maps/projects/ralab/data/projects/nucCAGE_PRIME_paper/1.CTSSs/")
 ```
 
 ## [0.3.] Function for pooling replicates

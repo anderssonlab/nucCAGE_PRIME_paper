@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Directories
-results_dir="/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/ldsc_results"  # Directory containing .results files
-output_file="/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/combined_results.tsv"  # Output file name
+results_dir="/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/ldsc_files/ldsc_results"  # Directory containing .results files
+output_file="/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/ldsc_files/combined_results.tsv"  # Output file name
 
 # Initialize the output file with the header
 echo -e "Category\tProp._SNPs\tProp._h2\tProp._h2_std_error\tEnrichment\tEnrichment_std_error\tEnrichment_p\tTrait" > "$output_file"

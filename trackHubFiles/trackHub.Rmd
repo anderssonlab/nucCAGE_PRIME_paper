@@ -38,7 +38,7 @@ library(reshape2)
 library(limma)
 library(ggplot2)
 
-setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/trackHubFiles//")
+setwd("/maps/projects/ralab/data/projects/nucCAGE_PRIME_paper/trackHubFiles//")
 ```
 
 ```{r}

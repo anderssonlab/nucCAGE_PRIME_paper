@@ -36,7 +36,7 @@ library(reshape2)
 library(limma)
 library(ggplot2)
 
-setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/3.DivergentLoci/")
+setwd("/maps/projects/ralab/data/projects/nucCAGE_PRIME_paper/3.DivergentLoci/")
 ```
 
 
