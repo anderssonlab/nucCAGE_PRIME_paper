@@ -6,9 +6,9 @@ module load ldsc
 source activate ldsc
 
 # Directories
-stat_dir="/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/sumstats"
-output_dir="/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/ldsc_results"
-stat_list="/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/sumstats.txt"
+stat_dir="/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/ldsc_files/sumstats"
+output_dir="/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/ldsc_files/ldsc_results"
+stat_list="/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/ldsc_files/sumstats.txt"
 
 # Define the score values (update this list if needed)
 scores=("0.5" "0.55" "0.6" "0.65" "0.7" "0.75")  
@@ -26,7 +26,7 @@ process_sumstat() {
 
     # Loop over each score
     for score in "${scores[@]}"; do
-        ref_ld_chr="/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/merged_annotations/combined.${score}."
+        ref_ld_chr="/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/ldsc_files/merged_annotations/combined.${score}."
         output_check="${output_dir}/${base_name}_score${score}.results"  # Check existence
         output_file="${output_dir}/${base_name}_score${score}"  # Output file
 
@@ -42,9 +42,9 @@ process_sumstat() {
         ldsc.py \
             --h2 "$sumstat_file" \
             --ref-ld-chr "$ref_ld_chr" \
-            --w-ld-chr /projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/weights/weights.hm3_noMHC. \
+            --w-ld-chr /projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/ldsc_files/weights/weights.hm3_noMHC. \
             --overlap-annot \
-            --frqfile-chr /projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/plink_files/1000G.EUR.hg38. \
+            --frqfile-chr /projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/ldsc_files/plink_files/1000G.EUR.hg38. \
             --out "$output_file" || {
             echo "Error processing $file_name for score $score" >&2
             exit 1

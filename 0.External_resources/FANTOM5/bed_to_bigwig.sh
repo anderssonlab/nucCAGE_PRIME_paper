@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Define the necessary paths
-OUT="/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5/primary_bw"
-WD="/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5/primary_ctss"
-TEMPDIR="/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5/primary_bw/tmp"
+OUT="/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5/primary_bw"
+WD="/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5/primary_ctss"
+TEMPDIR="/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/FANTOM5/primary_bw/tmp"
 SCRIPTDIR="/projects/ralab/apps/"
 GENOME_PATH="/projects/ralab/data/genome/hg38"
 GENOME="hg38"

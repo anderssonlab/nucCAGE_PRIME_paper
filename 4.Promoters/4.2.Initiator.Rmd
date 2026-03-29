@@ -18,7 +18,7 @@ library(dplyr)
 
 ## [0.1.] Set working directory
 ```{r}
-#setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/4.Promoters/")
+#setwd("/maps/projects/ralab/data/projects/nucCAGE_PRIME_paper/4.Promoters/")
 ```
 
 # [1.] K562 replicate subsetted  -------------------------

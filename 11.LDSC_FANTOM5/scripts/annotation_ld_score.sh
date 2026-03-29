@@ -7,10 +7,10 @@ module load ldsc
 source activate ldsc
 
 # Directories
-plink_dir="/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/plink_files"
-annot_dir="/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/merged_annotations"
-output_dir="/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/merged_annotations"
-snplist="/projects/ralab/data/projects/nucleiCAGEproject/11.LDSC_FANTOM5/ldsc_files/w_hm3.snplist"
+plink_dir="/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/ldsc_files/plink_files"
+annot_dir="/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/ldsc_files/merged_annotations"
+output_dir="/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/ldsc_files/merged_annotations"
+snplist="/projects/ralab/data/projects/nucCAGE_PRIME_paper/11.LDSC_FANTOM5/ldsc_files/w_hm3.snplist"
 
 # Ensure script stops on errors
 set -e

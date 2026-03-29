@@ -21,7 +21,7 @@ txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 
 ## [0.2.] Set working directory
 ```{r}
-#base::setwd("/maps/projects/ralab/data/projects/nucleiCAGEproject/2.NascentTranscription/")
+#base::setwd("/maps/projects/ralab/data/projects/nucCAGE_PRIME_paper/2.NascentTranscription/")
 ```
 
 

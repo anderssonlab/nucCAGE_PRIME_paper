@@ -1,10 +1,10 @@
 #!/bin/bash
 
 CELL_TYPE=K562_wt10M
-INPUT_FILE_DHS=/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/E123-DNase.macs2.hg38.narrowPeak
+INPUT_FILE_DHS=/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/E123-DNase.macs2.hg38.narrowPeak
 INPUT_DIR_CAGE=../data/resources/K562_bw/
 INPUT_FILE_DESIGN=design_matrix_${CELL_TYPE}.tsv
-INPUT_FILE_BLACKLIST=/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/hg38-blacklist.v2.bed
+INPUT_FILE_BLACKLIST=/projects/ralab/data/projects/nucCAGE_PRIME_paper/0.External_resources/hg38-blacklist.v2.bed
 
 nohup Rscript 1_dhs.r -i ${INPUT_FILE_DHS} -b $INPUT_FILE_BLACKLIST -n $CELL_TYPE -d 200 > nohup_${CELL_TYPE}_1
 

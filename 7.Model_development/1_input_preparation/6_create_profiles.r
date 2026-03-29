@@ -19,7 +19,7 @@ suppressPackageStartupMessages({
   library(GenomicRanges)
   library(reshape2)
 
-  library(PRIMEloci)
+  library(PRIMEmodel)
 })
 
 ### ARGPARSE

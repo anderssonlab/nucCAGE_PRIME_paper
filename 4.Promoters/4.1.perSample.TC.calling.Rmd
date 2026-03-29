@@ -23,7 +23,7 @@ library(dplyr)
 
 ## [0.2.] Set working directory
 ```{r}
-#base::setwd("/projects/ralab/data/projects/nucleiCAGEproject/4.Promoters/")
+#base::setwd("/projects/ralab/data/projects/nucCAGE_PRIME_paper/4.Promoters/")
 ```
 
 

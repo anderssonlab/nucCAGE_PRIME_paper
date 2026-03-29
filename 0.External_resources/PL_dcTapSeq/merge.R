@@ -13,12 +13,12 @@ library(tibble)
 library(ggrepel)
 library(tidyr)
 
-pooled.PRIMEloci.files <- c("K562_sld_C" = "/projects/ralab/data/projects/nucleiCAGEproject/8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_C.bed",
-                            "K562_sld_N" = "/projects/ralab/data/projects/nucleiCAGEproject/8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N.bed",
-                            "HepG2_sld_C" = "/projects/ralab/data/projects/nucleiCAGEproject/8.Genomewide_prediction/HepG2_sld_on_PRIMEloci1.0_C.bed",
-                            "HepG2_sld_N" = "/projects/ralab/data/projects/nucleiCAGEproject/8.Genomewide_prediction/HepG2_sld_on_PRIMEloci1.0_N.bed",
-                            "GM12878_sld_C" ="/projects/ralab/data/projects/nucleiCAGEproject/8.Genomewide_prediction/GM12878_sld_on_PRIMEloci1.0_C_1M.bed",
-                            "GM12878_sld_N" = "/projects/ralab/data/projects/nucleiCAGEproject/8.Genomewide_prediction/GM12878_sld_on_PRIMEloci1.0_N_5M.bed")
+pooled.PRIMEloci.files <- c("K562_sld_C" = "/projects/ralab/data/projects/nucCAGE_PRIME_paper/8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_C.bed",
+                            "K562_sld_N" = "/projects/ralab/data/projects/nucCAGE_PRIME_paper/8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N.bed",
+                            "HepG2_sld_C" = "/projects/ralab/data/projects/nucCAGE_PRIME_paper/8.Genomewide_prediction/HepG2_sld_on_PRIMEloci1.0_C.bed",
+                            "HepG2_sld_N" = "/projects/ralab/data/projects/nucCAGE_PRIME_paper/8.Genomewide_prediction/HepG2_sld_on_PRIMEloci1.0_N.bed",
+                            "GM12878_sld_C" ="/projects/ralab/data/projects/nucCAGE_PRIME_paper/8.Genomewide_prediction/GM12878_sld_on_PRIMEloci1.0_C_1M.bed",
+                            "GM12878_sld_N" = "/projects/ralab/data/projects/nucCAGE_PRIME_paper/8.Genomewide_prediction/GM12878_sld_on_PRIMEloci1.0_N_5M.bed")
 
 
 pooled.PRIMEloci <- lapply(names(pooled.PRIMEloci.files), function(n) {

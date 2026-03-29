@@ -30,7 +30,11 @@ for FILE_PATH in "$CELL_SRC_1"/*t075d010.bed; do
     
     OUT_FILE="$CELLLINE_DIR/PRIME_${clean_name}_0.75.bed"
 
-    awk 'BEGIN{OFS="\t"} { printf "%s\t%d\t%d\t%s\t%.4f\t%s\n", $1,$2,$3,$1":"$2"-"$3,$5,"*" }' "$FILE_PATH" | \
+    awk 'BEGIN{OFS="\t"} {
+    s=$5; if(s<0)s=0; if(s>1)s=1;
+    score=int(s*1000+0.5);
+    printf "%s\t%d\t%d\t%s\t%d\t%s\n", $1,$2,$3,$1":"$2"-"$3,score,"*"
+    }' "$FILE_PATH" | \
     sort -k 1,1 -k 2,2n > "$OUT_FILE"
 ) &
 done
@@ -44,7 +48,11 @@ for FILE_PATH in "$CELL_SRC_2"/*0_75*d010.bed; do
     
     OUT_FILE="$CELLLINE_DIR/PRIME_${clean_name}_0.75.bed"
 
-    awk 'BEGIN{OFS="\t"} { printf "%s\t%d\t%d\t%s\t%.4f\t%s\n", $1,$2,$3,$1":"$2"-"$3,$5,"*" }' "$FILE_PATH" | \
+    awk 'BEGIN{OFS="\t"} {
+    s=$5; if(s<0)s=0; if(s>1)s=1;
+    score=int(s*1000+0.5);
+    printf "%s\t%d\t%d\t%s\t%d\t%s\n", $1,$2,$3,$1":"$2"-"$3,score,"*"
+    }' "$FILE_PATH" | \
     sort -k 1,1 -k 2,2n > "$OUT_FILE"
 ) &
 done
@@ -62,7 +70,11 @@ for FILE_PATH in "$SRC_DIR"/*_qn.PL.score0.5.bed; do
 
     OUT_FILE="$FACET_DIR/PRIME_FANTOM5_${prefix}_0.5.bed"
 
-    awk 'BEGIN{OFS="\t"} { printf "%s\t%d\t%d\t%s\t%.4f\t%s\n", $1,$2,$3,$1":"$2"-"$3,$4,"*" }' "$FILE_PATH" | \
+    awk 'BEGIN{OFS="\t"} {
+    s=$4; if(s<0)s=0; if(s>1)s=1;
+    score=int(s*1000+0.5);
+    printf "%s\t%d\t%d\t%s\t%d\t%s\n", $1,$2,$3,$1":"$2"-"$3,score,"*"
+    }' "$FILE_PATH" | \
     sort -k 1,1 -k 2,2n > "$OUT_FILE"
 ) &
 
@@ -84,7 +96,9 @@ OUTPUT_FILE="${AGNOSTIC_DIR}/PRIME_FANTOM5_pooled_0.75.bed"
 
 sed 1d "$INPUT_FILE" | awk 'BEGIN{FS="\t"; OFS="\t"} {
     name = $1":"$2"-"$3;
-    printf "%s\t%d\t%d\t%s\t%.4f\t%s\t%d\t%d\n", $1, $2, $3, name, $5, $6, $7, $8
+    s=$5; if(s<0)s=0; if(s>1)s=1;
+    score=int(s*1000+0.5);
+    printf "%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\n", $1, $2, $3, name, score, $6, $7, $8
 }' | sort --parallel=$(nproc) -k1,1 -k2,2n > "$OUTPUT_FILE"
 
 ############################################
@@ -105,7 +119,9 @@ merge_facets() {
     awk -v min="$min_score" '
     BEGIN{FS=OFS="\t"}
     {
-        if ($5 < min) next;
+        raw=$5; if(raw<0)raw=0; if(raw>1)raw=1;
+        s=int(raw*1000+0.5);
+        if (s < int(min*1000+0.5)) next;
 
         split(FILENAME, a, "_");
         facet = a[3];
@@ -114,11 +130,11 @@ merge_facets() {
 
         if (!(name in seen)) {
             chr[name]=$1; start[name]=$2; end[name]=$3;
-            score[name]=$5; strand[name]=$6;
+            score[name]=s; strand[name]=$6;
             facets[name]=facet;
             seen[name]=1;
         } else {
-            if ($5 > score[name]) score[name]=$5;
+            if (s > score[name]) score[name]=s;
 
             if (!match(";"facets[name]";", ";"facet";")) {
                 facets[name] = facets[name]";"facet;
@@ -127,7 +143,7 @@ merge_facets() {
     }
     END {
         for (n in chr) {
-            printf "%s\t%d\t%d\t%s\t%.4f\t%s\t%s\n", chr[n], start[n], end[n], n, score[n], strand[n], facets[n]
+            printf "%s\t%d\t%d\t%s\t%d\t%s\t%s\n", chr[n], start[n], end[n], n, score[n], strand[n], facets[n]
         }
     }' $pattern | sort -k1,1 -k2,2n > "${out_name}.bed"
 }
@@ -156,7 +172,7 @@ BEGIN {
 }
 {
     split(FILENAME, a, "_")
-    facet = a[3]; type = a[4]; score = $5 + 0
+    facet = a[3]; type = a[4]; score = ($5 + 0) / 1000;
     facets[facet] = 1
     
     if(score >= 0.5)  all50[facet]++
