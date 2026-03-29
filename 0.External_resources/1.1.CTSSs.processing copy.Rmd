@@ -1,0 +1,315 @@
+---
+title: "CTSS processing including NET-CAGE"
+date: "2026-02-25"
+output: html_document
+---
+
+## [0.] Prerequsites -------------------------
+
+## [0.0.] Load necesarray packages
+```{r message=FALSE}
+base::library(tidyverse)
+base::library(CAGEfightR)
+base::library(PRIME)
+```
+
+## [0.1.] Register server cores / threads
+```{r}
+BiocParallel::register(
+  BPPARAM = BiocParallel::MulticoreParam(
+      workers = 10
+    )
+  )
+```
+
+## [0.2.] Set working directory
+```{r eval=FALSE}
+#base::setwd("/maps/projects/ralab/data/projects/nucCAGE_PRIME_paper/1.CTSSs/")
+```
+
+## [0.3.] Function for pooling replicates
+```{r}
+#In future included in PRIME so can be removed
+poolReplicates <- function(object, replicates, inputAssay="counts") {
+    
+    ## dimensions
+    assertthat::assert_that(
+        base::ncol(object) == base::length(replicates),
+        base::length(base::unique(replicates)) > 1
+      )
+
+    base::message("Calculating pooled counts...")
+    a <- base::do.call(
+        what = "cbind",
+        args = base::lapply(
+          X = base::unique(replicates),
+          FUN = function(b){
+            Matrix::rowSums(
+                SummarizedExperiment::assay(object,inputAssay)[,replicates==b,drop=FALSE]
+              )
+            }
+          )
+        )
+    a <- methods::as(a, "sparseMatrix")
+    base::colnames(a) <- base::unique(replicates)
+
+    base::message("Create a pasted design matrix...")
+    c <- base::do.call(
+      what = "rbind",
+      args = base::lapply(
+        X = base::unique(replicates),
+        FUN = function(b){ 
+          base::apply(
+              X = SummarizedExperiment::colData(object)[replicates==b,],
+              MARGIN = 2 ,
+              FUN = base::paste ,
+              collapse = ","
+            )
+          }
+        )
+      )
+
+    rse <- SummarizedExperiment::SummarizedExperiment(
+        assays = S4Vectors::SimpleList(counts = a),
+        rowRanges = SummarizedExperiment::rowRanges(object),
+        colData = base::as.data.frame(c)
+      )
+    rse <- CAGEfightR::calcTotalTags(rse)
+    return(rse)
+  }
+```
+
+## [0.4.] Function for removing singletons
+```{r}
+#Create new assay with counts where 1 counts become 0
+rmSingletons <- function(rse, inputAssay = "counts") {
+  rmS <- assay(rse, inputAssay)
+  # Find the indices where values are equal to 1
+  idx <- which(rmS == 1, arr.ind = TRUE)
+  # Replace the values at those indices with 0
+  rmS[idx] <- 0
+  # Assign the modified assay back to the SummarizedExperiment object
+  assay(rse, "counts.noSingletons") <- rmS
+  rse
+}
+```
+## [0.5.] Function for writing out TMM normalized bigwig tracks
+```{r}
+#In future included in PRIME so can be removed
+writeBw <- function(object, replicates, dir, inputAssay="TMM"){
+  
+  ## Check consistency of replicates
+  assertthat::assert_that(
+      base::length(SummarizedExperiment::rowRanges(object)) == base::nrow(SummarizedExperiment::assay(object,"TMM")),
+      base::all(replicates %in% rownames(SummarizedExperiment::colData(object)))
+    )
+  base::stopifnot("Chosen directory doesn't exist!" = base::dir.exists(dir))
+  
+  ## Parallel export across all chosen replicates
+  foreach::foreach(i=1:base::length(replicates)) %dopar% {
+    
+    ## Convert individual replicate to GRanges object
+    gr <- SummarizedExperiment::rowRanges(object)
+    S4Vectors::mcols(gr)["score"] <- SummarizedExperiment::assay(object,inputAssay)[,replicates[i]]
+    
+    ## Export replicate's plus and minus strands separately
+    for (s in base::c("+","-")){
+        grs <- gr[BiocGenerics::strand(gr) == s,]
+        s <- base::ifelse(s == "+","plus","minus")
+        fn <- base::paste0(dir,reps[i],".tmm.",s,".bw")
+        
+        rtracklayer::export(
+            object = grs,
+            con = fn,
+            format = "bigWig"
+          )
+        base::message(base::paste(fn,"done.",sep = " "))
+      }
+    }
+  }
+```
+
+# [2.] Process GM12878 datasets -------------------------
+
+## [2.0.] Read in GM12878 design matrix
+```{r}
+design_ <- utils::read.table(
+    file =  base::paste0(
+        "GM12878.design.txt"
+      ),
+    sep = "\t",
+    header = TRUE
+  )
+```
+
+## [2.1.] Filter and format for use
+#### CAGEfightR::quantifyCTSSs() requires rownames to be specified
+```{r}
+design <- design_ %>%
+  dplyr::filter(use == "yes") %>%
+  dplyr::mutate(
+      rn = base::paste(ID,Seq_run,sep="_")
+    ) %>% 
+  tibble::column_to_rownames(var = "rn")
+```
+
+## [2.2.] Prepare CAGEFightR input
+```{r}
+plus_files <- design$bw_plus
+minus_files <- design$bw_minus
+
+base::names(plus_files) <- base::rownames(design)
+base::names(minus_files) <- base::rownames(design)
+
+bw_plus <- rtracklayer::BigWigFileList(plus_files)
+bw_minus <- rtracklayer::BigWigFileList(minus_files)
+```
+
+## [2.3.] Quantify CTSSs with no reference genome set
+```{r}
+GM12878.CTSSs <- CAGEfightR::quantifyCTSSs(
+    plusStrand = bw_plus,
+    minusStrand = bw_minus,
+    design = design
+  )
+
+GM12878.CTSSs <- calcTotalTags(GM12878.CTSSs)
+```
+
+## [2.4.] Visualize amount of tags across libraries
+```{r}
+SummarizedExperiment::colData(GM12878.CTSSs) %>%
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+      ID = base::paste(Cell.line,Type,replicate,sep = "_"),
+      ID = forcats::as_factor(x = ID)
+    ) %>% 
+  ggplot2::ggplot(
+      data = .,
+      mapping = aes(
+        x = totalTags/1000000,
+        y = ID #base::paste(Type,replicate,sep="_")
+      )
+    ) +
+  geom_bar(
+      stat = "identity"
+    ) +
+  scale_y_discrete(
+      limits = rev
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 2,
+      axis.title.y = element_blank()
+    )
+```
+
+## [2.5.] Pool replicates
+#### Evaluate with SummarizedExperiment::colData(k562.p.CTSSs), SummarizedExperiment::colData(k562.CTSSs)
+```{r}
+keep <- GenomeInfoDb::seqlevels(GM12878.CTSSs)[1:23]
+
+GM12878.CTSSs <- GenomeInfoDb::keepSeqlevels(GM12878.CTSSs, keep, pruning.mode = "coarse")
+
+
+GM12878.CTSSs <- GM12878.CTSSs %>%
+  CAGEfightR::calcTPM() %>%
+  CAGEfightR::calcPooled()
+
+GM12878.p.CTSSs <- PRIME::poolReplicates(
+  object = GM12878.CTSSs,
+  replicates = base::paste(
+      SummarizedExperiment::colData(GM12878.CTSSs)$Cell.line,
+      SummarizedExperiment::colData(GM12878.CTSSs)$cell_count,
+      SummarizedExperiment::colData(GM12878.CTSSs)$Type,
+      sep = "_"
+    )
+  )
+
+GM12878.p.CTSSs <- CAGEfightR::calcTPM(GM12878.p.CTSSs)
+```
+
+## [2.6.] Pool only based on reqsequencing
+```{r}
+GM12878.pID.CTSSs <- PRIME::poolReplicates(
+    object = GM12878.CTSSs,
+    replicates = SummarizedExperiment::colData(GM12878.CTSSs)$ID
+  )
+
+GM12878.pID.CTSSs <- CAGEfightR::calcTPM(GM12878.pID.CTSSs)
+```
+
+## [2.7.] Create combined objects
+# Create object that also contains fully pooled samples.
+#### Main indicates if part of main analysis. Removing Triptolide and low input
+```{r}
+SummarizedExperiment::colData(GM12878.pID.CTSSs)$main <- "yes"
+SummarizedExperiment::colData(GM12878.pID.CTSSs)$main[
+    SummarizedExperiment::colData(GM12878.pID.CTSSs)$Type %in% base::c("Cap_align","ctrl","trip") |
+    SummarizedExperiment::colData(GM12878.pID.CTSSs)$cell_count %in% base::c("50K","250K,250K")
+  ] <- "no"
+SummarizedExperiment::colData(GM12878.pID.CTSSs)$pooled <- "no"
+```
+
+```{r}
+SummarizedExperiment::colData(GM12878.p.CTSSs)$main <- "yes"
+SummarizedExperiment::colData(GM12878.p.CTSSs)$main[
+    SummarizedExperiment::colData(GM12878.p.CTSSs)$Type %in% base::c("Cap_align","ctrl,ctrl,ctrl","trip,trip,trip,trip") |
+    SummarizedExperiment::colData(GM12878.p.CTSSs)$cell_count %in% base::c("50K,50K,50K","250K,250K,250K,250K,250K,250K")
+  ] <- "no"
+SummarizedExperiment::colData(GM12878.p.CTSSs)$pooled <- "yes"
+```
+
+```{r}
+GM12878.combined.CTSSs <- cbind(GM12878.p.CTSSs,GM12878.pID.CTSSs)
+GM12878.combined.CTSSs <- calcTotalTags(GM12878.combined.CTSSs)
+```
+
+## [2.8.] Create two subsamples one to the min replicate depth and one to min pool depth and keep original
+```{r}
+rep.min <- base::min(
+  SummarizedExperiment::colData(GM12878.combined.CTSSs)$totalTags[
+      SummarizedExperiment::colData(GM12878.combined.CTSSs)$main == "yes" &
+      SummarizedExperiment::colData(GM12878.combined.CTSSs)$pooled == "no"
+    ]
+  ) #29027358
+pool.min <- base::min(
+  SummarizedExperiment::colData(GM12878.combined.CTSSs)$totalTags[
+      SummarizedExperiment::colData(GM12878.combined.CTSSs)$main == "yes" &
+      SummarizedExperiment::colData(GM12878.combined.CTSSs)$pooled == "yes"
+    ]
+  ) #106618677
+
+GM12878.combined.repSub.CTSSs<- subsampleTarget(
+    object = GM12878.combined.CTSSs,
+    target = rep.min
+  )
+GM12878.combined.poolSub.CTSSs<- subsampleTarget(
+      object = GM12878.combined.CTSSs,
+      target = pool.min
+    )
+
+GM12878.combined.repSub.CTSSs <- CAGEfightR::calcTPM(GM12878.combined.repSub.CTSSs)
+GM12878.combined.poolSub.CTSSs <- CAGEfightR::calcTPM(GM12878.combined.poolSub.CTSSs)
+```
+
+```{r}
+GM12878.combined.repSub.CTSSs <- rmSingletons(GM12878.combined.repSub.CTSSs)
+GM12878.combined.poolSub.CTSSs <- rmSingletons(GM12878.combined.poolSub.CTSSs)
+```
+
+## [2.9.] Save CTSS objects
+```{r}
+base::saveRDS(
+    object = GM12878.combined.CTSSs,
+    file = "all.combined.GM12878.CTSSs.rds")
+
+base::saveRDS(
+  object = GM12878.combined.repSub.CTSSs,
+  file ="repSub.combined.GM12878.CTSSs.rmSingletons.rds")
+
+base::saveRDS(
+  object = GM12878.combined.poolSub.CTSSs,
+  file ="poolSub.combined.GM12878.CTSSs.rmSingletons.rds")
+here::here()
+```
