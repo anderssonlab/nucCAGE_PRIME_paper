@@ -10,7 +10,7 @@ library(stringr)
 input_dir <- "../0.External_resources/FANTOM5/pooled_bw"
 output_dir <- "PRIME_FANTOM5_facets_TPM_bw"
 
-dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(output_dir)
 
 BPPARAM <- MulticoreParam(workers = 20)
 
@@ -80,7 +80,8 @@ process_facet <- function(i) {
 
   for (f in bw_files) {
     strand <- ifelse(str_detect(f, "plus"), "plus", "minus")
-    out_name <- paste0(facet, ".", strand, ".bw")
+    facet_clean <- gsub("\\s+", ".", facet)
+    out_name <- paste0(facet_clean, ".", strand, ".bw")
     file.copy(f, file.path(output_dir, out_name), overwrite = TRUE)
   }
 
