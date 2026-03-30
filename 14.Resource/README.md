@@ -1,9 +1,9 @@
-# PRIME atlas of transcription initiation-derived gene regulatory elements
+# PRIME atlas of transcription initiation-derived gene regulatory elements in human cells
 
 ## Overview
-This resource provides genome-wide maps of transcription initiation-derived gene regulatory elements (GREs) identified using nucCAGE and the PRIME framework. The dataset includes cell line–specific predictions, FANTOM5 facet-level predictions, merged facet annotations, and pooled GRE datasets.
+This resource provides genome-wide maps of transcription initiation-derived gene regulatory elements (GREs) identified using nucCAGE and the PRIME computational framework. The dataset includes cell line–specific predictions, FANTOM5 facet-level predictions, merged facet annotations, pooled GRE datasets, and TPM-normalized CAGE signal tracks.
 
-All files are provided as coordinate-sorted BED files, bgzip-compressed and tabix-indexed for efficient genomic access.
+GRE annotations are provided as coordinate-sorted BED files (bgzip-compressed and tabix-indexed) for efficient genomic querying, while strand-specific bigWig files provide genome browser–ready visualization of transcription initiation activity across FANTOM5 facets.
 
 ---
 
