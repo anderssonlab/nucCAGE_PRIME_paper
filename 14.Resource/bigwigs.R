@@ -72,14 +72,11 @@ process_facet <- function(i) {
     CTSSs <- calcTPM(CTSSs)
 
     facet_clean <- gsub("\\s+", ".", facet)
+    colnames(CTSSs) <- facet_clean
 
-    tmp_dir <- tempfile(pattern = paste0("bw_", facet_clean, "_"))
-    dir.create(tmp_dir)
-
-    foreach::registerDoSEQ()
     PRIME::writeBw(
         object = CTSSs,
-        dir = tmp_dir,
+        dir = output_dir,
         replicates = "all",
         inputAssay = "TPM",
         splitByStrand = TRUE
