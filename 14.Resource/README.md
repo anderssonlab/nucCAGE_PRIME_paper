@@ -1,16 +1,14 @@
-# PRIME atlas of transcription initiation-derived gene regulatory elements in human cells
-
-## Overview
+### Overview
 This resource provides genome-wide maps of transcription initiation-derived gene regulatory elements (GREs) identified using nucCAGE and the PRIME computational framework. The dataset includes cell line–specific predictions, FANTOM5 facet-level predictions, merged facet annotations, pooled GRE datasets, and TPM-normalized CAGE signal tracks.
 
 GRE annotations are provided as coordinate-sorted BED files (bgzip-compressed and tabix-indexed) for efficient genomic querying, while strand-specific bigWig files provide genome browser–ready visualization of transcription initiation activity across FANTOM5 facets.
 
 ---
 
-## Directory structure
+### Contents
 
-### PRIME_cellLines/
-Contains GRE predictions for individual cell lines.
+#### PRIME_cellLines
+GRE predictions for individual cell lines.
 
 - Files are generated from genome-wide prediction outputs and filtered at PRIME score ≥ 0.75
 - Each file corresponds to one cell line (e.g. GM12878, K562) and sample preparation approeach, nuclei or whole cell, (e.g., K562_N, K562_C)
@@ -18,8 +16,8 @@ Contains GRE predictions for individual cell lines.
 
 ---
 
-### PRIME_FANTOM5_facets/
-Contains GRE predictions for individual FANTOM5 facets.
+#### PRIME_FANTOM5_facets
+GRE predictions for individual FANTOM5 facets.
 
 - Each file corresponds to a specific FANTOM5 cell, tissue, or cell line facet
 - Files are in BED6 format with activity scores scaled to 0–1000
@@ -28,8 +26,8 @@ Contains GRE predictions for individual FANTOM5 facets.
 
 ---
 
-### PRIME_FANTOM5_agnostic/
-Contains pooled and merged GRE datasets across FANTOM5 facets.
+#### PRIME_FANTOM5_agnostic
+Pooled and merged GRE datasets across FANTOM5 facets.
 
 Includes:
 - Pooled GRE predictions across all facets
@@ -46,8 +44,8 @@ Also includes:
 
 ---
 
-### PRIME_FANTOM5_TPM_bw/
-Contains TPM-normalized CAGE tracks for all FANTOM5 facets.
+#### PRIME_FANTOM5_TPM_bw
+TPM-normalized CAGE tracks for all FANTOM5 facets.
 
 - Each facet is represented by two strand-specific bigWig files (.plus.bw and .minus.bw)
 - Signals are derived from CTSS-level quantification and normalized to TPM
@@ -55,11 +53,11 @@ Contains TPM-normalized CAGE tracks for all FANTOM5 facets.
 
 ---
 
-## File format
+### File format
 
 All files follow standard BED conventions.
 
-### General properties
+#### General properties
 - Genome build: GRCh38
 - Chromosome naming: UCSC style (chr1–chr22, chrX)
 - Coordinate system: 0-based, half-open
@@ -69,7 +67,7 @@ All files follow standard BED conventions.
 
 ---
 
-### BED6 format (cell line and facet files)
+#### BED6 format (cell line and facet files)
 
 Columns:
 1. chrom
@@ -81,7 +79,7 @@ Columns:
 
 ---
 
-### Extended BED format (merged facet files)
+#### Extended BED format (merged facet files)
 
 Columns:
 1. chrom
@@ -94,7 +92,7 @@ Columns:
 
 ---
 
-## Score definition
+### Score definition
 
 The score column represents PRIME score scaled to the range 0–1000:
 
@@ -112,7 +110,7 @@ Thresholds used in the manuscript:
 
 ---
 
-## Usage
+### Usage
 
 Example query using tabix:
 
@@ -122,14 +120,14 @@ Files can be directly visualised in genome browsers such as IGV or UCSC Genome B
 
 ---
 
-## License
+### License
 
 Data are released under the Creative Commons Attribution 4.0 International (CC BY 4.0) license.
 
 ---
 
-## Citation
+### Citation
 
 If you use this resource, please cite:
 1. Einarsson, Navamajiti, et al, Mapping active regulatory elements from transcription initiation events, 2026, BioRxiv
-2. This Zenodo record
+2. This Zenodo record (doi: 10.5281/zenodo.19331480)
