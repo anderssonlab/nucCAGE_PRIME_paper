@@ -10,7 +10,7 @@ suppressPackageStartupMessages({
 })
 
 input_dir <- "../0.External_resources/FANTOM5/pooled_bw"
-output_dir <- "PRIME_FANTOM5_facets_TPM_bw"
+output_dir <- "PRIME_FANTOM5_facets_TPM_bw/"
 
 dir.create(output_dir)
 
@@ -81,7 +81,7 @@ process_facet <- function(i) {
         inputAssay = "TPM",
         splitByStrand = TRUE
     )
-    
+
     return(TRUE)
 }
 
