@@ -81,21 +81,7 @@ process_facet <- function(i) {
         inputAssay = "TPM",
         splitByStrand = TRUE
     )
-
-    bw_files <- list.files(tmp_dir, pattern = "\\.bw$", full.names = TRUE)
-
-    for (f in bw_files) {
-        strand <- if (grepl("\\.plus\\.bw$", f)) "plus" else "minus"
-        out_name <- paste0(facet_clean, ".", strand, ".bw")
-        dest <- file.path(output_dir, out_name)
-
-        if (!file.copy(f, dest, overwrite = TRUE)) {
-            stop("Copy failed for: ", f)
-        }
-    }
-
-    unlink(tmp_dir, recursive = TRUE)
-
+    
     return(TRUE)
 }
 
