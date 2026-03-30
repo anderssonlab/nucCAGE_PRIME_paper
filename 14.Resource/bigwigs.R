@@ -1,18 +1,21 @@
 #!/usr/bin/env Rscript
 
+suppressPackageStartupMessages({
 library(rtracklayer)
 library(CAGEfightR)
 library(PRIME)
 library(BiocParallel)
 library(dplyr)
 library(stringr)
+})
 
 input_dir <- "../0.External_resources/FANTOM5/pooled_bw"
 output_dir <- "PRIME_FANTOM5_facets_TPM_bw"
 
 dir.create(output_dir)
 
-BPPARAM <- MulticoreParam(workers = 20)
+#BPPARAM <- MulticoreParam(workers = 20)
+BPPARAM <- SerialParam()
 
 files <- list.files(
   path = input_dir,
@@ -64,6 +67,8 @@ process_facet <- function(i) {
     minusStrand = bw_minus
   )
 
+  stopifnot(!is.null(colnames(CTSSs)))
+
   CTSSs <- calcTotalTags(CTSSs)
   CTSSs <- calcTPM(CTSSs)
 
@@ -82,7 +87,7 @@ process_facet <- function(i) {
   bw_files <- list.files(tmp_dir, pattern = "\\.bw$", full.names = TRUE)
 
   for (f in bw_files) {
-    strand <- ifelse(str_detect(f, "plus"), "plus", "minus")
+    strand <- if (grepl("\\.plus\\.bw$", f)) "plus" else "minus"
     facet_clean <- gsub("\\s+", ".", facet)
     out_name <- paste0(facet_clean, ".", strand, ".bw")
     file.copy(f, file.path(output_dir, out_name), overwrite = TRUE)
