@@ -76,7 +76,7 @@ process_facet <- function(i) {
   tmp_dir <- tempfile(pattern = paste0("bw_", facet, "_"))
   dir.create(tmp_dir)
 
-  PRIME::exportBw(
+  PRIME::writeBw(
     object = CTSSs,
     directory = tmp_dir,
     replicates = "all",
