@@ -56,6 +56,9 @@ process_facet <- function(i) {
   bw_plus <- BigWigFileList(plus_file)
   bw_minus <- BigWigFileList(minus_file)
 
+  names(bw_plus)  <- facet
+  names(bw_minus) <- facet
+
   CTSSs <- quantifyCTSSs(
     plusStrand  = bw_plus,
     minusStrand = bw_minus
