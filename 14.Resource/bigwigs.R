@@ -78,7 +78,7 @@ process_facet <- function(i) {
 
   PRIME::writeBw(
     object = CTSSs,
-    directory = tmp_dir,
+    dir = tmp_dir,
     replicates = "all",
     inputAssay = "TPM",
     splitByStrand = TRUE
