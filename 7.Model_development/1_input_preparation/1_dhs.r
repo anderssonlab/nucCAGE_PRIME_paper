@@ -12,9 +12,7 @@ suppressPackageStartupMessages({
   library(AnnotationDbi)
   library(GenomicFeatures)
   library(GenomicRanges)
-  library(PRIMEmodel)
 })
-
 
 ### ARGPARSE
 parser <- ArgumentParser()
@@ -53,9 +51,42 @@ test_chr <- unlist(strsplit(args$test_chr, ","))
 input_file <- args$input_file
 blacklist_file <- args$blacklist_file
 output_dir <- args$output_dir
-name <- args$nam
+name <- args$name
 ucsc_genome <- args$ucscgenome
 species <- args$species
+
+
+
+# 0. Helper functions
+source("functions.r")
+
+#' Import DHS Data from ENCODE
+import_dhs_encode <- function(dhs_paths_with_names) {
+  colnames <- c("seqnames", "start", "end", "name")
+  coltypes <- readr::cols(.default = readr::col_double(),
+                          seqnames = readr::col_character(),
+                          name = readr::col_character())
+
+  dhs_data <- purrr::map(dhs_paths_with_names, function(r) {
+    df <- readr::read_delim(file = r, delim = "\t",
+                            col_names = colnames, col_types = coltypes)
+    df <- dplyr::mutate(df, start = start + 1) # Convert to 1-based indexing
+    return(df)
+  })
+
+  return(dhs_data)
+}
+
+#' Filter Ranges Overlapping Non-reliable Genomic Regions
+filter_blacklist <- function(ranges, blacklist) {
+  overlapping_blacklist <- S4Vectors::queryHits(GenomicRanges::findOverlaps(ranges, blacklist))
+  message("There are ", length(overlapping_blacklist), " ranges overlapping the blacklist")
+  if (length(overlapping_blacklist) > 0) {
+    ranges <- ranges[-overlapping_blacklist]
+  }
+  return(ranges)
+}
+
 
 
 # 1. Read in data
@@ -92,6 +123,7 @@ dhs_data <- purrr::map2_df(dhs_data,
                            ~dplyr::mutate(.x, lib_name = .y))
 
 
+
 # 2. Training: filter out the test chromosomes, and remove blacklist
 ocr_train_gr <- dhs_data %>%
   dplyr::filter(!(seqnames %in% test_chr)) %>%
@@ -102,6 +134,8 @@ names(ocr_train_gr) <- paste0(seqnames(ocr_train_gr), ":",
                               start(ocr_train_gr), "-",
                               end(ocr_train_gr), ";",
                               strand(ocr_train_gr))
+
+
 
 # 3. Testing: select the test chromosomes, and remove blacklist
 ocr_test_gr <- dhs_data %>%
@@ -120,6 +154,8 @@ print(paste0("Output: ", "1.", name, ".ocr.RData"))
 print(paste0("Distance from the dhs peak (bps): ", dist))
 print(paste0("OCR train: ", length(ocr_train_gr)))
 print(paste0("OCR test: ", length(ocr_test_gr)))
+
+
 
 # 4. Save
 writeLines("\nSaving..")

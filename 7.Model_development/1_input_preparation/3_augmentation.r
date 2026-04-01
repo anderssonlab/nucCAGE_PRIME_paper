@@ -12,7 +12,6 @@ suppressPackageStartupMessages({
   library(AnnotationDbi)
   library(GenomicFeatures)
   library(GenomicRanges)
-  library(PRIMEmodel)
 })
 
 set.seed(214)
@@ -38,71 +37,82 @@ output_dir <- args$output_dir
 name <- args$name
 
 
-# 1 load Rdata
-load(ocr_rdata_file)
 
+# 0 helper functions
+source("functions.r")
 
+#' Generate Random Integers with Normal Distribution
+rnorm_int <- function(number) {
+  ch <- 0
+  ls <- c()
 
-# 2 augment the positive OCR based on
-# normal distribution prob within +- 30 bps from center
-# they were check to make sure that
-# the augment one not exact overlap with original
-writeLines("\naugmenting the training- positive- ocr based on normal distribution prob within +- 30 bps from center..") # nolint: line_length_linter.
-ocr_train_aug_gr <- augmentation_norm(ocr_train_gr)
-print(paste0("train positive: ", length(ocr_train_gr)))
-print(paste0("augmented train positive: ", length(ocr_train_aug_gr)))
+  while (ch < number) {
+    cntrl_num <- number - ch
+    nn <- round(stats::rnorm(cntrl_num, mean = 0, sd = 10), 0)
+    nn <- nn[nn >= -30 & nn <= 30]
+    ls <- c(ls, nn)
+    ch <- length(ls)
+  }
 
-writeLines("\naugmenting the testing- positive- ocr based on normal distribution prob within +- 30 bps from center..") # nolint: line_length_linter.
-ocr_test_aug_gr <- augmentation_norm(ocr_test_gr)
-print(paste0("test positive: ", length(ocr_test_gr)))
-print(paste0("augmented test positive: ", length(ocr_test_aug_gr)))
+  return(ls[1:number])
+}
 
+#' Generate Random Numbers with Uniform and Normal Distributions
+get_random_number <- function(n) {
+  unif_int <- round(runif(n = n, min = -30, max = 30), 0)
 
+  norm_int <- rnorm_int(n)
 
-# 3 augment the negative OCR based on
-# random distribution prob within +- 30 bps from center
-# they were check to make sure tha
-# the augment one not exact overlap with original
-writeLines("\naugmenting the trianing- negative- ocr based on random distribution prob within +- 30 bps from center..") # nolint: line_length_linter.
-ocrlike_neg_train_aug_gr <- augmentation_unif(ocrlike_neg_train_gr)
-print(paste0("train negative: ", length(ocrlike_neg_train_gr)))
-print(paste0("augmented train negative (before filtering): ",
-             length(ocrlike_neg_train_aug_gr)))
+  return(list("unif" = unif_int, "norm" = norm_int))
+}
 
-writeLines("\naugmenting the testing- negative- ocr based on random distribution prob within +- 30 bps from center..") # nolint: line_length_linter.
-ocrlike_neg_test_aug_gr <- augmentation_unif(ocrlike_neg_test_gr)
-print(paste0("test negative: ", length(ocrlike_neg_test_gr)))
-print(paste0("augmented test negative (before filtering): ",
-             length(ocrlike_neg_test_aug_gr)))
+#' Data Augmentation with Uniform Distribution
+augmentation_unif <- function(ocr) {
+  # Assert that the 'thick' column is present and is an IRanges object
+  assertthat::assert_that("thick" %in% names(S4Vectors::mcols(ocr)),
+                          msg = "The 'thick' column is not present in the GRanges object.") # nolint: line_length_linter.
+  assertthat::assert_that(is(ocr$thick, "IRanges"),
+                          msg = "The 'thick' column is not an IRanges object.")
 
+  num <- length(ocr)
+  set <- get_random_number(num)
 
+  # ocr_unif
+  ocr_unif <- ocr
+  start(ocr_unif) <- start(ocr_unif) + set$unif
+  end(ocr_unif) <- end(ocr_unif) + set$unif
+  ocr_unif$thick <- IRanges::shift(ocr_unif$thick, shift = set$unif)
+  ocr_unif <- IRanges::subsetByOverlaps(ocr_unif,
+                                        ocr,
+                                        type = "equal",
+                                        invert = TRUE)
 
+  return(ocr_unif)
+}
 
-# 4 subset the training negative to training positive (orig + aug)
-# we allow the negative to be "50% or less" overlap with the positive
-ocrlike_neg_train_aug_gr <- IRanges::subsetByOverlaps(ocrlike_neg_train_aug_gr,
-                                                      c(ocr_train_aug_gr,
-                                                        ocr_train_gr),
-                                                      minoverlap = dist,
-                                                      invert = TRUE)
-print(paste0("\naugmented train negative (remove more than 50% overlap with pos): ", # nolint: line_length_linter.
-             length(ocrlike_neg_train_aug_gr)))
+#' Data Augmentation with Normal Distribution
+augmentation_norm <- function(ocr) {
+  # Assert that the 'thick' column is present and is an IRanges object
+  assertthat::assert_that("thick" %in% names(S4Vectors::mcols(ocr)),
+                          msg = "The 'thick' column is not present in the GRanges object.") # nolint: line_length_linter.
+  assertthat::assert_that(is(ocr$thick, "IRanges"),
+                          msg = "The 'thick' column is not an IRanges object.")
 
-ocrlike_neg_test_aug_gr <- IRanges::subsetByOverlaps(ocrlike_neg_test_aug_gr,
-                                                     c(ocr_test_aug_gr,
-                                                       ocr_test_gr),
-                                                     minoverlap = dist,
-                                                     invert = TRUE)
-print(paste0("\naugmented train negative (remove more than 50% overlap with pos): ", # nolint: line_length_linter.
-             length(ocrlike_neg_test_aug_gr)))
+  num <- length(ocr)
+  set <- get_random_number(num)
 
+  # ocr_norm
+  ocr_norm <- ocr
+  start(ocr_norm) <- start(ocr_norm) + set$norm
+  end(ocr_norm) <- end(ocr_norm) + set$norm
+  ocr_norm$thick <- IRanges::shift(ocr_norm$thick, shift = set$norm)
+  ocr_norm <- IRanges::subsetByOverlaps(ocr_norm,
+                                        ocr,
+                                        type = "equal",
+                                        invert = TRUE)
 
-
-
-# 5 set up near-positve negative,
-# core data +/- 75 bps
-
-core <- 75
+  return(ocr_norm)
+}
 
 nearpos_negative_front <- function(ocr_gr, dist, core) {
   # Shift core data and 'thick' column by -(200 + 75 + 1)
@@ -122,18 +132,6 @@ nearpos_negative_back <- function(ocr_gr, dist, core) {
   return(nearpos_back_gr)
 }
 
-#nearpos_neg_front_train_aug_gr <- augmentation_unif(nearpos_neg_front)
-#nearpos_neg_back_train_aug_gr <- augmentation_unif(nearpos_neg_back)
-
-
-
-npn_front_tr <- nearpos_negative_front(ocr_train_gr, dist, core)
-npn_back_tr <- nearpos_negative_back(ocr_train_gr, dist, core)
-
-npn_front_te <- nearpos_negative_front(ocr_test_gr, dist, core)
-npn_back_te <- nearpos_negative_back(ocr_test_gr, dist, core)
-
-
 get_core_gr <- function(gr, dist, core) {
   core_gr <- GRanges(seqnames = seqnames(gr),
                      ranges = IRanges(start = start(gr) + (dist - core),
@@ -142,25 +140,6 @@ get_core_gr <- function(gr, dist, core) {
   names(core_gr) <- names(gr)
   return(core_gr)
 }
-
-ocr_train_core <- get_core_gr(ocr_train_gr, dist, core)
-ocr_train_aug_core <- get_core_gr(ocr_train_aug_gr, dist, core)
-
-ocr_test_core <- get_core_gr(ocr_test_gr, dist, core)
-ocr_test_aug_core <- get_core_gr(ocr_test_aug_gr, dist, core)
-
-
-expand_core_gr <- function(core_gr, dist, core) {
-  gr <- GRanges(seqnames = seqnames(core_gr),
-                ranges = IRanges(start = start(core_gr) - (dist - core),
-                                 end = end(core_gr) + (dist - core)))
-  gr$thick <- core_gr$thick
-  names(gr) <- names(core_gr)
-
-  return(gr)
-}
-
-
 
 finalize_nearpos_neg <- function(npn_front_gr,
                                  npn_back_gr,
@@ -209,6 +188,94 @@ finalize_nearpos_neg <- function(npn_front_gr,
   return(combined_npn_gr)
 }
 
+expand_core_gr <- function(core_gr, dist, core) {
+  gr <- GRanges(seqnames = seqnames(core_gr),
+                ranges = IRanges(start = start(core_gr) - (dist - core),
+                                 end = end(core_gr) + (dist - core)))
+  gr$thick <- core_gr$thick
+  names(gr) <- names(core_gr)
+
+  return(gr)
+}
+
+
+
+# 1 load Rdata
+load(ocr_rdata_file)
+
+
+
+# 2 augment the positive OCR based on
+# normal distribution prob within +- 30 bps from center
+# they were check to make sure that
+# the augment one not exact overlap with original
+writeLines("\naugmenting the training- positive- ocr based on normal distribution prob within +- 30 bps from center..") # nolint: line_length_linter.
+ocr_train_aug_gr <- augmentation_norm(ocr_train_gr)
+print(paste0("train positive: ", length(ocr_train_gr)))
+print(paste0("augmented train positive: ", length(ocr_train_aug_gr)))
+
+writeLines("\naugmenting the testing- positive- ocr based on normal distribution prob within +- 30 bps from center..") # nolint: line_length_linter.
+ocr_test_aug_gr <- augmentation_norm(ocr_test_gr)
+print(paste0("test positive: ", length(ocr_test_gr)))
+print(paste0("augmented test positive: ", length(ocr_test_aug_gr)))
+
+
+
+# 3 augment the negative OCR based on
+# random distribution prob within +- 30 bps from center
+# they were check to make sure tha
+# the augment one not exact overlap with original
+writeLines("\naugmenting the trianing- negative- ocr based on random distribution prob within +- 30 bps from center..") # nolint: line_length_linter.
+ocrlike_neg_train_aug_gr <- augmentation_unif(ocrlike_neg_train_gr)
+print(paste0("train negative: ", length(ocrlike_neg_train_gr)))
+print(paste0("augmented train negative (before filtering): ",
+             length(ocrlike_neg_train_aug_gr)))
+
+writeLines("\naugmenting the testing- negative- ocr based on random distribution prob within +- 30 bps from center..") # nolint: line_length_linter.
+ocrlike_neg_test_aug_gr <- augmentation_unif(ocrlike_neg_test_gr)
+print(paste0("test negative: ", length(ocrlike_neg_test_gr)))
+print(paste0("augmented test negative (before filtering): ",
+             length(ocrlike_neg_test_aug_gr)))
+
+
+
+# 4 subset the training negative to training positive (orig + aug)
+# we allow the negative to be "50% or less" overlap with the positive
+ocrlike_neg_train_aug_gr <- IRanges::subsetByOverlaps(ocrlike_neg_train_aug_gr,
+                                                      c(ocr_train_aug_gr,
+                                                        ocr_train_gr),
+                                                      minoverlap = dist,
+                                                      invert = TRUE)
+print(paste0("\naugmented train negative (remove more than 50% overlap with pos): ", # nolint: line_length_linter.
+             length(ocrlike_neg_train_aug_gr)))
+
+ocrlike_neg_test_aug_gr <- IRanges::subsetByOverlaps(ocrlike_neg_test_aug_gr,
+                                                     c(ocr_test_aug_gr,
+                                                       ocr_test_gr),
+                                                     minoverlap = dist,
+                                                     invert = TRUE)
+print(paste0("\naugmented train negative (remove more than 50% overlap with pos): ", # nolint: line_length_linter.
+             length(ocrlike_neg_test_aug_gr)))
+
+
+
+
+# 5 set up near-positve negative,
+# core data +/- 75 bps
+
+core <- 75
+
+npn_front_tr <- nearpos_negative_front(ocr_train_gr, dist, core)
+npn_back_tr <- nearpos_negative_back(ocr_train_gr, dist, core)
+
+npn_front_te <- nearpos_negative_front(ocr_test_gr, dist, core)
+npn_back_te <- nearpos_negative_back(ocr_test_gr, dist, core)
+
+ocr_train_core <- get_core_gr(ocr_train_gr, dist, core)
+ocr_train_aug_core <- get_core_gr(ocr_train_aug_gr, dist, core)
+
+ocr_test_core <- get_core_gr(ocr_test_gr, dist, core)
+ocr_test_aug_core <- get_core_gr(ocr_test_aug_gr, dist, core)
 
 nearpos_neg_train_aug_gr <- finalize_nearpos_neg(npn_front_tr,
                                                  npn_back_tr,
@@ -225,6 +292,7 @@ nearpos_neg_test_aug_gr <- finalize_nearpos_neg(npn_front_te,
                                                 core)
 
 
+
 # 6 save
 writeLines("\nSaving..")
 save(list = c("ocr_train_gr",
@@ -238,14 +306,3 @@ save(list = c("ocr_train_gr",
               "nearpos_neg_train_aug_gr",
               "nearpos_neg_test_aug_gr"),
      file = paste0("3_", name, "_augmentation.RData"))
-
-
-# # 5 save
-# writeLines("\nSaving..")
-# save(list = c("ocr_train_gr",
-#               "ocr_train_aug_gr",
-#               "ocr_test_gr",
-#               "ocrlike_neg_train_gr",
-#               "ocrlike_neg_train_aug_gr",
-#               "ocrlike_neg_test_gr"),
-#      file = paste0("3_", name, "_ocr_ocrlikeneg_augmentation.RData"))

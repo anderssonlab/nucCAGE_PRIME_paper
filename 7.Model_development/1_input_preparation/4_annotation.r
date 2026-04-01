@@ -12,7 +12,6 @@ suppressPackageStartupMessages({
   library(AnnotationDbi)
   library(GenomicFeatures)
   library(GenomicRanges)
-  library(PRIMEmodel)
 })
 
 # need to be changed if changing the genome
@@ -31,7 +30,7 @@ parser$add_argument("-o", "--output_dir", default = "./",
 parser$add_argument("-u", "--ucsc", default = "TRUE",
                     help = "USE UCSC hg38 for txdb")
 parser$add_argument("-a", "--annotation_file",
-                    default = "../0.External_resources/gencode.v31.annotation.gtf", # nolint: line_length_linter.
+                    default = "/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/gencode.v31.annotation.gtf", # nolint: line_length_linter.
                     help = "gtf annotation file from GENCODE")
 parser$add_argument("-g", "--ucscgenome", default = "hg38",
                     help = "UCSC genome")
@@ -50,6 +49,11 @@ annotation_ucsc <- args$ucsc
 annotation_file <- args$annotation_file
 ucsc_genome <- args$ucscgenome
 species <- args$species
+
+
+
+# 0 helper functions
+source("functions.r")
 
 # 1 load Rdata
 load(ocr_rdata_file)
@@ -105,15 +109,6 @@ writeLines("\nnearpos_neg_test_aug_gr Annotation")
 nearpos_neg_test_aug_gr <- CAGEfightR::assignTxType(nearpos_neg_test_aug_gr, txModels = txdb) # nolint: line_length_linter.
 
 
-# 4 save
-#writeLines("\nSaving..")
-#save(list = c("ocr_train_gr",
-#              "ocr_train_aug_gr",
-#              "ocr_test_gr",
-#              "ocrlike_neg_train_gr",
-#              "ocrlike_neg_train_aug_gr",
-#              "ocrlike_neg_test_gr"),
-#     file = paste0("4_", name, "_ocr_ocrlikeneg_augmentation_with_annotation.RData")) # nolint: line_length_linter.
 
 # 4 save
 writeLines("\nSaving..")
