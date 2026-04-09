@@ -1,0 +1,52 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(reticulate)
+library(GenomicRanges)
+library(PRIMEmodel)
+```
+
+```{r}
+# Define the environment name
+env_name <- "prime-env"
+
+# Create the virtual environment if it doesn't exist
+virtualenv_create(envname = env_name)
+
+# Use and configure it
+use_virtualenv(env_name, required = TRUE)
+
+# Install Python packages
+required_pkgs <- readLines(system.file("envfile", "environment.txt", package = "PRIMEmodel"))
+reticulate::py_install(packages = required_pkgs, envname = env_name, method = "virtualenv")
+
+# Confirm active Python path
+py_config()$python
+```
+
+```{r}
+design_matrix_file <- "design_matrix_K562.tsv"
+design_matrix <- read.table(design_matrix_file,
+                            header = TRUE,
+                            sep = "\t",
+                            row.names = "Name")
+```
+
+```{r}
+bw_dir <- "/projects/ralab/data/CAGE/cellLinesCAGE/STAR_map/bw_files"
+ctss_rse <- PRIMEmodel::plc_get_ctss_from_bw(bw_dir, design_matrix) # CAGEfightR method
+ctss_rse <- GenomeInfoDb::keepStandardChromosomes(ctss_rse, pruning.mode = "coarse")
+```
+
+```{r}
+result <- PRIMEmodel::predict(ctss_rse = ctss_rse, 
+                              python_path = py_config()$python,
+                              score_threshold = 0.75,
+                              score_diff = 0.1,
+                              num_cores = NULL,
+                              keep_tmp = FALSE,
+                              log_dir = NULL)
+```

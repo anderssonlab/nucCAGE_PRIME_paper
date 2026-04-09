@@ -1,0 +1,80 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(reticulate)
+library(GenomicRanges)
+library(PRIMEmodel)
+```
+
+```{r}
+# Define the environment name
+env_name <- "prime-env"
+
+# Create the virtual environment if it doesn't exist
+virtualenv_create(envname = env_name)
+
+# Use and configure it
+use_virtualenv(env_name, required = TRUE)
+
+# Install Python packages
+required_pkgs <- readLines(file.path(find.package("PRIMEmodel"), "envfile", "environment.txt"))
+reticulate::py_install(packages = required_pkgs, envname = env_name, method = "virtualenv")
+
+# Confirm active Python path
+py_config()$python
+```
+
+```{r}
+design_matrix <- read.table("design_matrix_FANTOM5_rmSingletons.tsv",
+                            header = TRUE,
+                            sep = "\t",
+                            row.names = "Name")
+```
+
+```{r}
+bw_dir <- "/maps/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5"
+ctss_rse <- PRIMEmodel::plc_get_ctss_from_bw(bw_dir, design_matrix) # CAGEfightR method
+ctss_rse <- GenomeInfoDb::keepStandardChromosomes(ctss_rse, pruning.mode = "coarse")
+```
+
+```{r}
+pooled_result <- PRIMEmodel::predict(ctss_rse = ctss_rse, 
+                                     python_path = py_config()$python,
+                                     score_threshold = 0.75,
+                                     score_diff = 0.1)
+```
+
+```{r}
+# grl to gr
+pooled_result_gr <- unlist(pooled_result)
+```
+
+
+Cell facet focal prediction
+** due to the large number of cells/tissues
+** all bw were subsetted into 5 sets
+** repeat the steps for each set
+
+```{r}
+design_matrix_cellfacet <- read.table("design_matrix_FANTOM5_eachcelltype_1.tsv",
+                                      header = TRUE,
+                                      sep = "\t",
+                                      row.names = "Name")
+```
+
+```{r}
+bw_dir_cellfacet <- "/maps/projects/ralab/data/projects/nucleiCAGEproject/0.External_resources/FANTOM5/pooled_bw"
+ctss_rse_cellfacet <- PRIMEmodel::plc_get_ctss_from_bw(bw_dir_cellfacet, design_matrix_cellfacet) # CAGEfightR method
+ctss_rse_cellfacet <- GenomeInfoDb::keepStandardChromosomes(ctss_rse_cellfacet, pruning.mode = "coarse")
+```
+
+
+```{r}
+cell_facet_result <- PRIMEmodel::predictFocal(ctss_rse = ctss_rse_cellfacet,
+                                              tc_gr = pooled_result_gr,
+                                              python_path = py_config()$python)
+```
+

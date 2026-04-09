@@ -1,0 +1,3 @@
+cd PRIMEmodel/genomewide_prediction
+
+nice nohup ./PRIMEmodel --predict --config bash_config_K562 > nohup.K562 &

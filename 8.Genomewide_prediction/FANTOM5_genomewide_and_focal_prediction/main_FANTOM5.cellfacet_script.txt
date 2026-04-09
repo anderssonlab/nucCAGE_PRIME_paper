@@ -1,0 +1,14 @@
+cd PRIMEmodel/genomewide_prediction
+
+
+
+# RUN PREDICT ON POOLED REMOVED SINGLETONS FANTOM5
+nice nohup ./PRIMEmodel --predict --config pooled.FANTOM5.rmSingletons_config.sh > nohup.FANTOM5 &
+nice nohup Rscript _7_prepare_postprocessed_bed_for_focal_input.r --bed_path /FANTOM5.rmSingletons/FANTOM5_PRIME_pred_all_combined_thresh0.75_d0.1.bed
+
+
+
+# RUN FOCAL PREDICTION ON CELL FACET (5 SUBSETS)
+nice nohup ./PRIMEmodel -1 --config FANTOM5.cellfacet_config_1.sh > nohup.FANTOM5.cellfacet.1 &
+nice nohup ./PRIMEmodel --predictFocal --config FANTOM5.cellfacet_config_1.sh > nohup.FANTOM5.cellfacet.1 &
+# run it for subset 2-5
