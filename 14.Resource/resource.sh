@@ -256,7 +256,10 @@ cd .. || exit
 
 echo "Starting block-gzip compression and indexing..."
 
+find "$FACET_DIR" "$AGNOSTIC_DIR" "$CELLLINE_DIR" -name "*.bed.gz" -delete
+find "$FACET_DIR" "$AGNOSTIC_DIR" "$CELLLINE_DIR" -name "*.bed.gz.tbi" -delete
+
 # Find all .bed files in your output directories
 # and compress them using all available cores
 find "$FACET_DIR" "$AGNOSTIC_DIR" "$CELLLINE_DIR" -name "*.bed" | \
-parallel -j $(nproc) 'bgzip {} && tabix -p bed {}.gz'
+parallel -j $(nproc) 'bgzip {} && tabix -f -p bed {}.gz'
