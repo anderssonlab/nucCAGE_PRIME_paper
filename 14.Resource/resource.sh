@@ -17,7 +17,7 @@ mkdir -p "$FACET_DIR" "$AGNOSTIC_DIR" "$CELLLINE_DIR"
 NPROC=$(nproc)
 
 ############################################
-# 1. Produce cell line BED6 files
+# 1. Produce cell line BED9 files
 ############################################
 
 echo "Processing cell line predictions..."
@@ -30,12 +30,16 @@ for FILE_PATH in "$CELL_SRC_1"/*t075d010.bed; do
     
     OUT_FILE="$CELLLINE_DIR/PRIME_${clean_name}_0.75.bed"
 
-    awk 'BEGIN{OFS="\t"} {
-    s=$5; if(s<0)s=0; if(s>1)s=1;
-    score=int(s*1000+0.5);
-    printf "%s\t%d\t%d\t%s\t%d\t%s\n", $1,$2,$3,$1":"$2"-"$3,score,"*"
-    }' "$FILE_PATH" | \
-    sort -k 1,1 -k 2,2n > "$OUT_FILE"
+    { printf 'track type=bed name="PRIME_%s_0.75" description="PRIME CREs (%s score >= 0.75)" visibility=2 itemRgb="On"\n' \
+        "$clean_name" "$clean_name"
+      awk 'BEGIN{OFS="\t"} {
+        s=$5; if(s<0)s=0; if(s>1)s=1;
+        score=int(s*1000+0.5);
+        gb=int(255*(1-score/1000)+0.5); if(gb<0)gb=0; if(gb>255)gb=255;
+        printf "%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%d,%d,%d\n", \
+            $1,$2,$3,$1":"$2"-"$3,score,"*",$2,$3,255,gb,gb
+      }' "$FILE_PATH" | \
+      sort -k 1,1 -k 2,2n; } > "$OUT_FILE"
 ) &
 done
 
@@ -48,17 +52,21 @@ for FILE_PATH in "$CELL_SRC_2"/*0_75*d010.bed; do
     
     OUT_FILE="$CELLLINE_DIR/PRIME_${clean_name}_0.75.bed"
 
-    awk 'BEGIN{OFS="\t"} {
-    s=$5; if(s<0)s=0; if(s>1)s=1;
-    score=int(s*1000+0.5);
-    printf "%s\t%d\t%d\t%s\t%d\t%s\n", $1,$2,$3,$1":"$2"-"$3,score,"*"
-    }' "$FILE_PATH" | \
-    sort -k 1,1 -k 2,2n > "$OUT_FILE"
+    { printf 'track type=bed name="PRIME_%s_0.75" description="PRIME CREs (%s score >= 0.75)" visibility=2 itemRgb="On"\n' \
+        "$clean_name" "$clean_name"
+      awk 'BEGIN{OFS="\t"} {
+        s=$5; if(s<0)s=0; if(s>1)s=1;
+        score=int(s*1000+0.5);
+        gb=int(255*(1-score/1000)+0.5); if(gb<0)gb=0; if(gb>255)gb=255;
+        printf "%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%d,%d,%d\n", \
+            $1,$2,$3,$1":"$2"-"$3,score,"*",$2,$3,255,gb,gb
+      }' "$FILE_PATH" | \
+      sort -k 1,1 -k 2,2n; } > "$OUT_FILE"
 ) &
 done
 
 ############################################
-# 2. Produce FANTOM facet BED6 files
+# 2. Produce FANTOM facet BED9 files
 ############################################
 
 echo "Processing FANTOM5 facet predictions..."
@@ -70,12 +78,16 @@ for FILE_PATH in "$SRC_DIR"/*_qn.PL.score0.5.bed; do
 
     OUT_FILE="$FACET_DIR/PRIME_FANTOM5_${prefix}_0.5.bed"
 
-    awk 'BEGIN{OFS="\t"} {
-    s=$4; if(s<0)s=0; if(s>1)s=1;
-    score=int(s*1000+0.5);
-    printf "%s\t%d\t%d\t%s\t%d\t%s\n", $1,$2,$3,$1":"$2"-"$3,score,"*"
-    }' "$FILE_PATH" | \
-    sort -k 1,1 -k 2,2n > "$OUT_FILE"
+    { printf 'track type=bed name="PRIME_FANTOM5_%s_0.5" description="PRIME CREs (FANTOM5 %s)" visibility=2 itemRgb="On"\n' \
+        "$prefix" "$prefix"
+      awk 'BEGIN{OFS="\t"} {
+        s=$4; if(s<0)s=0; if(s>1)s=1;
+        score=int(s*1000+0.5);
+        gb=int(255*(1-score/1000)+0.5); if(gb<0)gb=0; if(gb>255)gb=255;
+        printf "%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%d,%d,%d\n", \
+            $1,$2,$3,$1":"$2"-"$3,score,"*",$2,$3,255,gb,gb
+      }' "$FILE_PATH" | \
+      sort -k 1,1 -k 2,2n; } > "$OUT_FILE"
 ) &
 
 while (( $(jobs -r | wc -l) >= NPROC )); do
@@ -94,12 +106,15 @@ echo "Creating pooled dataset..."
 INPUT_FILE="../8.Genomewide_prediction/FANTOM5_rmSingletons/PRIMEloci_pred_0_75_FANTOM5_rmSingletons_combined_coreovlwith-d.bed"
 OUTPUT_FILE="${AGNOSTIC_DIR}/PRIME_FANTOM5_pooled_0.75.bed"
 
-sed 1d "$INPUT_FILE" | awk 'BEGIN{FS="\t"; OFS="\t"} {
+{ printf 'track type=bed name="PRIME_FANTOM5_pooled_0.75" description="PRIME CREs (FANTOM5 pooled score >= 0.75)" visibility=2 itemRgb="On"\n'
+  sed 1d "$INPUT_FILE" | awk 'BEGIN{FS="\t"; OFS="\t"} {
     name = $1":"$2"-"$3;
     s=$5; if(s<0)s=0; if(s>1)s=1;
     score=int(s*1000+0.5);
-    printf "%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\n", $1, $2, $3, name, score, $6, $7, $8
-}' | sort --parallel=$(nproc) -k1,1 -k2,2n > "$OUTPUT_FILE"
+    gb=int(255*(1-score/1000)+0.5); if(gb<0)gb=0; if(gb>255)gb=255;
+    printf "%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%d,%d,%d\t%d\t%d\n", \
+        $1, $2, $3, name, score, $6, $2, $3, 255, gb, gb, $7, $8
+}' | sort --parallel=$(nproc) -k1,1 -k2,2n; } > "$OUTPUT_FILE"
 
 ############################################
 # 4. Merge facet GREs
@@ -113,39 +128,48 @@ merge_facets() {
     local pattern=$1
     local out_name=$2
     local min_score=$3
+    local track_name
+    track_name=$(basename "$out_name")
 
     echo "Generating $out_name (min Score: $min_score)..."
 
-    awk -v min="$min_score" '
-    BEGIN{FS=OFS="\t"}
-    {
-        raw=$5; if(raw<0)raw=0; if(raw>1)raw=1;
-        s=int(raw*1000+0.5);
-        if (s < int(min*1000+0.5)) next;
+    { printf 'track type=bed name="%s" description="PRIME CREs (FANTOM5 merged)" visibility=2 itemRgb="On"\n' \
+        "$track_name"
+      awk -v min="$min_score" '
+      BEGIN{FS=OFS="\t"}
+      /^track|^browser|^#/ { next }
+      {
+          s=$5; if(s<0)s=0; if(s>1000)s=1000;
+          if (s < int(min*1000+0.5)) next;
 
-        split(FILENAME, a, "_");
-        facet = a[3];
+          split(FILENAME, a, "_");
+          facet = a[3];
 
-        name = $4;
+          name = $4;
 
-        if (!(name in seen)) {
-            chr[name]=$1; start[name]=$2; end[name]=$3;
-            score[name]=s; strand[name]=$6;
-            facets[name]=facet;
-            seen[name]=1;
-        } else {
-            if (s > score[name]) score[name]=s;
+          if (!(name in seen)) {
+              chr[name]=$1; start[name]=$2; end[name]=$3;
+              score[name]=s; strand[name]=$6;
+              facets[name]=facet;
+              seen[name]=1;
+          } else {
+              if (s > score[name]) score[name]=s;
 
-            if (!match(";"facets[name]";", ";"facet";")) {
-                facets[name] = facets[name]";"facet;
-            }
-        }
-    }
-    END {
-        for (n in chr) {
-            printf "%s\t%d\t%d\t%s\t%d\t%s\t%s\n", chr[n], start[n], end[n], n, score[n], strand[n], facets[n]
-        }
-    }' $pattern | sort -k1,1 -k2,2n > "${out_name}.bed"
+              if (!match(";"facets[name]";", ";"facet";")) {
+                  facets[name] = facets[name]";"facet;
+              }
+          }
+      }
+      END {
+          for (n in chr) {
+              gb = int(255 * (1 - score[n]/1000) + 0.5)
+              if (gb < 0) gb = 0
+              if (gb > 255) gb = 255
+              printf "%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%d,%d,%d\t%s\n", \
+                  chr[n], start[n], end[n], n, score[n], strand[n], \
+                  start[n], end[n], 255, gb, gb, facets[n]
+          }
+      }' $pattern | sort -k1,1 -k2,2n; } > "${out_name}.bed"
 }
 
 merge_facets "*_proximal_0.5.bed" "../${AGNOSTIC_DIR}/PRIME_FANTOM5_agnostic_proximal_0.5" 0.0 &
@@ -170,6 +194,7 @@ BEGIN {
     FS=OFS="\t"
     print "facet", "proximal_0.5", "proximal_0.75", "distal_0.5", "distal_0.75", "all_0.5", "all_0.75"
 }
+/^track|^browser|^#/ { next }
 {
     split(FILENAME, a, "_")
     facet = a[3]; type = a[4]; score = ($5 + 0) / 1000;
