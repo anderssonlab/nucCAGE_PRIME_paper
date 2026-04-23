@@ -61,10 +61,9 @@ TPM-normalized CAGE tracks for all FANTOM5 facets.
 Pooled TPM-normalized CAGE signal tracks for individual cell lines.
 
 - Cell lines: GM12878, K562, HCT116, HepG2, A549
+- Pooling is performed across replicates
 - Each pooled group is represented by two strand-specific bigWig files (.plus.bw and .minus.bw)
-- Pooling is defined by the **Type** column in each design matrix under `1.CTSSs/`
 - For cell lines with multiple input amounts (e.g. GM12878 nuclei at 500K, 1M, 5M, 10M cells), each amount is kept as a separate pooled track
-- Produced by `14.Resource/cellline_bigwigs_TPM.R` using saved CTSS RDS objects from `1.CTSSs/1.1.CTSSs.processing.Rmd` and `PRIME::writeBw`
 
 ---
 

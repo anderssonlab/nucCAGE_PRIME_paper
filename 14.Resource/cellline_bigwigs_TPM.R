@@ -13,6 +13,9 @@ suppressPackageStartupMessages({
     library(PRIME)
     library(SummarizedExperiment)
     library(BiocGenerics)
+    library(doParallel)
+    library(foreach)
+    registerDoParallel(cores = 20)
 })
 
 ctss_dir   <- "../1.CTSSs"
@@ -35,7 +38,7 @@ write_bw_samples <- function(obj, output_dir) {
         message("  Writing bigWig: ", nm)
         PRIME::writeBw(
             object        = obj,
-            dir           = output_dir,
+            dir           = paste0(output_dir, "/"),
             replicates    = nm,
             inputAssay    = "TPM",
             splitByStrand = TRUE
