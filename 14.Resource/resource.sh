@@ -30,7 +30,7 @@ for FILE_PATH in "$CELL_SRC_1"/*t075d010.bed; do
     
     OUT_FILE="$CELLLINE_DIR/PRIME_${clean_name}_0.75.bed"
 
-    { printf 'track type=bed name="PRIME_%s_0.75" description="PRIME CREs (%s score >= 0.75)" visibility=2 itemRgb="On"\n' \
+    { printf '#track type=bed name="PRIME_%s_0.75" description="PRIME CREs (%s score >= 0.75)" visibility=2 itemRgb="On"\n' \
         "$clean_name" "$clean_name"
       awk 'BEGIN{OFS="\t"} {
         s=$5; if(s<0)s=0; if(s>1)s=1;
@@ -52,7 +52,7 @@ for FILE_PATH in "$CELL_SRC_2"/*0_75*d010.bed; do
     
     OUT_FILE="$CELLLINE_DIR/PRIME_${clean_name}_0.75.bed"
 
-    { printf 'track type=bed name="PRIME_%s_0.75" description="PRIME CREs (%s score >= 0.75)" visibility=2 itemRgb="On"\n' \
+    { printf '#track type=bed name="PRIME_%s_0.75" description="PRIME CREs (%s score >= 0.75)" visibility=2 itemRgb="On"\n' \
         "$clean_name" "$clean_name"
       awk 'BEGIN{OFS="\t"} {
         s=$5; if(s<0)s=0; if(s>1)s=1;
@@ -78,7 +78,7 @@ for FILE_PATH in "$SRC_DIR"/*_qn.PL.score0.5.bed; do
 
     OUT_FILE="$FACET_DIR/PRIME_FANTOM5_${prefix}_0.5.bed"
 
-    { printf 'track type=bed name="PRIME_FANTOM5_%s_0.5" description="PRIME CREs (FANTOM5 %s)" visibility=2 itemRgb="On"\n' \
+    { printf '#track type=bed name="PRIME_FANTOM5_%s_0.5" description="PRIME CREs (FANTOM5 %s)" visibility=2 itemRgb="On"\n' \
         "$prefix" "$prefix"
       awk 'BEGIN{OFS="\t"} {
         s=$4; if(s<0)s=0; if(s>1)s=1;
@@ -106,7 +106,7 @@ echo "Creating pooled dataset..."
 INPUT_FILE="../8.Genomewide_prediction/FANTOM5_rmSingletons/PRIMEloci_pred_0_75_FANTOM5_rmSingletons_combined_coreovlwith-d.bed"
 OUTPUT_FILE="${AGNOSTIC_DIR}/PRIME_FANTOM5_pooled_0.75.bed"
 
-{ printf 'track type=bed name="PRIME_FANTOM5_pooled_0.75" description="PRIME CREs (FANTOM5 pooled score >= 0.75)" visibility=2 itemRgb="On"\n'
+{ printf '#track type=bed name="PRIME_FANTOM5_pooled_0.75" description="PRIME CREs (FANTOM5 pooled score >= 0.75)" visibility=2 itemRgb="On"\n'
   sed 1d "$INPUT_FILE" | awk 'BEGIN{FS="\t"; OFS="\t"} {
     name = $1":"$2"-"$3;
     s=$5; if(s<0)s=0; if(s>1)s=1;
@@ -133,7 +133,7 @@ merge_facets() {
 
     echo "Generating $out_name (min Score: $min_score)..."
 
-    { printf 'track type=bed name="%s" description="PRIME CREs (FANTOM5 merged)" visibility=2 itemRgb="On"\n' \
+    { printf '#track type=bed name="%s" description="PRIME CREs (FANTOM5 merged)" visibility=2 itemRgb="On"\n' \
         "$track_name"
       awk -v min="$min_score" '
       BEGIN{FS=OFS="\t"}
@@ -262,4 +262,4 @@ find "$FACET_DIR" "$AGNOSTIC_DIR" "$CELLLINE_DIR" -name "*.bed.gz.tbi" -delete
 # Find all .bed files in your output directories
 # and compress them using all available cores
 find "$FACET_DIR" "$AGNOSTIC_DIR" "$CELLLINE_DIR" -name "*.bed" | \
-parallel -j $(nproc) 'bgzip {} && tabix -f -p bed {}.gz'
+parallel -j $(nproc) 'bgzip -f {} && tabix -f -p bed {}.gz'
