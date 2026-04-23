@@ -13,7 +13,7 @@ CRE predictions for individual cell lines.
 - Files are generated from genome-wide prediction outputs and filtered at PRIME score ≥ 0.75
 - Each file corresponds to one cell line (e.g. GM12878, K562) and sample preparation approach, nuclei or whole cell, (e.g., K562_N, K562_C)
 - Files are in BED9 format with PRIME scores scaled to 0–1000 and per-feature RGB coloring
-- Each file contains a UCSC track line (`track ... itemRgb="On"`) for direct loading into IGV or UCSC Genome Browser with color-by-score support
+- Each file contains a UCSC track line (`#track ... itemRgb="On"`) for direct loading into IGV or UCSC Genome Browser with color-by-score support
 
 ---
 
@@ -96,7 +96,7 @@ Columns:
 
 Each file begins with a UCSC track line:
 
-    track type=bed name="..." description="PRIME CREs (...)" visibility=2 itemRgb="On"
+    #track type=bed name="..." description="PRIME CREs (...)" visibility=2 itemRgb="On"
 
 This line is skipped by tabix and enables per-feature coloring when the file is loaded as a custom track in IGV or UCSC Genome Browser.
 
@@ -129,13 +129,7 @@ Thresholds used in the manuscript:
 
 ### Color encoding (itemRgb)
 
-Each CRE feature is colored using a **red scale** that maps the PRIME score to an RGB value:
-
-- score   0 → RGB `255,255,255` (white)
-- score 1000 → RGB `255,0,0`   (red)
-- Linear mapping: `R = 255`, `G = B = round(255 × (1 − score/1000))`
-
-Higher-confidence CREs appear more red; lower-confidence features appear lighter/white. This encoding is active when files are loaded with the embedded UCSC track line (`itemRgb="On"`).
+Each CRE feature is colored using a **red scale** that maps the PRIME score to an RGB value from light red to red. Higher-confidence CREs appear more red; lower-confidence features appear lighter. This encoding is active when files are loaded with the embedded UCSC track line (`itemRgb="On"`).
 
 ---
 
