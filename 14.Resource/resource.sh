@@ -35,7 +35,10 @@ for FILE_PATH in "$CELL_SRC_1"/*t075d010.bed; do
       awk 'BEGIN{OFS="\t"} {
         s=$5; if(s<0)s=0; if(s>1)s=1;
         score=int(s*1000+0.5);
-        gb=int(255*(1-score/1000)+0.5); if(gb<0)gb=0; if(gb>255)gb=255;
+        t = (score - 400) / 600.0
+        if (t < 0) t = 0
+        if (t > 1) t = 1
+        gb = int(255 * (1 - t) + 0.5)
         printf "%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%d,%d,%d\n", \
             $1,$2,$3,$1":"$2"-"$3,score,"*",$2,$3,255,gb,gb
       }' "$FILE_PATH" | \
@@ -57,7 +60,10 @@ for FILE_PATH in "$CELL_SRC_2"/*0_75*d010.bed; do
       awk 'BEGIN{OFS="\t"} {
         s=$5; if(s<0)s=0; if(s>1)s=1;
         score=int(s*1000+0.5);
-        gb=int(255*(1-score/1000)+0.5); if(gb<0)gb=0; if(gb>255)gb=255;
+        t = (score - 400) / 600.0
+        if (t < 0) t = 0
+        if (t > 1) t = 1
+        gb = int(255 * (1 - t) + 0.5)
         printf "%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%d,%d,%d\n", \
             $1,$2,$3,$1":"$2"-"$3,score,"*",$2,$3,255,gb,gb
       }' "$FILE_PATH" | \
@@ -83,7 +89,10 @@ for FILE_PATH in "$SRC_DIR"/*_qn.PL.score0.5.bed; do
       awk 'BEGIN{OFS="\t"} {
         s=$4; if(s<0)s=0; if(s>1)s=1;
         score=int(s*1000+0.5);
-        gb=int(255*(1-score/1000)+0.5); if(gb<0)gb=0; if(gb>255)gb=255;
+        t = (score - 400) / 600.0
+        if (t < 0) t = 0
+        if (t > 1) t = 1
+        gb = int(255 * (1 - t) + 0.5)
         printf "%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%d,%d,%d\n", \
             $1,$2,$3,$1":"$2"-"$3,score,"*",$2,$3,255,gb,gb
       }' "$FILE_PATH" | \
@@ -111,7 +120,10 @@ OUTPUT_FILE="${AGNOSTIC_DIR}/PRIME_FANTOM5_pooled_0.75.bed"
     name = $1":"$2"-"$3;
     s=$5; if(s<0)s=0; if(s>1)s=1;
     score=int(s*1000+0.5);
-    gb=int(255*(1-score/1000)+0.5); if(gb<0)gb=0; if(gb>255)gb=255;
+    t = (score - 400) / 600.0
+    if (t < 0) t = 0
+    if (t > 1) t = 1
+    gb = int(255 * (1 - t) + 0.5)
     printf "%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%d,%d,%d\t%d\t%d\n", \
         $1, $2, $3, name, score, $6, $2, $3, 255, gb, gb, $7, $8
 }' | sort --parallel=$(nproc) -k1,1 -k2,2n; } > "$OUTPUT_FILE"
