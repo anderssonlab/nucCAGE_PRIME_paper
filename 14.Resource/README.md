@@ -153,4 +153,4 @@ Data are released under the Creative Commons Attribution 4.0 International (CC B
 
 If you use this resource, please cite:
 1. Einarsson, Navamajiti, et al, Mapping active cis-regulatory elements from transcription initiation events, 2026, BioRxiv
-2. This Zenodo record (doi: 10.5281/zenodo.19331480)
+2. This Zenodo record (doi: 10.5281/zenodo.19712783)
