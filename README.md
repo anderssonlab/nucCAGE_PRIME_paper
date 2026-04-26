@@ -1,6 +1,6 @@
 Code for analyses and figures in the paper "Mapping active cis-regulatory elements from transcription initiation events" by Einarsson, Navamajiti, et al. 2026
 
-PRIME predictions in K562, GM12878, HepG2, HCT116, A549 cells and FANTOM5 facets as well as facet CAGE signal tracks are available at Zenodo (doi: [10.5281/zenodo.19712783](https://zenodo.org/records/19712783)).
+PRIME predictions in K562, GM12878, HepG2, HCT116, A549 cells and FANTOM5 facets as well as CAGE signal tracks are available at Zenodo (doi: [10.5281/zenodo.19712783](https://zenodo.org/records/19712783)).
 
 The code in this repository relies on the **PRIME toolkit**, three interconnected tools for the analysis of
 transcription initiation data (e.g., CAGE):
