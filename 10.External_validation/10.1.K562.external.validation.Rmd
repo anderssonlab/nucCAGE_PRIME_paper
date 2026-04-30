@@ -20,7 +20,8 @@ col.scheme <- base::c(
     "#377eb8","#d39200","#93aa00",
     "#4daf4a","#984ea3","#ff7f01",
     "#e41b1c","#256866","#f8bc24",
-    "grey","black","hotpink"
+    "grey","black","hotpink",
+    "darkblue" # ENCODE_rE2G
   )
 ```
 
@@ -787,7 +788,8 @@ col.scheme <- stats::setNames(
       "DHS","Divergent loci CAGE cells","Divergent loci CAGE nuclei",
       "dREG PRO-seq","dREG qPRO-seq","ENCODE cCRE",
       "PINTS GRO/PRO-cap","PRIME CAGE cells pooled","PRIME CAGE nuclei pooled",
-      "K27ac", "K27ac DHS","PRIME CAGE nuclei 10M pooled"
+      "K27ac", "K27ac DHS","PRIME CAGE nuclei 10M pooled",
+      "ENCODE rE2G"
     )
   )
 ```
@@ -1991,13 +1993,16 @@ ggplot2::ggplot(
         color = assay
       )
     ) +
+  
   geom_line(
-    mapping = aes(
-        group = sample
-      )
+      mapping = aes(
+          group = sample
+        ),
+      linewidth = 1
     ) +
   geom_point(
-      data = base::subset(point.ClinVar.df, loc == "genome")
+      data = base::subset(point.ClinVar.df, loc == "genome"),
+      size = 3
     ) +
   xlab(
       base::paste0("recall (n=",ClinVar.n,")")
@@ -2016,7 +2021,9 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
-        "K562_pooled_PRIME_ClinVar_enrichment_vs_recall_and_point_estimates_genome.pdf"
+        base::format(base::Sys.Date(), "%Y%m%d"),
+        "_K562_pooled_PRIME_ClinVar_enrichment_vs_recall_and_point_estimates_genome",
+        "_v3.pdf"
       ),
     width = 7,
     height = 5,
@@ -2039,10 +2046,12 @@ ggplot2::ggplot(
   geom_line(
     mapping = aes(
         group = sample
-      )
+      ),
+      linewidth = 1
     ) +
   geom_point(
-      data = point.eQTL.genome.df
+      data = point.eQTL.genome.df,
+      size = 3
     ) +
   xlab(
       base::paste0("recall (n=",eQTL.n,")")
@@ -2061,9 +2070,11 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
-        "K562_pooled_PRIME_eQTL_enrichment_vs_recall_PIP_",
+        base::format(base::Sys.Date(), "%Y%m%d"),
+        "_K562_pooled_PRIME_eQTL_enrichment_vs_recall_PIP_",
         eQTL.pip.thres,
-        "_and_point_estimates_genome.pdf"
+        "_and_point_estimates_genome",
+        "_v3.pdf"
       ),
     width = 7,
     height = 5,
@@ -2086,10 +2097,12 @@ ggplot2::ggplot(
   geom_line(
     mapping = aes(
         group = sample
-      )
+      ),
+    linewidth = 1
     ) +
   geom_point(
-      data = point.GWAS.genome.df
+      data = point.GWAS.genome.df,
+      size = 3
     ) +
   xlab(
       base::paste0("recall (n=",GWAS.n,")")
@@ -2108,9 +2121,11 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
+        base::format(base::Sys.Date(), "%Y%m%d"),
         "K562_pooled_PRIME_GWAS_enrichment_vs_recall_PIP_",
         GWAS.pip.thres,
-        "_and_point_estimates_genome.pdf"
+        "_and_point_estimates_genome",
+        "_v3.pdf"
       ),
     width = 7,
     height = 5,
@@ -2131,12 +2146,14 @@ ggplot2::ggplot(
       )
     ) +
   geom_line(
-    mapping = aes(
-        group = sample
-      )
+      mapping = aes(
+          group = sample
+        ),
+      linewidth = 1
     ) +
   geom_point(
-      data = point.CRISPR.genome.df
+      data = point.CRISPR.genome.df,
+      size = 3
     ) +
   xlab(
       base::paste0("recall (n=",CRISPR.n,")")
@@ -2155,7 +2172,9 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/plots/"),
-        "K562_pooled_PRIME_CRISPR_precision_vs_recall_and_point_estimates_genome.pdf"
+        base::format(base::Sys.Date(), "%Y%m%d"),
+        "K562_pooled_PRIME_CRISPR_precision_vs_recall_and_point_estimates_genome",
+        "_v3.pdf"
       ),
     width = 7,
     height = 5,
@@ -2169,7 +2188,10 @@ point.dctap.genome.df <- base::subset(
     x = point.dctap.df, loc == "genome"
   )
 ggplot2::ggplot(
-    data = pooled.PRIME.dctap.enrichment.recall.data,
+    data = pooled.PRIME.dctap.enrichment.recall.data[
+        pooled.PRIME.CRISPR.enrichment.recall.data$recall > 0.01,
+      ],
+    # data = pooled.PRIME.dctap.enrichment.recall.data,
     mapping = aes(
         x = recall,
         y = precision,
@@ -2203,7 +2225,9 @@ ggplot2::ggplot(
 ggplot2::ggsave(
     filename = base::paste0(
         here::here("10.External_validation/"),
-        "K562_pooled_PRIME_dctap_precision_vs_recall_and_point_estimates_genome.pdf"
+        base::format(base::Sys.Date(), "%Y%m%d"),
+        "K562_pooled_PRIME_dctap_precision_vs_recall_and_point_estimates_genome",
+        "_v3.pdf"
       ),
     width = 7,
     height = 5,
