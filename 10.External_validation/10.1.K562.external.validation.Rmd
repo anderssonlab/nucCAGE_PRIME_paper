@@ -5,11 +5,11 @@ date: "2024-07-01"
 ---
 
 ## Evaluation of predicted regulatory elements using ClinVar non-benign and non-coding variants, fine-mapped GWAS variants, fine-mapped eQTLs, and CRISPRi data.
-
-
+´
 ## [0.0.] Load necessary packages
 ```{r warning=TRUE, message=TRUE}
 base::library(tidyverse)
+utils::packageVersion("ggplot2")
 base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 base::library(UpSetR)
 ```
@@ -324,7 +324,7 @@ for (n in base::names(dREG.files)) {
   }
 ```
 
-## [1.11.] Read in all pooled PRIME files
+## [1.12.] Read in all pooled PRIME files
 #### see [1.3.] for øpooled.PRIME.filesø object
 ```{r}
 PRIME.thres = 0.75
@@ -355,7 +355,7 @@ for (n in base::names(pooled.PRIME.files)) {
   }
 ```
 
-## [1.11.] Read in cCRE data for point estimates
+## [1.13.] Read in cCRE data for point estimates
 #### cCRE.file <- "../0.External_resources/ENCFF464BRU.bed"
 ```{r}
 cCRE <- readr::read_tsv(
@@ -394,7 +394,7 @@ point.data[["ENCODE cCRE"]] <- base::c(
   )
 ```
 
-## [1.12.] Read in DHS data for point estimates for point estimates
+## [1.14.] Read in DHS data for point estimates for point estimates
 #### seqlevel adjustment step is missing, creating a warning in IRanges::subsetByOverlaps of [1.13.]
 ```{r}
 DHS <- rtracklayer::import.bed(
@@ -416,7 +416,7 @@ point.data[["DHS distal"]] <- DHS.distal
 point.data[["DHS proximal"]] <- DHS.proximal
 ```
 
-## [1.13.] Read in all H3K27ac data and combine with DHSs for point estimates
+## [1.15.] Read in all H3K27ac data and combine with DHSs for point estimates
 #### seqlevel adjustment step is missing, creating a warning in IRanges::subsetByOverlaps
 ```{r}
 k27ac <- utils::read.table(
@@ -444,7 +444,53 @@ point.data[["K27ac DHS"]] <- k27ac.dhs
 point.data[["K27ac"]] <- k27ac
 ```
 
-## [1.13.] Read in FANTOM5 data for point estimates
+## [1.16.] Add ENCODE-rE2G estimates.
+```{r}
+fn <- base::paste0(
+    here::here("0.External_resources/"),
+    "ENCFF269DKY.bed"
+  )
+
+rE2G <- readr::read_delim(
+      file = fn,
+      col_names = TRUE,
+      col_types = readr::cols(
+          .default = readr::col_double(),
+          `#chr` = readr::col_character(),
+          name = readr::col_character(),
+          class = readr::col_character(),
+          TargetGene = readr::col_character(),
+          TargetGeneEnsemblID = readr::col_character(),
+          CellType = readr::col_character(),
+          isSelfPromoter = readr::col_logical(),
+          ubiquitousExpressedGene.Feature = readr::col_logical(),
+          P2PromoterClass.Feature = readr::col_logical()
+        ),
+      delim = "\t"
+    ) %>%
+  dplyr::rename(
+    seqnames = `#chr`
+  )
+
+rE2G_gr <- GenomicRanges::GRanges(rE2G)
+```
+
+```{r}
+GenomeInfoDb::seqlevels(rE2G_gr, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+olap <- GenomicRanges::findOverlaps(
+    query = rE2G_gr,
+    subject = promoters,
+    minoverlap = 1
+  )
+rE2G_gr.proximal <- rE2G_gr[base::unique(S4Vectors::queryHits(olap))]
+rE2G_gr.distal <- rE2G_gr[base::setdiff(1:base::length(rE2G_gr), S4Vectors::queryHits(olap))]
+
+point.data[["ENCODE rE2G"]] <- rE2G_gr
+point.data[[base::paste0("ENCODE rE2G"," proximal")]] <- rE2G_gr.proximal
+point.data[[base::paste0("ENCODE rE2G"," distal")]] <- rE2G_gr.distal
+```
+
+## [1.17.] Read in FANTOM5 data for point estimates
 ```{r}
 FANTOM5.id = "CNhs12334"
 
@@ -487,7 +533,7 @@ FANTOM5.enhancers <- FANTOM5.enhancers[
 point.data[["FANTOM5 enhancers"]] <- FANTOM5.enhancers
 ```
 
-## [1.14.] Read in noise estimates
+## [1.18.] Read in noise estimates
 ```{r}
 pooled.noise.thresholds <- readr::read_csv(
     file = base::paste0(
@@ -503,7 +549,7 @@ pooled.noise.thresholds <- pooled.noise.thresholds[
   ]
 ```
 
-## [1.15.] Subset DLs by library-specific noise estimates 
+## [1.19.] Subset DLs by library-specific noise estimates 
 #### see [1.4.] for pooled.DLs object
 ```{r}
 pooled.DL.names <- base::c(
@@ -526,7 +572,7 @@ for (sample in base::c("K562_C","K562_N")) {
   }
 ```
 
-## [1.16.] Resize all sites across all datasets
+## [1.20.] Resize all sites across all datasets
 ```{r}
 resize.width = 200
 for (n in base::names(point.data)) {
@@ -544,7 +590,7 @@ for (n in base::names(point.data)) {
   }
 ```
 
-## [1.17.] Rename datasets
+## [1.21.] Rename datasets
 ```{r}
 point.data.assay <- base::names(point.data)
 point.data.loc <- base::rep("genome", base::length(point.data.assay))
@@ -570,7 +616,7 @@ point.data.assay <- base::gsub(
 base::names(point.data.assay) <- base::names(point.data.loc) <- base::names(point.data)
 ```
 
-## [1.18.] Read in CRISPR data
+## [1.22.] Read in CRISPR data
 ```{r}
 CRISPR.pos.data <- base::readRDS(
   file = base::paste0(
@@ -587,7 +633,7 @@ CRISPR.neg.data <- base::readRDS(
 CRISPR.n <- base::length(CRISPR.pos.data)
 ```
 
-## [1.19.] Read in DC-TAPseq data
+## [1.23.] Read in DC-TAPseq data
 #### Add dc-tap-seq validations
 ```{r}
 dc_tap <- readr::read_delim(

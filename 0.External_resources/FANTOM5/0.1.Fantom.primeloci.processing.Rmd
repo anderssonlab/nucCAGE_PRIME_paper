@@ -106,6 +106,9 @@ design <- data.frame(sampleName=c(cellLine.names,tissue.names,primary.names),
 
 
 row.names(design) <- design$sampelID
+
+write_tsv(design, "FANTOM5_sample_ontology_mapping.tsv")
+
 ```
 
 
