@@ -12,3 +12,9 @@ bedtools groupby -i UKBB_94traits_release1_pip01_clean.bed -g 1,2,3,4,5,6,7,8 -c
 
 # lift over to hg38 coordinates
 ./liftOver -bedPlus=3 UKBB_94traits_release1_pip01_clean_uniq.bed hg19ToHg38.over.chain UKBB_94traits_release1_pip01_clean_uniq_hg38.bed UKBB_94traits_release1_pip01_clean_uniq_unmapped.bed
+
+# report statistics
+mapped=$(wc -l < UKBB_94traits_release1_pip01_clean_uniq_hg38.bed)
+unmapped=$(wc -l < UKBB_94traits_release1_pip01_clean_uniq_unmapped.bed)
+total=$((mapped + unmapped))
+echo "liftOver hg19->hg38: mapped=${mapped} unmapped=${unmapped} total=${total} mapping_rate=$(awk -v m=$mapped -v t=$total 'BEGIN{printf "%.4f", m/t}')"
