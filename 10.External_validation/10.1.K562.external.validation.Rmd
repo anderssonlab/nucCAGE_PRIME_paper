@@ -2016,6 +2016,15 @@ ggplot2::ggplot(
     )
 ```
 
+#### Evaluate
+#### DHS recall: 0.05421322; DHS enrichment: 2.452082 -> PRIME CAGE cells pooled: 24.100419 (9.83x); PRIME CAGE nuclei pooled: 18.532597 (7,56x)
+```{r}
+pooled.PRIME.ClinVar.enrichment.recall.data[
+        pooled.PRIME.CRISPR.enrichment.recall.data$recall > 0.01,
+      ] %>%
+  dplyr::filter(assay != "PRIME CAGE nuclei 10M pooled")
+```
+
 ## [8.1.] Print plot
 ```{r}
 ggplot2::ggsave(
@@ -2220,11 +2229,12 @@ ggplot2::ggplot(
       aspect.ratio = 1
     )
 ```
+
 ## [8.9.] Print plot
 ```{r}
 ggplot2::ggsave(
     filename = base::paste0(
-        here::here("10.External_validation/"),
+        here::here("10.External_validation/plots/"),
         base::format(base::Sys.Date(), "%Y%m%d"),
         "K562_pooled_PRIME_dctap_precision_vs_recall_and_point_estimates_genome",
         "_v3.pdf"
