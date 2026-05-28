@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRIME CRE Atlas | Browser</title>
+    <script src="https://cdn.jsdelivr.net/npm/igv@2.15.5/dist/igv.min.js"></script>
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-hover: #0369a1;
+            --bg-page: #f8fafc;
+            --border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --nav-bg: #0f172a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-page); color: var(--text-main); overflow: hidden; }
+        
+        /* Top Navigation */
+        .navbar { background: var(--nav-bg); color: white; padding: 0 1.5rem; display: flex; justify-content: space-between; align-items: center; height: 60px; }
+        .navbar-brand { font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
+        .navbar-brand span { font-size: 0.85rem; font-weight: 400; background: rgba(255,255,255,0.1); padding: 0.2rem 0.5rem; border-radius: 4px; }
+        .nav-links { display: flex; gap: 1.5rem; }
+        .nav-links button { background: transparent; border: none; color: #cbd5e1; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: color 0.2s; }
+        .nav-links button:hover { color: white; }
+
+        /* Dashboard Layout */
+        .dashboard { display: grid; grid-template-columns: 340px 1fr; height: calc(100vh - 60px); }
+        
+        .sidebar { background: white; border-right: 1px solid var(--border); padding: 1.5rem; overflow-y: auto; }
+        .sidebar h2 { font-size: 1rem; margin-bottom: 0.75rem; color: var(--primary); letter-spacing: 0.05em;}
+        
+        .search-group { margin-bottom: 1.5rem; }
+        .search-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .search-input { width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.9rem; outline: none; }
+        .search-input:focus { border-color: var(--primary); }
+        
+        .btn { width: 100%; background: var(--primary); color: white; border: none; padding: 0.5rem; border-radius: 4px; cursor: pointer; margin-top: 0.5rem; font-weight: 600; transition: background 0.2s;}
+        .btn:hover { background: var(--primary-hover); }
+        .btn-outline { background: white; color: var(--text-main); border: 1px solid var(--border); margin-top: 0.5rem; }
+        .btn-outline:hover { background: #f1f5f9; }
+        .btn-danger { background: white; color: #e11d48; border: 1px solid #e11d48; margin-top: 0.5rem;}
+        .btn-danger:hover { background: #fff1f2; }
+
+        .main-view { padding: 1rem; display: flex; flex-direction: column; overflow-y: auto; background: white; }
+        #igv-container { border: 1px solid var(--border); border-radius: 4px; padding-top: 10px; min-height: 600px; flex-grow: 1; }
+        
+        /* Multi-select Styles */
+        .multi-select-container { border: 1px solid var(--border); border-radius: 4px; overflow: hidden; background: #fafafa; }
+        .multi-select-search { width: 100%; padding: 0.5rem; border: none; border-bottom: 1px solid var(--border); outline: none; font-size: 0.85rem; }
+        .facet-checkbox-list { max-height: 250px; overflow-y: auto; padding: 0.5rem; }
+        .facet-checkbox-item { display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.35rem 0; font-size: 0.85rem; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: opacity 0.2s;}
+        .facet-checkbox-item:last-child { border-bottom: none; }
+        .facet-checkbox-item input { margin-top: 0.2rem; cursor: pointer; }
+
+        .download-link { font-size: 0.85rem; color: var(--primary); text-decoration: none; font-weight: 600; display: block; margin-bottom: 0.5rem;}
+        .download-link:hover { text-decoration: underline; }
+
+        /* Modal Styles */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; opacity: 0; transition: opacity 0.2s; }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal { background: white; padding: 2rem; border-radius: 8px; width: 90%; max-width: 600px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative;}
+        .modal h3 { font-size: 1.25rem; color: var(--text-main); margin-bottom: 1rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem;}
+        .modal p { font-size: 0.9rem; margin-bottom: 1rem; color: var(--text-main); line-height: 1.6;}
+        .modal a { color: var(--primary); text-decoration: none; }
+        .modal a:hover { text-decoration: underline; }
+        .modal-close { position: absolute; top: 1.5rem; right: 1.5rem; background: transparent; border: none; font-size: 1.25rem; cursor: pointer; color: var(--text-muted); }
+        .modal-close:hover { color: var(--text-main); }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="navbar-brand">
+            PRIME CRE Atlas <span>Browser</span>
+        </div>
+        <div class="nav-links">
+            <button onclick="openModal('modal-citation')">Citation</button>
+            <button onclick="openModal('modal-methods')">Methods</button>
+            <button onclick="openModal('modal-data')">Data availability</button>
+            <button onclick="openModal('modal-contact')">Funding & Contact</button>
+        </div>
+    </nav>
+
+    <div class="dashboard">
+        <div class="sidebar">
+            
+            <div class="search-group">
+                <h2>1. Navigate locus</h2>
+                <label>Gene or coordinates</label>
+                <input type="text" id="locusInput" class="search-input" placeholder="e.g., SMAD3" value="SMAD3">
+                <button class="btn" onclick="searchLocus()">Search browser</button>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0;">
+
+            <div class="search-group">
+                <h2>2. Load agnostic PRIME CREs</h2>
+                <label>Global FANTOM5 dataset</label>
+                <select id="agnosticSelect" class="search-input">
+                    <option value="all_0.5">All loci (≥ 0.5)</option>
+                    <option value="all_0.75">All loci (≥ 0.75)</option>
+                    <option value="distal_0.5">Distal loci (≥ 0.5)</option>
+                    <option value="distal_0.75" selected>Distal loci (≥ 0.75)</option>
+                    <option value="proximal_0.5">Proximal loci (≥ 0.5)</option>
+                    <option value="proximal_0.75">Proximal loci (≥ 0.75)</option>
+                    <option value="pooled_0.75">Pooled (≥ 0.75)</option>
+                </select>
+                <button class="btn btn-outline" onclick="loadAgnosticTrack()">Load agnostic track</button>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0;">
+
+            <div class="search-group">
+                <h2>3. Load PRIME CREs and CAGE signal</h2>
+                <label>Select FANTOM5 facets or cell lines</label>
+                <div class="multi-select-container">
+                    <input type="text" id="facetFilter" class="multi-select-search" placeholder="Type to filter..." oninput="filterFacets()">
+                    <div class="facet-checkbox-list" id="facetCheckboxes">
+                        </div>
+                </div>
+                <button class="btn btn-outline" onclick="loadFacetTracks()">Load selected tracks</button>
+                <button class="btn btn-danger" onclick="clearAllTracks()">Clear all tracks</button>
+            </div>
+            
+        </div>    
+
+        <div class="main-view">
+            <div id="igv-container"></div>
+        </div>
+    </div>
+
+    <div id="modal-citation" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeAllModals()">×</button>
+            <h3>Citation</h3>
+            <p><strong>Mapping active cis-regulatory elements from transcription initiation events</strong></p> 
+            <p>Hjörleifur Einarsson, Natsuda Navamajiti, Christian Skov Vaagensø, Stefano Pellegrini, Nicolas Alcaraz, Malte Thodberg, Daniel A. Solvie, Wei-Lin Qiu, Maya U. Sheth, Marta Greedy Escudero, Bram Gorissen, Marco Salvatore, Bradley E. Bernstein, Albin Sandelin, Jesse M. Engreitz, Robert Krautz, Robin Andersson</p>
+            <p><strong>Preprint:</strong> bioRxiv doi:<a href="https://doi.org/10.64898/2026.05.11.724207" target="_blank">10.64898/2026.05.11.724207</a></p>
+        </div>
+    </div>
+
+    <div id="modal-methods" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeAllModals()">×</button>
+            <h3>Methods</h3>
+            <p>The <a href="https://anderssonlab.org/PRIME/" target="_blank">PRIME toolkit</a> was used to identify active cis-regulatory elements from CAGE data, including a curated set of 760 FANTOM5 CAGE libraries from the <a href="https://fantom.gsc.riken.jp/5/" target="_blank">FANTOM5 project</a>.</p>
+            <p style="margin-bottom: 0.5rem;">New CAGE sequencing data from K562, HepG2, GM12878, A549, HCT116 cells were preprocessed and mapped using the <a href="https://github.com/anderssonlab/PRIMEprep" target="_blank">PRIMEprep pipeline</a> (v0.1.0).</p>
+            <p style="margin-bottom: 0.5rem;">Downstream analyses were performed in R using <a href="https://github.com/anderssonlab/PRIME" target="_blank">PRIME</a> (v0.1.0) and in Python using <a href="https://github.com/anderssonlab/PRIMEmodel" target="_blank">PRIMEmodel</a> (v1.0.0).</p>
+        </div>
+    </div>
+
+    <div id="modal-data" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeAllModals()">×</button>
+            <h3>Data availability</h3>
+            <p>All PRIME predictions and signal tracks in K562, GM12878, HepG2, HCT116, A549 cells and FANTOM5 facets are available at Zenodo (doi: <a href="https://doi.org/10.5281/zenodo.19712783" target="_blank">10.5281/zenodo.19712783</a>, v0.2.0).</p>
+            <p><a href="https://os134.hpc.ku.dk/PRIME_atlas/PRIME_FANTOM5_agnostic/facet_statistics.tsv" class="download-link" target="_blank">Download facet statistics (.tsv)</a></p>
+        </div>
+    </div>
+
+    <div id="modal-contact" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeAllModals()">×</button>
+            <h3>Funding</h3>
+            <p>This work was supported by grants from the Novo Nordisk Foundation, the Independent Research Fund Denmark, the Lundbeck Foundation, and the Villum Foundation.</p>
+            <h3 style="margin-top: 1.5rem;">Contact</h3>
+            <p>For inquiries regarding this work, please contact the PRIME team at the <a href="https://tgrlab.org/" target="_blank">Tissue Gene Regulation Lab</a> and the <a href="https://anderssonlab.org/" target="_blank">Andersson Lab</a>.</p>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = "https://os134.hpc.ku.dk/PRIME_atlas";
+        let igvBrowser = null;
+        
+        const loadedAgnosticTracks = new Set();
+        const loadedFacetTracks = new Set();
+
+        // Modal Logic
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeAllModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
+        function closeModal(e) { if(e.target.classList.contains('modal-overlay')) closeAllModals(); }
+
+        // Robust function to safely convert BED feature colors (e.g. "255,0,0" to "rgb(255,0,0)")
+        const getTrackColor = (feature, defaultColor) => {
+            if (feature.color) {
+                // If the color string is raw comma-separated RGB
+                if (typeof feature.color === 'string' && feature.color.includes(',') && !feature.color.startsWith('rgb')) {
+                    return `rgb(${feature.color})`;
+                }
+                return feature.color;
+            }
+            return defaultColor;
+        };
+
+        const igvOptions = {
+            genome: "hg38",
+            locus: "SMAD3",
+            tracks: [
+                {
+                    name: "Genes (RefSeq)",
+                    type: "annotation",
+                    format: "refgene",
+                    sourceType: "file",
+                    url: "https://s3.amazonaws.com/igv.org.genomes/hg38/ncbiRefSeq.sorted.txt.gz",
+                    indexURL: "https://s3.amazonaws.com/igv.org.genomes/hg38/ncbiRefSeq.sorted.txt.gz.tbi",
+                    visibilityWindow: -1,
+                    displayMode: "EXPANDED"
+                },
+                {
+                    name: "Agnostic FANTOM5 PRIME CREs (distal 0.75)",
+                    type: "annotation",
+                    format: "bed",
+                    url: `${BASE_URL}/PRIME_FANTOM5_agnostic/PRIME_FANTOM5_agnostic_distal_0.75.bed.gz`,
+                    indexURL: `${BASE_URL}/PRIME_FANTOM5_agnostic/PRIME_FANTOM5_agnostic_distal_0.75.bed.gz.tbi`,
+                    displayMode: "EXPANDED",
+                    itemRGB: true, // Forces IGV to parse the 9th column (itemRgb) bypassing the missing header
+                    color: "#1e293b"
+                }
+            ]
+        };
+
+        const fantomFacets = [
+            "B.lymphoblastoid", "Burkitts.lymphoma", "Hep.2", "T.cell", "Wilms.tumor", "acinar.cell",
+            "acute.lymphoblastic.leukemia.B.ALL", "acute.lymphoblastic.leukemia.T.ALL",
+            "acute.myeloid.leukemia.FAB.M2", "acute.myeloid.leukemia.FAB.M4", "acute.myeloid.leukemia.FAB.M4eo",
+            "acute.myeloid.leukemia.FAB.M5", "acute.myeloid.leukemia.FAB.M6", "acute.myeloid.leukemia.FAB.M7",
+            "amniotic.epithelial.cell", "astrocyte", "bile.duct.carcinoma", "blood.vessel.endothelial.cell",
+            "blood.vessel", "brain", "breast.carcinoma", "bronchioalveolar.carcinoma", "carcinoid",
+            "cardiac.fibroblast", "cardiac.myocyte", "cervical.cancer", "chondrocyte", "choriocarcinoma",
+            "chronic.myelogenous.leukemia", "ciliated.epithelial.cell", "clear.cell.carcinoma",
+            "colon.carcinoma", "cord.blood.derived", "corneal.epithelial.cell", "dendritic.cell",
+            "ductal.cell.carcinoma", "embryonic.kidney", "embryonic.pancreas",
+            "endothelial.cell.of.hepatic.sinusoid", "endothelial.cell.of.lymphatic.vessel",
+            "enteric.smooth.muscle.cell", "epidermoid.carcinoma", "epithelial.cell.of.Malassez",
+            "epithelial.cell.of.esophagus", "epithelial.cell.of.prostate", "epithelioid.sarcoma",
+            "epitheloid.carcinoma", "eye", "fat.cell", "fibroblast.of.choroid.plexus",
+            "fibroblast.of.gingiva", "fibroblast.of.lymphatic.vessel", "fibroblast.of.periodontium",
+            "fibroblast.of.tunica.adventitia.of.artery", "gall.bladder.carcinoma",
+            "gastric.adenocarcinoma", "gastric.cancer", "giant.cell.carcinoma",
+            "gingival.epithelial.cell", "glioblastoma", "hair.follicle.cell", "heart",
+            "hepatic.stellate.cell", "hepatocellular.carcinoma", "hepatocyte",
+            "internal.male.genitalia", "keratinocyte", "keratocyte", "kidney.epithelial.cell",
+            "kidney", "large.cell.lung.carcinoma", "large.intestine", "leiomyoma",
+            "lens.epithelial.cell", "liposarcoma", "liver", "lung.adenocarcinoma", "lung",
+            "lymphocyte.of.B.lineage", "macrophage", "mammary.epithelial.cell", "mast.cell",
+            "medulloblastoma", "melanocyte", "melanoma", "meninx", "merkel.cell.carcinoma",
+            "mesenchymal.cell", "mesothelial.cell", "mesothelioma", "monocyte", "myoblast",
+            "myxofibrosarcoma", "natural.killer.cell", "neuroblastoma", "neuroectodermal.tumor",
+            "neuron", "neuronal.stem.cell", "neutrophil", "oral.squamous.cell.carcinoma",
+            "osteoblast", "osteosarcoma", "pericyte.cell", "placental.epithelial.cell",
+            "preadipocyte", "prostate.cancer", "renal.cell.carcinoma", "respiratory.epithelial.cell",
+            "reticulocyte", "retinal.pigment.epithelial.cell", "rhabdomyosarcoma", "schwannoma",
+            "sensory.epithelial.cell", "serous.adenocarcinoma", "signet.ring.carcinoma",
+            "skeletal.muscle.cell", "skeletal.muscle.tissue", "skin.fibroblast",
+            "small.cell.lung.carcinoma", "small.intestine", "smooth.muscle.cell.of.prostate",
+            "smooth.muscle.cell.of.trachea", "spinal.cord", "spleen", "squamous.cell.carcinoma",
+            "squamous.cell.lung.carcinoma", "stromal.cell", "tendon.cell", "teratocarcinoma",
+            "testicular.germ.cell.embryonal.carcinoma", "testis", "throat", "thymus",
+            "thyroid.carcinoma", "thyroid.gland", "tongue", "trabecular.meshwork.cell",
+            "transitional.cell.carcinoma", "urothelial.cell", "uterus",
+            "vascular.associated.smooth.muscle.cell"
+        ];
+
+        const bwNameMap = {
+            'B.lymphoblastoid': 'B_lymphoblastoid', 'Burkitts.lymphoma': 'Burkitts_lymphoma', 'Hep.2': 'Hep-2',
+            'acute.lymphoblastic.leukemia.B.ALL': 'acute_lymphoblastic_leukemia_(B-ALL)', 'acute.lymphoblastic.leukemia.T.ALL': 'acute_lymphoblastic_leukemia_(T-ALL)',
+            'acute.myeloid.leukemia.FAB.M2': 'acute_myeloid_leukemia_(FAB_M2)', 'acute.myeloid.leukemia.FAB.M4': 'acute_myeloid_leukemia_(FAB_M4)',
+            'acute.myeloid.leukemia.FAB.M4eo': 'acute_myeloid_leukemia_(FAB_M4eo)', 'acute.myeloid.leukemia.FAB.M5': 'acute_myeloid_leukemia_(FAB_M5)',
+            'acute.myeloid.leukemia.FAB.M6': 'acute_myeloid_leukemia_(FAB_M6)', 'acute.myeloid.leukemia.FAB.M7': 'acute_myeloid_leukemia_(FAB_M7)',
+            'bile.duct.carcinoma': 'bile_duct_carcinoma', 'breast.carcinoma': 'breast_carcinoma', 'bronchioalveolar.carcinoma': 'bronchioalveolar_carcinoma',
+            'cervical.cancer': 'cervical_cancer', 'chronic.myelogenous.leukemia': 'chronic_myelogenous_leukemia', 'clear.cell.carcinoma': 'clear_cell_carcinoma',
+            'colon.carcinoma': 'colon_carcinoma', 'cord.blood.derived': 'cord_blood_derived', 'ductal.cell.carcinoma': 'ductal_cell_carcinoma',
+            'embryonic.kidney': 'embryonic_kidney', 'embryonic.pancreas': 'embryonic_pancreas', 'epidermoid.carcinoma': 'epidermoid_carcinoma',
+            'epithelioid.sarcoma': 'epithelioid_sarcoma', 'epitheloid.carcinoma': 'epitheloid_carcinoma', 'gall.bladder.carcinoma': 'gall_bladder_carcinoma',
+            'gastric.adenocarcinoma': 'gastric_adenocarcinoma', 'gastric.cancer': 'gastric_cancer', 'giant.cell.carcinoma': 'giant_cell_carcinoma',
+            'hepatocellular.carcinoma': 'hepatocellular_carcinoma', 'large.cell.lung.carcinoma': 'large_cell_lung_carcinoma',
+            'lung.adenocarcinoma': 'lung_adenocarcinoma', 'merkel.cell.carcinoma': 'merkel_cell_carcinoma', 'neuroectodermal.tumor': 'neuroectodermal_tumor',
+            'oral.squamous.cell.carcinoma': 'oral_squamous_cell_carcinoma', 'prostate.cancer': 'prostate_cancer', 'renal.cell.carcinoma': 'renal_cell_carcinoma',
+            'serous.adenocarcinoma': 'serous_adenocarcinoma', 'signet.ring.carcinoma': 'signet_ring_carcinoma', 'small.cell.lung.carcinoma': 'small_cell_lung_carcinoma',
+            'squamous.cell.carcinoma': 'squamous_cell_carcinoma', 'squamous.cell.lung.carcinoma': 'squamous_cell_lung_carcinoma',
+            'testicular.germ.cell.embryonal.carcinoma': 'testicular_germ_cell_embryonal_carcinoma', 'thyroid.carcinoma': 'thyroid_carcinoma',
+            'transitional.cell.carcinoma': 'transitional-cell_carcinoma'
+        };
+
+        const cellLinesMap = [
+            { bed: "A549_C_0.75", bw: "A549_C", label: "A549 (Whole Cell, 0.75)" },
+            { bed: "A549_N_0.75", bw: "A549_N", label: "A549 (Nuclei, 0.75)" },
+            { bed: "GM12878_C_1M_0.75", bw: "GM12878_1M_C", label: "GM12878 (Whole Cell 1M, 0.75)" },
+            { bed: "GM12878_C_250K_0.75", bw: null, label: "GM12878 (Whole Cell 250K, 0.75)" },
+            { bed: "GM12878_C_500K_0.75", bw: "GM12878_500K_C", label: "GM12878 (Whole Cell 500K, 0.75)" },
+            { bed: "GM12878_N_1M_0.75", bw: "GM12878_1M_N", label: "GM12878 (Nuclei 1M, 0.75)" },
+            { bed: "GM12878_N_500K_0.75", bw: "GM12878_500K_N", label: "GM12878 (Nuclei 500K, 0.75)" },
+            { bed: "GM12878_N_5M_0.75", bw: "GM12878_5M_N", label: "GM12878 (Nuclei 5M, 0.75)" },
+            { bed: "HCT116_C_0.75", bw: "HCT116_C", label: "HCT116 (Whole Cell, 0.75)" },
+            { bed: "HepG2_C_0.75", bw: "HepG2_C", label: "HepG2 (Whole Cell, 0.75)" },
+            { bed: "HepG2_N_0.75", bw: "HepG2_N", label: "HepG2 (Nuclei, 0.75)" },
+            { bed: "K562_C_0.75", bw: "K562_C", label: "K562 (Whole Cell, 0.75)" },
+            { bed: "K562_N_0.75", bw: "K562_N", label: "K562 (Nuclei, 0.75)" }
+        ];
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const igvDiv = document.getElementById("igv-container");
+            const checkboxList = document.getElementById("facetCheckboxes");
+            
+            loadedAgnosticTracks.add("distal_0.75");
+
+            cellLinesMap.forEach(c => {
+                const label = document.createElement('label');
+                label.className = 'facet-checkbox-item';
+                label.innerHTML = `<input type="checkbox" value="${c.label}"> <span>${c.label}</span>`;
+                checkboxList.appendChild(label);
+            });
+
+            fantomFacets.forEach(f => {
+                const label = document.createElement('label');
+                label.className = 'facet-checkbox-item';
+                label.innerHTML = `<input type="checkbox" value="${f}"> <span>${f} (FANTOM5, 0.5)</span>`;
+                checkboxList.appendChild(label);
+            });
+
+            igv.createBrowser(igvDiv, igvOptions)
+                .then(function (browser) {
+                    igvBrowser = browser;
+                })
+                .catch(function (error) {
+                    console.error("Failed to initialize IGV:", error);
+                    igvDiv.innerHTML = `<div style="padding: 2rem; color: red;"><strong>Error loading IGV browser:</strong> ${error.message}</div>`;
+                });
+        });
+
+        function filterFacets() {
+            const term = document.getElementById('facetFilter').value.toLowerCase();
+            const labels = document.getElementById('facetCheckboxes').getElementsByTagName('label');
+            for (let label of labels) {
+                const text = label.textContent.toLowerCase();
+                if (text.includes(term)) {
+                    label.style.display = "flex";
+                } else {
+                    label.style.display = "none";
+                }
+            }
+        }
+
+        function searchLocus() {
+            const locus = document.getElementById('locusInput').value.trim();
+            if (igvBrowser && locus) {
+                igvBrowser.search(locus);
+            }
+        }
+
+        async function loadAgnosticTrack() {
+            if (!igvBrowser) return;
+            const suffix = document.getElementById('agnosticSelect').value; 
+            
+            if (loadedAgnosticTracks.has(suffix)) {
+                alert(`Agnostic FANTOM5 PRIME CREs (${suffix.replace('_', ' ')}) is already loaded.`);
+                return;
+            }
+
+            try {
+                await igvBrowser.loadTrack({
+                    type: 'annotation',
+                    format: 'bed',
+                    url: `${BASE_URL}/PRIME_FANTOM5_agnostic/PRIME_FANTOM5_agnostic_${suffix}.bed.gz`,
+                    indexURL: `${BASE_URL}/PRIME_FANTOM5_agnostic/PRIME_FANTOM5_agnostic_${suffix}.bed.gz.tbi`,
+                    name: `Agnostic FANTOM5 PRIME CREs (${suffix.replace('_', ' ')})`,
+                    displayMode: "EXPANDED",
+                    itemRGB: true,
+                    color: "#1e293b"
+                });
+                loadedAgnosticTracks.add(suffix);
+            } catch(e) {
+                console.error("Error loading agnostic track:", e);
+                alert(`Failed to load Agnostic ${suffix}. Ensure the server is reachable and the file exists.`);
+            }
+        }
+
+        async function loadFacetTracks() {
+            if (!igvBrowser) return;
+            
+            const checkboxes = document.querySelectorAll('#facetCheckboxes input[type="checkbox"]:checked:not(:disabled)');
+            if (checkboxes.length === 0) return;
+
+            for (const cb of checkboxes) {
+                const selection = cb.value;
+                let bedDistalUrl, bedProximalUrl, bwPlus, bwMinus, trackName, bedDistalName;
+
+                const cellLineMatch = cellLinesMap.find(c => c.label === selection);
+                
+                if (cellLineMatch) {
+                    trackName = cellLineMatch.label;
+                    bedDistalUrl = `${BASE_URL}/PRIME_cellLines/PRIME_${cellLineMatch.bed}.bed.gz`;
+                    bedDistalName = `${trackName} (All CREs)`; 
+                    
+                    if(cellLineMatch.bw) {
+                        bwPlus = `${BASE_URL}/PRIME_cellLines_TPM_bw/${cellLineMatch.bw}.TPM.plus.bw`;
+                        bwMinus = `${BASE_URL}/PRIME_cellLines_TPM_bw/${cellLineMatch.bw}.TPM.minus.bw`;
+                    }
+                } 
+                else if (fantomFacets.includes(selection)) {
+                    trackName = selection;
+                    bedDistalName = `${trackName} (Distal)`;
+                    const bwName = bwNameMap[selection] || selection;
+                    
+                    bedDistalUrl = `${BASE_URL}/PRIME_FANTOM5_facets/PRIME_FANTOM5_${selection}_distal_0.5.bed.gz`;
+                    bedProximalUrl = `${BASE_URL}/PRIME_FANTOM5_facets/PRIME_FANTOM5_${selection}_proximal_0.5.bed.gz`;
+                    
+                    bwPlus = `${BASE_URL}/PRIME_FANTOM5_facets_TPM_bw/${bwName}.TPM.plus.bw`;
+                    bwMinus = `${BASE_URL}/PRIME_FANTOM5_facets_TPM_bw/${bwName}.TPM.minus.bw`;
+                }
+
+                if(bedDistalUrl) {
+                    try {
+                        await igvBrowser.loadTrack({
+                            type: 'annotation', format: 'bed',
+                            url: bedDistalUrl, indexURL: `${bedDistalUrl}.tbi`,
+                            name: bedDistalName, displayMode: "EXPANDED",
+                            itemRGB: true, color: "#0284c7"
+                        });
+                    } catch(e) { console.error("Error loading BED for", trackName, e); }
+                }
+
+                if(bedProximalUrl) {
+                    try {
+                        await igvBrowser.loadTrack({
+                            type: 'annotation', format: 'bed',
+                            url: bedProximalUrl, indexURL: `${bedProximalUrl}.tbi`,
+                            name: `${trackName} (Proximal)`, displayMode: "EXPANDED",
+                            itemRGB: true, color: "#0d9488"
+                        });
+                    } catch(e) { console.error("Error loading proximal BED for", trackName, e); }
+                }
+
+                if(bwPlus) {
+                    try {
+                        await igvBrowser.loadTrack({
+                            type: 'wig', format: 'bigwig', url: bwPlus,
+                            name: `${trackName} Signal (+)`, color: "#2563eb"
+                        });
+                    } catch(e) { console.error("Error loading plus bigWig for", trackName, e); }
+                }
+                
+                if(bwMinus) {
+                    try {
+                        await igvBrowser.loadTrack({
+                            type: 'wig', format: 'bigwig', url: bwMinus,
+                            name: `${trackName} Signal (-)`, color: "#e11d48"
+                        });
+                    } catch(e) { console.error("Error loading minus bigWig for", trackName, e); }
+                }
+                
+                cb.checked = false;
+                cb.disabled = true;
+                cb.parentElement.style.opacity = "0.5";
+                cb.parentElement.title = "Track is already loaded.";
+                loadedFacetTracks.add(selection);
+            }
+        }
+
+        function clearAllTracks() {
+            if (!igvBrowser) return;
+            const currentTracks = igvBrowser.findTracks();
+            currentTracks.forEach(track => {
+                if (track.name !== "Genes (RefSeq)") {
+                    igvBrowser.removeTrack(track);
+                }
+            });
+
+            loadedAgnosticTracks.clear();
+            loadedFacetTracks.clear();
+
+            const checkboxes = document.querySelectorAll('#facetCheckboxes input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.disabled = false;
+                cb.parentElement.style.opacity = "1";
+                cb.parentElement.title = "";
+            });
+        }
+    </script>
+</body>
+</html>
