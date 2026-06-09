@@ -106,14 +106,6 @@ pooled.PRIME <- base::lapply(
 base::names(pooled.PRIME) <- base::names(pooled.PRIME.files)
 ```
 
-#### Evaluate pooled PRIME distal loci
-```{r}
-pooled.PRIME$K562_sld_N %>%
-  tibble::as_tibble() %>%
-  dplyr::filter(class == "distal") %>%
-  dplyr::arrange(dplyr::desc(score))
-```
-
 ## [1.4.] Annotate identified Divergent loci by txdb annotated promoters into proximal (overlapping with promoter) or distal
 ```{r}
 pooled.DLs <- base::readRDS(
@@ -150,42 +142,6 @@ olap <- GenomicRanges::findOverlaps(
 dlc[S4Vectors::queryHits(olap)] <- "proximal"
 pooled.DLs$class <- dlc # 104.105
 ```
-
-#### chr12:34335869-34336269; chr4:702557-702957; chr9:135689838-135690238; chr10:77836260-77836660; chr9:136511891-136512291 (Notch); chr4:128471633-128472033; chr11:65493822-65494222 (MALAT1)
-```{r}
-pooled.DLs %>%
-  tibble::as_tibble() %>%
-  dplyr::filter(class == "distal" & sample == "K562_N") %>% 
-  dplyr::arrange(base::abs(directionality),dplyr::desc(score))
-  # dplyr::arrange(dplyr::desc(score))
-```
-
-#### chr17:65537822-65538222 (?, AXIN2 intron); chr1:36386416-36386816 (?, LOC124904012 exon); chr7:76166443-76166843 (!!, intergenic LOC124901674) 
-#### chr20:37379147-37379547 (! SRC intron)
-#### chr5:119321597-119321997 (?, TNFAIP8 intron); chr15:70099475-70099875 (!, intergenic TLE3)
-```{r}
-pooled.DLs %>%
-  tibble::as_tibble() %>%
-  dplyr::filter(
-      class == "distal" & sample == "K562_N" &
-      base::abs(directionality) <= 0.1
-    ) %>% 
-  dplyr::arrange(dplyr::desc(score))
-  # dplyr::arrange(base::abs(directionality),dplyr::desc(score))
-```
-
-#### chr2:142930954-142931354 (!!, KYNU intron), chr11:9364346-9364746 (!!, intergenic IPO7); chr5:141849550-141849950 (!!, intergenic PCDH1); chr6:53359250-53359650 (!!, intergenic ELOVL5)
-```{r}
-pooled.DLs %>%
-  tibble::as_tibble() %>%
-  dplyr::filter(
-      class == "distal" & sample == "K562_N" &
-      base::abs(directionality) <= 0.25
-    ) %>% 
-  dplyr::arrange(dplyr::desc(score))
-  # dplyr::arrange(base::abs(directionality),dplyr::desc(score))
-```
-
 
 ## [1.5.] Read in, prepare and subset eQTL data
 ```{r}
@@ -409,7 +365,7 @@ cCRE <- readr::read_tsv(
         "ENCFF414OGC_ENCFF806YEZ_ENCFF849TDM_ENCFF736UDR.bed"
       ),
     col_names = FALSE,
-    show_col_types = FALSE 
+    show_col_types = FALSE
   )
 df <- cCRE[,1:3]
 base::colnames(df) <- base::c("chrom","start","end")
@@ -819,105 +775,6 @@ point.dctap.df <- .GlobalEnv$point.enrichment.precision.recall(
   )
 ```
 
-```{r}
-base::saveRDS(
-    object = point.ClinVar.df,
-    file = base::paste0(
-        here::here("10.External_validation/"),
-        base::format(base::Sys.Date(),"%Y%m%d"),
-        "_point_ClinVar_df",
-        ".rds"
-      ),
-    compress = TRUE
-  )
-
-base::saveRDS(
-    object = point.eQTL.df,
-    file = base::paste0(
-        here::here("10.External_validation/"),
-        base::format(base::Sys.Date(),"%Y%m%d"),
-        "_point_eQTL_df",
-        ".rds"
-      ),
-    compress = TRUE
-  )
-
-base::saveRDS(
-    object = point.GWAS.df,
-    file = base::paste0(
-        here::here("10.External_validation/"),
-        base::format(base::Sys.Date(),"%Y%m%d"),
-        "_point_GWAS_df",
-        ".rds"
-      ),
-    compress = TRUE
-  )
-
-base::saveRDS(
-    object = point.CRISPR.df,
-    file = base::paste0(
-        here::here("10.External_validation/"),
-        base::format(base::Sys.Date(),"%Y%m%d"),
-        "_point_CRISPR_df",
-        ".rds"
-      ),
-    compress = TRUE
-  )
-
-base::saveRDS(
-    object = point.dctap.df,
-    file = base::paste0(
-        here::here("10.External_validation/"),
-        base::format(base::Sys.Date(),"%Y%m%d"),
-        "_point_dctap_df",
-        ".rds"
-      ),
-    compress = TRUE
-  )
-```
-
-```{r eval=FALSE}
-point.ClinVar.df <- base::readRDS(
-    file = base::list.files(
-        path = here::here("10.External_validation"),
-        full.names = TRUE
-      ) %>%
-    stringr::str_subset("_point_ClinVar_df")
-  )
-
-point.eQTL.df <- base::readRDS(
-    file = base::list.files(
-        path = here::here("10.External_validation"),
-        full.names = TRUE
-      ) %>%
-    stringr::str_subset("_point_eQTL_df")
-  )
-
-point.GWAS.df <- base::readRDS(
-    file = base::list.files(
-        path = here::here("10.External_validation"),
-        full.names = TRUE
-      ) %>%
-    stringr::str_subset("_point_GWAS_df")
-  )
-
-point.CRISPR.df <- base::readRDS(
-    file = base::list.files(
-        path = here::here("10.External_validation"),
-        full.names = TRUE
-      ) %>%
-    stringr::str_subset("_point_CRISPR_df")
-  )
-
-point.dctap.df <- base::readRDS(
-    file = base::list.files(
-        path = here::here("10.External_validation"),
-        full.names = TRUE
-      ) %>%
-    stringr::str_subset("_point_dctap_df")
-  )
-```
-
 ## [3.] Visualize ClinVar results -------------------------
 
 ## [3.0.] Prepare ClinVar plotting
@@ -1217,7 +1074,7 @@ ggplot2::ggsave(
   )
 ```
 
-## [4.] Visualize eQTL results -------------------------
+## [4.] Visualize ClinVar results -------------------------
 
 ## [4.1.] Plot eQTL point estimate results
 ```{r}
@@ -2818,34 +2675,17 @@ gr_list[["dcTap.neg.data"]] <- dc.tap.enhancers.neg
 ```
 
 ```{r}
-col.scheme <- stats::setNames(
-  object = col.scheme,
-  nm = base::c(
-      "DHS","Divergent loci CAGE cells","Divergent loci CAGE nuclei",
-      "dREG PRO-seq","dREG qPRO-seq","ENCODE cCRE",
-      "PINTS GRO/PRO-cap","PRIMEloci CAGE cells pooled","PRIMEloci CAGE nuclei pooled",
-      "K27ac", "K27ac DHS","PRIMEloci CAGE nuclei 10M pooled",
-      "ENCODE rE2G"
-    )
-  )
-```
-
-
-```{r}
 create_upset_plot <- function(subset_name, gr_list, sets_to_include) {
     # Get the specific subset's GRanges
     subset_gr <- gr_list[[subset_name]]
   
     # Create a binary matrix for overlaps, restricted to the subset
     overlap_matrix <- sapply(gr_list, function(gr) {
-          overlaps <- findOverlaps(subset_gr, gr)
-          overlap_vector <- rep(0, length(subset_gr))
-          overlap_vector[unique(queryHits(overlaps))] <- 1
-          return(
-            overlap_vector
-          )
-        }
-      )
+      overlaps <- findOverlaps(subset_gr, gr)
+      overlap_vector <- rep(0, length(subset_gr))
+      overlap_vector[unique(queryHits(overlaps))] <- 1
+      return(overlap_vector)
+    })
     colnames(overlap_matrix) <- names(gr_list)
     
     # Convert to a data frame
