@@ -1,0 +1,2322 @@
+---
+title: "workflow_trackVisualization"
+output: html_document
+date: "2024-04-11"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# [0.] Packages -------------------------
+
+## [0.0.] Install necessary packages
+#### Maybe required: "base::detach(name = tidyverse, unload = TRUE)", "utils::remove.packages("tidyverse")", "utils::remove.packages("ggplot2")"
+#### Lib locations: "/maps/projects/scarball/apps/Modules/software/R-packages/4.2.2", "/maps/projects/ralab/people/pbr316/bin/Rpackages"
+```{r eval=FALSE}
+# # tidyverse
+# utils::install.packages(
+#     pkgs = "tidyverse",
+#     lib = "/maps/projects/ralab/people/pbr316/bin/Rpackages"
+#   )
+# 
+# ## Ensure ggplot2 version 3.5.2 is installed
+# utils::remove.packages("ggplot2")
+# utils::install.packages(
+#     "https://cran.r-project.org/src/contrib/Archive/ggplot2/ggplot2_3.5.2.tar.gz",
+#     type = "source",
+#     repos = NULL
+#   )
+# utils::packageVersion("ggplot2")
+# 
+# BiocManager::install("AnnotationHub")
+# BiocManager::install("remotes")
+# BiocManager::install("Bioconductor/RBGL")
+# BiocManager::install("ggbio")
+# devtools::install_github("thomasp85/patchwork")
+# utils::install.packages("ggh4x")
+# 
+# utils::install.packages(
+#     "xfun",
+#     dependencies = TRUE,
+#     INSTALL_opts = '--no-lock'
+#   )
+# utils::install.packages("S7")
+```
+
+## [0.1.] Load necessary packages
+#### Evaluate with sessioninfo::session_info()
+```{r message=FALSE, warning=FALSE}
+base::library(tidyverse)
+base::library(PRIME)
+utils::packageVersion("ggplot2") # 4.0.1 # 4.0.3 (20260429)
+
+# base::library(tidyverse, lib.loc = "/maps/projects/ralab/people/pbr316/bin/Rpackages")
+# base::library("AnnotationHub")
+# base::library("parallel")
+# base::library("foreach")
+# base::library("doParallel")
+# doParallel::registerDoParallel(
+#     cores = 15
+#   )
+
+# utils::installed.packages() %>%
+#   tibble::as_tibble() %>% 
+#   dplyr::filter(
+#     stringr::str_detect(Package,"TxDb.Hsapiens")
+#   )
+base::library("TxDb.Hsapiens.UCSC.hg38.knownGene")
+base::library("BSgenome.Hsapiens.UCSC.hg38")
+
+```
+
+
+## [1.] Read in data --------------------
+
+## [1.0.] Color palette
+```{r}
+cols <- base::c(
+    "#659DBD", "#FFC425", "#AFD275",
+    "#9A1750", "#FC4445", "#55BCC9",
+    "#242582", "#00B159", "#8860D0",
+    "#41B3A3", "#C38D9E", "#8EE4AF",
+    "#1F2833", "#D79922", "#7E685A",
+    "#8D8741", "#E27D60", "#E8A87C",
+    "#9B786F", "#DAAD86", "#EDF5E1",
+    "#64485C"
+  )
+```
+
+## [1.1.] Read in annotations - convert from gff to gr
+#### unique entries: 'hg38_gr[which(!is.na(elementMetadata(dm6_gr)[,"Name"])),]'
+#### 'hg38_tbl <- tibble::as_tibble(hg38_gr)', 'dplyr::distinct(hg38_tbl,type)'
+#### 'base::unique(S4Vectors::elementMetadata(hg38_gr)[,"type"])'
+#### previous '/isdata/alab/genome/annotations/hg38/gencode.v31.annotation.gtf'
+#### see 'https://www.gencodegenes.org/human/' for updates
+```{r}
+# hg38_gff <- rtracklayer::readGFF(
+#     filepath = base::paste0(
+#       here::here("0.External_resources/"),
+#       "gencode.v39.annotation.gtf"
+#     )
+#   )
+# dplyr::distinct(hg38_gff,type)
+# hg38_gr <- GenomicRanges::makeGRangesFromDataFrame(
+#     df = hg38_gff,
+#     keep.extra.columns = TRUE
+#   )
+# 
+# types <- base::c(
+#     "transcription_start_site", "exon_junction", "exon",
+#     "gene", "pseudogene", "ncRNA",
+#     "intron", "mRNA", "protein",
+#     "CDS", "five_prime_UTR", "three_prime_UTR",
+#     "polyA_site", "snoRNA", "pre_miRNA",
+#     "miRNA", "silencer", "enhancer",
+#     "snRNA", "tRNA", "rRNA",
+#     "UTR"
+#   )
+# hg38_gr_sub <- hg38_gr[
+#     S4Vectors::elementMetadata(hg38_gr)[,"type"] %in% types,
+#   ]
+```
+
+## [1.2.] Build lookup table for colors associated with annotations
+#### 'col2rgb(cols3[1])[1:3,] %>% unname() %>% paste(collapse = ",")'
+```{r}
+# annos <- base::unique(
+#     S4Vectors::elementMetadata(hg38_gr_sub)[,"type"]
+#   )
+# 
+# lkup <- tibble::tibble(
+#     txType = annos,
+#     hex = cols[1:base::length(annos)]
+#   )
+```
+
+## ---------------
+
+## [1.3.] Read in bigwig files - K562 and GM12878
+```{r}
+fs <- base::list.files(
+      path = here::here("trackHubFiles"),
+      full.names = TRUE
+    ) %>%
+  stringr::str_subset("PoolSub|repSub", negate = TRUE) %>% 
+  stringr::str_subset("_500K_|_5M_") # GM12878-specific
+  # stringr::str_subset("K562") # K562-specific
+```
+
+## [1.4.] Read in bigwig files - FANTOM5 immune tracks (Fig6)
+#### SMAD3 (Fig6)
+```{r}
+facets_sel <- base::c(
+    "mast cell", "dendritic cell", "monocyte",
+    "T cell", "reticulocyte"
+  )
+
+fs <- base::list.files(
+      path = here::here("0.External_resources/FANTOM5/pooled_bw"),
+      full.names = TRUE
+    ) %>%
+  stringr::str_subset(base::paste0(facets_sel,collapse = "|"))
+```
+
+#### ACOT11, NCOR2, TRDMT1, CD82 (Fig6)
+```{r}
+# facets_sel <- base::c(
+#     "B_lymphoblastoid", "Hep-2", "astrocyte",
+#     "chronic_myelogenous_leukemia", "epitheloid_carcinoma", "kidney epithelial cell",
+#     "mast cell", "mesenchymal cell", "monocyte",
+#     "natural killer cell", "neuroblastoma", "skin fibroblast",
+#     "small_cell_lung_carcinoma", "thymus", "vascular associated smooth muscle cell"
+#   )
+# facets_sel <- base::c(
+#     "mast cell", "dendritic cell", "monocyte",
+#     "T cell", "reticulocyte", "cervical_cancer",
+#     "placental epithelial cell", "uterus"
+#   )
+# facets_sel <- base::c(
+#     "mast cell", "dendritic cell", "monocyte",
+#     "T cell", "reticulocyte", "hepatocyte",
+#     "large intestine", "small intestine", "preadipocyte",
+#     "liposarcoma", "fat cell", "hepatocellular_carcinoma",
+#     "Hep-2", "liver", "hepatic stellate cell",
+#     "endothelial cell of hepatic sinusoid"
+#   )
+# facets_sel <- base::c(
+#     "mast cell", "dendritic cell", "monocyte",
+#     "T cell", "reticulocyte", "natural killer cell"
+#   )
+# facets_sel <- base::c(
+#     "mast cell", "dendritic cell", "monocyte",
+#     "T cell", "reticulocyte", "acute_myeloid_leukemia_\\(FAB_M6\\)",
+#     "neutrophil"
+#   )
+
+fs <- base::list.files( 
+      path = here::here("0.External_resources/FANTOM5/pooled_bw"),
+      full.names = TRUE
+    ) %>%
+  stringr::str_subset(base::paste0(facets_sel,collapse = "|"))
+```
+
+#### FANTOM5 kidney-related tracks (Fig6)
+```{r}
+facets_sel_ <- base::c(
+    "spinal cord", "internal male genitalia", "throat",
+    "tongue", "testis", "thyroid gland",
+    "blood vessel", "spleen", "thymus",
+    "meninx", "eye", "kidney",
+    "uterus", "lung", "large.intestine",
+    "small.intestine"
+  )
+
+facets_sel <- facets_sel_ %>%
+  base::paste0("/",., "\\.") %>%
+  base::paste0(collapse = "|")
+
+fs <- base::list.files(
+      path = here::here("0.External_resources/FANTOM5/pooled_bw"),
+      full.names = TRUE
+    ) %>%
+  stringr::str_subset(facets_sel)
+  # stringr::str_subset("TPM1")
+```
+
+## ---------------
+
+## [1.5.] Read in CTSSs - Load HepG2-, HCT116-, A549-CTSS objects & adapt names (Fig5)
+#### Evaluate with 'rsen = "A549"', 'SummarizedExperiment::colData(CTSSs.objects[[rsen]])'
+```{r}
+CTSSs.objects_ <- base::list.files(
+      path = here::here("1.CTSSs"),
+      full.names = TRUE
+    ) %>%
+  stringr::str_subset("\\/poolSub") %>%
+  stringr::str_subset("HepG2|HCT116|A549")
+  # stringr::str_subset("HepG2|HCT116|A549|combined.GM12878|combined.k562")
+
+CTSSs.objects <- purrr::map(
+    .x = CTSSs.objects_,
+    .f = base::readRDS
+  )
+base::names(CTSSs.objects) <- stringr::str_replace(
+    CTSSs.objects_, ".*/poolSub(\\.combined)?\\.(.*?)\\.CTSSs.*", "\\2"
+  )
+CTSSs.objects <- purrr::map(
+    .x = base::names(CTSSs.objects),
+    .f = function(rsen){
+      base::rownames(SummarizedExperiment::colData(CTSSs.objects[[rsen]])) <- base::paste0(
+          rsen, "_",
+          base::rownames(SummarizedExperiment::colData(CTSSs.objects[[rsen]]))
+        )
+      return(CTSSs.objects[[rsen]])
+    }
+  )
+base::names(CTSSs.objects) <- stringr::str_replace(
+    CTSSs.objects_, ".*/poolSub(\\.combined)?\\.(.*?)\\.CTSSs.*", "\\2"
+  )
+```
+
+## [1.6.] Read in CTSSs - Add the corresponding K562 poolSub data to CTSSs.objects of [1.5.] (Fig5)
+#### Evaluate with SummarizedExperiment::colData(K562.CTSSs.sub), SummarizedExperiment::assay(K562.CTSSs.sub, i = "counts.noSingletons")
+```{r}
+K562.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "poolSub.combined.k562.CTSSs.rmSingletons.rds"
+    )
+  )
+
+ids <- SummarizedExperiment::colData(x = K562.CTSSs) %>%
+  tibble::as_tibble(rownames = "type") %>%
+  dplyr::filter(
+      # stringr::str_detect(type, "K562_C$|K562_N$")
+    stringr::str_detect(type, "K562_C$|K562_N$|K562_N_10M$") # (20260408)
+    ) %>%
+  dplyr::pull(ID)
+
+# K562.CTSSs.sub <- S4Vectors::subset(
+#     x = K562.CTSSs,
+#     select = SummarizedExperiment::colData(K562.CTSSs)$ID %in% ids
+#   )
+
+tpm <- SummarizedExperiment::assay(K562.CTSSs,"TPM")[,SummarizedExperiment::colData(K562.CTSSs)$ID %in% ids]
+K562.CTSSs.sub <- SummarizedExperiment::SummarizedExperiment(
+    assays = base::list(
+        TPM = SummarizedExperiment::assay(K562.CTSSs,"TPM")[
+            (Matrix::rowSums(tpm) != 0),
+            SummarizedExperiment::colData(K562.CTSSs)$ID %in% ids
+          ], # 8810502, 2
+        counts = SummarizedExperiment::assay(K562.CTSSs,"counts")[
+            (Matrix::rowSums(tpm) != 0),
+            SummarizedExperiment::colData(K562.CTSSs)$ID %in% ids
+          ], # 8810502, 2
+        counts.noSingletons = SummarizedExperiment::assay(K562.CTSSs,"counts.noSingletons")[
+            (Matrix::rowSums(tpm) != 0),
+            SummarizedExperiment::colData(K562.CTSSs)$ID %in% ids
+          ] # 8810502, 2
+      ),
+    colData = SummarizedExperiment::colData(K562.CTSSs)[SummarizedExperiment::colData(K562.CTSSs)$ID %in% ids,],
+    rowRanges = SummarizedExperiment::rowRanges(K562.CTSSs)[(Matrix::rowSums(tpm) != 0),]
+  )
+
+CTSSs.objects[["K562"]] <- K562.CTSSs.sub
+base::remove(K562.CTSSs,K562.CTSSs.sub)
+```
+
+#### Evaluations
+```{r}
+SummarizedExperiment::assay(K562.CTSSs,"TPM")[1:13,]
+SummarizedExperiment::assay(K562.CTSSs.sub,"TPM")[1:13,]
+SummarizedExperiment::assay(CTSSs.objects[["K562"]],"TPM")[1:13,]
+
+assertthat::are_equal(
+    SummarizedExperiment::rowRanges(K562.CTSSs)[1030345:1030545],
+    base::sort(SummarizedExperiment::rowRanges(K562.CTSSs))[1030345:1030545]
+  )
+setdiff(
+    SummarizedExperiment::rowRanges(K562.CTSSs),
+    base::sort(SummarizedExperiment::rowRanges(K562.CTSSs))
+  )
+tpm <- SummarizedExperiment::assay(K562.CTSSs.sub,"TPM")
+tpm[(Matrix::rowSums(tpm) != 0),] # 8,810,502
+SummarizedExperiment::rowRanges(K562.CTSSs)[(Matrix::rowSums(tpm) != 0),] # 8,810,502
+```
+
+## [1.7.] Read in CTSSs - Add the corresponding GM12878 poolSub data to CTSSs.objects of [1.5.] (Fig5)
+```{r}
+GM12878.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "poolSub.combined.GM12878.CTSSs.rmSingletons.rds"
+    )
+  )
+
+ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
+  tibble::as_tibble(rownames = "type") %>%
+  dplyr::filter(
+     stringr::str_detect(type, "GM12878_1M_C$|GM12878_1M_N$")
+    ) %>%
+  dplyr::pull(ID)
+
+# GM12878.CTSSs.sub <- S4Vectors::subset(
+#     x = GM12878.CTSSs,
+#     select = SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids
+#   )
+
+tpm <- SummarizedExperiment::assay(GM12878.CTSSs,"TPM")[,SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids]
+GM12878.CTSSs.sub <- SummarizedExperiment::SummarizedExperiment(
+    assays = base::list(
+        TPM = SummarizedExperiment::assay(GM12878.CTSSs,"TPM")[
+            (Matrix::rowSums(tpm) != 0),
+            SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids
+          ], # 8810502, 2
+        counts = SummarizedExperiment::assay(GM12878.CTSSs,"counts")[
+            (Matrix::rowSums(tpm) != 0),
+            SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids
+          ], # 8810502, 2
+        counts.noSingletons = SummarizedExperiment::assay(GM12878.CTSSs,"counts.noSingletons")[
+            (Matrix::rowSums(tpm) != 0),
+            SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids
+          ] # 8810502, 2
+      ),
+    colData = SummarizedExperiment::colData(GM12878.CTSSs)[SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids,],
+    rowRanges = SummarizedExperiment::rowRanges(GM12878.CTSSs)[(Matrix::rowSums(tpm) != 0),]
+  )
+
+CTSSs.objects[["GM12878"]] <- GM12878.CTSSs.sub
+# SummarizedExperiment::colData(GM12878.CTSSs.sub)
+base::remove(GM12878.CTSSs,GM12878.CTSSs.sub)
+```
+
+#### Evaluations
+```{r}
+base::names(CTSSs.objects)
+SummarizedExperiment::assay(GM12878.CTSSs,"TPM")[1:13,]
+SummarizedExperiment::assay(GM12878.CTSSs.sub,"TPM")[13,]
+SummarizedExperiment::assay(CTSSs.objects[["GM12878"]],"TPM")[1:13,]
+
+assertthat::are_equal(
+    SummarizedExperiment::rowRanges(GM12878.CTSSs)[1030345:1030545],
+    base::sort(SummarizedExperiment::rowRanges(GM12878.CTSSs))[1030345:1030545]
+  )
+setdiff(
+    SummarizedExperiment::rowRanges(GM12878.CTSSs),
+    base::sort(SummarizedExperiment::rowRanges(GM12878.CTSSs))
+  )
+```
+
+## ---------------
+
+## [1.8.] Read in CTSSs - Load prepared 'all CTSS' - objects for GM12878 & K562 (Fig3)
+#### Evaluate with 'SummarizedExperiment::colData(GM12878.CTSSs.sub)' & 'SummarizedExperiment::assay(GM12878.CTSSs.sub, "counts")'
+```{r}
+GM12878.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "all.combined.GM12878.CTSSs.rds"
+    )
+  )
+
+ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
+  tibble::as_tibble(rownames = "type") %>%
+  dplyr::filter(
+      (pooled == "yes" & stringr::str_detect(type, "trip|ctrl")) |
+      (stringr::str_detect(type, "groCap")) |
+      (pooled == "yes" & stringr::str_detect(ID, "500K|5M"))
+    ) %>%
+  dplyr::pull(ID)
+
+GM12878.CTSSs.sub <- S4Vectors::subset(
+    x = GM12878.CTSSs,
+    select = SummarizedExperiment::colData(GM12878.CTSSs)$ID %in% ids
+  )
+base::remove(GM12878.CTSSs)
+```
+
+#### Identify and subset for specific samples, e.g., 5M, Triptolide or GROcap
+```{r}
+# ##GM12878 5M and 500k samples
+# ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
+#   tibble::as_tibble(rownames = "type") %>%
+#   dplyr::filter(
+#       pooled == "yes" &
+#       stringr::str_detect(ID, "500K|5M")
+#     ) %>%
+#   dplyr::pull(ID)
+# 
+# ##Triptolide samples
+# ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
+#   tibble::as_tibble(rownames = "type") %>%
+#   dplyr::filter(
+#       stringr::str_detect(Pool, "trip")
+#     ) %>%
+#   dplyr::pull(ID)
+# 
+# ##GRO-cap samples
+# ids <- SummarizedExperiment::colData(x = GM12878.CTSSs) %>%
+#   tibble::as_tibble(rownames = "type") %>%
+#   dplyr::filter(
+#       stringr::str_detect(type, "groCap")
+#     ) %>%
+#   dplyr::pull(ID)
+```
+
+#### Evaluate with 'SummarizedExperiment::colData(K562.CTSSs.sub)' & 'SummarizedExperiment::assay(K562.CTSSs.sub, "counts")'
+#### Different from "poolSub.combined.GM12878.CTSSs.rmSingletons.rds" in [1.6.]
+```{r}
+K562.CTSSs <- base::readRDS(
+  file = base::paste0(
+      here::here("1.CTSSs/"),
+      "all.combined.k562.CTSSs.rds"
+    )
+  )
+
+ids <- SummarizedExperiment::colData(x = K562.CTSSs) %>%
+  tibble::as_tibble() %>%
+  dplyr::filter(
+      pooled == "yes" & # Only pooled replicates for figure plots
+      stringr::str_detect(ID, "Cap", negate = TRUE)
+    ) %>%
+  dplyr::pull(ID)
+
+K562.CTSSs.sub <- S4Vectors::subset(
+    x = K562.CTSSs,
+    select = SummarizedExperiment::colData(K562.CTSSs)$ID %in% ids
+  )
+```
+
+## ---------------
+
+## [1.9.] Write out bigWig files
+```{r}
+samples = base::rownames(
+    SummarizedExperiment::colData(GM12878.CTSSs.sub)
+  )
+
+PRIME::writeBw(
+    object = GM12878.CTSSs,
+    replicates = samples,
+    dir = base::paste0(
+        here::here("trackHubFiles/"),
+        "20240718_bigWig/"
+      ),
+    inputAssay = "TPM",
+    splitByStrand = TRUE
+  )
+```
+
+```{r}
+samples = base::rownames(
+    SummarizedExperiment::colData(K562.CTSSs.sub)
+  )
+
+PRIME::writeBw(
+    object = K562.CTSSs,
+    replicates = samples,
+    dir = base::paste0(
+        here::here("trackHubFiles/"),
+        "20240718_bigWig/"
+      ),
+    inputAssay = "TPM",
+    splitByStrand = TRUE
+  )
+```
+
+#### Write out HepG2-, HCT116-, A549-CTSS samples
+```{r}
+purrr::map(
+    .x = CTSSs.objects,
+    .f = PRIME::writeBw,
+    dir = base::paste0(
+          here::here("trackHubFiles/"),
+          "20240718_bigWig/"
+        ),
+    inputAssay = "TPM",
+    splitByStrand = TRUE
+  )
+```
+
+## ---------------
+
+## [1.10.] TMM normalise data
+```{r}
+# base::debugonce(edgeR::calcNormFactors)
+# facs <- edgeR::calcNormFactors(
+#     object = GM12878.CTSSs.sub,
+#     method = "TMM",
+#     refColumn = NULL
+#   )
+# GM12878.tmm.CTSSs <- PRIME::TPMnormalizeBySizeFactors(
+#     object = GM12878.CTSSs.sub,
+#     sizeFactors = facs$samples$lib.size * facs$samples$norm.factors,
+#     inputAssay = "counts",
+#     outputAssay = "TMM"
+#   )
+```
+
+#### Use TMM values as "counts" and calculate TPMs on top of this
+```{r}
+# GM12878.tmm.CTSSs <- PRIME::TPMnormalizeBySizeFactors(
+#       object = GM12878.CTSSs.sub,
+#       sizeFactors = facs$samples$lib.size * facs$samples$norm.factors,
+#       inputAssay = "counts",
+#       outputAssay = "counts"
+#     ) %>%
+#   CAGEfightR::calcTPM()
+```
+
+#### Deconstructed edgeR::calcNormFactors() function
+#### "GM12878_5M_N2" is the refColumn
+```{r}
+# object <- edgeR::SE2DGEList(GM12878.CTSSs.sub)
+# x <- base::as.matrix(object)
+# nsamples <- base::ncol(x)
+# lib.size <- Matrix::colSums(x)
+# allzero <- .Internal(rowSums(x > 0, base::nrow(x), nsamples, na.rm = FALSE)) == 0L
+# x <- x[!allzero, , drop = FALSE]
+# f75 <- base::suppressWarnings(
+#    edgeR:::.calcFactorQuantile(
+#        data = x,
+#        lib.size = lib.size,
+#        p = 0.75
+#      )
+#    )
+# if (stats::median(f75) < 1e-20) {
+#     refColumn <- BiocGenerics::which.max(base::colSums(base::sqrt(x)))
+#   } else {
+#     refColumn <- BiocGenerics::which.min(base::abs(f75 - base::mean(f75)))
+#   }
+```
+
+#### Load tmm.CTSSs object
+#### see [1.15.2.] in "1.1.CTSSs.processing.Rmd" for more info
+```{r}
+# fn <- base::list.files(
+#       path = here::here("1.CTSSs"),
+#       full.names = TRUE
+#     ) %>%
+#   stringr::str_subset("tmm.CTSSs")
+# 
+# tmm.CTSSs <- base::readRDS(file = fn)
+```
+
+## ---------------
+
+## [1.12.] Read in CRISPR-gRNA locations
+```{r}
+dir = "/projects/ralab/people/pbr316/20221208_scCAGE/resources/"
+crispr <- readr::read_delim(
+    file = base::paste0(
+        dir,
+        "EPCrisprBenchmark_ensemble_data_GRCh38.tsv.gz"
+      ),
+    delim = "\t",
+    col_names = TRUE
+  )
+
+myc_locus <- crispr %>%
+  dplyr::filter(
+      measuredGeneSymbol == "MYC"
+    ) %>%
+  dplyr::summarise(
+      chr = dplyr::first(chrom),
+      start = base::min(chromStart),
+      end = base::max(chromEnd)
+    ) %>%
+  GenomicRanges::GRanges()
+
+crispr_data <- crispr %>%
+  dplyr::filter(
+      measuredGeneSymbol == "MYC"
+    ) %>%
+  dplyr::mutate(
+      y = dplyr::row_number(),
+      y_alt = 1,
+      summit = chromStart + base::round((chromEnd-chromStart+1)/2)
+    )
+```
+
+## [1.13.] Read in MYC enhancer coordinates (20260430)
+```{r}
+mycs <- rtracklayer::import.bed(
+    con = base::paste0(
+        here::here("0.External_resources/"),
+        "20260501_MYC_superenhancers_hg38.bed"
+      )
+    ) %>%
+  tibble::as_tibble() %>%
+  dplyr::select(seqnames, start, end)
+```
+
+## [1.14.] Read in K562 enhancer coordinates (20260505)
+```{r}
+enhs <- readr::read_delim(
+      file = base::paste0(
+          here::here("0.External_resources/"),
+          "20260505_enhancers_K562_v1.csv"
+        ),
+      delim = ";",
+      col_names = TRUE,
+      col_types = readr::cols(
+        .default = readr::col_integer(),
+        sample = readr::col_character(),
+        seqname = readr::col_character(),
+        type = readr::col_character(),
+        reference = readr::col_character(),
+        comment = readr::col_character()
+      )
+    ) %>%
+  dplyr::mutate(
+      loc = base::paste0(seqname, ":", start, "-", end)
+    )
+```
+
+# [2.] Prepare coordinate objects -------------------------
+
+## [2.0.] Define coordinates
+
+#### Fig1 examples
+#### suggested region "chr8:144,407,529-144,416,261", "chr10:110,291,360-110,366,023", 
+#### wider area: "chrX:48,670,569-48,746,869" with enh1: "chrX:48,676,170-48,676,946" and enh2: "chrX:48,737,065-48,737,528"
+#### enhancers - "chr9:41358750-41358940", "chr9:41,356,277-41,359,588", "chr8:134563800-134564100", "chr8:134,563,186-134,566,375"
+#### MYC-enhancer: "chr8:127,884,215-127,915,852"
+#### MYC-locus & PVT1-promoter: "chr8:127,704,300-127,810,400"
+#### HDAC6 promoter: "chrX:48,801,000-48,803,000"
+#### RUNX1 promoter: "chr21:35,048,764-35,049,617"
+#### MEF2A promoter: "chr15:99,565,263-99,566,083"
+#### GATA1 promoters: "chrX:48,786,301-48,788,293" & enhancer: "chrX:48,787,857-48,788,321"
+#### KLF2 promoter: "chr19:16,324,467-16,325,106"
+#### BCL2 promoter/PROMPTs: "chr18:63,317,868-63,320,926"
+#### NAA1 / LIN01088 intron: "chr4:144,080,727-144,158,976"
+```{r}
+l_ <- "chrX:48,786,301-48,788,293" # GATA1 promoter
+l_ <- "chrX:48,787,857-48,788,321" # GATA1 enhancer
+
+l_ <- "chrX:12950917-12951208" # TMSB4X enhancer
+
+l_ <- "chr20:47360724-47361135" # ZMYND8 enhancer
+
+l_ <- "chr7:12,684,956-12,724,970" # ARL4A genewider
+l_ <- "chr7:12722785-12723156" # ARL4A enhancer
+```
+
+#### see [4.10.] in 10.3.Cell_line_vs_trait_enrichment.Rmd for 'chr22:37109513:37109512'
+
+#### RAPGEF2 promoter: "chr4:159,101,737-159,104,305" (Fig3)
+```{r}
+l_ <- "chr4:159,101,737-159,104,305" # RAPGEF2 promoter combined
+
+l_ <- "chr4:159,101,737-159,102,970" # RAPGEF2 PROMPT wider
+l_ <- "chr4:159,102,750-159,102,970" # RAPGEF2 PROMPT
+
+l_ <- "chr4:159,102,971-159,104,305" # RAPGEF2 promoter wider
+l_ <- "chr4:159,102,971-159,103,250" # RAPGEF2 promoter
+```
+
+### MCHC trait (Fig5)
+#### Whole ABCA7 gene including "chr19:1050876-1050875": "chr19:1039521-1065670"
+#### Whole TMPRSS6 gene including "chr22:37109513:37109512": "chr22:37,065,000-37,110,700"
+```{r}
+l_ <- "chr19:1,039,521-1,065,670" # ABCA7
+l_ <- "chr19:1,050,492-1,051,269" # ABCA7 Primeloci
+
+l_ <- "chr22:37,065,000-37,110,700" # TMPRSS6
+l_ <- "chr22:37,109,199-37,109,898" # TMPRSS6 Primeloci
+```
+
+### ApoB trait (Fig5)
+#### Whole ApoB gene locus as control: "chr2:20,999,429-21,046,073"
+#### Whole ABO gene including "chr9:133274296:133274295" and "chr9:133263363:133263374": "chr9:133,250,000-133,276,238"
+#### Whole LPL gene including: "chr8:19961929-19961928": "chr8:19,938,800-19,968,800"
+#### Whole LIPC gene including: "chr15:58430392:58430391": "chr15:58,400,000-58,570,000"
+
+#### Whole APOC1 gene including "chr19:44913485:44913484": "chr19:44,914,000-44,920,000" & with alternatively entire promoter proximal region "chr19:44,913,101-44,914,607"
+#### APOE - APOC1: "chr19:44,908,532-44,915,200"
+```{r}
+l_ <- "chr2:20,999,429-21,046,073"
+
+l_ <- "chr9:133,250,000-133,276,238" # ABO
+l_ <- "chr9:133,273,899-133,274,680" # ABO PRIMElocus
+
+l_ <- "chr8:19,938,800-19,968,800" # LPL
+l_ <- "chr8:19,961,537-19,962,318" # LPL Primelocus
+
+l_ <- "chr15:58,400,000-58,570,000" # LIPCs
+l_ <- "chr15:58429996-58435030" # LIPCs PRIMEloci
+
+l_ <- "chr19:44,908,532-44,915,200" # APOC1
+```
+
+### c-KIT & KLF6 (Fig6)
+```{r}
+l_ <- "chr4:54,360,000-55,036,000" # c-KIT gene wider
+l_ <- "chr4:54,538,000-54,760,000" # c-KIT gene
+l_ <- "chr4:54,635,119-54,635,915" # c-KIT enhancer
+# l_ <- "chr4:54,708,916-54,709,316" # (20260228)
+l_ <- "chr4:54542425-54543225" # c-KIT enhancer (20260303, deficiency anemia)
+
+# l_ <- "chr10:3,700,000-4,146,000" # KLF6 # wider area
+l_ <- "chr10:3,715,630-3,960,899" # KLF6
+l_ <- "chr10:3,942,689-3,943,182" # KLF6 enhancer
+#l_ <- "chr10:3,740,001-3,740,401" # (20260228)
+```
+
+#### Examples immune (Fig6)
+```{r}
+# l_ <- "chr9:127,737,317-127,779,666" # SH2D3C
+# l_ <- "chr9:127776431-127776831"
+# l_ <- "chr21:37,361,584-37,657,699" # DYRK1A
+# l_ <- "chr21:37563548-37563948"
+
+# l_ <- "chr1:6,219,522-6,361,546" # GPR153 (ACOT7)
+# l_ <- "chr1:6301631-6302031"
+
+# l_ <-  "chr3:100,679,296-100,760,074" # TFG
+# l_ <- "chr3:100,702,114-100,702,514" # TFG enhancer
+# l_ <- "chr3:100,696,090-100,710,895" # TFG enhancer wider
+
+l_ <- "chr17:34,347,028-34,420,319" # CCL1
+l_ <- "chr17:34412487-34412887" # CCL1 enhancer
+l_ <- "chr17:34412487-34413427" # CCL1 enhancers
+
+l_ <- "chr11:75,075,603-75,209,784" # OR2AT4 / SLCO2B1 gene wider
+l_ <- "chr11:75,100,000-75,109,986" # OR2AT4 gene
+l_ <- "chr11:75103056-75104456" # OR2AT4 enhancer
+
+l_ <- "chr14:24,497,494-24,526,450" # CMA1 gene
+l_ <- "chr14:24,423,851-24,585,580" # CMA1 gene wider (20260314)
+l_ <- "chr14:24,423,851-24,550,000" # CMA1 gene (20260326)
+l_ <- "chr14:24517772-24518172" # CMA1 enhancer
+
+l_ <- "chr15:67,039,999-67,195,802" # SMAD3 gene
+l_ <- "chr15:67120991-67121491" # SMAD3 intronic enhancer
+
+l_ <- "chr10:8,052,466-8,075,704" # GATA3 gene
+l_ <- "chr10:8073007-8073407" # GATA3 intronic enhancer
+```
+
+#### Examples kidney-related (Fig6)
+```{r}
+l_ <- "chr10:117,166,998-118,047,656" # SLC18A2 / EMX2 gene
+l_ <- "chr10:117720703-117721303" # SLC18A2 enhancer
+
+l_ <- "chr2:113,171,623-113,282,700" # PAX8 gene
+l_ <- "chr2:113213742-113214142" # PAX8 enhancer
+
+l_ <- "chr2:54,448,250-54,680,036" # Cystatin C / SPTBN1 gene
+l_ <- "chr2:54559889-54560289" # Cystatin C / SPTBN1 enhancer
+```
+
+```{r}
+l_ <- "chr12:124,284,664-124,887,451" # NCOR2 gene
+l_ <- "chr12:124626205-124626605" # NCOR2 enhancer
+
+l_ <- "chr1:54,220,981-54,629,250" # ACOT11 gene
+l_ <- "chr1:54488214-54488614" # ACOT11 enhancer
+
+l_ <- "chr11:44,559,802-44,621,474" # CD82 gene
+l_ <- "chr11:44570516-44570916" # CD82 enhancer
+
+l_ <- "chr10:17,133,279-17,243,033" # TRDMT1 gene
+l_ <- "chr10:17212828-17213228" # TRDMT1 enhancer
+
+l_ <- "chr17:39,751,261-39,885,067" # IKFZ3 gene
+l_ <- "chr17:39813772-39814172" # IKFZ3 enhancer
+```
+
+#### MYC example (Fig4)
+```{r}
+l_ <- "chr8:127,212,430-127,229,803" # PC91
+l_ <- "chr8:127,218,611-127,220,250" # PC91_subset
+l_ <- "chr8:127,264,015-127,266,715" # HT292
+l_ <- "chr8:127,291,864-127,302,271" # PC92
+l_ <- "chr8:127,595,945-127,597,132" # PC93
+l_ <- "chr8:127,612,703-127,620,929" # PC94 # -0.06045953  0.26724026
+l_ <- "chr8:127,618,500-127,618,700" # PC94_subset
+l_ <- "chr8:127,618,483-127,618,802" # PC94_subset_2
+l_ <- "chr8:127,667,949-127,670,942" # PC95 # -0.2159349  0.1049872
+l_ <- "chr8:127,668,650-127,669,350" # PC95_subset
+l_ <- "chr8:127,794,101-127,796,071" # PVT1
+l_ <- "chr8:127,808,598-127,811,423" # A3751
+l_ <- "chr8:127,850,678-127,855,822" # A3752 # -0.09139276  0.31496174
+l_ <- "chr8:127,851,517-127,851,856" # A3752_subset1
+l_ <- "chr8:127,854,256-127,854,835" # A3752_subset2
+l_ <- "chr8:127,890,376-127,890,404" # A3753
+l_ <- "chr8:127,906,653-127,909,763" # A3754
+l_ <- "chr8:128,076,404-128,077,909" # A3755
+l_ <- "chr8:128,175,430-128,177,526" # MDA1 # -0.11624159  0.08464334
+l_ <- "chr8:128,176,675-128,177,208" # MDA1_subset
+l_ <- "chr8:128,182,061-128,184,664" # MDA2
+l_ <- "chr8:128,324,390-128,324,940" # A3756
+l_ <- "chr8:128,551,556-128,560,975" # A5493 # -0.9652244  0.2906040
+l_ <- "chr8:128,555,167-128,555,466" # A5493_subset1
+l_ <- "chr8:128,556,690-128,557,011" # A5493_subset2
+l_ <- "chr8:128,653,951-128,654,391" # HepG21
+l_ <- "chr8:129,707,012-129,713,257" # HCT1161 # -0.1571948  0.6529629
+l_ <- "chr8:129,707,566-129,708,269" # HCT1161_subset
+
+l_ <- "chr8:127,892,754-127,907,754" # e1
+l_ <- "chr8:127,952,754-127,972,754" # e2
+l_ <- "chr8:128,042,754-128,052,754" # e3-e4
+l_ <- "chr8:129,577,754-129,592,754" # e5
+l_ <- "chr8:129,682,754-129,697,754" # e6-e7 #  -2.1276451  0.3113627
+l_ <- "chr8:129,690,869-129,691,415" # e6
+l_ <- "chr8:129,692,149-129,693,315" # e7
+
+l_ <- "chr8:127,727,331-129,697,754" # MYC gene wider 1
+l_ <- "chr8:127,173,354-129,805,804" # MYC gene wider 2
+l_ <- "chr8:127,670,067-129,805,029" # MYC PVT1 GSDMC genes
+```
+
+#### ProbeSet K562_enhancers
+#### see [1.4.] in '10.1.K562_external_validation_copy.Rmd'
+```{r}
+l_ <- "chr12:34335869-34336269" # intergenic (LINC02963)
+l_ <- "chr4:702557-702957" # intergenic (PCGF3)
+l_ <- "chr9:135689838-135690238" # intergenic (SOLH1)
+# l_ <- "chr9:135689838-135690260" # intergenic (SOLH1)
+l_ <- "chr10:77836260-77836660" # intronic (DLG5)
+# l_ <- "chr10:77836250-77836660" # intronic (DLG5)
+l_ <- "chr9:136511891-136512291" # intronic (NOTCH1) ?
+l_ <- "chr4:128471633-128472033" # intronic (LINC02615)
+l_ <- "chr11:65493822-65494222" # intergenic (MALAT1)
+
+l_ <- "chr1:36386416-36386816" # exon (LOC124904012)
+l_ <- "chr7:76166443-76166843" # intergenic (LOC124901674)
+# l_ <- "chr7:76166443-76166860" # intergenic (LOC124901674)
+l_ <- "chr20:37379147-37379547" # intronic (SRC)
+l_ <- "chr5:119321597-119321997" # intronic (TNFAIP8)
+l_ <- "chr15:70099475-70099875" # intergenic (TLE3)
+# l_ <- "chr15:70099430-70099930" # intergenic (TLE3)
+
+l_ <- "chr2:142930954-142931354" # intronic (KYNU)
+l_ <- "chr11:9364346-9364746" # intergenic (IPO7)
+l_ <- "chr5:141849550-141849950" # intergenic (PCDH1)
+l_ <- "chr6:53359250-53359650" # intergenic (ELOVL5)
+# l_ <- "chr6:53359250-53359665" # intergenic (ELOVL5)
+```
+
+#### ProbeSet K562_nonenhancers
+#### see [1.2.2.] in '10.3.Cell_line_vs_trait_enrichment_copy.Rmd'
+```{r}
+l_ <- "chr10:72319524-72320183" # intergenic (DNAJB12)
+l_ <- "chr6:142926574-142927393" # intergenic (HIVEP2) ?
+l_ <- "chr6:44001262-44001770" # intronic (SCIRT) ?
+l_ <- "chr2:84927005-84927424" # intergenic (TMSB10) ?
+l_ <- "chr2:231680936-231681515" # intergenic (PTMA)
+l_ <- "chr18:8607550-8608249" # intergenic (RAB12) # excluded
+l_ <- "chr1:2578073-2578772" # intronic (LOC100996583)
+l_ <- "chr16:509187-509745" # intronic (RAB11FIP3)
+```
+
+## [2.1.] Get genomic region from coordinates
+```{r}
+l <- stringr::str_replace_all(l_,",","")
+chr = stringr::str_replace(l,"^(chr.*):.*","\\1")
+s = stringr::str_replace(l,"^chr.*:(.*)-(.*)","\\1") %>%
+  base::as.integer()
+e = stringr::str_replace(l,"^chr.*:(.*)-(.*)","\\2") %>%
+  base::as.integer()
+out <- base::paste0("_",chr,"_",s,"_",e)
+```
+
+```{r}
+extend = 0 # 200 # 500
+ran <- GenomicRanges::GRanges(
+    seqnames = chr,
+    ranges = IRanges::IRanges(start = s, end = e)
+  )
+BiocGenerics::start(ran) <- BiocGenerics::start(ran) - extend
+BiocGenerics::end(ran) <- BiocGenerics::end(ran) + extend
+GenomeInfoDb::seqlevelsStyle(ran) <- "UCSC"
+```
+
+## [2.2.] Extract coordinates
+```{r}
+chrom <- GenomeInfoDb::seqnames(ran) %>%
+  base::as.character()
+start_pos <- BiocGenerics::start(ran)
+end_pos <- BiocGenerics::end(ran)
+```
+
+## [2.3.] Get genomic region from gene names
+#### examples are SLC39A4, YLPM1, SMNDC1
+```{r}
+# omr <- base::c(
+#     "AREL1","FCF1","YLPM1","XR_944033.2",
+#     "PROX2"
+#   )
+# ran_ <- hg38_gr_sub[
+#     S4Vectors::elementMetadata(hg38_gr_sub)[,"gene_name"] %in% omr,
+#   ]
+# base::unique(ran_$gene_name)
+# ran <- base::range(ran_,ignore.strand = TRUE)
+# 
+# GenomeInfoDb::seqlevelsStyle(ran) <- "UCSC"
+# if(!stringr::str_detect(GenomeInfoDb::seqlevels(ran)[1],"chr")){
+#   GenomeInfoDb::seqlevels(ran) <- base::gsub(
+#       pattern = '^(.*)$',
+#       replacement = 'chr\\1',
+#       x = GenomeInfoDb::seqlevels(ran)
+#     )
+#   }
+# GenomeInfoDb::seqlevels(ran)
+```
+
+## [2.4.] Get genomic regions from GRanges input
+```{r}
+# gr <- crispr %>%
+#   dplyr::filter(
+#       measuredGeneSymbol == "MYC" &
+#       Significant == TRUE
+#     ) %>%
+#   dplyr::mutate(
+#       summit = chromStart + base::round((chromEnd - chromStart +1)/2)
+#     ) %>% 
+#   GenomicRanges::GRanges()
+# extend = 1000
+# BiocGenerics::start(gr) <- BiocGenerics::start(gr) - extend
+# BiocGenerics::end(gr) <- BiocGenerics::end(gr) + extend
+# GenomeInfoDb::seqlevelsStyle(gr) <- "UCSC"
+# myce38 <- IRanges::reduce(gr, ignore.strand = TRUE, with.revmap = TRUE)
+# S4Vectors::mcols(myce38)$smts <- S4Vectors::aggregate(gr, S4Vectors::mcols(myce38)$revmap, smts = summit)$smts
+# i = 1L
+# ran <- myce38[i]
+```
+
+## [3.] CAGE preparation based on bigwigs --------------------
+
+## [3.1.] Read in tpm scores in selected ranges
+#### see [2.0.] in '20200721_workflow_DrosophilaCAGE.Rmd'
+#### Evaluate with 'dplyr::distinct(cage_sel_,sample)'
+```{r}
+cage_sel_ <- PRIME::readRange(fs,ran)
+```
+
+## [3.2.] Summarise data
+```{r}
+cage_sel <- cage_sel_ %>%
+  dplyr::mutate(
+    replicate = stringr::str_replace(
+        sample, ".*_(.*?)\\.TPM$", "\\1"
+      ),
+    type = stringr::str_replace(
+        sample, "^(.*?)_(.*)_(.*)\\.TPM$", "\\2"
+      ),
+    )
+```
+
+## [3.3.] Adjust source order
+#### dplyr::distinct(cage_sel,source)
+```{r}
+levs <- base::c(
+    "C", "C1", "C2", "C3",
+    "N", "N1", "N2", "N3"
+  )
+cage_sel <- cage_sel %>%
+  dplyr::mutate(
+      replicate = base::factor(
+          x = replicate,
+          levels = levs,
+          ordered = TRUE
+        )
+    ) %>%
+  dplyr::arrange(
+      type,replicate,seqnames,start,end
+    )
+```
+
+## [4.] CAGE preparation based on CTSSs --------------------
+
+## [4.0.1.] Subset & convert scores from RangedSummarizedExperiment to tibble
+#### Based on objects read in in [1.8.]
+#### Evaluate samples "base::rownames(SummarizedExperiment::colData(GM12878.CTSSs.sub))"
+```{r}
+# object <- GM12878.CTSSs.sub # GM12878.CTSSs.sub # K562.CTSSs.sub
+# ovl <- IRanges::findOverlaps(
+#     query = ran,
+#     subject = object
+#   )
+# gr <- SummarizedExperiment::rowRanges(object)[ovl@to,]
+# 
+# crds <- gr %>%
+#   base::as.data.frame() %>%
+#   tibble::as_tibble() %>%
+#   dplyr::mutate(
+#       start = pos,
+#       end = pos
+#     ) %>%
+#   dplyr::select(
+#       seqnames,start,end,strand
+#     )
+# 
+# scrs <- SummarizedExperiment::assay(object,"TPM")[ovl@to,] %>%
+#   base::as.matrix() %>%
+#   base::as.data.frame()
+# 
+# cage_sel_ <- dplyr::bind_cols(crds,scrs)
+```
+
+## [4.0.2.] Subset & convert scores from RangedSummarizedExperiment to tibble
+#### Based on objects read in in [1.5.] - [1.7.]
+#### Evaluate with 'c = "HepG2"'
+#### Alternative for combining data: base::do.call(what = "rbind",args = base::lapply(X = base::names(ovl),FUN = function(c){}))'
+```{r}
+# ovl <- purrr::map(
+#   .x = base::names(CTSSs.objects),
+#   .f = function(c){
+#       ovl <- IRanges::findOverlaps(
+#           query = ran,
+#           subject = CTSSs.objects[[c]]
+#         )
+#       gr <- SummarizedExperiment::rowRanges(CTSSs.objects[[c]])[ovl@to,]
+#       return(methods::as(gr,"GRanges"))
+#     }
+#   )
+# base::names(ovl) <- base::names(CTSSs.objects)
+# 
+# crds <- purrr::map_dfr(
+#   .x = base::names(ovl),
+#   .f = function(c){
+#     ovl[[c]] %>% 
+#       base::as.data.frame() %>%
+#         tibble::as_tibble() %>%
+#         dplyr::mutate(
+#             celltype = c
+#           ) %>%
+#         dplyr::select(
+#             celltype,seqnames,start,end,strand
+#           )
+#         }
+#       )
+```
+
+```{r}
+ovl <- purrr::map(
+  .x = base::names(CTSSs.objects),
+  .f = function(c){
+      return(
+        IRanges::findOverlaps(
+          query = ran,
+          subject = CTSSs.objects[[c]]
+        )
+      )
+    }
+  )
+base::names(ovl) <- base::names(CTSSs.objects)
+
+crds <- purrr::map_dfr(
+  .x = base::names(ovl),
+  .f = function(c){
+    gr <- SummarizedExperiment::rowRanges(CTSSs.objects[[c]])[ovl[[c]]@to,]
+    methods::as(gr,"GRanges") %>%
+      base::as.data.frame() %>%
+        tibble::as_tibble() %>%
+        dplyr::mutate(
+            type = c,
+            rowID = ovl[[c]]@to
+          ) %>%
+        dplyr::select(
+            type,seqnames,start,
+            end,strand,rowID
+          )
+        }
+      )
+```
+
+#### Evaluate with 'c = "HCT116"', 'c = "A549"','c = "K562"', 'c = "HepG2"'
+```{r}
+scrs <-  purrr::map_dfr(
+  .x = base::names(ovl),
+  .f = function(c){
+    
+    mat <- CTSSs.objects[[c]]@assays@data$TPM %>%
+      base::as.matrix()
+    
+    # base::colnames(mat) <- stringr::str_extract(base::colnames(mat), "C|N")
+    # base::colnames(mat) <- stringr::str_replace(base::colnames(mat), "^(.*?)_(.*?)$", "\\2")
+    base::colnames(mat) <- stringr::str_match(base::colnames(mat), "N_10M|C|N") %>%
+      base::as.character()
+      
+    return(
+      mat %>%
+        tibble::as_tibble() %>%
+        dplyr::filter(
+            dplyr::row_number() %in% ovl[[c]]@to
+          ) %>%
+        dplyr::mutate(
+          type = c,
+          rowID = ovl[[c]]@to
+        )
+      )
+    }
+  )
+
+cage_sel_ <- dplyr::left_join(
+      crds, scrs, by = base::c("type","rowID")
+    ) %>%
+  # dplyr::mutate(
+  #     dplyr::across(
+  #       C:N, ~ base::replace(., base::is.na(.), 0)
+  #     )
+  #   ) %>%
+  dplyr::select(-rowID)
+```
+
+## [4.1.1.] Summarise data
+#### Used with e.g., GM12878.CTSSs.sub, K562.CTSSs.sub, see [1.8.] & [4.0.1]
+#### Evaluate with 'dplyr::arrange(cage_sel,dplyr::desc(score))'
+#### Use 'TRUE ~ (20)*score' for GATA1 enhancer example
+```{r}
+# regex_f = "(?<=C|N)\\d$" # ".*(.)$"
+# regex_s = "^(.*?)_(.*?)(\\d)?$" # "^(.*?)_(.*)(_)?(.)"
+# 
+# cage_sel <- cage_sel_ %>%
+#   tidyr::pivot_longer(
+#       cols = tidyselect::contains("_"),
+#       names_to = "sample",
+#       values_to = "score"
+#     ) %>%
+#   dplyr::mutate(
+#     replicate = stringr::str_extract(
+#         sample, regex_f
+#       ),
+#     replicate = dplyr::case_when(
+#         base::is.na(replicate) ~ "pool",
+#         TRUE ~ replicate
+#       ),
+#     type = stringr::str_replace(
+#           sample, regex_s, "\\2"
+#         ) %>%
+#       stringr::str_replace(
+#         .,"^(.*?)[_]$","\\1"
+#       )
+#     ) %>%
+#   dplyr::mutate(
+#     score = dplyr::case_when(
+#         strand == "-" ~ (-1)*score,
+#         TRUE ~ score
+#       ),
+#     strand = dplyr::case_when(
+#         strand == "+" ~ "plus",
+#         strand == "-" ~ "minus"
+#       )
+#     )
+```
+
+## [4.1.2.] Summarise data
+#### Used with e.g., GM12878.CTSSs.sub, K562.CTSSs.sub, see [1.5.]-[1.7.] & [4.0.2]
+#### Evaluate with 'dplyr::distinct(cage_sel,sample)'
+```{r}
+cage_sel <- cage_sel_ %>%
+  tidyr::pivot_longer(
+      cols = base::c("C","N", "N_10M"),
+      names_to = "sample",
+      values_to = "score",
+      values_drop_na = TRUE
+    ) %>%
+  dplyr::mutate(
+    score = dplyr::case_when(
+        strand == "-" ~ (-1)*score,
+        TRUE ~ score
+      ),
+    strand = dplyr::case_when(
+        strand == "+" ~ "plus",
+        strand == "-" ~ "minus"
+      )
+    )
+```
+
+## [4.2.] Add mock lines for missing cell types
+#### Use with 'CTSSs.objects'
+#### Evaluate with "ins <- base::names(CTSSs.objects)"
+```{r}
+ins <- cage_sel %>%
+  dplyr::distinct(type) %>%
+  dplyr::pull(type)
+
+ous <- base::names(CTSSs.objects)[! base::names(CTSSs.objects) %in% ins]
+
+insert <- tibble::tibble(
+    type = base::sort(base::rep(ous,2)),
+    seqnames = base::rep(chrom,2*base::length(ous)),
+    start = base::rep(start_pos,2*base::length(ous)),
+    end = base::rep(end_pos,2*base::length(ous)),
+    strand = base::rep("plus",2*base::length(ous)),
+    sample = base::rep(base::c("C","N"),base::length(ous)),
+    score = base::rep(base::as.double(0),2*base::length(ous))
+  )
+
+cage_sel <- dplyr::bind_rows(cage_sel,insert)
+```
+
+#### Evaluate with 'ins <- base::c("dendritic cell", "mast cell", "monocyte", "reticulocyte")'
+#### 'dplyr::distinct(cage_sel,sample)'
+#### For individual samples 'insert <- tibble::tibble(sample = "reticulocyte",seqnames = chrom,start = start_pos,end = end_pos,strand = "plus",score = base::as.double(0))'
+```{r}
+# cage_sel <- cage_sel_
+# ins <- cage_sel %>%
+#   dplyr::distinct(sample) %>%
+#   dplyr::pull(sample)
+# 
+# ous <- facets_sel[!facets_sel %in% ins]
+# # ous <- facets_sel_[!facets_sel_ %in% ins]
+# 
+# insert <- tibble::tibble(
+#     sample = ous,
+#     seqnames = chrom,
+#     start = start_pos,
+#     end = end_pos,
+#     strand = "plus",
+#     score = base::as.double(0)
+#   )
+# 
+# cage_sel <- dplyr::bind_rows(cage_sel,insert)
+```
+
+# [5.] Plot data -------------------------
+
+## [5.0.] Plot genome tracks
+```{r}
+plot <- PRIME::plotTracks(cage_sel, ran) +
+  ggplot2::facet_wrap(
+      facets = . ~ type + replicate,
+      ncol = 1,
+      # scales = "free_y",
+      strip.position = "right"
+    ) +
+  coord_cartesian(
+      ylim = base::c(-0.1,0.1) # -250,250 # -3,3
+    ) # +
+  # ggh4x::facetted_pos_scales(
+  #   y = base::list(
+  #     type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ scale_y_continuous(
+  #         limits = base::c(-3,3)
+  #       ),
+  #     type %in% base::c("500K_N","5M_N","500K_C") ~ scale_y_continuous(
+  #         limits = base::c(0,300)
+  #       )
+  #     )
+  #   )
+ggrastr::rasterise(
+    input = plot,
+    layers = "Bar",
+    dpi = 300
+  )
+```
+
+#### Plot GATA1 enhancer: "chrX:48,787,857-48,788,321"
+```{r}
+# plot <- cage_sel %>%
+#   dplyr::mutate(
+#     type = base::factor(
+#         x = type,
+#         levels = base::c("C","N","N_10M"),
+#         ordered = TRUE
+#       ),
+#     score = dplyr::case_when(
+#         strand == "plus" ~ score*10,
+#         TRUE ~ score
+#       )
+#     ) %>%
+#   PRIME::plotTracks(., ran) +
+#     ggplot2::facet_wrap(
+#         facets = . ~ type,
+#         ncol = 1,
+#         strip.position = "right"
+#         # scales = "free_y"
+#       ) +
+#     ggh4x::facetted_pos_scales(
+#       y = base::list(
+#         type %in% base::c("C","N","N_10M") ~ scale_y_continuous(
+#             limits = base::c(-7.5,7.5),
+#             breaks = base::c(-5,0,5),
+#             labels = base::c(-5,0,0.5)
+#           )
+#         )
+#       )
+# ggrastr::rasterise(
+#     input = plot,
+#     layers = "Bar",
+#     dpi = 300
+#   )
+```
+
+## Print data
+```{r eval=FALSE}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("trackHubFiles/plots/"),
+        base::format(base::Sys.time(), "%Y%m%d"),
+        # "_GATA1", "_RAPGEF2"
+        # "_TMSB4X", "_ZMYND8", "_ARL4A",
+        "_RAPGEF2",
+        # "_K562CTSSPool", "_Gm12878CTSSPool",
+        # "_enhancer", "_gene", "_promoter", _genewider, "_PROMPT"
+        "_PROMPT_v2",
+        out,
+        ".pdf"
+      ),
+    plot = ggplot2::last_plot(),
+    device = "pdf",
+    dpi = 300,
+    width = 2, # 2.5 # 8
+    height = 5
+  )
+```
+
+#### Plot MYC example (20260408)
+```{r}
+# plot <- PRIME::plotTracks(cage_sel, ran) +
+#   ggplot2::facet_wrap(
+#       facets = . ~ type,
+#       ncol = 1,
+#       # scales = "free_y",
+#       strip.position = "right"
+#     ) # +
+#   # ggh4x::facetted_pos_scales(
+#   #   y = base::list(
+#   #     type %in% base::c("C","N","N_10M") ~ scale_y_continuous(
+#   #         limits = base::c(-5,5)
+#   #       )
+#   #     )
+#   #   )
+# ggrastr::rasterise(
+#     input = plot,
+#     layers = "Bar",
+#     dpi = 300
+#   )
+```
+
+#### Plot MYC example (20260501)
+```{r}
+cage_sel <- cage_sel %>%
+  dplyr::filter(!(type == "HCT116" & sample == "N"))
+
+plot <- PRIME::plotTracks(cage_sel, ran) +
+  ggplot2::facet_wrap(
+      facets = . ~ type + sample,
+      ncol = 1,
+      # scales = "free_y",
+      strip.position = "right"
+    ) +
+  coord_cartesian(
+      ylim = base::c(-0.25,0.25)
+    ) +
+  scale_y_continuous(
+      labels = base::c(-0.2,0,0.2),
+      breaks = base::c(-0.2,0,0.2)
+    )
+  # theme(
+  #     aspect.ratio = 1
+  #   ) # +
+  # geom_rect(
+  #     inherit.aes = FALSE,
+  #     data = tibble::tibble(
+  #         start = base::c(129690933, 129692279),
+  #         end = base::c(129691317, 129693646)
+  #       ),
+  #     mapping = aes(
+  #         xmin = start,
+  #         xmax = end
+  #       ),
+  #     ymin = -2,
+  #     ymax = 0.5,
+  #     fill = "grey",
+  #     alpha = 0.5
+  #   )
+  # geom_rect(
+  #     inherit.aes = FALSE,
+  #     data = mycs,
+  #     mapping = aes(
+  #         xmin = start,
+  #         xmax = end
+  #       ),
+  #     ymin = -5,
+  #     ymax = 5,
+  #     fill = "grey",
+  #     alpha = 0.5
+  #   )
+  # ggh4x::facetted_pos_scales(
+  #   y = base::list(
+  #     type %in% base::c("C","N","N_10M") ~ scale_y_continuous(
+  #         limits = base::c(-5,5)
+  #       )
+  #     )
+  #   )
+ggrastr::rasterise(
+    input = plot,
+    layers = "Bar",
+    dpi = 300
+  )
+```
+
+#### Plot ProbeSet enhancers (20260505)
+```{r}
+# cage_sel <- cage_sel %>%
+#   dplyr::filter(!(type == "HCT116" & sample == "N"))
+# 
+# probes <- tibble::tibble(
+#     start = base::c(509242, 509408),
+#     end = base::c(509391, 509557),
+#     sample = base::c("N_10M","N_10M"),
+#     type = base::c("K562","K562")
+#   )
+```
+
+```{r}
+probes <- enhs %>%
+  dplyr::select(-comment) %>% 
+  drop_na() %>% 
+  tidyr::pivot_longer(
+      cols = tidyselect::contains("_"),
+      names_to = "position",
+      values_to = "coordinate"
+    ) %>%
+  tidyr::separate(
+      col = "position",
+      into = base::c("strand","position"),
+      sep = "_"
+    ) %>%
+  dplyr::select(
+      "loc","strand","position","coordinate"
+    ) %>% 
+  tidyr::pivot_wider(
+      names_from = "position",
+      values_from = "coordinate"
+    ) %>%
+  dplyr::mutate(
+      sample ="N_10M",
+      type = "K562"
+    ) %>%
+  dplyr::filter(
+      loc == l_
+    )
+
+probes
+```
+
+```{r}
+cage_sel <- cage_sel %>%
+  dplyr::filter(!(type == "HCT116" & sample == "N"))
+
+plot <- PRIME::plotTracks(cage_sel, ran) +
+  ggplot2::facet_wrap(
+      facets = . ~ type + sample,
+      ncol = 1,
+      # scales = "free_y",
+      strip.position = "right"
+    ) +
+  coord_cartesian(
+      ylim = base::c(-0.25,0.25)
+    ) +
+  scale_y_continuous(
+      labels = base::c(-0.2,0,0.2),
+      breaks = base::c(-0.2,0,0.2)
+    ) +
+  geom_rect(
+      inherit.aes = FALSE,
+      data = probes,
+      mapping = aes(
+          xmin = start,
+          xmax = end
+        ),
+      ymin = -0.2,
+      ymax = -0.1,
+      fill = "grey",
+      alpha = 0.5
+    )
+
+ggrastr::rasterise(
+    input = plot,
+    layers = "Bar",
+    dpi = 300
+  )
+```
+
+## Print data
+```{r eval=FALSE}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("trackHubFiles/plots/"),
+        base::format(base::Sys.time(), "%Y%m%d"),
+        # "_GATA1", "_MYC"
+        "_probeSites",
+        # "_K562CTSSPool", "_AllCellCTSSsPool"
+        "_AllCellCTSSsPool",
+        # "_enhancer", "_gene", "_e1", "_e2", "_e3_e4", "_e5", "_e6_e7",
+        # "_PC91", "_HT292", "_PC92", "_PC93", "_PC94", "_PC95", "_PVT1",
+        # "_A3751", "_A3752", "_A3753", "_A3754", "_A3755", "_MDA1", "_MDA2",
+        # "_A5493", "_HepG21", "_HCT1161"
+        out,
+        ".pdf"
+      ),
+    plot = ggplot2::last_plot(),
+    device = "pdf",
+    dpi = 300,
+    width = 2.5, # 2.5 # 8
+    height = 6
+  )
+```
+
+```{r}
+probes_seqs <- enhs %>%
+  dplyr::select(-comment) %>% 
+  drop_na() %>% 
+  tidyr::pivot_longer(
+      cols = tidyselect::contains("_"),
+      names_to = "position",
+      values_to = "coordinate"
+    ) %>%
+  tidyr::separate(
+      col = "position",
+      into = base::c("strand","position"),
+      sep = "_"
+    ) %>% 
+  dplyr::select(
+      "sample","loc","position","coordinate",
+      "type","reference","seqname","strand"
+    ) %>% 
+  tidyr::pivot_wider(
+      names_from = "position",
+      values_from = "coordinate"
+    ) %>%
+  dplyr::rename(
+      names = "seqname",
+      enhancer_coordinates = "loc",
+      enhancer_type = "type"
+    ) %>%
+  dplyr::mutate(
+    strand = dplyr::case_when(
+        strand == "minus" ~ "-",
+        strand == "plus" ~ "+",
+        TRUE ~ strand
+      ),
+    probe_coordinates = base::paste0(names,":",start,"-",end),
+    probe_seq = purrr::pmap(
+        .l = base::list(
+            names, start, end, strand
+          ),
+       .f = Biostrings::getSeq,
+        x = Hsapiens,
+        width = NA,
+        as.character = TRUE
+      ),
+    probe_seq = base::unlist(probe_seq)
+  )
+probes_seqs
+```
+
+#### Evaluate
+```{r}
+probes_seqs %>%
+  dplyr::filter(row_number() == 46) %>%
+  dplyr::pull(probe_seq)
+```
+
+#### Write out
+```{r}
+utils::write.table(
+    x = probes_seqs,
+    file = base::paste0(
+        here::here("0.External_resources/"),
+        base::format(base::Sys.Date(), "%Y%m%d"),
+        "_enhancers_K562_v1",
+        ".tsv"
+      ),
+    quote = FALSE,
+    sep = "\t",
+    eol = "\n",
+    row.names = FALSE,
+    col.names = TRUE
+  )
+```
+
+
+```{r}
+# plot <- cage_sel %>%
+#   dplyr::filter(
+#       sample != "GM12878_10M_Cap_align"
+#     ) %>% 
+#   dplyr::mutate(
+#     type = base::factor(
+#         x = type,
+#         levels = base::c("500K_C","500K_N","5M_N","1M_trip","1M_ctrl","groCap","10M_Cap_align"),
+#         ordered = TRUE
+#       ),
+#     score = dplyr::case_when(
+#         strand == "minus" & type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ score,
+#         strand == "minus" & type %in% base::c("500K_N","5M_N","500K_C") ~ score*200,
+#         TRUE ~ score
+#       )
+#     ) %>%
+#   PRIME::plotTracks(., ran) +
+#     ggplot2::facet_wrap(
+#         facets = . ~ type,
+#         ncol = 1,
+#         strip.position = "right",
+#         scales = "free_y"
+#       ) +
+#     ggh4x::facetted_pos_scales(
+#       y = base::list(
+#         type %in% base::c("10M_Cap_align","1M_trip","1M_ctrl","groCap") ~ scale_y_continuous(
+#             limits = base::c(-3,3)
+#           ),
+#         type %in% base::c("500K_N","5M_N","500K_C") ~ scale_y_continuous(
+#             limits = base::c(-300,300),
+#             breaks = base::c(-200,0,200),
+#             labels = base::c(-1,0,200)
+#           )
+#         )
+#       )
+# ggrastr::rasterise(
+#     input = plot,
+#     layers = "Bar",
+#     dpi = 300
+#   )
+```
+
+## [5.1.] Print data
+```{r eval=FALSE}
+# for(ext in c("pdf", "png")){
+#     ggplot2::ggsave(
+#       filename = base::paste0(
+#           here::here("trackHubFiles/"),
+#           format(Sys.time(), "%Y%m%d"),
+#           out,
+#           # "_enh2",
+#           "_500k5M",
+#           "_TmmTpm",
+#           ".", ext
+#         ),
+#       plot = ggplot2::last_plot(),
+#       device = ext,
+#       dpi = 300,
+#       width = 4,
+#       height = 8
+#     )
+#   }
+```
+
+## [5.2.] E.g., APOC1 example (ABO)
+#### see [4.10.] in "10.3.Cell_line_vs_trait_enrichment.Rmd"
+```{r}
+sites_ <- base::readRDS(
+  file = base::list.files(
+        path = here::here("10.External_validation"),
+        full.names = TRUE
+      ) %>%
+    stringr::str_subset("ApoB.rds")
+    # stringr::str_subset("MCHC.rds")
+  )
+```
+
+## E.g., Filter out ApoB-related genetic variants in the vicinity of APOC1 gene (ABO)
+#### see also [2.3.] for 'start_pos' and 'end_pos' objects
+```{r warning=FALSE}
+chr <- GenomeInfoDb::seqnames(ran) %>%
+  base::as.character()
+start_pos <- BiocGenerics::start(ran)
+end_pos <- BiocGenerics::end(ran)
+
+sites <- sites_ %>% 
+  tidyr::pivot_wider( # 218
+      names_from = "cell.line",
+      values_from = "score"
+    ) %>%
+  # dplyr::filter(
+  #     stringr::str_detect(variant, "chr19:44")
+  #   ) %>%
+  tidyr::separate(
+      col = variant,
+      sep = ":",
+      into = base::c("chrom","start","end","gv"),
+      convert = TRUE
+    ) %>%
+  dplyr::filter(
+      chrom == chr & start > start_pos & end < end_pos,
+    ) %>%
+  dplyr::mutate(
+      end = start
+    ) %>% 
+  # dplyr::select(chrom, start, gv) %>% 
+  GenomicRanges::makeGRangesFromDataFrame()
+  # dplyr::mutate(
+  #     start = base::as.double(start) - extend,
+  #     end = base::as.double(end) + extend
+  #   ) %>% 
+  # dplyr::select(start, end)
+```
+
+#### see [1.0.-1.4.], especially [1.2.1.] in "10.3.Cell_line_vs_trait_enrichment.Rmd" for 'unfiltered.PRIME'-object
+#### Alternative: Use IRanges::reduce() on olap from unfiltered.PRIME and filter for the highest PRIME score
+#### evaluate with 'n = "HepG2_N"' # 61,589
+
+#### Pooled PRIME data
+```{r}
+sites_scores_ <- purrr::map_dfr(
+  .x = base::names(pooled.PRIME),
+  .f = function(n){
+    pd <- pooled.PRIME[[n]]
+    olap <- IRanges::findOverlaps(
+        query = sites,
+        subject = pd,
+        minoverlap = 1
+      )
+    return(
+      pd[S4Vectors::subjectHits(olap),] %>%
+        tibble::as_tibble() %>%
+        dplyr::mutate(
+            type = stringr::str_replace(n,"(.*?)_.*","\\1"),
+            sample = stringr::str_replace(n,"(.*?)_(.*)","\\2")
+          )
+      )
+    }
+  )
+```
+
+#### Unfiltered PRIME data
+```{r}
+sites_scores_ <- purrr::map_dfr(
+  .x = base::names(unfiltered.PRIME),
+  .f = function(n){
+    pd <- unfiltered.PRIME[[n]]
+    olap <- IRanges::findOverlaps(
+        query = sites,
+        subject = pd,
+        minoverlap = 1
+      )
+    
+    gr <- pd[S4Vectors::subjectHits(olap),]
+    out <- IRanges::reduce(x = gr, with.revmap = TRUE)
+    S4Vectors::mcols(out)$score <- base::do.call(
+          what = rbind,
+          args = base::lapply(
+            X = S4Vectors::mcols(out)$revmap,
+            FUN = function(i) {
+              base::max(S4Vectors::mcols(gr)$score[i])
+            }
+          )
+        )
+    
+    return(
+      out %>%
+        tibble::as_tibble() %>%
+        dplyr::mutate(
+            type = stringr::str_replace(n,"(.*?)_.*","\\1"),
+            sample = stringr::str_replace(n,"(.*?)_(.*)","\\2")
+          )
+      )
+    }
+  )
+```
+
+#### Cut sites to plotted range
+```{r}
+sites_scores <- sites_scores_ %>%
+  dplyr::mutate(
+    start = dplyr::case_when(
+        start <= start_pos ~ start_pos,
+        .default = start
+      ),
+    end = dplyr::case_when(
+        end >= end_pos ~ end_pos,
+        .default = end
+      )
+    )
+```
+
+#### Plot data
+```{r}
+# base::range(cage_sel$score)
+minY = base::range(cage_sel$score)[1] # -2.1 # -0.5 # -0.15
+maxY = base::range(cage_sel$score)[2] # 2.1 # 0.5 # 0.15
+coef = 0.75
+cols <- base::c(
+  grDevices::colorRampPalette(
+      base::c("#e7f0fa", "#c9e2f6", "#95cbee", "#0099dc", "#4ab04a", "#ffd73e")
+    )(coef*100),
+  grDevices::colorRampPalette(
+      c("#eec73a", "#e29421", "#e29421", "#f05336","#ce472e"),
+      bias=2
+    )((1-coef)*100)
+  )
+
+plot_ <- PRIME::plotTracks(cage_sel, ran) +
+  geom_rect(
+      inherit.aes = FALSE,
+      data = sites_scores,
+      mapping = aes(
+          xmin = start,
+          xmax = end,
+          fill = score
+        ),
+      ymin = minY,
+      ymax = maxY,
+      # fill = "grey",
+      alpha = 0.5
+    ) +
+  facet_wrap(
+      facets = . ~ type + sample,
+      ncol = 1,
+      strip.position = "right",
+      scales = "fixed" #"fixed" "free_y"
+    ) +
+  scale_fill_gradientn(
+      limits = base::c(0,1),
+      colours = cols
+    ) +
+  ylim(minY,maxY)  +
+  guides(
+      fill = guide_colourbar(
+        label.position = "right",
+        title = NULL,
+        title.position = "left",
+        title.theme = element_text(
+            angle = 90,
+            hjust = 0.5
+          ),
+        ticks=T,
+        nbin=100,
+        barheight=10,
+        label=T,
+        barwidth=0.5
+      )
+    ) # +
+  # theme(
+  #     aspect.ratio = 0.8
+  #   )
+  
+plot <- ggrastr::rasterise(
+    input = plot_,
+    layers = "Bar",
+    dpi = 300
+  )
+plot
+```
+
+## Print data
+```{r eval=FALSE}
+for(ext in c("pdf", "png")){
+    ggplot2::ggsave(
+      filename = base::paste0(
+          here::here("trackHubFiles/"),
+          base::format(base::Sys.time(), "%Y%m%d"),
+          # "_ABOprimelocus",
+          # "_LPLprimelocus",
+          # "_LIPCprimeloci",
+          "_ABCA7primelocus",
+          # "_TMPRSS6primelocus",
+          "_unfilteredPRIMEloci",
+          out,
+          ".", ext
+        ),
+      plot = ggplot2::last_plot(),
+      device = ext,
+      dpi = 300,
+      width = 8,
+      height = 4
+    )
+  }
+```
+
+## [5.3.] Plot c-KIT & KLF6 (Fig6)
+```{r}
+varPL <- base::readRDS(
+  file  = base::list.files(
+        path = here::here("11.LDSC_FANTOM5_copy"),
+        full.names = TRUE
+      ) %>%
+    stringr::str_subset("rds") %>%
+    stringr::str_subset("varPL") %>%
+    stringr::str_subset("_AllImmuneCells")
+  )
+```
+
+```{r}
+icPL <- base::readRDS(
+  file  = base::list.files(
+        path = here::here("11.LDSC_FANTOM5_copy"),
+        full.names = TRUE
+      ) %>%
+    stringr::str_subset("rds") %>%
+    stringr::str_subset("20260305_icPL_AllImmuneCells") # 2,056,763
+    # stringr::str_subset("20260305_icPL_KidneyRelatedCells") # 2,772,597
+    # stringr::str_subset("20260311_icPL_AllImuneNeutrophilFABM6") # 2,258,436
+    # stringr::str_subset("20260311_icPL_ACOT11") # 3,762,040
+    # stringr::str_subset("20260311_icPL_NCOR2") # 2,381,852
+    # stringr::str_subset("20260311_icPL_TRDMT1") # 3,493,705
+    # stringr::str_subset("20260312_icPL_IKFZ3") # 2,243,878
+  )
+```
+
+#### Evaluate
+```{r}
+# chrom = "chr15"
+# start_pos = 67121091
+# end_pos = 67121491
+# 
+# icPL %>%
+#   dplyr::filter(
+#       chr == chrom & start >= start_pos & end <= end_pos
+#     )
+```
+
+#### Evaluate with 'dplyr::filter(varPL, Gene_symbol == "CMA1")'
+#### 'dplyr::distinct(seqnames,start,end,PL,.keep_all = TRUE)'
+```{r}
+chrom <- GenomeInfoDb::seqnames(ran) %>%
+  base::as.character()
+start_pos <- BiocGenerics::start(ran)
+end_pos <- BiocGenerics::end(ran)
+
+sites_scores <- icPL %>% # varPL # icPL
+  dplyr::filter(
+      chr == chrom & start >= start_pos & end <= end_pos &
+      PL >= 0.75
+      # base::abs(Z) > 2
+    ) %>%
+  # dplyr::mutate(
+  #     cell = case_when(
+  #       cell == "acute.myeloid.leukemia.FAB.M6" ~ "acute_myeloid_leukemia_(FAB_M6)",
+  #       cell == "B.lymphoblastoid" ~ "B_lymphoblastoid",
+  #       cell == "chronic.myelogenous.leukemia" ~ "chronic_myelogenous_leukemia",
+  #       cell == "epitheloid.carcinoma" ~ "epitheloid_carcinoma",
+  #       cell == "Hep.2" ~ "Hep-2",
+  #       cell == "kidney.epithelial.cell" ~ "kidney epithelial cell",
+  #       cell == "mast.cell" ~ "mast cell",
+  #       cell == "mesenchymal.cell" ~ "mesenchymal cell",
+  #       cell == "natural.killer.cell" ~ "natural killer cell",
+  #       cell == "skin.fibroblast" ~ "skin fibroblast",
+  #       cell == "small.cell.lung.carcinoma" ~ "small_cell_lung_carcinoma",
+  #       cell == "vascular.associated.smooth.muscle.cell" ~ "vascular associated smooth muscle cell",
+  #       cell == "cervical.cancer" ~ "cervical_cancer",
+  #       cell == "Hep.2" ~ "Hep-2",
+  #       TRUE ~ cell
+  #     )
+  #   ) %>%
+  dplyr::mutate(
+      sample = stringr::str_replace_all(cell, "\\.", " ")
+    )
+```
+
+#### cage_sel <- cage_sel_
+#### facets_sel <- base::c("dendritic cell", "mast cell", "monocyte", "reticulocyte", "T cell", "neutrophil", "acute_myeloid_leukemia_(FAB_M6)")
+```{r}
+minY = -20 # -50 # -500 # base::range(cage_sel_$score)[1]
+maxY = 20 # 50 # 500 # base::range(cage_sel_$score)[2]
+
+coef = 0.75
+cols <- base::c(
+  grDevices::colorRampPalette(
+      base::c("#e7f0fa", "#c9e2f6", "#95cbee", "#0099dc", "#4ab04a", "#ffd73e")
+    )(coef*100),
+  grDevices::colorRampPalette(
+      c("#eec73a", "#e29421", "#e29421", "#f05336","#ce472e"),
+      bias=2
+    )((1-coef)*100)
+  )
+
+plot <- cage_sel %>%
+  dplyr::mutate(
+    sample = base::factor(
+        x = sample,
+        levels = facets_sel, # facets_sel_ # facets_sel
+        ordered = TRUE
+      )
+    ) %>%
+  PRIME::plotTracks(., ran) +
+  geom_rect(
+      inherit.aes = FALSE,
+      data = sites_scores,
+      mapping = aes(
+          xmin = start,
+          xmax = end,
+          fill = PL
+        ),
+      ymin = minY,
+      ymax = maxY,
+      # fill = "grey",
+      alpha = 0.5
+    ) +
+  # facet_wrap(
+  #     facets = . ~ sample,
+  #     ncol = 1,
+  #     strip.position = "right",
+  #     scales = "fixed" #"fixed" "free_y"
+  #   ) +
+  scale_y_continuous(
+      limits = base::c(minY,maxY),
+      breaks = base::seq(minY,maxY,(maxY-minY)/4)
+    ) +
+  scale_fill_gradientn(
+      limits = base::c(0.0,1.0),
+      colours = cols
+    )
+   
+ggrastr::rasterise(
+    input = plot,
+    layers = "Bar",
+    dpi = 300
+  )
+```
+
+## Print data
+```{r eval=FALSE}
+ext  = "pdf" # "png"
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("trackHubFiles/plots/"),
+        base::format(base::Sys.time(), "%Y%m%d"),
+        # "_KLF6", "_cKit", "_CCL1", "_OR2AT4", "_CMA1", "_SMAD3", "_GATA3",
+        # "_SLC18A2", "_PAX8", "_SPTBN1",
+        # "_NCOR2", "_ACOT11", "_CD82", "_TRDMT1", "_IKFZ3",
+        "_CMA1",
+        # "_gene", "_enhancer", "_geneWider", "_enhancerMore",
+        "_gene",
+        out,
+        # "_v1", "_v2",
+        "_v3",
+        ".", ext
+      ),
+    plot = ggplot2::last_plot(),
+    device = ext,
+    dpi = 300,
+    width = 8, # 8, # 2.5,
+    height = 4 # 4 # 8
+  )
+```
+
+## [5.4.] Plot MYC example (20260506)
+#### see [1.0.-1.4.], especially [1.2.1.] in "10.3.Cell_line_vs_trait_enrichment.Rmd" for 'unfiltered.PRIME'-object
+#### Alternative: Use IRanges::reduce() on olap from unfiltered.PRIME and filter for the highest PRIME score
+#### evaluate with 'n = "HepG2_N"' # 61,589
+
+#### Pooled PRIME data
+```{r}
+sites_scores_ <- purrr::map_dfr(
+  .x = base::names(pooled.PRIME),
+  .f = function(n){
+    pd <- pooled.PRIME[[n]]
+    olap <- IRanges::findOverlaps(
+        query = ran,
+        subject = pd,
+        minoverlap = 1
+      )
+    return(
+      pd[S4Vectors::subjectHits(olap),] %>%
+        tibble::as_tibble() %>%
+        dplyr::mutate(
+            type = stringr::str_replace(n,"(.*?)_.*","\\1"),
+            sample = stringr::str_replace(n,"(.*?)_(.*)","\\2")
+          )
+      )
+    }
+  )
+sites_scores_
+```
+
+#### Cut sites to plotted range
+```{r}
+sites_scores <- sites_scores_ %>%
+  dplyr::mutate(
+    start = dplyr::case_when(
+        start <= start_pos ~ start_pos,
+        .default = start
+      ),
+    end = dplyr::case_when(
+        end >= end_pos ~ end_pos,
+        .default = end
+      )
+    )
+sites_scores
+```
+
+```{r}
+minY = -0.5  # -0.3 # -5 # base::range(cage_sel$score)[1]
+maxY = 0.5  # 0.3 # 5 # base::range(cage_sel$score)[2]
+
+coef = 0.75
+cols <- base::c(
+  grDevices::colorRampPalette(
+      base::c("#e7f0fa", "#c9e2f6", "#95cbee", "#0099dc", "#4ab04a", "#ffd73e")
+    )(coef*100),
+  grDevices::colorRampPalette(
+      c("#eec73a", "#e29421", "#e29421", "#f05336","#ce472e"),
+      bias=2
+    )((1-coef)*100)
+  )
+
+cage_sel <- cage_sel %>%
+  dplyr::filter(!(type == "HCT116" & sample == "N"))
+
+plot <- PRIME::plotTracks(cage_sel, ran) +
+  ggplot2::facet_wrap(
+      facets = . ~ type + sample,
+      ncol = 1,
+      # scales = "free_y",
+      strip.position = "right"
+    ) +
+  coord_cartesian(
+      ylim = base::c(minY,maxY)
+    ) +
+  # scale_y_continuous(
+  #     labels = base::c(-0.2,0,0.2),
+  #     breaks = base::c(-0.2,0,0.2)
+  #   ) +
+  # geom_rect(
+  #     inherit.aes = FALSE,
+  #     data = mycs, # <- MYC enhancers
+  #     mapping = aes(
+  #         xmin = start,
+  #         xmax = end
+  #       ),
+  #     ymin = minY,
+  #     ymax = maxY,
+  #     fill = "grey",
+  #     alpha = 0.5
+  #   ) +
+  geom_rect(
+      inherit.aes = FALSE,
+      data = sites_scores,  # <- PRIME loci
+      mapping = aes(
+          xmin = start,
+          xmax = end,
+          fill = score
+        ),
+      ymin = minY,
+      ymax = maxY,
+      alpha = 0.5
+    ) +
+  scale_fill_gradientn(
+      limits = base::c(0,1),
+      colours = cols
+    ) +
+  theme(
+      aspect.ratio = 1,
+      legend.position = "none"
+    )
+
+ggrastr::rasterise(
+    input = plot,
+    layers = "Bar",
+    dpi = 300
+  )
+```
+
+## Print data
+```{r eval=FALSE}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("trackHubFiles/plots/"),
+        base::format(base::Sys.time(), "%Y%m%d"),
+        "_MYC",
+        "_AllCellCTSSsPool",
+        # "_enhancer", "_gene", "_e1", "_e2", "_e3_e4", "_e5", "_e6_e7",
+        # "_PC91", "_HT292", "_PC92", "_PC93", "_PC94", "_PC95", "_PVT1",
+        # "_A3751", "_A3752", "_A3753", "_A3754", "_A3755", "_MDA1", "_MDA2",
+        # "_A5493", "_HepG21", "_HCT1161"
+        "_PC91_subset",
+        out,
+        "_v2",
+        ".pdf"
+      ),
+    plot = ggplot2::last_plot(),
+    device = "pdf",
+    dpi = 300,
+    width = 3, # 2.5 # 8
+    height = 6
+  )
+```
+
+## [6.] Genomic_landscape -------------------------
+
+## [6.0.] Plot genomic environment
+#### evaluate with 'columns(txdb)'
+```{r}
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+
+start_pos <- BiocGenerics::start(ran)
+end_pos <- BiocGenerics::end(ran)
+
+# BiocManager::install("ggbio", version = '3.16')
+
+plot_land <- ggbio::autoplot(
+      object = txdb,
+      which = ran,
+      truncate.gaps = FALSE,
+      truncate.fun = NA,
+      stat = "identity",
+      label = FALSE
+    ) +
+  scale_x_continuous(
+      limits = base::c(start_pos,end_pos)
+    ) +
+  theme_bw() +
+  theme(
+      plot.margin = grid::unit(base::c(0.05,0,0,0), "lines")
+    )
+base::print(plot_land)
+```
+
+## [6.1.] Align genomic landscape and score plot
+```{r}
+g <- ggplot2::ggplotGrob(plot)
+l <- ggplot2::ggplotGrob(plot_land@ggplot)
+
+l_add <- gtable::gtable_add_cols(
+    x = l,
+    widths = grid::unit(1, "lines"),
+    pos = -1
+  )
+
+l_add$widths <- g$widths
+
+gridExtra::grid.arrange(
+    g,l_add,
+    heights = grid::unit(base::c(0.8, 0.2),"npc")
+  )
+```
+
+## [6.2.] Print data
+```{r}
+# outfile <- base::paste0(
+#     here::here("trackHubFiles/plots/"),
+#     base::format(base::Sys.time(), "%Y%m%d"),
+#     "_proximalTripGro",
+#     out,
+#     "_RAPGEF2",
+#     "_GM12878",
+#     "_poolsOnly",
+#     ".pdf"
+#   )
+# 
+# grDevices::pdf(
+#     file = outfile,
+#     width = 8,
+#     height = 4
+#   )
+# base::print(
+#     gridExtra::grid.arrange(
+#       g,l_add,
+#       heights = grid::unit(base::c(0.8, 0.2),"npc")
+#     )
+#   )
+# grDevices::dev.off()
+```
+
+```{r}
+outfile <- base::paste0(
+    here::here("trackHubFiles/plots/"),
+    base::format(base::Sys.time(), "%Y%m%d"),
+    "_APOBgene",
+    # "_ABCA7gene", # "_ABCA7enhancer",
+    # "_TMPRSS6gene", # "_TMPRSS6promoter",
+    # "_ABOgene", # "_ABOprimelocus", # "_ABOgene", # "_ABOenhancer_2",
+    # "_LPLgene", # "_LPLenhancer",
+    # "_LIPCgene",
+    # "_APOC1intergenic",
+    "_unfilteredPRIMEloci",
+    # "_pooledPRIMEloci",
+    # "_rescaled",
+    out,
+    ".pdf"
+  )
+
+grDevices::pdf(
+    file = outfile,
+    width = 8, # 4 # 8
+    height = 4 # 6 # 4
+  )
+base::print(
+    gridExtra::grid.arrange(
+      g,l_add,
+      heights = grid::unit(base::c(0.8, 0.2),"npc")
+    )
+  )
+grDevices::dev.off()
+```
+

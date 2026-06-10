@@ -1,0 +1,2811 @@
+---
+title: "10.1. K562 external validation"
+output: html_document
+date: "2024-07-01"
+---
+
+## Evaluation of predicted regulatory elements using ClinVar non-benign and non-coding variants, fine-mapped GWAS variants, fine-mapped eQTLs, and CRISPRi data.
+´
+## [0.0.] Load necessary packages
+```{r warning=TRUE, message=TRUE}
+base::library(tidyverse)
+utils::packageVersion("ggplot2")
+base::library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+base::library(UpSetR)
+```
+
+## [0.1.] Add custom color palettes
+```{r}
+col.scheme <- base::c(
+    "#377eb8","#d39200","#93aa00",
+    "#4daf4a","#984ea3","#ff7f01",
+    "#e41b1c","#256866","#f8bc24",
+    "grey","black","hotpink",
+    "darkblue" # ENCODE_rE2G
+  )
+```
+
+## [1.] Read in & prepare data -------------------------
+
+## [1.0.] Read in CDSs from txdb
+```{r}
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+cds <- base::unlist(GenomicFeatures::cdsBy(txdb,"gene"))
+cds <- BiocGenerics::sort(cds)
+```
+
+## [1.1.] Overlap CDSs with background SNPs (9,913,974 unique autosomal SNP locations)
+#### Remove SNPs overlapping with CDSs
+```{r}
+## Read in SNP.file
+SNP.data <- rtracklayer::import.bed( # 9.991.229
+   con = base::paste0(
+       here::here("0.External_resources/"),
+       "all.bg.SNPs.hg38.baseline.v1.1.bed.sorted"
+     )
+  )
+SNP.data <- BiocGenerics::sort(SNP.data)
+olap <- GenomicRanges::findOverlaps( ## 93.742
+    query = SNP.data,
+    subject = cds,
+    minoverlap = 1L
+  )
+SNP.data$name <- NULL
+SNP.data <- base::unique( # 9.914.129
+    SNP.data[-S4Vectors::queryHits(olap)]
+  )
+GenomeInfoDb::seqlevels(txdb, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+```
+
+## [1.2.] Read in promoters from txdb
+```{r}
+promoters <- IRanges::promoters(
+    x = txdb,
+    upstream = 500,
+    downstream = 500
+  )
+```
+
+## [1.3.] Annotate identified PRIME loci by txdb annotated promoters into proximal (overlapping with promoter) or distal
+## PRIME loci, pooled replicates; evaluate with n = "K562_sld_C" # 4.049.578
+```{r}
+resize.width = 200
+pooled.PRIME.files <- base::c(
+    "K562_sld_C" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_C.bed"),
+    "K562_sld_N" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N.bed"),
+    "K562_sld_10M_N" = here::here("8.Genomewide_prediction/K562_sld_on_PRIMEloci1.0_N_10M.bed")
+  )
+
+pooled.PRIME <- base::lapply(
+  X = base::names(pooled.PRIME.files),
+  FUN = function(n) {
+      gr <- readr::read_tsv( # # 4.049.578
+          file = pooled.PRIME.files[n],
+          show_col_types = FALSE
+        )
+      score <- gr$score # # 4.049.578
+      gr <- GenomicRanges::makeGRangesFromDataFrame(gr[,1:3]) # 4.049.578
+      gr$score <- score
+      GenomeInfoDb::seqlevels(gr, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data) # 3.915.085
+      gr <- IRanges::resize(
+          x = gr,
+          width = resize.width,
+          fix = "center"
+        )
+      pc <- base::rep("distal", base::length(gr))
+      olap <- GenomicRanges::findOverlaps(
+          query = gr,
+          subject = promoters,
+          minoverlap = 1
+        )
+      pc[S4Vectors::queryHits(olap)] <- "proximal"
+      gr$class <- pc
+      return(gr)
+    }
+  )
+base::names(pooled.PRIME) <- base::names(pooled.PRIME.files)
+```
+
+## [1.4.] Annotate identified Divergent loci by txdb annotated promoters into proximal (overlapping with promoter) or distal
+```{r}
+pooled.DLs <- base::readRDS(
+    file = base::paste0(
+      here::here("3.DivergentLoci/"),
+      #"poolSub.k562.summitDLs.rmSingletons.rds"
+      "poolSub.K562.DLs.FANTOM5style.rds"
+    )
+  )
+pooled.DLs[[1]]$sample <- "K562_C"
+pooled.DLs[[2]]$sample <- "K562_N"
+pooled.DLs[[3]]$sample <- "K562_N_10M"
+if (base::is.list(pooled.DLs)) {
+  pooled.DLs <- base::do.call(
+      what = "c",
+      args = pooled.DLs
+    )
+  }
+GenomeInfoDb::seqlevels(pooled.DLs, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+pooled.DLs <- pooled.DLs[pooled.DLs$sample %in% base::c("K562_C","K562_N")] # 104.105
+
+resize.width = 200
+pooled.DLs <- IRanges::resize(
+    x = pooled.DLs,
+    width = resize.width,
+    fix = "center"
+  )
+dlc <- base::rep("distal",base::length(pooled.DLs))
+olap <- GenomicRanges::findOverlaps(
+    query = pooled.DLs,
+    subject = promoters,
+    minoverlap = 1
+  )
+dlc[S4Vectors::queryHits(olap)] <- "proximal"
+pooled.DLs$class <- dlc # 104.105
+```
+
+## [1.5.] Read in, prepare and subset eQTL data
+```{r}
+eQTL.pip.thres = 0.5
+eQTL.data <- readr::read_tsv(
+      file = base::paste0(
+        here::here("0.External_resources/"),
+        "GTEx_30tissues_release1_pip_01_Whole_Blood.tsv"
+      ),
+    col_names = FALSE,
+    show_col_types = FALSE
+  )
+eQTL.data <- eQTL.data[,base::c(1,3)]
+base::colnames(eQTL.data) <- base::c("variant","pip")
+pos <- base::as.numeric(
+  base::sapply(
+      X = eQTL.data$variant,
+      FUN = function(n){
+          base::strsplit(n,"_")[[1]][2]
+      }
+    )
+  ) + 1
+eQTL.data <- GenomicRanges::GRanges(
+    seqnames = base::as.character(
+      base::sapply(
+        X = eQTL.data$variant,
+        FUN = function(n){
+            base::strsplit(n,"_")[[1]][1]
+          }
+        )
+      ),
+    score = eQTL.data$pip,
+    ranges = IRanges::IRanges(pos, pos)
+  )
+eQTL.data <- base::sort(eQTL.data)
+GenomeInfoDb::seqlevels(eQTL.data, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+eQTL.data <- base::subset(eQTL.data, score >= eQTL.pip.thres)
+eQTL.data$score <- NULL
+```
+
+## [1.6.] Subset eQTLs for sites outside of CDSs
+```{r}
+olap <- GenomicRanges::findOverlaps(
+    query = eQTL.data,
+    subject = cds,
+    minoverlap = 1
+  )
+eQTL.data <- base::unique(
+    eQTL.data[-S4Vectors::queryHits(olap)]
+  )
+eQTL.n <- base::length(eQTL.data)
+```
+
+## [1.7.] Read in, prepare and subset GWAS data
+```{r}
+GWAS.pip.thres = 0.2
+
+GWAS.data <- readr::read_tsv( # 66.638
+    file = base::paste0(
+        here::here("0.External_resources/"),
+        "UKBB_94traits_release1_pip01_clean_uniq_hg38.bed"
+      ),
+    col_names = FALSE,
+    show_col_types = FALSE
+  )
+base::colnames(GWAS.data) <- base::c(
+    "chr","start","end",
+    "name","score","strand",
+    "RS_id","trait","pip"
+  )
+GWAS.data <- GenomicRanges::makeGRangesFromDataFrame( # 66.638
+    df = GWAS.data,
+    keep.extra.columns = TRUE,
+    starts.in.df.are.0based = TRUE
+  )
+GWAS.data <- base::subset( # 30.743
+    GWAS.data, pip >= GWAS.pip.thres
+  )
+GenomeInfoDb::seqlevels(GWAS.data, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+```
+
+## [1.8.] Remove GWAS hits overlapping with CDSs & unwanted traits
+```{r}
+traits <- base::c(
+    "HbA1c","Hb","RBC",
+    "MCV","MCH","MCHC"
+  )
+
+olap <- GenomicRanges::findOverlaps(
+    query = GWAS.data,
+    subject = cds,
+    minoverlap = 1
+  )
+GWAS.data <- GWAS.data[-S4Vectors::queryHits(olap)]
+GWAS.data <- base::subset(GWAS.data, trait %in% traits)
+trait.count.df <- base::do.call(
+  what = "rbind",
+  args = base::lapply(
+    X = traits,
+    FUN = function(t) {
+      dat <- base::subset(GWAS.data, trait == t)
+      return(
+          base::as.data.frame(
+            base::table(dat$trait)
+          )
+        )
+      }
+    )
+  )
+
+GWAS.data$pip <- NULL
+GWAS.data$trait <- NULL
+GWAS.data <- base::unique(GWAS.data) # 2.877
+GWAS.n <- base::length(GWAS.data)
+```
+
+## [1.9.] Read in and subset ClinVar data for sites not overlapping with CDSs
+```{r}
+ClinVar.data <- readr::read_tsv(
+    file = base::paste0(
+        here::here("0.External_resources/"),
+        #"ClinVar_GRCh38_nonbenign_noncoding_SNV.tsv"
+        "clinvar/ClinVar_GRCh38_allCategories_noncoding_SNV.tsv"
+      ),
+    show_col_types = FALSE
+  )
+ClinVar.data <- GenomicRanges::makeGRangesFromDataFrame(
+    df = ClinVar.data
+  )
+GenomeInfoDb::seqlevels(ClinVar.data, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+olap <- GenomicRanges::findOverlaps(
+    query = ClinVar.data,
+    subject = cds,
+    minoverlap = 1
+  )
+if (length(S4Vectors::queryHits(olap))>0)
+  ClinVar.data <- ClinVar.data[-S4Vectors::queryHits(olap)]
+ClinVar.data <- base::sort(ClinVar.data)
+ClinVar.data <- base::unique(ClinVar.data)
+ClinVar.n <- base::length(ClinVar.data)
+```
+
+## [1.10.] Read in all PINTS data for point estimates
+```{r}
+PINTS.files <- base::c(
+    "PINTS GRO/PRO-cap distal" = here::here("0.External_resources/K562_Distal_PINTS_GRO_PRO_cap.bed"),
+    "PINTS GRO/PRO-cap proximal" = here::here("0.External_resources/K562_Proximal_PINTS_GRO_PRO_cap.bed")
+  )
+
+point.data <- base::lapply(
+  X = base::names(PINTS.files),
+  FUN = function(n){
+      rtracklayer::import.bed(PINTS.files[[n]])
+    }
+  )
+base::names(point.data) <- base::names(PINTS.files)
+
+point.data[["PINTS GRO/PRO-cap"]] <- base::c(point.data[[1]],point.data[[2]])
+```
+
+## [1.11.] Read in all dREG data for points estimates
+```{r}
+dREG.files <- base::c(
+    "dREG PRO-seq" = here::here("0.External_resources/GSE150625_PROseq_1M_K562_dREGpeaks_clean.bed"),
+    "dREG qPRO-seq" = here::here("0.External_resources/GSE150625_qPROseq_1M_K562_dREGpeaks_clean.bed")
+  )
+
+for (n in base::names(dREG.files)) {
+    gr <- rtracklayer::import.bed(con = dREG.files[n])
+    GenomeInfoDb::seqlevels(gr, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+    olap <- GenomicRanges::findOverlaps(
+        query = gr,
+        subject = promoters,
+        minoverlap = 1
+      )
+    gr.proximal <- gr[base::unique(S4Vectors::queryHits(olap))]
+    gr.distal <- gr[base::setdiff(1:base::length(gr), S4Vectors::queryHits(olap))]
+    point.data[[n]] <- gr
+    point.data[[base::paste0(n," distal")]] <- gr.distal
+    point.data[[base::paste0(n," proximal")]] <- gr.proximal
+  }
+```
+
+## [1.12.] Read in all pooled PRIME files
+#### see [1.3.] for øpooled.PRIME.filesø object
+```{r}
+PRIME.thres = 0.75
+pooled.PRIME.names <- base::c(
+    "K562_sld_C" = "PRIME CAGE cells pooled",
+    "K562_sld_N" = "PRIME CAGE nuclei pooled",
+    "K562_sld_10M_N" = "PRIME CAGE nuclei 10M pooled"
+  )
+
+for (n in base::names(pooled.PRIME.files)) {
+    gr <- readr::read_tsv(
+        file = pooled.PRIME.files[n],
+        show_col_types = FALSE
+      )
+    gr <- base::subset(gr, score >= PRIME.thres)
+    gr <- GenomicRanges::makeGRangesFromDataFrame(gr[,1:3])
+    GenomeInfoDb::seqlevels(gr, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+    olap <- IRanges::findOverlaps(
+        query = gr,
+        subject = promoters,
+        minoverlap = 1
+      )
+    gr.proximal <- gr[base::unique(S4Vectors::queryHits(olap))]
+    gr.distal <- gr[base::setdiff(1:base::length(gr), S4Vectors::queryHits(olap))]
+    point.data[[pooled.PRIME.names[n]]] <- gr
+    point.data[[base::paste0(pooled.PRIME.names[n]," distal")]] <- gr.distal
+    point.data[[base::paste0(pooled.PRIME.names[n]," proximal")]] <- gr.proximal
+  }
+```
+
+## [1.13.] Read in cCRE data for point estimates
+#### cCRE.file <- "../0.External_resources/ENCFF464BRU.bed"
+```{r}
+cCRE <- readr::read_tsv(
+    file = base::paste0(
+        here::here("0.External_resources/"),
+        "ENCFF414OGC_ENCFF806YEZ_ENCFF849TDM_ENCFF736UDR.bed"
+      ),
+    col_names = FALSE,
+    show_col_types = FALSE
+  )
+df <- cCRE[,1:3]
+base::colnames(df) <- base::c("chrom","start","end")
+cCRE.data <- GenomicRanges::makeGRangesFromDataFrame(df)
+cCRE.data$class <- cCRE[,10, drop = TRUE]
+
+for (n in base::c("dELS","PLS")) {
+   x <- base::subset(cCRE.data, class == n)
+   x$class <- NULL
+   GenomeInfoDb::seqlevels(x,pruning.mode="coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+   olap <- GenomicRanges::findOverlaps(
+       query = x,
+       subject = promoters,
+       minoverlap = 1
+     )
+   x.proximal <- x[base::unique(S4Vectors::queryHits(olap))]
+   x.distal <- x[base::setdiff(1:length(x), S4Vectors::queryHits(olap))]
+   point.data[[paste0("ENCODE cCRE ",n," distal")]] <- x.distal
+   point.data[[paste0("ENCODE cCRE ",n," proximal")]] <- x.proximal
+  }
+
+point.data[["ENCODE cCRE"]] <- base::c(
+    point.data[["ENCODE cCRE dELS distal"]],
+    point.data[["ENCODE cCRE dELS proximal"]],
+    point.data[["ENCODE cCRE PLS distal"]],
+    point.data[["ENCODE cCRE PLS proximal"]]
+  )
+```
+
+## [1.14.] Read in DHS data for point estimates for point estimates
+#### seqlevel adjustment step is missing, creating a warning in IRanges::subsetByOverlaps of [1.13.]
+```{r}
+DHS <- rtracklayer::import.bed(
+  con = base::paste0(
+      here::here("0.External_resources/"),
+      "E123-DNase.macs2.hg38.narrowPeak"
+    )
+  )
+olap <- GenomicRanges::findOverlaps(
+    query = DHS,
+    subject = promoters,
+    minoverlap = 1
+  )
+DHS.proximal <- DHS[base::unique(S4Vectors::queryHits(olap))]
+DHS.distal <- DHS[base::setdiff(1:length(DHS), S4Vectors::queryHits(olap))]
+
+point.data[["DHS"]] <- DHS
+point.data[["DHS distal"]] <- DHS.distal
+point.data[["DHS proximal"]] <- DHS.proximal
+```
+
+## [1.15.] Read in all H3K27ac data and combine with DHSs for point estimates
+#### seqlevel adjustment step is missing, creating a warning in IRanges::subsetByOverlaps
+```{r}
+k27ac <- utils::read.table(
+  file = base::paste0(
+      here::here("0.External_resources/"),
+      "ENCFF038DDS.bed"
+    )
+  )
+base::colnames(k27ac) <- base::c(
+    "chr","start","end",
+    "name","score","strand",
+    "signal_value","pvalue",
+    "qvalue","peak"
+  )
+k27ac <- GenomicRanges::GRanges(k27ac)
+GenomeInfoDb::seqlevels(k27ac,pruning.mode="coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+k27ac.dhs <- IRanges::subsetByOverlaps(
+    x = DHS,
+    ranges = k27ac
+  )
+GenomicRanges::start(k27ac) <- GenomicRanges::start(k27ac) + k27ac$peak
+GenomicRanges::end(k27ac) <- GenomicRanges::start(k27ac) + 1
+
+point.data[["K27ac DHS"]] <- k27ac.dhs
+point.data[["K27ac"]] <- k27ac
+```
+
+## [1.16.] Add ENCODE-rE2G estimates.
+```{r}
+fn <- base::paste0(
+    here::here("0.External_resources/"),
+    "ENCFF269DKY.bed"
+  )
+
+rE2G <- readr::read_delim(
+      file = fn,
+      col_names = TRUE,
+      col_types = readr::cols(
+          .default = readr::col_double(),
+          `#chr` = readr::col_character(),
+          name = readr::col_character(),
+          class = readr::col_character(),
+          TargetGene = readr::col_character(),
+          TargetGeneEnsemblID = readr::col_character(),
+          CellType = readr::col_character(),
+          isSelfPromoter = readr::col_logical(),
+          ubiquitousExpressedGene.Feature = readr::col_logical(),
+          P2PromoterClass.Feature = readr::col_logical()
+        ),
+      delim = "\t"
+    ) %>%
+  dplyr::rename(
+    seqnames = `#chr`
+  )
+
+rE2G_gr <- GenomicRanges::GRanges(rE2G)
+```
+
+```{r}
+GenomeInfoDb::seqlevels(rE2G_gr, pruning.mode = "coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+olap <- GenomicRanges::findOverlaps(
+    query = rE2G_gr,
+    subject = promoters,
+    minoverlap = 1
+  )
+rE2G_gr.proximal <- rE2G_gr[base::unique(S4Vectors::queryHits(olap))]
+rE2G_gr.distal <- rE2G_gr[base::setdiff(1:base::length(rE2G_gr), S4Vectors::queryHits(olap))]
+
+point.data[["ENCODE rE2G"]] <- rE2G_gr
+point.data[[base::paste0("ENCODE rE2G"," proximal")]] <- rE2G_gr.proximal
+point.data[[base::paste0("ENCODE rE2G"," distal")]] <- rE2G_gr.distal
+```
+
+## [1.17.] Read in FANTOM5 data for point estimates
+```{r}
+FANTOM5.id = "CNhs12334"
+
+header <- base::colnames(
+  readr::read_tsv(
+      file = base::paste0(
+          here::here("0.External_resources/"),
+          "F5.hg38.enhancers.expression.matrix.gz"
+        ),
+      n_max = 1,
+      show_col_types = FALSE
+    )
+  )
+FANTOM5.data <- readr::read_tsv(
+    file = base::paste0(
+        here::here("0.External_resources/"),
+        "F5.hg38.enhancers.expression.matrix.gz"
+      ),
+    skip = 0,
+    col_names = TRUE,
+    show_col_types = FALSE
+  )
+FANTOM5.data <- FANTOM5.data[,base::c(1,base::match(FANTOM5.id,header)+1)]
+
+FANTOM5.enhancers <- IRanges::flank(
+  x = CAGEfightR::swapRanges(
+      rtracklayer::import.bed(
+          con = base::paste0(
+            here::here("0.External_resources/"),
+            "F5.hg38.enhancers.bed.gz"
+          )
+        )
+      ),
+    width = 200,
+    both = TRUE
+  )
+FANTOM5.enhancers <- FANTOM5.enhancers[
+    FANTOM5.enhancers$name %in% tibble::deframe(FANTOM5.data[FANTOM5.data[2]>0,1])
+  ]
+point.data[["FANTOM5 enhancers"]] <- FANTOM5.enhancers
+```
+
+## [1.18.] Read in noise estimates
+```{r}
+pooled.noise.thresholds <- readr::read_csv(
+    file = base::paste0(
+        here::here("9.Noise/"),
+        "K562.poolSub.divnoise.csv"
+      ),
+    col_names = TRUE,
+    show_col_types = FALSE
+  )
+pooled.noise.thresholds <- pooled.noise.thresholds[
+    pooled.noise.thresholds[,1]=="95%",
+    base::c("K562_C","K562_N","K562_C","K562_N")
+  ]
+```
+
+## [1.19.] Subset DLs by library-specific noise estimates 
+#### see [1.4.] for pooled.DLs object
+```{r}
+pooled.DL.names <- base::c(
+    "K562_C" = "Divergent loci CAGE cells",
+    "K562_N" = "Divergent loci CAGE nuclei"
+  )
+
+for (sample in base::c("K562_C","K562_N")) {
+    gr <- pooled.DLs[pooled.DLs$sample == sample]
+    gr <- gr[base::which(gr$score > tibble::deframe(pooled.noise.thresholds[,sample]))]
+    point.data[[pooled.DL.names[sample]]] <- gr
+  
+    gr <- pooled.DLs[pooled.DLs$sample == sample & pooled.DLs$class == "distal"]
+    gr <- gr[base::which(gr$score > tibble::deframe(pooled.noise.thresholds[,sample]))]
+    point.data[[base::paste0(pooled.DL.names[sample]," distal")]] <- gr
+  
+    gr <- pooled.DLs[pooled.DLs$sample==sample & pooled.DLs$class == "proximal"]
+    gr <- gr[base::which(gr$score > tibble::deframe(pooled.noise.thresholds[,sample]))]
+    point.data[[base::paste0(pooled.DL.names[sample]," proximal")]] <- gr
+  }
+```
+
+## [1.20.] Resize all sites across all datasets
+```{r}
+resize.width = 200
+for (n in base::names(point.data)) {
+    point.data[[n]] <- base::sort(point.data[[n]])
+    GenomeInfoDb::seqlevels(point.data[[n]],pruning.mode="coarse") <- GenomeInfoDb::seqlevels(SNP.data)
+    point.data[[n]] <- IRanges::resize(
+        x = point.data[[n]],
+        width = resize.width,
+        fix = "center"
+      )
+    point.data[[n]] <- IRanges::reduce(
+        x = point.data[[n]],
+        min.gapwidth = 0
+      )
+  }
+```
+
+## [1.21.] Rename datasets
+```{r}
+point.data.assay <- base::names(point.data)
+point.data.loc <- base::rep("genome", base::length(point.data.assay))
+point.data.loc[base::grep("distal", point.data.assay)] <- "distal"
+point.data.loc[base::grep("proximal", point.data.assay)] <- "proximal"
+point.data.loc[base::which(point.data.assay == "FANTOM5 enhancers")] <- "distal"
+point.data.loc[base::which(point.data.assay == "ENCODE cCRE dELS")] <- "distal"
+point.data.loc[base::which(point.data.assay == "ENCODE cCRE PLS")] <- "proximal"
+point.data.assay <- base::gsub(
+  " distal", "", base::gsub(
+    " proximal", "", base::gsub(
+      " PLS", "", base::gsub(
+        " dELS", "", point.data.assay
+        )
+      )
+    )
+  )
+point.data.assay <- base::gsub(
+  " distal", "", base::gsub(
+    " proximal", "", point.data.assay
+    )
+  )
+base::names(point.data.assay) <- base::names(point.data.loc) <- base::names(point.data)
+```
+
+## [1.22.] Read in CRISPR data
+```{r}
+CRISPR.pos.data <- base::readRDS(
+  file = base::paste0(
+      here::here("5.EPCrisprBenchmark/"),
+      "epc_pos_gr.rds"
+    )
+  )
+CRISPR.neg.data <- base::readRDS(
+  file = base::paste0(
+      here::here("5.EPCrisprBenchmark/"),
+      "epc_neg_gr.rds"
+    )
+  )
+CRISPR.n <- base::length(CRISPR.pos.data)
+```
+
+## [1.23.] Read in DC-TAPseq data
+#### Add dc-tap-seq validations
+```{r}
+dc_tap <- readr::read_delim(
+    file = base::paste0(
+        here::here("0.External_resources/PL_dcTapSeq/"),
+        "media-3.tsv"
+      ),
+    delim = "\t"
+  )
+
+dc_tap_hg38 <- dc_tap[,base::c(2:4,9:80)]
+base::colnames(dc_tap_hg38)[1:3] <- base::c("chr","start","end")
+dc_tap_hg38 <- GenomicRanges::makeGRangesFromDataFrame(
+    df = dc_tap_hg38,
+    keep.extra.columns = TRUE
+  )
+
+dc.tap.enhancers.pos <- dc_tap_hg38[
+    dc_tap_hg38$significant == TRUE & dc_tap_hg38$cell_type == "K562",
+  ]
+dc.tap.enhancers.neg <- dc_tap_hg38[
+    dc_tap_hg38$significant == FALSE & dc_tap_hg38$cell_type == "K562",
+  ]
+
+S4Vectors::mcols(dc.tap.enhancers.pos) <- NULL 
+S4Vectors::mcols(dc.tap.enhancers.neg) <- NULL
+
+dc.tap.enhancers.pos <- base::unique(dc.tap.enhancers.pos) # 258 -> 223
+dc.tap.enhancers.neg <- base::unique(dc.tap.enhancers.neg) # 7217 -> 923
+
+dc.tap.n <- base::length(dc.tap.enhancers.pos)
+
+# For some reason a lot of them overlap
+dc.tap.enhancers.neg <- IRanges::subsetByOverlaps( # 923 -> 725
+    dc.tap.enhancers.neg,
+    dc.tap.enhancers.pos,
+    invert = TRUE
+  )
+```
+
+# [2.] Calculate precision, enrichment and recall -------------------------
+
+## [2.0.] Helper function for preparing enrichment-recall curves
+```{r}
+point.enrichment.precision.recall <- function(data, fg.data, bg.data, assay, location) {
+  
+    base::do.call(
+      what = "rbind",
+      args = base::lapply(
+        X = base::names(data),
+        FUN = function(n) {
+    
+          fg.olap <- GenomicRanges::findOverlaps(
+              query = fg.data,
+              subject = data[[n]],
+              minoverlap = 1
+            )
+          fg.count <- base::length(
+            base::unique(
+                S4Vectors::queryHits(fg.olap)
+              )
+            )
+          region.count <- base::length(
+            base::unique(
+                S4Vectors::subjectHits(fg.olap)
+              )
+            )
+          bg.olap <- GenomicRanges::findOverlaps(
+              query = bg.data,
+              subject = data[[n]],
+              minoverlap = 1
+            )
+          bg.count <- base::length(
+            base::unique(
+                S4Vectors::queryHits(bg.olap)
+              )
+            )
+          return(
+            base::data.frame(
+              enrichment = (fg.count/base::length(fg.data)) / (bg.count/base::length(bg.data)),
+              precision = fg.count/(fg.count + bg.count),
+              recall = fg.count/base::length(fg.data),
+              fg.count = fg.count,
+              bg.count = bg.count,
+              region.count = region.count,
+              sample = n,
+              assay = assay[n],
+              loc = location[n]
+            )
+          )
+        }
+      )
+    )
+  }
+```
+
+## [2.1.] Run helper function across all data modality combinations
+#### evaluate with n = "DHS proximal"
+```{r}
+point.ClinVar.df <- .GlobalEnv$point.enrichment.precision.recall(
+    data = point.data,
+    fg.data = ClinVar.data,
+    bg.data = SNP.data,
+    assay = point.data.assay,
+    location = point.data.loc
+  )
+
+point.eQTL.df <- .GlobalEnv$point.enrichment.precision.recall(
+    data = point.data,
+    fg.data = eQTL.data,
+    bg.data = SNP.data,
+    assay = point.data.assay,
+    location = point.data.loc
+  )
+
+point.GWAS.df <- .GlobalEnv$point.enrichment.precision.recall(
+    data = point.data,
+    fg.data = GWAS.data,
+    bg.data = SNP.data,
+    assay = point.data.assay,
+    location = point.data.loc
+  )
+
+point.CRISPR.df <- .GlobalEnv$point.enrichment.precision.recall(
+    data = point.data,
+    fg.data = CRISPR.pos.data,
+    bg.data = CRISPR.neg.data,
+    assay = point.data.assay,
+    location = point.data.loc
+  )
+
+point.dctap.df <- .GlobalEnv$point.enrichment.precision.recall(
+    data = point.data,
+    fg.data = dc.tap.enhancers.pos,
+    bg.data = dc.tap.enhancers.neg,
+    assay = point.data.assay,
+    location = point.data.loc
+  )
+```
+
+## [3.] Visualize ClinVar results -------------------------
+
+## [3.0.] Prepare ClinVar plotting
+```{r}
+point.ClinVar.genome.df <- base::subset(point.ClinVar.df, loc == "genome")
+point.ClinVar.non.genome.df <- base::subset(point.ClinVar.df, loc != "genome")
+
+col.scheme <- stats::setNames(
+  object = col.scheme,
+  nm = base::c(
+      "DHS","Divergent loci CAGE cells","Divergent loci CAGE nuclei",
+      "dREG PRO-seq","dREG qPRO-seq","ENCODE cCRE",
+      "PINTS GRO/PRO-cap","PRIME CAGE cells pooled","PRIME CAGE nuclei pooled",
+      "K27ac", "K27ac DHS","PRIME CAGE nuclei 10M pooled",
+      "ENCODE rE2G"
+    )
+  )
+```
+
+## [3.1.] Visualization
+```{r}
+ggplot2::ggplot(
+    data = point.ClinVar.genome.df,
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay,
+        label = sample
+      )
+    ) + 
+  geom_point() +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    ) +
+  ggrepel::geom_text_repel(
+      size = 2,
+      min.segment.length = 0,
+      color = "black"
+    ) + 
+  xlab(
+    base::paste0("recall (n=",ClinVar.n,")")) +
+  scale_color_manual(
+      values = col.scheme
+    )
+```
+
+## [3.2.] Printint plots
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_ClinVar_enrichment_vs_recall_point_estimates.pdf"
+      ),
+    width = 8,
+    height = 7,
+    device = "pdf"
+  )
+```
+
+## [3.3.] Supplementary Figure
+```{r}
+ggplot2::ggplot(
+    data = point.ClinVar.non.genome.df,
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay,
+        label = sample
+      )
+    ) + 
+  geom_point(
+    mapping = aes(
+        shape = loc
+      )
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    ) +
+  ggrepel::geom_text_repel(
+      size = 2,
+      min.segment.length = 0,
+      color = "black"
+    ) + 
+  xlab(
+    base::paste0("recall (n=",ClinVar.n,")")) +
+  scale_color_manual(
+      values = col.scheme
+    )
+```
+
+## [3.4.] Printint plots
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_ClinVar_enrichment_vs_recall_point_estimates_proximal_vs_distal.pdf"
+      ),
+    width = 8,
+    height = 7,
+    device = "pdf"
+  )
+```
+
+## [3.5.] Prepare Figure 1 E bar plots
+```{r}
+point.ClinVar.genome.df$sample <- base::factor(
+  x = point.ClinVar.genome.df$sample,
+  levels = point.ClinVar.genome.df$sample[
+      base::order(point.ClinVar.genome.df$recall, decreasing = FALSE)
+    ]
+  )
+```
+
+## [3.6.] Visualize Figure 1 E bar plots
+```{r}
+ggplot2::ggplot(
+    data = point.ClinVar.genome.df,
+    mapping = aes(
+        x = recall,
+        y = sample,
+        fill = sample
+      )
+    ) +
+  geom_bar(
+      stat = "identity"
+    ) + 
+  theme_bw() +
+  theme(
+    aspect.ratio = 1,
+    # axis.text.x = element_text(
+    #     angle = 45,
+    #     vjust = 1,
+    #     hjust = 1
+    #   )
+    axis.text.y = element_blank()
+    ) +
+  ylab(
+    base::paste0("recall (n=",ClinVar.n,")")) +
+  scale_fill_manual(
+      values = col.scheme
+    )
+```
+
+## [3.7.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_ClinVar_recall_point_estimates_bar.pdf"
+      ),
+    width = 4,
+    height = 3,
+    device = "pdf"
+  )
+```
+
+## [3.8.] Prepare Figure 1 E
+```{r}
+point.ClinVar.genome.df$sample <- base::factor(
+  x = point.ClinVar.genome.df$sample,
+  levels = point.ClinVar.genome.df$sample[
+      order(point.ClinVar.genome.df$enrichment, decreasing = FALSE)
+    ]
+  )
+```
+
+## [3.9.] Plot Figure 1 E
+```{r}
+ggplot2::ggplot(
+    data = point.ClinVar.genome.df,
+    mapping = aes(
+        x = enrichment,
+        y = sample,
+        fill = sample
+      )
+    ) +
+  geom_bar(
+      stat = "identity"
+    ) + 
+  theme_bw() +
+  theme(
+    aspect.ratio = 1,
+    # axis.text.x = element_text(
+    #     angle = 45,
+    #     vjust = 1,
+    #     hjust = 1
+    #   )
+    axis.text.y = element_blank()
+    ) +
+  ylab(
+    base::paste0("recall (n=",ClinVar.n,")")) +
+  scale_fill_manual(
+      values = col.scheme
+    )
+```
+
+## [3.10.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_ClinVar_enrichment_point_estimates_bar.pdf"
+      ),
+    width = 4,
+    height = 3,
+    device = "pdf"
+  )
+```
+
+## [3.11] Prepare bar plots for point estimates
+#### Create a new column for scaled enrichment
+```{r}
+scaling_factor <- base::max(point.ClinVar.genome.df$recall) / base::max(point.ClinVar.genome.df$enrichment)
+
+point.ClinVar.genome.df$enrichment_scaled <- point.ClinVar.genome.df$enrichment * scaling_factor
+
+point.ClinVar.genome.df_long <- point.ClinVar.genome.df %>%
+  tidyr::pivot_longer(
+      cols = base::c("recall", "enrichment_scaled"),
+      names_to = "metric",
+      values_to = "value"
+    ) %>%
+  mutate(
+    metric = base::factor(
+        x = metric,
+        levels = base::c("recall","enrichment_scaled")
+      )
+    )
+```
+
+## [3.12.] Plot using ggplot with adjusted spacing
+```{r}
+ggplot2::ggplot(
+      data = point.ClinVar.genome.df_long
+    ) +
+  geom_col(
+      mapping = aes(
+          x = sample,
+          y = value,
+          fill = sample,
+          group = metric,
+          alpha = metric  
+        ),
+      position = position_dodge(width = 0.6),  
+      color = "black",
+      width = 0.6  
+    ) +
+  # Primary Y-axis for recall and secondary Y-axis for scaled enrichment
+  scale_y_continuous(
+    name = "Recall",
+    limits = base::c(0, base::max(point.ClinVar.genome.df$recall) * 1.1),
+    sec.axis = ggplot2::sec_axis(
+        ~ . / scaling_factor,  
+        name = "Enrichment"
+      )
+    ) +
+  scale_fill_manual(
+      values = col.scheme
+    ) +
+  scale_alpha_manual(
+      values = base::c("recall" = 1, "enrichment_scaled" = 0.5)
+    ) +  # Set alpha levels for recall and enrichment
+  theme_bw() +
+  theme(
+      aspect.ratio = 1/2,
+      axis.text.x = element_text(
+          angle = 90,
+          vjust = 0.5,
+          hjust = 1
+        ),
+      axis.title.x = element_blank(),
+      axis.title.y.left = element_text(
+          color = "black"
+        ),
+      axis.title.y.right = element_text(
+          color = "black"
+        ),
+      legend.title = element_blank(),
+      legend.position = "bottom"
+    ) +
+  labs(x = "Sample", fill = "Sample") +
+  theme(legend.position = "none")
+```
+
+## [3.13.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_ClinVar_enrichment_recall_point_estimates_bar.pdf"
+      ),
+    width = 5,
+    height = 3,
+    device = "pdf"
+  )
+```
+
+## [4.] Visualize ClinVar results -------------------------
+
+## [4.1.] Plot eQTL point estimate results
+```{r}
+point.eQTL.genome.df <- subset(point.eQTL.df, loc == "genome")
+point.eQTL.non.genome.df <- subset(point.eQTL.df, loc != "genome")
+```
+
+## [4.2.] Visualization
+```{r}
+ggplot2::ggplot(
+    data = point.eQTL.genome.df,
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay,
+        label = sample
+      )
+    ) + 
+  geom_point() +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    ) +
+  ggrepel::geom_text_repel(
+      size = 2,
+      min.segment.length = 0,
+      color = "black"
+    ) + 
+  xlab(
+      base::paste0("recall (n=",eQTL.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    )
+```
+
+## [4.3.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_eQTL_enrichment_vs_recall_PIP_",
+        eQTL.pip.thres,
+        "_point_estimates.pdf"
+      ),
+    width = 5,
+    height = 3,
+    device = "pdf"
+  )
+```
+
+## [4.4.] Supplementary Figure
+#### <<important>>
+```{r}
+ggplot2::ggplot(
+    data = point.eQTL.non.genome.df,
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay,
+        label = sample
+      )
+    ) + 
+  geom_point(
+    mapping = aes(
+        shape = loc
+      )
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    ) +
+  ggrepel::geom_text_repel(
+      size = 2,
+      min.segment.length = 0,
+      color = "black"
+    ) +
+  xlab(
+      base::paste0("recall (n=",eQTL.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    )
+```
+
+## [4.5.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_eQTL_enrichment_vs_recall_PIP_",
+        eQTL.pip.thres,
+        "_point_estimates_proximal_vs_distal.pdf"
+      ),
+    width = 5,
+    height = 3,
+    device = "pdf"
+  )
+```
+
+## [4.6.] Prepare Figure 1 F
+```{r}
+point.eQTL.genome.df$sample <- base::factor(
+  x = point.eQTL.genome.df$sample,
+  levels = point.eQTL.genome.df$sample[
+      base::order(point.eQTL.genome.df$recall, decreasing = FALSE)
+    ]
+  )
+```
+
+## [4.7.] Plot Figure 1 F
+```{r}
+ggplot2::ggplot(
+  data = point.eQTL.genome.df,
+  mapping = aes(
+      y = sample,
+      x = recall,
+      fill = sample
+    )
+  ) +
+  geom_bar(
+      stat = "identity"
+    ) + 
+  ylab(
+      base::paste0("recall (n=",eQTL.n,")")
+    ) +
+  scale_fill_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+    axis.text.y = element_blank()
+    # axis.text.x = element_text(
+    #     angle = 45,
+    #     vjust = 1,
+    #     hjust = 1
+    #   )
+    )
+```
+
+## [4.8.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_eQTL_recall_PIP_",
+        eQTL.pip.thres,
+        "_point_estimates_bar.pdf"
+      ),
+    width = 5,
+    height = 3,
+    device = "pdf"
+  )
+```
+
+## [4.9.] Prepae Figure 1 F
+```{r}
+point.eQTL.genome.df$sample <- base::factor(
+  x = point.eQTL.genome.df$sample,
+  levels = point.eQTL.genome.df$sample[
+      base::order(point.eQTL.genome.df$enrichment, decreasing = FALSE)
+    ]
+  )
+```
+
+## [4.10.] Plot Figure 1F
+```{r}
+ggplot2::ggplot(
+    data = point.eQTL.genome.df,
+    mapping = aes(
+        x = enrichment,
+        y = sample,
+        fill = sample
+      )
+    ) +
+  geom_bar(
+      stat = "identity"
+    ) + 
+  theme_bw() +
+  theme(
+      # axis.text.x = element_text(
+      #     angle = 90,
+      #     vjust = 1,
+      #     hjust = 1
+      #   )
+      axis.text.y = element_blank(),
+      axis.title.y = element_blank()
+    ) +
+  scale_fill_manual(
+      values = col.scheme
+    )
+```
+
+## [4.11.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_eQTL_enrichment_PIP_",
+        eQTL.pip.thres,
+        "_point_estimates_bar.pdf"
+      ),
+    width = 5,
+    height = 3,
+    device = "pdf"
+  )
+```
+
+## [4.12.] Prepare bar plots for point estimates
+#### Create a new column for scaled enrichment
+```{r}
+scaling_factor <- base::max(point.eQTL.genome.df$recall) / base::max(point.eQTL.genome.df$enrichment)
+
+point.eQTL.genome.df$enrichment_scaled <- point.eQTL.genome.df$enrichment * scaling_factor
+
+point.eQTL.genome.df_long <- point.eQTL.genome.df %>%
+  tidyr::pivot_longer(
+      cols = base::c("recall", "enrichment_scaled"),
+      names_to = "metric",
+      values_to = "value"
+    ) %>%
+  dplyr::mutate(
+    metric = base::factor(
+        x = metric,
+        levels = base::c("recall","enrichment_scaled")
+      )
+    )
+```
+
+## [4.13.] Plot using ggplot with adjusted spacing
+```{r}
+ggplot2::ggplot(
+      data = point.eQTL.genome.df_long
+    ) +
+  geom_col(
+      mapping = aes(
+          x = sample,
+          y = value,
+          fill = sample,
+          group = metric,
+          alpha = metric  
+        ),
+      position = position_dodge(width = 0.6),  
+      color = "black",
+      width = 0.6  
+    ) +
+  # Primary Y-axis for recall and secondary Y-axis for scaled enrichment
+  scale_y_continuous(
+      name = "Recall",
+      limits = base::c(0, base::max(point.eQTL.genome.df$recall) * 1.1),
+      sec.axis = ggplot2::sec_axis(
+        transform = ~ . / scaling_factor,
+        name = "Enrichment"
+      )
+    ) +
+  scale_fill_manual(
+      values = col.scheme
+    ) +
+  scale_alpha_manual(
+      values = base::c("recall" = 1, "enrichment_scaled" = 0.5)
+    ) + 
+  labs(x = "Sample", fill = "Sample") +
+  # Set alpha levels for recall and enrichment
+  theme_bw() +
+  theme(
+      aspect.ratio = 1/2,
+      axis.text.x = element_text(
+          angle = 90,
+          vjust = 0.5,
+          hjust = 1
+        ),
+      axis.title.x = element_blank(),
+      axis.title.y.left = element_text(
+          color = "black"
+        ),
+      axis.title.y.right = element_text(
+          color = "black"
+        ),
+      legend.title = element_blank(),
+      legend.position = "none"
+    )
+```
+
+## [4.14.] Plot using ggplot with adjusted spacing
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_eQTL_enrichment_recall_point_estimates_bar.pdf"
+      ),
+    width = 5,
+    height = 3,
+    device = "pdf"
+  )
+```
+
+## [5.] Visualize GWAS results -------------------------
+
+## [5.0.] Plot GWAS point estimate results
+```{r}
+point.GWAS.genome.df <- base::subset(point.GWAS.df, loc == "genome")
+point.GWAS.non.genome.df <- base::subset(point.GWAS.df, loc != "genome")
+```
+
+## [5.1.] Plot data
+```{r}
+ggplot2::ggplot(
+    data = point.GWAS.genome.df,
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay,
+        label = sample
+      )
+    ) + 
+  geom_point() +
+  ggrepel::geom_text_repel(
+      size = 2,
+      min.segment.length = 0,
+      color = "black"
+    ) + 
+  xlab(
+      base::paste0("recall (n=",GWAS.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [5.2.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+      here::here("10.External_validation/plots/"),
+        "K562_GWAS_enrichment_vs_recall_PIP_",
+        GWAS.pip.thres,
+        "_point_estimates.pdf"
+      ),
+    width = 6,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [5.3.] Print plot
+```{r}
+ggplot2::ggplot(
+    data = point.GWAS.non.genome.df,
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay,
+        label = sample
+      )
+    ) + 
+  geom_point(
+    mapping = aes(
+        shape = loc
+      )
+    ) +
+  ggrepel::geom_text_repel(
+      size = 2,
+      min.segment.length = 0,
+      color = "black"
+    ) + 
+  xlab(
+      base::paste0("recall (n=",GWAS.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [5.4.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_GWAS_enrichment_vs_recall_PIP_",
+        GWAS.pip.thres,
+        "_point_estimates_proximal_vs_distal.pdf"
+      ),
+    width = 6,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [5.5.] Prepare data for plotting
+```{r}
+point.GWAS.genome.df$sample <- base::factor(
+  x = point.GWAS.genome.df$sample,
+  levels = point.GWAS.genome.df$sample[
+      base::order(point.GWAS.genome.df$recall, decreasing = FALSE)
+    ]
+  )
+```
+
+## [5.6.] Plot data
+```{r}
+ggplot2::ggplot(
+    data = point.GWAS.genome.df,
+    mapping = aes(
+        x = recall,
+        y = sample,
+        fill = sample
+      )
+    ) +
+  geom_bar(
+      stat = "identity"
+    ) + 
+  theme_bw() +
+  theme(
+      # axis.text.x = element_text(
+      #     angle = 90,
+      #     vjust = 1,
+      #     hjust = 1
+      #   )
+      axis.text.y = element_blank()
+    ) +
+  ylab(
+      base::paste0("recall (n=",GWAS.n,")")
+    ) +
+  scale_fill_manual(
+      values = col.scheme
+    )
+```
+
+## [5.7.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_GWAS_recall_PIP_",
+        GWAS.pip.thres,
+        "_point_estimates_bar.pdf"
+      ),
+    width = 4,
+    height = 3,
+    device = "pdf"
+  )
+```
+
+## [5.8.] Prepare plotting
+```{r}
+point.GWAS.genome.df$sample <- base::factor(
+  x = point.GWAS.genome.df$sample,
+  levels = point.GWAS.genome.df$sample[
+      base::order(point.GWAS.genome.df$enrichment, decreasing = FALSE)
+    ]
+  )
+```
+
+## [5.9.] Plot data
+```{r}
+ggplot2::ggplot(
+    data = point.GWAS.genome.df,
+    mapping = aes(
+        x = enrichment,
+        y = sample,
+        fill = sample
+      )
+    ) +
+  geom_bar(
+      stat = "identity"
+    ) + 
+  theme_bw() +
+  theme(
+      # axis.text.x = element_text(
+      #     angle = 90,
+      #     vjust = 1,
+      #     hjust = 1
+      #   )
+      axis.text.y = element_blank()
+    ) +
+  scale_fill_manual(
+      values = col.scheme
+    )
+```
+
+## [5.10.] Plot data
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_GWAS_enrichment_PIP_",
+        GWAS.pip.thres,
+        "_point_estimates_bar.pdf"
+      ),
+    width = 5,
+    height = 4,
+    device = "pdf"
+  )
+```
+
+## [6.] Visualize CRISPR results -------------------------
+
+## [6.0.] Prepare data for plotting
+```{r}
+point.CRISPR.genome.df <- base::subset(point.CRISPR.df, loc == "genome")
+point.CRISPR.non.genome.df <- base::subset(point.CRISPR.df, loc != "genome")
+```
+
+## [6.1.] Plot CRISPR point estimate results
+```{r}
+ggplot2::ggplot(
+    data = point.CRISPR.genome.df,
+    mapping = aes(
+        x = recall,
+        y = precision,
+        color = assay,
+        label = sample
+      )
+    ) + 
+  geom_point() +
+  ggrepel::geom_text_repel(
+      size = 2,
+      min.segment.length = 0,
+      color = "black"
+    ) + 
+  xlab(
+      base::paste0("recall (n=",CRISPR.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  theme_bw() + 
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [6.2.] Print plot
+```{r}
+ggplot2::ggsave(
+    base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_CRISPR_precision_vs_recall_point_estimates.pdf"
+      ),
+    width = 8,
+    height = 7,
+    device = "pdf"
+  )
+```
+
+## [6.3.] Plot data
+```{r}
+ggplot2::ggplot(
+    data = point.CRISPR.non.genome.df,
+    mapping = aes(
+        x = recall,
+        y = precision,
+        color = assay,
+        label = sample
+      )
+    ) + 
+  geom_point() +
+  ggrepel::geom_text_repel(
+      size = 2,
+      min.segment.length = 0,
+      color = "black"
+    ) +
+  facet_wrap(
+      facets = ~loc,
+      scales = "free"
+    ) +
+  xlab(
+      base::paste0("recall (n=",CRISPR.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) + 
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [6.4.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_CRISPR_precision_vs_recall_point_estimates_proximal_vs_distal.pdf"
+      ),
+    width = 6,
+    height = 3,
+    device = "pdf"
+  )
+```
+
+## [6.5.] Prepare plotting
+```{r}
+point.CRISPR.genome.df$sample <- base::factor(
+  x = point.CRISPR.genome.df$sample,
+  levels = point.CRISPR.genome.df$sample[
+      base::order(point.CRISPR.genome.df$recall, decreasing = TRUE)
+    ]
+  )
+```
+
+## [6.6.] Plot data
+```{r}
+ggplot2::ggplot(
+    data = point.CRISPR.genome.df,
+    mapping = aes(
+        x = sample,
+        y = recall,
+        fill = sample
+      )
+    ) +
+  geom_bar(
+      stat = "identity"
+    ) + 
+  ylab(
+      base::paste0("recall (n=",CRISPR.n,")")
+    ) +
+  scale_fill_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(
+      angle = 45,
+      vjust = 1,
+      hjust = 1
+      )
+    )
+```
+
+## [6.7.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_CRISPR_recall_point_estimates_bar.pdf"
+      ),
+    width = 3,
+    height = 3,
+    device = "pdf"
+  )
+```
+
+## [6.8.] Prepare plotting
+```{r}
+point.CRISPR.genome.df$sample <- base::factor(
+  x = point.CRISPR.genome.df$sample,
+  levels = point.CRISPR.genome.df$sample[
+      base::order(point.CRISPR.genome.df$precision, decreasing = TRUE)
+    ]
+  )
+```
+
+## [6.9.] Plot data
+```{r}
+ggplot2::ggplot(
+  data = point.CRISPR.genome.df,
+  mapping = aes(
+      x = sample,
+      y = precision,
+      fill = sample
+    )
+  ) +
+  geom_bar(
+      stat = "identity"
+    ) +
+  scale_fill_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(
+        angle = 45,
+        vjust = 1,
+        hjust = 1
+      )
+    )
+```
+
+## [6.10.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_CRISPR_precision_point_estimates_bar.pdf"
+      ),
+    width = 5,
+    height = 3,
+    device = "pdf"
+  )
+```
+
+## [6.11.] Prepare bar plots for point estimates
+#### Create a new column for scaled precision
+```{r}
+scaling_factor <- base::max(point.CRISPR.genome.df$recall) / base::max(point.CRISPR.genome.df$precision)
+
+point.CRISPR.genome.df$precision_scaled <- point.CRISPR.genome.df$precision * scaling_factor
+
+point.CRISPR.genome.df_long <- point.CRISPR.genome.df %>%
+  tidyr::pivot_longer(
+      cols = base::c("recall", "precision_scaled"),
+      names_to = "metric",
+      values_to = "value"
+    ) %>%
+  dplyr::mutate(
+    metric = base::factor(
+        x = metric,
+        levels = base::c("recall","precision_scaled")
+      )
+    )
+```
+
+## [6.12.] Plot data
+```{r}
+ggplot2::ggplot(
+      data = point.CRISPR.genome.df_long
+    ) +
+  geom_col(
+      mapping = aes(
+          x = sample,
+          y = value,
+          fill = sample,
+          group = metric,
+          alpha = metric  
+        ),
+      position = position_dodge(width = 0.6),  
+      color = "black",
+      width = 0.6  
+    ) +
+  # Primary Y-axis for recall and secondary Y-axis for scaled precision
+  scale_y_continuous(
+      name = "Recall",
+      limits = base::c(0, base::max(point.CRISPR.genome.df$recall) * 1.1),
+      sec.axis = ggplot2::sec_axis(
+        transform = ~ . / scaling_factor,  
+        name = "Precision"
+      )
+    ) +
+  scale_fill_manual(
+      values = col.scheme
+    ) +
+  # Set alpha levels for recall and precision
+  scale_alpha_manual(
+      values = base::c("recall" = 1, "precision_scaled" = 0.5)
+    ) + 
+  theme_bw() +
+  theme(
+      aspect.ratio = 1/2,
+      axis.text.x = element_text(
+          angle = 90,
+          vjust = 0.5,
+          hjust = 1
+        ),
+      axis.title.y.left = element_text(
+          color = "black"
+        ),
+      axis.title.y.right = element_text(
+          color = "black"
+        ),
+      legend.title = element_blank(),
+      legend.position = "bottom"
+    ) +
+  labs(
+      x = "Sample", fill = "Sample"
+    ) +
+  theme(
+      legend.position = "none"
+    )
+```
+
+## [6.13.] Plot data
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_CRISPR_precision_recall_point_estimates_bar.pdf"
+      ),
+    width = 5,
+    height = 3,
+    device = "pdf"
+  )
+```
+
+## [7.] Calculate enrichment, precision, and recall versus score threshold -------------------------
+
+## [7.0.] Helper function for preparing enrichment-recall curves
+```{r}
+enrichment.precision.recall <- function(data, fg.data, bg.data, assay) {
+  
+  base::do.call(
+    what = "rbind",
+    args = base::lapply(
+      X = base::names(data),
+      FUN = function(n) {
+    
+        gr <- data[[n]]
+        scores <- base::seq(0, 1, by = 0.01)
+        cnt <- base::sapply(
+          X = scores,
+          FUN = function(sco){
+              base::sum(gr$score>=sco)
+            }
+          )
+        scores <- scores[cnt>=10]
+        
+        gr.fg.olap <- GenomicRanges::findOverlaps(
+            query = fg.data,
+            subject = gr,
+            minoverlap = 1
+          )
+        gr.bg.olap <- GenomicRanges::findOverlaps(
+            query = bg.data,
+            subject = gr,
+            minoverlap = 1
+          )
+    
+        base::do.call(
+          what = "rbind",
+          args = base::lapply(
+            X = scores,
+            FUN = function(sco){
+      
+              selection <- base::which(gr$score>=sco)
+              fg.count <- base::length(
+                base::unique(
+                  S4Vectors::queryHits(gr.fg.olap)[
+                      base::which(S4Vectors::subjectHits(gr.fg.olap) %in% selection)
+                    ]
+                  )
+                )
+              bg.count <- base::length(
+                base::unique(
+                  S4Vectors::queryHits(gr.bg.olap)[
+                      base::which(S4Vectors::subjectHits(gr.bg.olap) %in% selection)
+                    ]
+                  )
+                )
+              
+              base::data.frame(
+                    enrichment = (fg.count/length(fg.data))/(bg.count/length(bg.data)),
+                    precision = fg.count/(fg.count+bg.count),
+                    recall = fg.count/length(fg.data),
+                    fg.count = fg.count,
+                    bg.count = bg.count,
+                    score = sco,
+                    sample = n,
+                    assay = assay[n]
+                )
+              }
+            )
+          )
+        }
+      )
+    )
+  }
+```
+
+## [7.1.] Apply helper function
+```{r}
+pooled.PRIME.ClinVar.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIME, # PRIME
+    fg.data = ClinVar.data,
+    bg.data = SNP.data,
+    assay =  pooled.PRIME.names # PRIME.names
+  )
+
+pooled.PRIME.eQTL.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIME, # PRIME
+    fg.data = eQTL.data,
+    bg.data = SNP.data,
+    assay = pooled.PRIME.names # PRIME.names
+  )
+
+pooled.PRIME.GWAS.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIME, # PRIME
+    fg.data = GWAS.data,
+    bg.data = SNP.data,
+    assay = pooled.PRIME.names # PRIME.names
+  )
+
+pooled.PRIME.CRISPR.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIME, # PRIME
+    fg.data = CRISPR.pos.data,
+    bg.data = CRISPR.neg.data,
+    assay = pooled.PRIME.names # PRIME.names
+  )
+
+pooled.PRIME.dctap.enrichment.recall.data <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIME,
+    fg.data = dc.tap.enhancers.pos,
+    bg.data = dc.tap.enhancers.neg,
+    assay = pooled.PRIME.names # PRIME.names
+  )
+```
+
+## [8.] Visualize CLinVar, eQTL & CRISPR results -------------------------
+
+## [8.0.] Plot results
+```{r}
+ggplot2::ggplot(
+    data = pooled.PRIME.ClinVar.enrichment.recall.data[
+        pooled.PRIME.CRISPR.enrichment.recall.data$recall > 0.01,
+      ],
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay
+      )
+    ) +
+  
+  geom_line(
+      mapping = aes(
+          group = sample
+        ),
+      linewidth = 1
+    ) +
+  geom_point(
+      data = base::subset(point.ClinVar.df, loc == "genome"),
+      size = 3
+    ) +
+  xlab(
+      base::paste0("recall (n=",ClinVar.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+#### Evaluate
+#### DHS recall: 0.05421322; DHS enrichment: 2.452082 -> PRIME CAGE cells pooled: 24.100419 (9.83x); PRIME CAGE nuclei pooled: 18.532597 (7,56x)
+```{r}
+pooled.PRIME.ClinVar.enrichment.recall.data[
+        pooled.PRIME.CRISPR.enrichment.recall.data$recall > 0.01,
+      ] %>%
+  dplyr::filter(assay != "PRIME CAGE nuclei 10M pooled")
+```
+
+## [8.1.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        base::format(base::Sys.Date(), "%Y%m%d"),
+        "_K562_pooled_PRIME_ClinVar_enrichment_vs_recall_and_point_estimates_genome",
+        "_v3.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [8.2.] Print plot
+```{r}
+ggplot2::ggplot(
+    data = pooled.PRIME.eQTL.enrichment.recall.data[
+        pooled.PRIME.CRISPR.enrichment.recall.data$recall > 0.01,
+      ],
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      ),
+      linewidth = 1
+    ) +
+  geom_point(
+      data = point.eQTL.genome.df,
+      size = 3
+    ) +
+  xlab(
+      base::paste0("recall (n=",eQTL.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [8.3.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        base::format(base::Sys.Date(), "%Y%m%d"),
+        "_K562_pooled_PRIME_eQTL_enrichment_vs_recall_PIP_",
+        eQTL.pip.thres,
+        "_and_point_estimates_genome",
+        "_v3.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [8.4.] Plot data
+```{r}
+ggplot2::ggplot(
+    data = pooled.PRIME.GWAS.enrichment.recall.data[
+        pooled.PRIME.CRISPR.enrichment.recall.data$recall > 0.01,
+      ],
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      ),
+    linewidth = 1
+    ) +
+  geom_point(
+      data = point.GWAS.genome.df,
+      size = 3
+    ) +
+  xlab(
+      base::paste0("recall (n=",GWAS.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [8.5.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        base::format(base::Sys.Date(), "%Y%m%d"),
+        "K562_pooled_PRIME_GWAS_enrichment_vs_recall_PIP_",
+        GWAS.pip.thres,
+        "_and_point_estimates_genome",
+        "_v3.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [8.6.] Plot data
+```{r}
+ggplot2::ggplot(
+    data = pooled.PRIME.CRISPR.enrichment.recall.data[
+        pooled.PRIME.CRISPR.enrichment.recall.data$recall > 0.01,
+      ],
+    mapping = aes(
+        x = recall,
+        y = precision,
+        color = assay
+      )
+    ) +
+  geom_line(
+      mapping = aes(
+          group = sample
+        ),
+      linewidth = 1
+    ) +
+  geom_point(
+      data = point.CRISPR.genome.df,
+      size = 3
+    ) +
+  xlab(
+      base::paste0("recall (n=",CRISPR.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [8.7.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        base::format(base::Sys.Date(), "%Y%m%d"),
+        "K562_pooled_PRIME_CRISPR_precision_vs_recall_and_point_estimates_genome",
+        "_v3.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [8.8.] Plot data
+```{r}
+point.dctap.genome.df <- base::subset(
+    x = point.dctap.df, loc == "genome"
+  )
+ggplot2::ggplot(
+    data = pooled.PRIME.dctap.enrichment.recall.data[
+        pooled.PRIME.CRISPR.enrichment.recall.data$recall > 0.01,
+      ],
+    # data = pooled.PRIME.dctap.enrichment.recall.data,
+    mapping = aes(
+        x = recall,
+        y = precision,
+        color = assay
+      )
+    ) +
+  geom_line(
+      mapping = aes(
+          group = sample
+        ),
+      size = 1
+    ) +
+  geom_point(
+      data = point.dctap.genome.df,
+      size = 3
+    ) +
+  xlab(
+    base::paste0(
+        "recall (n=",dc.tap.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [8.9.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        base::format(base::Sys.Date(), "%Y%m%d"),
+        "K562_pooled_PRIME_dctap_precision_vs_recall_and_point_estimates_genome",
+        "_v3.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [8.10.] Prepare data for running distal-proximal analysis again
+#### Specifically for distal
+```{r}
+pooled.PRIME.distal <- base::lapply(
+  X = pooled.PRIME,
+  FUN = function(gr){
+      gr[gr$class == "distal"]
+    }
+  )
+pooled.PRIME.proximal <- base::lapply(
+  X = pooled.PRIME,
+  FUN = function(gr){
+      gr[gr$class == "proximal"]
+    }
+  )
+```
+
+## [8.11.] Run separate analysis for distal and proximal
+```{r}
+pooled.PRIME.GWAS.enrichment.recall.data.distal <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIME.distal,
+    fg.data = GWAS.data,
+    bg.data = SNP.data,
+    assay = pooled.PRIME.names
+  )
+
+pooled.PRIME.GWAS.enrichment.recall.data.proximal <- .GlobalEnv$enrichment.precision.recall(
+    data = pooled.PRIME.proximal,
+    fg.data = GWAS.data,
+    bg.data = SNP.data,
+    assay = pooled.PRIME.names
+  )
+```
+
+## [8.12.] Subset data for plotting
+```{r}
+point.GWAS.genome.distal <- base::subset(point.GWAS.df, loc == "distal")
+```
+
+## [8.13.] Plot data
+```{r}
+ggplot2::ggplot(
+    data = pooled.PRIME.GWAS.enrichment.recall.data.distal[
+        pooled.PRIME.GWAS.enrichment.recall.data.distal$recall > 0.001,
+      ],
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  geom_point(
+      data = point.GWAS.genome.distal
+    ) + 
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    ) +
+  xlab(
+      base::paste0("recall (n=",GWAS.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    )
+```
+
+## [8.14.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIME_GWAS_enrichment_vs_recall_and_point_estimates_distal.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [8.15.] Subset data for plotting
+```{r}
+point.GWAS.genome.proximal <- base::subset(point.GWAS.df, loc == "proximal")
+```
+
+## [8.16.] Plot data
+```{r}
+ggplot2::ggplot(
+    data = pooled.PRIME.GWAS.enrichment.recall.data.proximal[
+        pooled.PRIME.GWAS.enrichment.recall.data.proximal$recall > 0.001,
+      ],
+    mapping = aes(
+        x = recall,
+        y = enrichment,
+        color = assay
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  geom_point(
+      data = point.GWAS.genome.proximal
+    ) +
+  xlab(
+      base::paste0("recall (n=",GWAS.n,")")
+    ) +
+  scale_color_manual(
+      values = col.scheme
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [8.17.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIME_GWAS_enrichment_vs_recall_and_point_estimates_proximal.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+
+## [9.] Enrichment, precision, recall vs score -------------------------
+
+## [9.0.] Plot data
+```{r}
+ggplot2::ggplot(
+  data = pooled.PRIME.ClinVar.enrichment.recall.data,
+  mapping = aes(
+      x = score,
+      y = enrichment,
+      color = assay
+    )
+  ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [9.1.] Print data
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIME_ClinVar_enrichment_vs_score.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [9.2.] Plot data
+```{r}
+ggplot2::ggplot(
+  data = pooled.PRIME.ClinVar.enrichment.recall.data,
+  mapping = aes(
+      x = score,
+      y = recall,
+      color = assay
+    )
+  ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [9.3.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIME_ClinVar_recall_vs_score.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [9.4.] Plot data
+```{r}
+ggplot2::ggplot(
+    data = pooled.PRIME.eQTL.enrichment.recall.data,
+    mapping = aes(
+        x = score,
+        y = enrichment,
+        color = assay
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [9.5.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIME_eQTL_enrichment_vs_score_PIP_",
+        eQTL.pip.thres,
+        ".pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [9.6.] Plot data
+```{r}
+ggplot2::ggplot(
+  data = pooled.PRIME.eQTL.enrichment.recall.data,
+  mapping = aes(
+      x = score,
+      y = recall,
+      color = assay
+    )
+  ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  theme_bw() + 
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [9.7.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIME_eQTL_recall_vs_score_PIP_",
+        eQTL.pip.thres,
+        ".pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [9.8.] Plot data
+```{r}
+ggplot2::ggplot(
+  data = pooled.PRIME.GWAS.enrichment.recall.data,
+  mapping = aes(
+      x = score,
+      y = enrichment,
+      color = assay
+    )
+  ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [9.9.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIME_GWAS_enrichment_vs_score_PIP_",
+        GWAS.pip.thres,
+        ".pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [9.10.] Plot data
+```{r}
+ggplot2::ggplot(
+  data = pooled.PRIME.GWAS.enrichment.recall.data,
+  mapping = aes(
+      x = score,
+      y = recall,
+      color = assay
+    )
+  ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  theme(
+    aspect.ratio=1)
+```
+
+## [9.11.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIME_GWAS_recall_vs_score_PIP_",
+        GWAS.pip.thres,
+        ".pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [9.12.] Plot data 
+```{r}
+ggplot2::ggplot(
+    data = pooled.PRIME.CRISPR.enrichment.recall.data,
+    mapping = aes(
+        x = score,
+        y = precision,
+        color = assay
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [9.13.] Print plot
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIME_CRISPR_precision_vs_score.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [9.14.] Plot data 
+```{r}
+ggplot2::ggplot(
+    data = pooled.PRIME.CRISPR.enrichment.recall.data,
+    mapping = aes(
+        x = score,
+        y = recall,
+        color = assay
+      )
+    ) +
+  geom_line(
+    mapping = aes(
+        group = sample
+      )
+    ) +
+  theme_bw() +
+  theme(
+      aspect.ratio = 1
+    )
+```
+
+## [9.15.] Print data
+```{r}
+ggplot2::ggsave(
+    filename = base::paste0(
+        here::here("10.External_validation/plots/"),
+        "K562_pooled_PRIME_CRISPR_recall_vs_score.pdf"
+      ),
+    width = 7,
+    height = 5,
+    device = "pdf"
+  )
+```
+
+## [10.] Upset plots -------------------------
+
+```{r}
+gr_list <- GRangesList(point.data)
+
+gr_list[["GWAS.data"]] <- GWAS.data
+gr_list[["eQTL.data"]] <- eQTL.data
+gr_list[["ClinVar.data"]] <- ClinVar.data
+gr_list[["CRISPR.data"]] <- CRISPR.pos.data
+gr_list[["CRISPR.neg.data"]] <- CRISPR.neg.data
+gr_list[["dcTap.pos.data"]] <- dc.tap.enhancers.pos
+gr_list[["dcTap.neg.data"]] <- dc.tap.enhancers.neg
+```
+
+```{r}
+create_upset_plot <- function(subset_name, gr_list, sets_to_include) {
+    # Get the specific subset's GRanges
+    subset_gr <- gr_list[[subset_name]]
+  
+    # Create a binary matrix for overlaps, restricted to the subset
+    overlap_matrix <- sapply(gr_list, function(gr) {
+      overlaps <- findOverlaps(subset_gr, gr)
+      overlap_vector <- rep(0, length(subset_gr))
+      overlap_vector[unique(queryHits(overlaps))] <- 1
+      return(overlap_vector)
+    })
+    colnames(overlap_matrix) <- names(gr_list)
+    
+    # Convert to a data frame
+    overlap_df <- as.data.frame(overlap_matrix)
+    rownames(overlap_df) <- NULL
+    
+    # Filter to include only relevant sets
+    subset_overlap_df <- overlap_df[, sets_to_include]
+    
+    # Generate the UpSet plot
+    base::library(UpSetR)
+    p<- upset(
+      subset_overlap_df,
+      sets = names(gr_list)[sets_to_include],
+      order.by = "freq",
+      sets.bar.color=col.scheme[names(col.scheme) %in% names(gr_list)[sets_to_include]]
+    )
+    
+      p1 <-upset(
+      subset_overlap_df,
+      sets = names(gr_list)[sets_to_include],
+      order.by = "freq",
+      sets.bar.color=col.scheme[match(p$labels,names(col.scheme))],
+      line.size=0
+    )
+      p1
+  }
+```
+
+## Define sets to include for intersection analysis
+```{r}
+sets_to_include <-  names(gr_list) %in% base::c("PRIME CAGE cells pooled", "PRIME CAGE nuclei pooled","DHS")
+```
+
+## Generate plots for PRIME/DHS focus
+```{r}
+s <- create_upset_plot("GWAS.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIME_GWAS_upset.pdf",height=6, width=8)
+s
+dev.off()
+```
+
+```{r}
+s <- create_upset_plot("ClinVar.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIME_ClinVar_upset.pdf",height=6, width=8)
+s
+dev.off()
+```
+
+```{r}
+s <- create_upset_plot("eQTL.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIME_eQTL_upset.pdf",height=6, width=8)
+s
+dev.off()
+```
+
+```{r}
+s <- create_upset_plot("CRISPR.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIME_CRISPR.pos_upset.pdf",height=6, width=8)
+s
+dev.off()
+```
+
+```{r}
+s <- create_upset_plot("CRISPR.neg.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIME_CRISPR.neg_upset.pdf",height=6, width=8)
+s
+dev.off()
+```
+
+# Generate plots for full panel
+```{r}
+sets_to_include <-  names(gr_list) %in% names(col.scheme)
+```
+
+```{r}
+s <- create_upset_plot("GWAS.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIME_full_GWAS_upset.pdf",height=6, width=8)
+s
+dev.off()
+```
+
+```{r}
+s <- create_upset_plot("ClinVar.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIME_full_ClinVar_upset.pdf",height=6, width=8)
+s
+dev.off()
+```
+
+```{r}
+s <- create_upset_plot("eQTL.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIME_full_eQTL_upset.pdf",height=6, width=8)
+s
+dev.off()
+```
+
+```{r}
+s <- create_upset_plot("CRISPR.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIME_full_CRISPR.pos_upset.pdf",height=6, width=8)
+s
+dev.off()
+```
+
+```{r}
+s <- create_upset_plot("CRISPR.neg.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIME_full_CRISPR.neg_upset.pdf",height=6, width=8)
+s
+dev.off()
+```
+
+```{r}
+s <- create_upset_plot("dcTap.pos.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIME_dcTap.pos_upset.pdf",height=6, width=8)
+s
+dev.off()
+```
+
+```{r}
+s <- create_upset_plot("dcTap.neg.data", gr_list, sets_to_include)
+pdf("plots/K562_PRIME_dcTap.neg_upset.pdf",height=6, width=8)
+s
+dev.off()
+```
