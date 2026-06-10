@@ -775,7 +775,7 @@ point.dctap.df <- .GlobalEnv$point.enrichment.precision.recall(
   )
 ```
 
-```{r eval=FALSE}
+```{r}
 base::saveRDS(
     object = point.ClinVar.df,
     file = base::paste0(
@@ -2036,7 +2036,7 @@ pooled.PRIME.dctap.enrichment.recall.data <- .GlobalEnv$enrichment.precision.rec
   )
 ```
 
-```{r eval=FALSE}
+```{r}
 base::saveRDS(
     object = pooled.PRIME.ClinVar.enrichment.recall.data,
     file = base::paste0(
