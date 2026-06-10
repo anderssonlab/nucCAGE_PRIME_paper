@@ -775,6 +775,63 @@ point.dctap.df <- .GlobalEnv$point.enrichment.precision.recall(
   )
 ```
 
+```{r eval=FALSE}
+base::saveRDS(
+    object = point.ClinVar.df,
+    file = base::paste0(
+        here::here("10.External_validation/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_point_ClinVar_df",
+        ".rds"
+      ),
+    compress = TRUE
+  )
+
+base::saveRDS(
+    object = point.eQTL.df,
+    file = base::paste0(
+        here::here("10.External_validation/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_point_eQTL_df",
+        ".rds"
+      ),
+    compress = TRUE
+  )
+
+base::saveRDS(
+    object = point.GWAS.df,
+    file = base::paste0(
+        here::here("10.External_validation/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_point_GWAS_df",
+        ".rds"
+      ),
+    compress = TRUE
+  )
+
+base::saveRDS(
+    object = point.CRISPR.df,
+    file = base::paste0(
+        here::here("10.External_validation/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_point_CRISPR_df",
+        ".rds"
+      ),
+    compress = TRUE
+  )
+
+base::saveRDS(
+    object = point.dctap.df,
+    file = base::paste0(
+        here::here("10.External_validation/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_point_dctap_df",
+        ".rds"
+      ),
+    compress = TRUE
+  )
+```
+
 ## [3.] Visualize ClinVar results -------------------------
 
 ## [3.0.] Prepare ClinVar plotting
@@ -1976,6 +2033,63 @@ pooled.PRIME.dctap.enrichment.recall.data <- .GlobalEnv$enrichment.precision.rec
     fg.data = dc.tap.enhancers.pos,
     bg.data = dc.tap.enhancers.neg,
     assay = pooled.PRIME.names # PRIME.names
+  )
+```
+
+```{r eval=FALSE}
+base::saveRDS(
+    object = pooled.PRIME.ClinVar.enrichment.recall.data,
+    file = base::paste0(
+        here::here("10.External_validation/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_pooled_PRIME_ClinVar_enrichment_recall_data",
+        ".rds"
+      ),
+    compress = TRUE
+  )
+
+base::saveRDS(
+    object = pooled.PRIME.eQTL.enrichment.recall.data,
+    file = base::paste0(
+        here::here("10.External_validation/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_pooled_PRIME_eQTL_enrichment_recall_data",
+        ".rds"
+      ),
+    compress = TRUE
+  )
+
+base::saveRDS(
+    object = pooled.PRIME.GWAS.enrichment.recall.data,
+    file = base::paste0(
+        here::here("10.External_validation/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_pooled_PRIME_GWAS_enrichment_recall_data",
+        ".rds"
+      ),
+    compress = TRUE
+  )
+
+base::saveRDS(
+    object = pooled.PRIME.CRISPR.enrichment.recall.data,
+    file = base::paste0(
+        here::here("10.External_validation/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_pooled_PRIME_CRISPR_enrichment_recall_data",
+        ".rds"
+      ),
+    compress = TRUE
+  )
+
+base::saveRDS(
+    object = pooled.PRIME.dctap.enrichment.recall.data,
+    file = base::paste0(
+        here::here("10.External_validation/plots/"),
+        base::format(base::Sys.Date(),"%Y%m%d"),
+        "_pooled_PRIME_dctap_enrichment_recall_data",
+        ".rds"
+      ),
+    compress = TRUE
   )
 ```
 

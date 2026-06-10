@@ -40,7 +40,7 @@ for FILE_PATH in "$CELL_SRC_1"/*t075d010.bed; do
         if (t > 1) t = 1
         gb = int(255 * (1 - t) + 0.5)
         printf "%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%d,%d,%d\n", \
-            $1,$2,$3,$1":"$2"-"$3,score,"*",$2,$3,255,gb,gb
+            $1,$2,$3,$1":"$2"-"$3,score,".",$2,$3,255,gb,gb
       }' "$FILE_PATH" | \
       sort -k 1,1 -k 2,2n; } > "$OUT_FILE"
 ) &
@@ -65,7 +65,7 @@ for FILE_PATH in "$CELL_SRC_2"/*0_75*d010.bed; do
         if (t > 1) t = 1
         gb = int(255 * (1 - t) + 0.5)
         printf "%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%d,%d,%d\n", \
-            $1,$2,$3,$1":"$2"-"$3,score,"*",$2,$3,255,gb,gb
+            $1,$2,$3,$1":"$2"-"$3,score,".",$2,$3,255,gb,gb
       }' "$FILE_PATH" | \
       sort -k 1,1 -k 2,2n; } > "$OUT_FILE"
 ) &
@@ -94,7 +94,7 @@ for FILE_PATH in "$SRC_DIR"/*_qn.PL.score0.5.bed; do
         if (t > 1) t = 1
         gb = int(255 * (1 - t) + 0.5)
         printf "%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%d,%d,%d\n", \
-            $1,$2,$3,$1":"$2"-"$3,score,"*",$2,$3,255,gb,gb
+            $1,$2,$3,$1":"$2"-"$3,score,".",$2,$3,255,gb,gb
       }' "$FILE_PATH" | \
       sort -k 1,1 -k 2,2n; } > "$OUT_FILE"
 ) &
